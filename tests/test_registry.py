@@ -1,0 +1,24 @@
+import unittest
+from django_components import component
+
+class MockComponent(object):
+    pass
+
+class ComponentRegistryTest(unittest.TestCase):
+    def setUp(self):
+        self.registry = component.ComponentRegistry()
+
+    def test_simple_register(self):
+        self.registry.register(name="testcomponent", component=MockComponent)
+        self.assertEqual(
+            self.registry._registry.items(),
+            [("testcomponent", MockComponent)]
+        )
+
+    def test_register_two_components(self):
+        self.registry.register(name="testcomponent", component=MockComponent)
+        self.registry.register(name="testcomponent2", component=MockComponent)
+        self.assertEqual(
+            self.registry._registry.items(),
+            [("testcomponent", MockComponent), ("testcomponent2", MockComponent)]
+        )
