@@ -27,3 +27,12 @@ class ComponentRegistryTest(unittest.TestCase):
         self.registry.register(name="testcomponent", component=MockComponent)
         with self.assertRaises(component.AlreadyRegistered):
             self.registry.register(name="testcomponent", component=MockComponent)
+
+    def test_simple_unregister(self):
+        self.registry.register(name="testcomponent", component=MockComponent)
+        self.registry.unregister(name="testcomponent")
+        self.assertEqual(self.registry._registry.items(), [])
+
+    def test_raises_on_failed_unregister(self):
+        with self.assertRaises(component.NotRegistered):
+            self.registry.unregister(name="testcomponent")
