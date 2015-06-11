@@ -22,3 +22,8 @@ class ComponentRegistryTest(unittest.TestCase):
             self.registry._registry.items(),
             [("testcomponent", MockComponent), ("testcomponent2", MockComponent)]
         )
+
+    def test_prevent_registering_twice(self):
+        self.registry.register(name="testcomponent", component=MockComponent)
+        with self.assertRaises(component.AlreadyRegistered):
+            self.registry.register(name="testcomponent", component=MockComponent)
