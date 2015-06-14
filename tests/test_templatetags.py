@@ -19,7 +19,7 @@ class ComponentTemplateTagTest(unittest.TestCase):
     def test_component_dependencies(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_dependencies %}")
+        template = Template('{% load component_tags %}{% component_dependencies %}')
         rendered = template.render(Context())
         self.assertEqual(rendered, dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet" />
