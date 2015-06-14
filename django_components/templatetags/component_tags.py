@@ -10,3 +10,9 @@ def component_dependencies_tag():
         out.append(component_class.render_dependencies())
 
     return "\n".join(out)
+
+@register.simple_tag(name="component")
+def component_tag(name, *args, **kwargs):
+    component_class = registry._registry[name]
+    component = component_class()
+    return component.render(*args, **kwargs)

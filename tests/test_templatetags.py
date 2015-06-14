@@ -29,3 +29,10 @@ class ComponentTemplateTagTest(unittest.TestCase):
             <link href="style.css" type="text/css" media="all" rel="stylesheet" />
             <script type="text/javascript" src="script.js"></script>
         """).strip())
+
+    def test_component(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template('{% load component_tags %}{% component name="test" variable="variable" %}')
+        rendered = template.render(Context({}))
+        self.assertEqual(rendered, "Variable: <strong>variable</strong>\n")
