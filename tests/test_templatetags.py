@@ -16,6 +16,10 @@ class SimpleComponent(component.Component):
         js = ("script.js",)
 
 class ComponentTemplateTagTest(unittest.TestCase):
+    def setUp(self):
+        # NOTE: component.registry is global, so need to clear before each test
+        component.registry._registry = {}
+
     def test_component_dependencies(self):
         component.registry.register(name="test", component=SimpleComponent)
 
