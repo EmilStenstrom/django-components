@@ -6,7 +6,7 @@ register = template.Library()
 @register.simple_tag(name="component_dependencies")
 def component_dependencies_tag():
     out = []
-    for comp in registry._registry.values():
-        out.append(comp.render_dependencies())
+    for component_class in registry._registry.values():
+        out.append(component_class.render_dependencies())
 
     return "\n".join(out)
