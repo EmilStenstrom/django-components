@@ -4,6 +4,14 @@ import django
 from django.conf import settings
 from django_components import component
 
+settings.configure(
+    TEMPLATES=[{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': ["tests/templates/"],
+    }]
+)
+django.setup()
+
 class SimpleComponent(component.Component):
     def context(self, variable=None):
         return {
@@ -16,15 +24,6 @@ class SimpleComponent(component.Component):
         js = ("script.js",)
 
 class ComponentRegistryTest(unittest.TestCase):
-    def setUp(self):
-        settings.configure(
-            TEMPLATES=[{
-                'BACKEND': 'django.template.backends.django.DjangoTemplates',
-                'DIRS': ["tests/templates/"],
-            }]
-        )
-        django.setup()
-
     def test_simple_component(self):
         comp = SimpleComponent()
 
