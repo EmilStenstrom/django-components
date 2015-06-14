@@ -1,16 +1,7 @@
 from textwrap import dedent
 import unittest
-import django
-from django.conf import settings
 from django_components import component
-
-settings.configure(
-    TEMPLATES=[{
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ["tests/templates/"],
-    }]
-)
-django.setup()
+from .django_test_setup import *  # NOQA
 
 class SimpleComponent(component.Component):
     def context(self, variable=None):
