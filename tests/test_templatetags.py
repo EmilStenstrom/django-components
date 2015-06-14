@@ -17,7 +17,7 @@ class SimpleComponent(component.Component):
 
 class ComponentTemplateTagTest(unittest.TestCase):
     def test_component_dependencies(self):
-        component.registry.register(name="testcomponent", component=SimpleComponent)
+        component.registry.register(name="test", component=SimpleComponent)
 
         template = Template("{% load component_tags %}{% component_dependencies %}")
         rendered = template.render(Context())
