@@ -21,7 +21,7 @@ class Calendar(component.Component):
     class Media:
         template = "[your app]/components/calendar/calendar.html"
         css = {'all': ('[your app]/components/calendar/calendar.css',)}
-        js = ('[your app]/components/calendar/calendar.js',) 
+        js = ('[your app]/components/calendar/calendar.js',)
 
 component.register(name="calendar", component=Calendar) 
 ```
@@ -33,7 +33,7 @@ In your templates, use your component by first importing the django_components t
 {% block extra_media %}{% component_dependencies %}{% endblock %}
 {% block main %}
     {% component name="calendar" date=custom_date %}
-{% endblock %} 
+{% endblock %}
 ```
 
 # Running the tests
