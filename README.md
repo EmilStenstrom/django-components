@@ -34,3 +34,12 @@ In your templates, use your component by first importing the django_components t
     {% component name="calendar" date=custom_date %}
 {% endblock %} 
 ```
+
+# Running the tests
+
+Install and run `tox`:
+
+```sh
+pip install tox
+tox
+```
