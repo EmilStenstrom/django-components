@@ -5,7 +5,7 @@ from django_components import component
 from .django_test_setup import *  # NOQA
 
 class SimpleComponent(component.Component):
-    def context(self, variable=None):
+    def context(self, variable):
         return {
             "variable": variable,
         }
