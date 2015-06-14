@@ -1,4 +1,5 @@
 # django-components
+<img align="right" src="https://travis-ci.org/EmilStenstrom/django-components.svg?branch=master">
 A way to create simple reusable template components in Django.
 
 # Installation
