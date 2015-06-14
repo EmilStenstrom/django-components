@@ -30,10 +30,17 @@ In your templates, use your component by first importing the django_components t
 
 ```htmldjango
 {% load django_components %}
-{% block extra_media %}{% component_dependencies %}{% endblock %}
-{% block main %}
-    {% component name="calendar" date=custom_date %}
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My example calendar</title>
+    {% component_dependencies %}
+</head>
+<body>
+    {% component name="calendar" date=custom_date1 %}
+    {% component name="calendar" date=custom_date2 %}
+</body>
+<html>
 ```
 
 # Running the tests
