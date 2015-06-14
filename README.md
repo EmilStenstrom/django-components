@@ -23,13 +23,13 @@ class Calendar(component.Component):
         css = {'all': ('[your app]/components/calendar/calendar.css',)}
         js = ('[your app]/components/calendar/calendar.js',)
 
-component.register(name="calendar", component=Calendar) 
+component.registry.register(name="calendar", component=Calendar)
 ```
 
 In your templates, use your component by first importing the django_components tag library, and then using the component_dependencies and component tags to render the component to the page.
 
 ```htmldjango
-{% load components %}
+{% load django_components %}
 {% block extra_media %}{% component_dependencies %}{% endblock %}
 {% block main %}
     {% component name="calendar" date=custom_date %}
