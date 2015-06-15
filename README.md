@@ -45,9 +45,26 @@ In your templates, use your component by first importing the django_components t
 
 # Running the tests
 
-Install and run `tox`:
+Install `tox`:
 
 ```sh
 pip install tox
+```
+
+Then run all the tests over all Python versions:
+
+```sh
 tox
+```
+
+Or just the particular version you wish to test:
+
+```sh
+tox -e py34
+```
+
+You can also have it watch the directory for changes and re-run the tests:
+
+```sh
+tox -e py34 -- -f
 ```
