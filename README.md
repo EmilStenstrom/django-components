@@ -1,9 +1,43 @@
 # django-components
-<a href="https://travis-ci.org/EmilStenstrom/django-components"><img align="right" src="https://travis-ci.org/EmilStenstrom/django-components.svg?branch=master"></a>
 A way to create simple reusable template components in Django.
+This repository is a fork from the original one, since it's not maintanied anymore.
 
 # Installation
-```pip install django-components``` (NOTE: Does not work yet)
+
+First install the app into your environment
+
+> ```pip install git+https://github.com/mohammedalhaddar/django-components.git#egg=django_components```
+
+Then add the app into INSTALLED APPS in settings.py
+
+```
+INSTALLED_APPS = [
+    ...,
+    "django_components",
+    ...
+]
+```
+
+## Optional
+To avoid loading the app in each template using
+``` {% load django_components %} ```
+, you can add the tag as a 'builtin' in settings.py
+
+```
+TEMPLATES = [
+    {
+        ...,
+        'OPTIONS': {
+            'context_processors': [
+                ...
+            ],
+            'builtins': [
+                'django_components.templatetags.component_tags',
+            ]
+        },
+    },
+]
+```
 
 # Create your first component
 
