@@ -1,17 +1,16 @@
 from django import template
 from django_components.component import registry
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
 @register.simple_tag(name="component_dependencies")
-def component_dependencies_tag():
-    unique_component_classes = set(registry._registry.values())
+def component_dependencies_tag(*args, **kwargs):
+    current_component_class = registry._registry[kwargs['component']]
 
-    out = []
-    for component_class in unique_component_classes:
-        out.append(component_class.render_dependencies())
+    dependencies = (current_component_class.render_dependencies(),)
 
-    return "\n".join(out)
+    return mark_safe("\n".join(dependencies))
 
 @register.simple_tag(name="component")
 def component_tag(name, *args, **kwargs):

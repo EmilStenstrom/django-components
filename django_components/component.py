@@ -2,7 +2,7 @@ from django.template.loader import render_to_string
 from .component_registry import ComponentRegistry, AlreadyRegistered, NotRegistered  # NOQA
 
 class Component(object):
-    CSS_TEMPLATE = '<link href="{}" type="text/css" media="{}" rel="stylesheet" />'
+    CSS_TEMPLATE = '<link href="{}" type="text/css" rel="stylesheet" />'
     JS_TEMPLATE = '<script type="text/javascript" src="{}"></script>'
 
     def context(self):
@@ -12,8 +12,8 @@ class Component(object):
     def render_dependencies(cls):
         out = []
 
-        for css_media, css_path in cls.Media.css.items():
-            out.append(cls.CSS_TEMPLATE.format(css_path, css_media))
+        for css_path in cls.Media.css:
+            out.append(cls.CSS_TEMPLATE.format(css_path))
 
         for js_path in cls.Media.js:
             out.append(cls.JS_TEMPLATE.format(js_path))
