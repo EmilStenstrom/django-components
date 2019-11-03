@@ -54,7 +54,5 @@ class ChildComponentNode(template.Node):
         self.component_name = component_name[0]
 
     def render(self, context):
-        # context.add(self.component_name, self.nodelist)
-        print("Comp name is: " + self.component_name)
         context[self.component_name] = self.nodelist.render(context)
         return ''
