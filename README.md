@@ -136,26 +136,16 @@ This makes it possible to organize your front-end around reusable components. In
 
 # Running the tests
 
-Install `tox`:
+To quickly run the tests install the local dependencies by running
 
 ```sh
-pip install tox
+pip install -r requirements-dev.txt
+./pytest
 ```
 
-Then run all the tests over all Python versions:
+The library is also tested across many versions of Python and Django. To run tests that way:
 
 ```sh
+pip install -r requirements-dev.txt
 tox
-```
-
-Or just the particular version you wish to test:
-
-```sh
-tox -e py34
-```
-
-You can also have it watch the directory for changes and re-run the tests:
-
-```sh
-tox -e py34 -- -f
 ```
