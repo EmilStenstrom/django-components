@@ -1,5 +1,6 @@
 from django import template
 from django_components.component import registry
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -11,7 +12,7 @@ def component_dependencies_tag():
     for component_class in unique_component_classes:
         out.append(component_class.render_dependencies())
 
-    return "\n".join(out)
+    return mark_safe("\n".join(out))
 
 @register.simple_tag(name="component")
 def component_tag(name, *args, **kwargs):
