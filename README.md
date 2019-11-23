@@ -2,6 +2,17 @@
 <a href="https://travis-ci.org/EmilStenstrom/django-components"><img align="right" src="https://travis-ci.org/EmilStenstrom/django-components.svg?branch=master"></a>
 A way to create simple reusable template components in Django.
 
+# Compatiblity
+
+| Python version | Django version      |
+|----------------|---------------------|
+| 2.7            | 1.11                |
+| 3.4            | 1.11, 2.0           |
+| 3.5            | 1.11, 2.0, 2.1, 2.2 |
+| 3.6            | 1.11, 2.0, 2.1, 2.2 |
+| 3.7            | 1.11, 2.0, 2.1, 2.2 |
+| 3.8            | 1.11, 2.0, 2.1, 2.2 |
+
 # Installation
 
 Install the app into your environment:
