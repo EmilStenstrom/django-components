@@ -26,7 +26,7 @@ class Component(object):
     class Media:
         template = None
         css = {}
-        js = ()
+        js = []
 
 # This variable represents the global component registry
 registry = ComponentRegistry()

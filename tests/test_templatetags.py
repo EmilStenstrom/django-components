@@ -13,7 +13,7 @@ class SimpleComponent(component.Component):
     class Media:
         template = "simple_template.html"
         css = {"all": "style.css"}
-        js = ("script.js",)
+        js = ["script.js"]
 
 class ComponentTemplateTagTest(unittest.TestCase):
     def setUp(self):

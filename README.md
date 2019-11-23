@@ -90,8 +90,8 @@ class Calendar(component.Component):
 
     class Media:
         template = "[your app]/components/calendar/calendar.html"
-        css = {'all': ('[your app]/components/calendar/calendar.css',)}
-        js = ('[your app]/components/calendar/calendar.js',)
+        css = {'all': ['[your app]/components/calendar/calendar.css']}
+        js = ['[your app]/components/calendar/calendar.js']
 
 component.registry.register(name="calendar", component=Calendar)
 ```

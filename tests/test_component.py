@@ -12,7 +12,7 @@ class SimpleComponent(component.Component):
     class Media:
         template = "simple_template.html"
         css = {"all": "style.css"}
-        js = ("script.js",)
+        js = ["script.js"]
 
 class ComponentRegistryTest(unittest.TestCase):
     def test_simple_component(self):
