@@ -16,15 +16,30 @@ class SimpleComponent(component.Component):
         css = {"all": ["style.css"]}
         js = ["script.js"]
 
+class MultistyleComponent(SimpleComponent):
+    class Media:
+        css = {"all": ["style.css", "style2.css"]}
+        js = ["script.js", "script2.js"]
+
 class ComponentRegistryTest(unittest.TestCase):
     def test_simple_component(self):
         comp = SimpleComponent()
 
         self.assertEqual(comp.render_dependencies(), dedent("""
-            <link href="style.css" type="text/css" media="all" rel="stylesheet" />
+            <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())
 
         self.assertEqual(comp.render(variable="test"), dedent("""
             Variable: <strong>test</strong>
         """).lstrip())
+
+    def test_component_with_list_of_styles(self):
+        comp = MultistyleComponent()
+
+        self.assertEqual(comp.render_dependencies(), dedent("""
+            <link href="style.css" type="text/css" media="all" rel="stylesheet">
+            <link href="style2.css" type="text/css" media="all" rel="stylesheet">
+            <script type="text/javascript" src="script.js"></script>
+            <script type="text/javascript" src="script2.js"></script>
+        """).strip())
