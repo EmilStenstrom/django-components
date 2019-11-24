@@ -6,27 +6,21 @@ from django_components import component
 
 from .django_test_setup import *  # NOQA
 
-
-class SimpleComponent(component.Component):
-    def context(self, variable=None):
-        return {
-            "variable": variable,
-        }
-
-    def template(self, context):
-        return "simple_template.html"
-
-    class Media:
-        css = {"all": ["style.css"]}
-        js = ["script.js"]
-
-class MultistyleComponent(SimpleComponent):
-    class Media:
-        css = {"all": ["style.css", "style2.css"]}
-        js = ["script.js", "script2.js"]
-
 class ComponentRegistryTest(SimpleTestCase):
     def test_simple_component(self):
+        class SimpleComponent(component.Component):
+            def context(self, variable=None):
+                return {
+                    "variable": variable,
+                }
+
+            def template(self, context):
+                return "simple_template.html"
+
+            class Media:
+                css = {"all": ["style.css"]}
+                js = ["script.js"]
+
         comp = SimpleComponent()
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
@@ -39,6 +33,11 @@ class ComponentRegistryTest(SimpleTestCase):
         """).lstrip())
 
     def test_component_with_list_of_styles(self):
+        class MultistyleComponent(component.Component):
+            class Media:
+                css = {"all": ["style.css", "style2.css"]}
+                js = ["script.js", "script2.js"]
+
         comp = MultistyleComponent()
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
