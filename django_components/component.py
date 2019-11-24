@@ -1,8 +1,9 @@
 from django.template.loader import render_to_string
 from .component_registry import ComponentRegistry, AlreadyRegistered, NotRegistered  # NOQA
 from django.forms.widgets import MediaDefiningClass
+from six import with_metaclass
 
-class Component(metaclass=MediaDefiningClass):
+class Component(with_metaclass(MediaDefiningClass)):
     def context(self):
         return {}
 
