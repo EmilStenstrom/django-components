@@ -1,5 +1,5 @@
 from textwrap import dedent
-import unittest
+from django.test import SimpleTestCase
 from django.template import Template, Context
 from django_components import component
 from .django_test_setup import *  # NOQA
@@ -17,7 +17,7 @@ class SimpleComponent(component.Component):
         css = {"all": ["style.css"]}
         js = ["script.js"]
 
-class ComponentTemplateTagTest(unittest.TestCase):
+class ComponentTemplateTagTest(SimpleTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry._registry = {}
@@ -27,7 +27,7 @@ class ComponentTemplateTagTest(unittest.TestCase):
 
         template = Template('{% load component_tags %}{% component_dependencies %}')
         rendered = template.render(Context())
-        self.assertEqual(rendered, dedent("""
+        self.assertHTMLEqual(rendered, dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())
@@ -37,7 +37,7 @@ class ComponentTemplateTagTest(unittest.TestCase):
 
         template = Template('{% load component_tags %}{% component name="test" variable="variable" %}')
         rendered = template.render(Context({}))
-        self.assertEqual(rendered, "Variable: <strong>variable</strong>\n")
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_multiple_component_dependencies(self):
         component.registry.register(name="test1", component=SimpleComponent)
@@ -45,7 +45,7 @@ class ComponentTemplateTagTest(unittest.TestCase):
 
         template = Template('{% load component_tags %}{% component_dependencies %}')
         rendered = template.render(Context())
-        self.assertEqual(rendered, dedent("""
+        self.assertHTMLEqual(rendered, dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())

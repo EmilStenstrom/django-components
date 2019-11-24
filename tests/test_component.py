@@ -1,5 +1,5 @@
 from textwrap import dedent
-import unittest
+from django.test import SimpleTestCase
 from django_components import component
 from .django_test_setup import *  # NOQA
 
@@ -21,23 +21,23 @@ class MultistyleComponent(SimpleComponent):
         css = {"all": ["style.css", "style2.css"]}
         js = ["script.js", "script2.js"]
 
-class ComponentRegistryTest(unittest.TestCase):
+class ComponentRegistryTest(SimpleTestCase):
     def test_simple_component(self):
         comp = SimpleComponent()
 
-        self.assertEqual(comp.render_dependencies(), dedent("""
+        self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())
 
-        self.assertEqual(comp.render(variable="test"), dedent("""
+        self.assertHTMLEqual(comp.render(variable="test"), dedent("""
             Variable: <strong>test</strong>
         """).lstrip())
 
     def test_component_with_list_of_styles(self):
         comp = MultistyleComponent()
 
-        self.assertEqual(comp.render_dependencies(), dedent("""
+        self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <link href="style2.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
