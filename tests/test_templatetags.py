@@ -9,9 +9,10 @@ from .django_test_setup import *  # NOQA
 
 
 class SimpleComponent(component.Component):
-    def context(self, variable):
+    def context(self, variable, variable2="default"):
         return {
             "variable": variable,
+            "variable2": variable2,
         }
 
     def template(self, context):
@@ -20,6 +21,10 @@ class SimpleComponent(component.Component):
     class Media:
         css = {"all": ["style.css"]}
         js = ["script.js"]
+
+class IffedComponent(SimpleComponent):
+    def template(self, context):
+        return "iffed_template.html"
 
 class ComponentTemplateTagTest(SimpleTestCase):
     def setUp(self):
@@ -42,6 +47,16 @@ class ComponentTemplateTagTest(SimpleTestCase):
         template = Template('{% load component_tags %}{% component name="test" variable="variable" %}')
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    def test_call_component_with_two_variables(self):
+        component.registry.register(name="test", component=IffedComponent)
+
+        template = Template('{% load component_tags %}{% component name="test" variable="variable" variable2="hej" %}')
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, dedent("""
+            Variable: <strong>variable</strong>
+            Variable2: <strong>hej</strong>
+        """))
 
     def test_component_called_with_positional_name(self):
         component.registry.register(name="test", component=SimpleComponent)
