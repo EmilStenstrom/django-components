@@ -1,7 +1,10 @@
-from django.template.loader import render_to_string
-from .component_registry import ComponentRegistry, AlreadyRegistered, NotRegistered  # NOQA
 from django.forms.widgets import MediaDefiningClass
+from django.template.loader import render_to_string
 from six import with_metaclass
+
+# Allow "component.AlreadyRegistered" instead of having to import these everywhere
+from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # NOQA
+
 
 class Component(with_metaclass(MediaDefiningClass)):
     def context(self):

@@ -1,8 +1,12 @@
 from textwrap import dedent
+
+from django.template import Context, Template
 from django.test import SimpleTestCase
-from django.template import Template, Context
+
 from django_components import component
+
 from .django_test_setup import *  # NOQA
+
 
 class SimpleComponent(component.Component):
     def context(self, variable):

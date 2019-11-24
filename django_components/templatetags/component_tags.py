@@ -1,6 +1,7 @@
 from django import template
-from django_components.component import registry
 from django.utils.safestring import mark_safe
+
+from django_components.component import registry
 
 register = template.Library()
 

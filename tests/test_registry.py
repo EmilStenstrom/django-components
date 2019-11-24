@@ -1,5 +1,7 @@
 import unittest
+
 from django_components import component
+
 
 class MockComponent(object):
     pass
