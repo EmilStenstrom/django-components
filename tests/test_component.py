@@ -46,3 +46,21 @@ class ComponentRegistryTest(SimpleTestCase):
             <script type="text/javascript" src="script.js"></script>
             <script type="text/javascript" src="script2.js"></script>
         """).strip())
+
+    def test_component_with_filtered_template(self):
+        class FilteredComponent(component.Component):
+            def context(self, var1=None, var2=None):
+                return {
+                    "var1": var1,
+                    "var2": var2,
+                }
+
+            def template(self, context):
+                return "filtered_template.html"
+
+        comp = FilteredComponent()
+
+        self.assertHTMLEqual(comp.render(var1="test1", var2="test2"), dedent("""
+            Var1: <strong>test1</strong>
+            Var2 (uppercased): <strong>TEST2</strong>
+        """).lstrip())
