@@ -10,7 +10,8 @@ def component_dependencies_tag():
 
     out = []
     for component_class in unique_component_classes:
-        out.append(component_class.render_dependencies())
+        component = component_class()
+        out.append(component.render_dependencies())
 
     return mark_safe("\n".join(out))
 

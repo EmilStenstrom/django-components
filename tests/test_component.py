@@ -9,9 +9,11 @@ class SimpleComponent(component.Component):
             "variable": variable,
         }
 
+    def template(self, context):
+        return "simple_template.html"
+
     class Media:
-        template = "simple_template.html"
-        css = {"all": "style.css"}
+        css = {"all": ["style.css"]}
         js = ["script.js"]
 
 class ComponentRegistryTest(unittest.TestCase):

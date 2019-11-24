@@ -1,30 +1,22 @@
 from django.template.loader import render_to_string
 from .component_registry import ComponentRegistry, AlreadyRegistered, NotRegistered  # NOQA
+from django.forms.widgets import MediaDefiningClass
 
-class Component(object):
-    CSS_TEMPLATE = '<link href="{}" type="text/css" media="{}" rel="stylesheet" />'
-    JS_TEMPLATE = '<script type="text/javascript" src="{}"></script>'
-
+class Component(metaclass=MediaDefiningClass):
     def context(self):
         return {}
 
-    @classmethod
-    def render_dependencies(cls):
-        out = []
+    def template(self, context):
+        return ""
 
-        for css_media, css_path in cls.Media.css.items():
-            out.append(cls.CSS_TEMPLATE.format(css_path, css_media))
-
-        for js_path in cls.Media.js:
-            out.append(cls.JS_TEMPLATE.format(js_path))
-
-        return "\n".join(out)
+    def render_dependencies(self):
+        return self.media.render()
 
     def render(self, *args, **kwargs):
-        return render_to_string(self.Media.template, self.context(*args, **kwargs))
+        context = self.context(*args, **kwargs)
+        return render_to_string(self.template(context), context)
 
     class Media:
-        template = None
         css = {}
         js = []
 

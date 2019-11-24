@@ -10,9 +10,11 @@ class SimpleComponent(component.Component):
             "variable": variable,
         }
 
+    def template(self, context):
+        return "simple_template.html"
+
     class Media:
-        template = "simple_template.html"
-        css = {"all": "style.css"}
+        css = {"all": ["style.css"]}
         js = ["script.js"]
 
 class ComponentTemplateTagTest(unittest.TestCase):
@@ -26,7 +28,7 @@ class ComponentTemplateTagTest(unittest.TestCase):
         template = Template('{% load component_tags %}{% component_dependencies %}')
         rendered = template.render(Context())
         self.assertEqual(rendered, dedent("""
-            <link href="style.css" type="text/css" media="all" rel="stylesheet" />
+            <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())
 
@@ -44,6 +46,6 @@ class ComponentTemplateTagTest(unittest.TestCase):
         template = Template('{% load component_tags %}{% component_dependencies %}')
         rendered = template.render(Context())
         self.assertEqual(rendered, dedent("""
-            <link href="style.css" type="text/css" media="all" rel="stylesheet" />
+            <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())

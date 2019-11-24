@@ -88,8 +88,10 @@ class Calendar(component.Component):
             "date": date,
         }
 
+    def template(self, date):
+        return "[your app]/components/calendar/calendar.html"
+
     class Media:
-        template = "[your app]/components/calendar/calendar.html"
         css = {'all': ['[your app]/components/calendar/calendar.css']}
         js = ['[your app]/components/calendar/calendar.js']
 
@@ -123,7 +125,7 @@ The output from the above template will be:
 <html>
 <head>
     <title>My example calendar</title>
-    <link href="style.css" type="text/css" media="all" rel="stylesheet" />
+    <link href="style.css" type="text/css" media="all" rel="stylesheet">
     <script type="text/javascript" src="script.js"></script>
 </head>
 <body>
