@@ -73,7 +73,7 @@ Then you need a javascript file that specifies how you interact with this compon
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
 
 ```htmldjango
-{# In a file called template.html #}
+{# In a file called calendar.html #}
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
 
