@@ -1,0 +1,6 @@
+django
+six
+tox
+pytest
+flake8
+isort
