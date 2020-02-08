@@ -1,4 +1,4 @@
-# django-components
+# django-reusable-components
 <a href="https://travis-ci.org/EmilStenstrom/django-components"><img align="right" src="https://travis-ci.org/EmilStenstrom/django-components.svg?branch=master"></a>
 A way to create simple reusable template components in Django.
 
