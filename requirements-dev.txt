@@ -4,27 +4,28 @@
 #
 #    pip-compile requirements-dev.in
 #
+asgiref==3.2.3            # via django
 attrs==19.3.0             # via pytest
-django==2.2.7
+django==3.0.3
 entrypoints==0.3          # via flake8
 filelock==3.0.12          # via tox
 flake8==3.7.9
-importlib-metadata==0.23  # via pluggy, pytest, tox
+importlib-metadata==1.5.0  # via pluggy, pytest, tox
 isort==4.3.21
 mccabe==0.6.1             # via flake8
-more-itertools==7.2.0     # via pytest, zipp
-packaging==19.2           # via pytest, tox
+more-itertools==8.2.0     # via pytest
+packaging==20.1           # via pytest, tox
 pluggy==0.13.1            # via pytest, tox
-py==1.8.0                 # via pytest, tox
+py==1.8.1                 # via pytest, tox
 pycodestyle==2.5.0        # via flake8
 pyflakes==2.1.1           # via flake8
-pyparsing==2.4.5          # via packaging
-pytest==5.3.0
+pyparsing==2.4.6          # via packaging
+pytest==5.3.5
 pytz==2019.3              # via django
-six==1.13.0
+six==1.14.0
 sqlparse==0.3.0           # via django
 toml==0.10.0              # via tox
-tox==3.14.1
-virtualenv==16.7.8        # via tox
-wcwidth==0.1.7            # via pytest
-zipp==0.6.0               # via importlib-metadata
+tox==3.14.3
+virtualenv==16.7.9        # via tox
+wcwidth==0.1.8            # via pytest
+zipp==2.2.0               # via importlib-metadata
