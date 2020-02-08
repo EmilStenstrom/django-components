@@ -6,7 +6,7 @@ from setuptools import setup
 VERSION = '0.1'
 
 setup(
-    name='django_components',
+    name='django_reusable_components',
     packages=["django_components"],
     version=VERSION,
     description='A way to create simple reusable template components in Django.',

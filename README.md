@@ -17,7 +17,7 @@ A way to create simple reusable template components in Django.
 
 Install the app into your environment:
 
-> ```pip install git+https://github.com/EmilStenstrom/django-components.git#egg=django_components```
+> ```pip install django_reusable_components```
 
 Then add the app into INSTALLED APPS in settings.py
 
