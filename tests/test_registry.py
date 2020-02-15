@@ -13,7 +13,7 @@ class ComponentRegistryTest(unittest.TestCase):
     def test_simple_register(self):
         self.registry.register(name="testcomponent", component=MockComponent)
         self.assertEqual(
-            self.registry._registry,
+            self.registry.all(),
             {"testcomponent": MockComponent}
         )
 
@@ -21,8 +21,11 @@ class ComponentRegistryTest(unittest.TestCase):
         self.registry.register(name="testcomponent", component=MockComponent)
         self.registry.register(name="testcomponent2", component=MockComponent)
         self.assertEqual(
-            self.registry._registry,
-            {"testcomponent": MockComponent, "testcomponent2": MockComponent}
+            self.registry.all(),
+            {
+                "testcomponent": MockComponent,
+                "testcomponent2": MockComponent,
+            }
         )
 
     def test_prevent_registering_twice(self):
@@ -33,7 +36,7 @@ class ComponentRegistryTest(unittest.TestCase):
     def test_simple_unregister(self):
         self.registry.register(name="testcomponent", component=MockComponent)
         self.registry.unregister(name="testcomponent")
-        self.assertEqual(self.registry._registry, {})
+        self.assertEqual(self.registry.all(), {})
 
     def test_raises_on_failed_unregister(self):
         with self.assertRaises(component.NotRegistered):

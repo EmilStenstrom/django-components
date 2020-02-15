@@ -15,7 +15,18 @@ class ComponentRegistry(object):
         self._registry[name] = component
 
     def unregister(self, name):
+        self.get(name)
+
+        del self._registry[name]
+
+    def get(self, name):
         if name not in self._registry:
             raise NotRegistered('The component "%s" is not registered' % name)
 
-        del self._registry[name]
+        return self._registry[name]
+
+    def all(self):
+        return self._registry
+
+    def clear(self):
+        self._registry = {}

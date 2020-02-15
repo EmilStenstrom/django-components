@@ -7,7 +7,7 @@ register = template.Library()
 
 @register.simple_tag(name="component_dependencies")
 def component_dependencies_tag():
-    unique_component_classes = set(registry._registry.values())
+    unique_component_classes = set(registry.all().values())
 
     out = []
     for component_class in unique_component_classes:
@@ -18,6 +18,6 @@ def component_dependencies_tag():
 
 @register.simple_tag(name="component")
 def component_tag(name, *args, **kwargs):
-    component_class = registry._registry[name]
+    component_class = registry.get(name)
     component = component_class()
     return component.render(*args, **kwargs)
