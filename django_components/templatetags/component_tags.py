@@ -1,9 +1,20 @@
 from django import template
-from django.utils.safestring import mark_safe
-from django.template.base import Node, NodeList, TokenType, TemplateSyntaxError, token_kwargs
+from django.template.base import Node, NodeList, TemplateSyntaxError, token_kwargs
 from django.template.library import parse_bits
+from django.utils.safestring import mark_safe
 
 from django_components.component import registry
+
+# Django < 2.1 compatibility
+try:
+    from django.template.base import TokenType
+except ImportError:
+    from django.template.base import TOKEN_TEXT, TOKEN_VAR, TOKEN_BLOCK
+
+    class TokenType:
+        TEXT = TOKEN_TEXT
+        VAR = TOKEN_VAR
+        BLOCK = TOKEN_BLOCK
 
 register = template.Library()
 
