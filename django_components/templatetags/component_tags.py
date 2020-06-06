@@ -113,8 +113,6 @@ def do_component(parser, token):
         varargs=None,
         varkw=[],
         defaults=None,
-        kwonly=[],
-        kwonly_defaults=None,
         takes_context=False,
         name="component_block"
     )
