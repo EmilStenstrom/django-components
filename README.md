@@ -2,16 +2,19 @@
 <a href="https://travis-ci.org/EmilStenstrom/django-components"><img align="right" src="https://travis-ci.org/EmilStenstrom/django-components.svg?branch=master"></a>
 A way to create simple reusable template components in Django.
 
-# Compatiblity
+It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
 
-| Python version | Django version           |
-|----------------|--------------------------|
-| 2.7            | 1.11                     |
-| 3.4            | 1.11, 2.0                |
-| 3.5            | 1.11, 2.0, 2.1, 2.2      |
-| 3.6            | 1.11, 2.0, 2.1, 2.2, 3.0 |
-| 3.7            | 1.11, 2.0, 2.1, 2.2, 3.0 |
-| 3.8            | 1.11, 2.0, 2.1, 2.2, 3.0 |
+```htmldjango
+{% component name="calendar" date="2015-06-19" %}
+```
+
+And this is what gets rendered (plus the CSS and Javascript you've specified):
+
+```html
+<div class="calendar-component">Today's date is <span>2015-06-19</span></div>
+```
+
+Read on to learn about the details!
 
 # Installation
 
@@ -48,6 +51,17 @@ TEMPLATES = [
     },
 ]
 ```
+
+# Compatiblity
+
+| Python version | Django version           |
+|----------------|--------------------------|
+| 2.7            | 1.11                     |
+| 3.4            | 1.11, 2.0                |
+| 3.5            | 1.11, 2.0, 2.1, 2.2      |
+| 3.6            | 1.11, 2.0, 2.1, 2.2, 3.0 |
+| 3.7            | 1.11, 2.0, 2.1, 2.2, 3.0 |
+| 3.8            | 1.11, 2.0, 2.1, 2.2, 3.0 |
 
 # Create your first component
 
@@ -135,6 +149,31 @@ The output from the above template will be:
 ```
 
 This makes it possible to organize your front-end around reusable components. Instead of relying on template tags and keeping your CSS and Javascript in the static directory.
+
+# Using slots in templates
+
+Components support something called slots. They work a lot like Django blocks, but only inside components you define. Let's update our calendar component to support more customization, by updating our calendar.html template:
+
+```htmldjango
+<div class="calendar-component">
+    <div class="header">
+        {% slot "header" %}Calendar header{% endslot %}
+    </div>
+    <div class="body">
+        {% slot "body" %}Calendar body{% endslot %}
+    </div>
+</div>
+```
+
+When using the component, you specify what slots you want to fill and where you want to use the defaults from the template. It looks like this:
+
+```
+{% component_block %}
+    {% slot "body" %}Today's date is <span>{{ date }}</span>{% endslot %}
+{% endcomponent_block %}
+```
+
+Since to header block is unspecified, it's taken from the base template. 
 
 # Running the tests
 

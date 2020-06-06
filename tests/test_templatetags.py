@@ -22,9 +22,26 @@ class SimpleComponent(component.Component):
         css = {"all": ["style.css"]}
         js = ["script.js"]
 
+
 class IffedComponent(SimpleComponent):
     def template(self, context):
         return "iffed_template.html"
+
+
+class SlottedComponent(component.Component):
+    def template(self, context):
+        return "slotted_template.html"
+
+class SlottedComponentNoSlots(component.Component):
+    def template(self, context):
+        return "slotted_template_no_slots.html"
+
+class SlottedComponentWithContext(component.Component):
+    def context(self, variable):
+        return {"variable": variable}
+
+    def template(self, context):
+        return "slotted_template.html"
 
 class ComponentTemplateTagTest(SimpleTestCase):
     def setUp(self):
@@ -75,3 +92,84 @@ class ComponentTemplateTagTest(SimpleTestCase):
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script type="text/javascript" src="script.js"></script>
         """).strip())
+
+class ComponentSlottedTemplateTagTest(SimpleTestCase):
+    def setUp(self):
+        # NOTE: component.registry is global, so need to clear before each test
+        component.registry.clear()
+
+    def test_slotted_template_basic(self):
+        component.registry.register(name="test1", component=SlottedComponent)
+        component.registry.register(name="test2", component=SimpleComponent)
+
+        template = Template("""
+            {% load component_tags %}
+            {% component_block "test1" %}
+                {% slot "header" %}
+                    Custom header
+                {% endslot %}
+                {% slot "main" %}
+                    {% component "test2" variable="variable" %}
+                {% endslot %}
+            {% endcomponent_block %}
+        """)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(rendered, """
+            <custom-template>
+                <header>Custom header</header>
+                <main>Variable: <strong>variable</strong></main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """)
+
+    def test_slotted_template_with_context_var(self):
+        component.registry.register(name="test1", component=SlottedComponentWithContext)
+
+        template = Template("""
+            {% load component_tags %}
+            {% with my_first_variable="test123" %}
+                {% component_block "test1" variable="test456" %}
+                    {% slot "main" %}
+                        {{ my_first_variable }} - {{ variable }}
+                    {% endslot %}
+                    {% slot "footer" %}
+                        {{ my_second_variable }}
+                    {% endslot %}
+                {% endcomponent_block %}
+            {% endwith %}
+        """)
+        rendered = template.render(Context({"my_second_variable": "test321"}))
+
+        self.assertHTMLEqual(rendered, """
+            <custom-template>
+                <header>Default header</header>
+                <main>test123 - test456</main>
+                <footer>test321</footer>
+            </custom-template>
+        """)
+
+    def test_slotted_template_no_slots_filled(self):
+        component.registry.register(name="test", component=SlottedComponent)
+
+        template = Template('{% load component_tags %}{% component_block "test" %}{% endcomponent_block %}')
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(rendered, """
+            <custom-template>
+                <header>Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """)
+
+    def test_slotted_template_without_slots(self):
+        component.registry.register(name="test", component=SlottedComponentNoSlots)
+        template = Template("""
+            {% load component_tags %}
+            {% component_block "test" %}{% endcomponent_block %}
+        """)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
+
