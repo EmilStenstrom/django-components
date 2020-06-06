@@ -167,7 +167,7 @@ Components support something called slots. They work a lot like Django blocks, b
 
 When using the component, you specify what slots you want to fill and where you want to use the defaults from the template. It looks like this:
 
-```
+```htmldjango
 {% component_block %}
     {% slot "body" %}Today's date is <span>{{ date }}</span>{% endslot %}
 {% endcomponent_block %}
