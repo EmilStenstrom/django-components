@@ -173,7 +173,21 @@ When using the component, you specify what slots you want to fill and where you 
 {% endcomponent_block %}
 ```
 
-Since to header block is unspecified, it's taken from the base template. 
+Since to header block is unspecified, it's taken from the base template. If you put this in a template, and send in date=2020-06-06, this is what's rendered:
+
+```html
+<div class="calendar-component">
+    <div class="header">
+        Calendar header
+    </div>
+    <div class="body">
+        Today's date is <span>2020-06-06</span>
+    </div>
+</div>
+
+```
+
+As you can see, component slots lets you write reusable containers, that you fill out when you use a component. This makes for highly reusable components, that can be used in different circumstances.
 
 # Running the tests
 
