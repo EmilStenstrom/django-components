@@ -1,3 +1,4 @@
+import django
 from django import template
 from django.template.base import Node, NodeList, TemplateSyntaxError, token_kwargs
 from django.template.library import parse_bits
@@ -15,6 +16,22 @@ except ImportError:
         TEXT = TOKEN_TEXT
         VAR = TOKEN_VAR
         BLOCK = TOKEN_BLOCK
+
+# Django < 2.0 compatibility
+if django.VERSION > (2, 0):
+    PARSE_BITS_DEFAULTS = {
+        "varargs": None,
+        "varkw": [],
+        "defaults": None,
+        "kwonly": [],
+        "kwonly_defaults": None,
+    }
+else:
+    PARSE_BITS_DEFAULTS = {
+        "varargs": None,
+        "varkw": [],
+        "defaults": None,
+    }
 
 register = template.Library()
 
@@ -106,15 +123,14 @@ def do_component(parser, token):
     """
 
     bits = token.split_contents()
+
     tag_args, tag_kwargs = parse_bits(
         parser=parser,
         bits=bits,
         params=["tag_name", "component_name"],
-        varargs=None,
-        varkw=[],
-        defaults=None,
         takes_context=False,
-        name="component_block"
+        name="component_block",
+        **PARSE_BITS_DEFAULTS
     )
     print(tag_args)
     tag_name = tag_args.pop(0)
