@@ -132,9 +132,7 @@ def do_component(parser, token):
         name="component_block",
         **PARSE_BITS_DEFAULTS
     )
-    print(tag_args)
     tag_name = tag_args.pop(0)
-    # assert False, tag_args[0]
 
     if len(bits) < 2:
         raise TemplateSyntaxError("Call the '%s' tag with a component name as the first parameter" % tag_name)
