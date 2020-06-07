@@ -29,7 +29,7 @@ class Component(with_metaclass(MediaDefiningClass)):
         return {}
 
     def template(self, context):
-        return ""
+        raise NotImplementedError("Missing template() method on component")
 
     def render_dependencies(self):
         return self.media.render()

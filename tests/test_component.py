@@ -6,7 +6,15 @@ from django_components import component
 
 from .django_test_setup import *  # NOQA
 
+
 class ComponentRegistryTest(SimpleTestCase):
+    def test_empty_component(self):
+        class EmptyComponent(component.Component):
+            pass
+
+        with self.assertRaises(NotImplementedError):
+            EmptyComponent().template({})
+
     def test_simple_component(self):
         class SimpleComponent(component.Component):
             def context(self, variable=None):
