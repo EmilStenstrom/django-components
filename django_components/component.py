@@ -77,5 +77,6 @@ class Component(with_metaclass(MediaDefiningClass)):
         css = {}
         js = []
 
+
 # This variable represents the global component registry
 registry = ComponentRegistry()

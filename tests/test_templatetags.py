@@ -172,4 +172,3 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
-
