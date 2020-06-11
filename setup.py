@@ -14,7 +14,7 @@ setup(
     long_description_content_type="text/markdown",
     author=u'Emil Stenström',
     author_email='em@kth.se',
-    url='https://github.com/EmilStenstrom/django_components/',
+    url='https://github.com/EmilStenstrom/django-components/',
     install_requires=[
         "Django>=1.11",
         "six",
