@@ -102,7 +102,7 @@ class Calendar(component.Component):
             "date": date,
         }
 
-    def template(self, date):
+    def template(self, context):
         return "[your app]/components/calendar/calendar.html"
 
     class Media:
@@ -116,10 +116,10 @@ And voilá! We've created our first component.
 
 # Use the component in a template
 
-First load the `django_components` tag library, then use the `component_dependencies` and `component` tags to render the component to the page.
+First load the `component_tags` tag library, then use the `component_dependencies` and `component` tags to render the component to the page.
 
 ```htmldjango
-{% load django_components %}
+{% load component_tags %}
 <!DOCTYPE html>
 <html>
 <head>
