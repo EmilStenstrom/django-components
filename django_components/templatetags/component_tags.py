@@ -39,43 +39,49 @@ register = template.Library()
 COMPONENT_CONTEXT_KEY = "component_context"
 
 
-def iter_components_from_registry(registry):
-    """Yields unique components from the registry."""
+def get_components_from_registry(registry):
+    """Returns a list unique components from the registry."""
 
     unique_component_classes = set(registry.all().values())
 
+    components = []
     for component_class in unique_component_classes:
-        yield component_class()
+        components.append(component_class())
+
+    return components
 
 
 @register.simple_tag(name="component_dependencies")
 def component_dependencies_tag():
     """Render both the CSS and JS dependency tags."""
 
-    component_gen = iter_components_from_registry(registry)
-    dependency_gen = map(lambda x: x.render_dependencies(), component_gen)
+    rendered_dependencies = []
+    for component in get_components_from_registry(registry):
+        rendered_dependencies.append(component.render_dependencies())
 
-    return mark_safe("\n".join(dependency_gen))
+    return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_css_dependencies")
 def component_css_dependencies_tag():
     """Render the CSS tags."""
 
-    component_gen = iter_components_from_registry(registry)
-    dependency_gen = map(lambda x: x.render_css_dependencies(), component_gen)
+    rendered_dependencies = []
+    for component in get_components_from_registry(registry):
+        rendered_dependencies.append(component.render_css_dependencies())
 
-    return mark_safe("\n".join(dependency_gen))
+    return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_js_dependencies")
 def component_js_dependencies_tag():
     """Render the JS tags."""
 
-    component_gen = iter_components_from_registry(registry)
-    dependency_gen = map(lambda x: x.render_js_dependencies(), component_gen)
+    rendered_dependencies = []
+    for component in get_components_from_registry(registry):
+        rendered_dependencies.append(component.render_js_dependencies())
 
-    return mark_safe("\n".join(dependency_gen))
+    return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component")
