@@ -2,5 +2,6 @@ django
 six
 tox
 pytest
+pytest-cov
 flake8
 isort

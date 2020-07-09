@@ -2,10 +2,11 @@ from django.forms.widgets import MediaDefiningClass
 from django.template import Context
 from django.template.base import NodeList, TextNode
 from django.template.loader import get_template
+from django.utils.safestring import mark_safe
 from six import with_metaclass
 
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
-from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # NOQA
+from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
 
 # Python 2 compatibility
 try:
@@ -24,6 +25,7 @@ except ImportError:
         VAR = TOKEN_VAR
         BLOCK = TOKEN_BLOCK
 
+
 class Component(with_metaclass(MediaDefiningClass)):
     def context(self):
         return {}
@@ -32,7 +34,19 @@ class Component(with_metaclass(MediaDefiningClass)):
         raise NotImplementedError("Missing template() method on component")
 
     def render_dependencies(self):
+        """Helper function to access media.render()"""
+
         return self.media.render()
+
+    def render_css_dependencies(self):
+        """Render only CSS dependencies available in the media class."""
+
+        return mark_safe("\n".join(self.media.render_css()))
+
+    def render_js_dependencies(self):
+        """Render only JS dependencies available in the media class."""
+
+        return mark_safe("\n".join(self.media.render_js()))
 
     def slots_in_template(self, template):
         nodelist = NodeList()
@@ -48,7 +62,9 @@ class Component(with_metaclass(MediaDefiningClass)):
     def render(self, slots_filled=None, *args, **kwargs):
         slots_filled = slots_filled or []
         context_args_variables = getfullargspec(self.context).args[1:]
-        context_args = {key: kwargs[key] for key in context_args_variables if key in kwargs}
+        context_args = {
+            key: kwargs[key] for key in context_args_variables if key in kwargs
+        }
         context = self.context(**context_args)
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
