@@ -17,6 +17,7 @@ except ImportError:
         VAR = TOKEN_VAR
         BLOCK = TOKEN_BLOCK
 
+
 # Django < 2.0 compatibility
 if django.VERSION > (2, 0):
     PARSE_BITS_DEFAULTS = {
@@ -38,16 +39,43 @@ register = template.Library()
 COMPONENT_CONTEXT_KEY = "component_context"
 
 
-@register.simple_tag(name="component_dependencies")
-def component_dependencies_tag():
+def iter_components_from_registry(registry):
+    """Yields unique components from the registry."""
+
     unique_component_classes = set(registry.all().values())
 
-    out = []
     for component_class in unique_component_classes:
-        component = component_class()
-        out.append(component.render_dependencies())
+        yield component_class()
 
-    return mark_safe("\n".join(out))
+
+@register.simple_tag(name="component_dependencies")
+def component_dependencies_tag():
+    """Render both the CSS and JS dependency tags."""
+
+    component_gen = iter_components_from_registry(registry)
+    dependency_gen = map(lambda x: x.render_dependencies(), component_gen)
+
+    return mark_safe("\n".join(dependency_gen))
+
+
+@register.simple_tag(name="component_css_dependencies")
+def component_css_dependencies_tag():
+    """Render the CSS tags."""
+
+    component_gen = iter_components_from_registry(registry)
+    dependency_gen = map(lambda x: x.render_css_dependencies(), component_gen)
+
+    return mark_safe("\n".join(dependency_gen))
+
+
+@register.simple_tag(name="component_js_dependencies")
+def component_js_dependencies_tag():
+    """Render the JS tags."""
+
+    component_gen = iter_components_from_registry(registry)
+    dependency_gen = map(lambda x: x.render_js_dependencies(), component_gen)
+
+    return mark_safe("\n".join(dependency_gen))
 
 
 @register.simple_tag(name="component")
@@ -74,9 +102,11 @@ class SlotNode(Node):
         rendered_slot = self.nodelist.render(context)
 
         if self.component:
-            context.render_context[COMPONENT_CONTEXT_KEY][self.component][self.name] = rendered_slot
+            context.render_context[COMPONENT_CONTEXT_KEY][self.component][
+                self.name
+            ] = rendered_slot
 
-        return ''
+        return ""
 
 
 @register.tag("slot")
@@ -135,11 +165,17 @@ def do_component(parser, token):
     tag_name = tag_args.pop(0)
 
     if len(bits) < 2:
-        raise TemplateSyntaxError("Call the '%s' tag with a component name as the first parameter" % tag_name)
+        raise TemplateSyntaxError(
+            "Call the '%s' tag with a component name as the first parameter" % tag_name
+        )
 
     component_name = bits[1]
-    if not component_name.startswith(('"', "'")) or not component_name.endswith(('"', "'")):
-        raise TemplateSyntaxError("Component name '%s' should be in quotes" % component_name)
+    if not component_name.startswith(('"', "'")) or not component_name.endswith(
+        ('"', "'")
+    ):
+        raise TemplateSyntaxError(
+            "Component name '%s' should be in quotes" % component_name
+        )
 
     component_name = component_name.strip('"')
     component_class = registry.get(component_name)

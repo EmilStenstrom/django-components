@@ -1,8 +1,10 @@
 class AlreadyRegistered(Exception):
     pass
 
+
 class NotRegistered(Exception):
     pass
+
 
 class ComponentRegistry(object):
     def __init__(self):
