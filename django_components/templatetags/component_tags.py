@@ -10,7 +10,7 @@ from django_components.component import registry
 try:
     from django.template.base import TokenType
 except ImportError:
-    from django.template.base import TOKEN_TEXT, TOKEN_VAR, TOKEN_BLOCK
+    from django.template.base import TOKEN_BLOCK, TOKEN_TEXT, TOKEN_VAR
 
     class TokenType:
         TEXT = TOKEN_TEXT
