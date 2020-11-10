@@ -33,7 +33,7 @@ class ComponentRegistryTest(SimpleTestCase):
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
-            <script type="text/javascript" src="script.js"></script>
+            <script src="script.js"></script>
         """).strip())
 
         self.assertHTMLEqual(comp.render(variable="test"), dedent("""
@@ -51,8 +51,8 @@ class ComponentRegistryTest(SimpleTestCase):
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <link href="style2.css" type="text/css" media="all" rel="stylesheet">
-            <script type="text/javascript" src="script.js"></script>
-            <script type="text/javascript" src="script2.js"></script>
+            <script src="script.js"></script>
+            <script src="script2.js"></script>
         """).strip())
 
     def test_component_with_filtered_template(self):

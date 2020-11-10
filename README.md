@@ -140,7 +140,7 @@ The output from the above template will be:
 <head>
     <title>My example calendar</title>
     <link href="style.css" type="text/css" media="all" rel="stylesheet">
-    <script type="text/javascript" src="script.js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
     <div class="calendar-component">Today's date is <span>2015-06-19</span></div>

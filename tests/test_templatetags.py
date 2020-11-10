@@ -58,7 +58,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context())
         expected_outcome = (
             """<link href="style.css" type="text/css" media="all" rel="stylesheet">\n"""
-            """<script type="text/javascript" src="script.js"></script>"""
+            """<script src="script.js"></script>"""
         )
         self.assertHTMLEqual(rendered, dedent(expected_outcome))
 
@@ -78,7 +78,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         template = Template("{% load component_tags %}{% component_js_dependencies %}")
         rendered = template.render(Context())
         expected_outcome = (
-            """<script type="text/javascript" src="script.js"></script>"""
+            """<script src="script.js"></script>"""
         )
         self.assertHTMLEqual(rendered, dedent(expected_outcome))
 
@@ -122,7 +122,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context())
         expected_outcome = (
             """<link href="style.css" type="text/css" media="all" rel="stylesheet">\n"""
-            """<script type="text/javascript" src="script.js"></script>"""
+            """<script src="script.js"></script>"""
         )
         self.assertHTMLEqual(rendered, dedent(expected_outcome))
 
@@ -144,7 +144,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         template = Template("{% load component_tags %}{% component_js_dependencies %}")
         rendered = template.render(Context())
         expected_outcome = (
-            """<script type="text/javascript" src="script.js"></script>"""
+            """<script src="script.js"></script>"""
         )
         self.assertHTMLEqual(rendered, dedent(expected_outcome))
 
