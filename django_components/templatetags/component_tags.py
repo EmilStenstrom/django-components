@@ -183,7 +183,7 @@ def do_component(parser, token):
             "Component name '%s' should be in quotes" % component_name
         )
 
-    component_name = component_name.strip('"')
+    component_name = component_name.strip('"\'')
     component_class = registry.get(component_name)
     component = component_class()
 

@@ -114,6 +114,15 @@ class ComponentTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
+    def test_component_called_with_singlequoted_name(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            '{% load component_tags %}{% component \'test\' variable="variable" %}'
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
     def test_multiple_component_dependencies(self):
         component.registry.register(name="test1", component=SimpleComponent)
         component.registry.register(name="test2", component=SimpleComponent)
@@ -240,6 +249,18 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test" %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
+
+    def test_slotted_template_without_slots_an_single_quotes(self):
+        component.registry.register(name="test", component=SlottedComponentNoSlots)
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% endcomponent_block %}
         """
         )
         rendered = template.render(Context({}))
