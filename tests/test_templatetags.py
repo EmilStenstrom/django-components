@@ -39,8 +39,8 @@ class SlottedComponentNoSlots(component.Component):
 
 
 class SlottedComponentWithContext(component.Component):
-    def context(self, variable):
-        return {"variable": variable}
+    def context(self, variable, tag_variable="default value"):
+        return {"variable": variable, 'tag_variable': tag_variable}
 
     def template(self, context):
         return "slotted_template.html"
