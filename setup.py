@@ -13,7 +13,7 @@ setup(
     long_description=open(os.path.join(os.path.dirname(__file__), "README.md")).read(),
     long_description_content_type="text/markdown",
     author=u"Emil Stenström",
-    author_email="em@kth.se",
+    author_email="emil@emilstenstrom.se",
     url="https://github.com/EmilStenstrom/django-components/",
     install_requires=["Django>=1.11", "six"],
     license="MIT",
