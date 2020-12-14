@@ -3,7 +3,7 @@ import os
 
 from setuptools import find_packages, setup
 
-VERSION = '0.4.3'
+VERSION = '0.4.4'
 
 setup(
     name="django_reusable_components",
@@ -27,6 +27,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Operating System :: OS Independent",
         "Framework :: Django",
         "Framework :: Django :: 1.11",
@@ -34,5 +35,6 @@ setup(
         "Framework :: Django :: 2.1",
         "Framework :: Django :: 2.2",
         "Framework :: Django :: 3.0",
+        "Framework :: Django :: 3.1",
     ],
 )
