@@ -149,7 +149,7 @@ class ComponentNode(Node):
             slots_filled = context.render_context[COMPONENT_CONTEXT_KEY][self.component]
             return self.component.render(slots_filled=slots_filled, **context.flatten())
 
-        return self.component.render()
+        return self.component.render(**extra_context)
 
 
 @register.tag("component_block")
