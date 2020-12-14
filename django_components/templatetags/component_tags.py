@@ -138,8 +138,8 @@ class ComponentNode(Node):
 
     def render(self, context):
         extra_context = {
-            key: filter_expression.resolve(context)
-            for key, filter_expression in self.extra_context.items()
+            key: context_item.resolve(context) if hasattr(context_item, 'resolve') else context_item
+            for key, context_item in self.extra_context.items()
         }
         context.update(extra_context)
 
@@ -149,7 +149,7 @@ class ComponentNode(Node):
             slots_filled = context.render_context[COMPONENT_CONTEXT_KEY][self.component]
             return self.component.render(slots_filled=slots_filled, **context.flatten())
 
-        return self.component.render()
+        return self.component.render(**extra_context)
 
 
 @register.tag("component_block")

@@ -33,6 +33,11 @@ class SlottedComponent(component.Component):
         return "slotted_template.html"
 
 
+class SlottedComponentWithMissingVariable(component.Component):
+    def template(self, context):
+        return "slotted_template_with_missing_variable.html"
+
+
 class SlottedComponentNoSlots(component.Component):
     def template(self, context):
         return "slotted_template_no_slots.html"
@@ -44,6 +49,14 @@ class SlottedComponentWithContext(component.Component):
 
     def template(self, context):
         return "slotted_template.html"
+
+
+class ComponentWithProvidedAndDefaultParameters(component.Component):
+    def context(self, variable, default_param="default text"):
+        return {"variable": variable, 'default_param': default_param}
+
+    def template(self, context):
+        return "template_with_provided_and_default_parameters.html"
 
 
 class ComponentTemplateTagTest(SimpleTestCase):
@@ -255,7 +268,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
 
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
 
-    def test_slotted_template_without_slots_an_single_quotes(self):
+    def test_slotted_template_without_slots_and_single_quotes(self):
         component.registry.register(name="test", component=SlottedComponentNoSlots)
         template = Template(
             """
@@ -266,3 +279,37 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
+
+
+class SlottedTemplateRegressionTests(SimpleTestCase):
+    def setUp(self):
+        # NOTE: component.registry is global, so need to clear before each test
+        component.registry.clear()
+
+    def test_slotted_template_that_uses_missing_variable(self):
+        component.registry.register(name="test", component=SlottedComponentWithMissingVariable)
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(rendered, """
+            <custom-template>
+                <header>Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """)
+
+    def test_component_block_accepts_provided_and_default_parameters(self):
+        component.registry.register(name="test", component=ComponentWithProvidedAndDefaultParameters)
+
+        template = Template(
+            '{% load component_tags %}{% component_block "test" variable="provided value" %}{% endcomponent_block %}'
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered,
+                             "Provided variable: <strong>provided value</strong>\nDefault: <p>default text</p>")

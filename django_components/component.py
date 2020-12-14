@@ -85,7 +85,9 @@ class Component(with_metaclass(MediaDefiningClass)):
                 else:
                     nodelist.append(node)
 
-            return nodelist.render(Context(context))
+            render_context = Context(context)
+            with render_context.bind_template(template.template):
+                return nodelist.render(render_context)
 
         return template.render(context)
 
