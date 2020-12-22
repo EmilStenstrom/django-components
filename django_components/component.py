@@ -1,5 +1,4 @@
 from django.forms.widgets import MediaDefiningClass
-from django.template import Context
 from django.template.base import NodeList, TextNode
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
@@ -49,51 +48,39 @@ class Component(with_metaclass(MediaDefiningClass)):
         return mark_safe("\n".join(self.media.render_js()))
 
     def slots_in_template(self, template):
-        nodelist = NodeList()
-        for node in template.template.nodelist:
-            if (
-                node.token.token_type == TokenType.BLOCK
-                and node.token.split_contents()[0] == "slot"
-            ):
-                nodelist.append(node)
+        return NodeList(node for node in template.template.nodelist if is_slot_node(node))
 
-        return nodelist
-
-    def render(self, slots_filled=None, *args, **kwargs):
+    def render(self, context, slots_filled=None):
         slots_filled = slots_filled or []
-        context_args_variables = getfullargspec(self.context).args[1:]
-        context_args = {
-            key: kwargs[key] for key in context_args_variables if key in kwargs
-        }
-        context = self.context(**context_args)
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
 
-        if slots_in_template:
-            valid_slot_names = set([slot.name for slot in slots_in_template])
-            nodelist = NodeList()
-            for node in template.template.nodelist:
-                if (
-                    node.token.token_type == TokenType.BLOCK
-                    and node.token.split_contents()[0] == "slot"
-                ):
-                    if node.name in valid_slot_names and node.name in slots_filled:
-                        nodelist.append(TextNode(slots_filled[node.name]))
-                    else:
-                        for node in node.nodelist:
-                            nodelist.append(node)
+        # If there are no slots, then we can simply render the template
+        if not slots_in_template:
+            return template.template.render(context)
+
+        # Otherwise, we need to assemble and render a nodelist containing the nodes from the template, slots that were
+        # provided when the component was called (previously rendered by the component's render method) and the
+        # unrendered default slots
+        nodelist = NodeList()
+        for node in template.template.nodelist:
+            if is_slot_node(node):
+                if node.name in slots_filled:
+                    nodelist.append(TextNode(slots_filled[node.name]))
                 else:
-                    nodelist.append(node)
+                    nodelist.extend(node.nodelist)
+            else:
+                nodelist.append(node)
 
-            render_context = Context(context)
-            with render_context.bind_template(template.template):
-                return nodelist.render(render_context)
-
-        return template.render(context)
+        return nodelist.render(context)
 
     class Media:
         css = {}
         js = []
+
+
+def is_slot_node(node):
+    return node.token.token_type == TokenType.BLOCK and node.token.split_contents()[0] == "slot"
 
 
 # This variable represents the global component registry

@@ -88,7 +88,8 @@ def component_js_dependencies_tag():
 def component_tag(name, *args, **kwargs):
     component_class = registry.get(name)
     component = component_class()
-    return component.render(*args, **kwargs)
+    context = template.Context(component.context(*args, **kwargs))
+    return component.render(context)
 
 
 class SlotNode(Node):
@@ -129,27 +130,30 @@ def do_slot(parser, token, component=None):
 
 
 class ComponentNode(Node):
-    def __init__(self, component, extra_context, slots):
-        extra_context = extra_context or {}
-        self.component, self.extra_context, self.slots = component, extra_context, slots
+    def __init__(self, component, context_kwargs, slots):
+        self.context_kwargs = context_kwargs or {}
+        self.component, self.slots = component, slots
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.slots)
 
     def render(self, context):
-        extra_context = {
+        # Resolve FilterExpressions and Variables that were passed as args to the component, then call component's
+        # context method to get values to insert into the context
+        resolved_context_kwargs = {
             key: context_item.resolve(context) if hasattr(context_item, 'resolve') else context_item
-            for key, context_item in self.extra_context.items()
+            for key, context_item in self.context_kwargs.items()
         }
-        context.update(extra_context)
+        extra_context = self.component.context(**resolved_context_kwargs)
 
-        self.slots.render(context)
+        with context.update(extra_context):
+            self.slots.render(context)
+            if COMPONENT_CONTEXT_KEY in context.render_context:
+                slots_filled = context.render_context[COMPONENT_CONTEXT_KEY][self.component]
+            else:
+                slots_filled = []
 
-        if COMPONENT_CONTEXT_KEY in context.render_context:
-            slots_filled = context.render_context[COMPONENT_CONTEXT_KEY][self.component]
-            return self.component.render(slots_filled=slots_filled, **context.flatten())
-
-        return self.component.render(**extra_context)
+            return self.component.render(context, slots_filled=slots_filled)
 
 
 @register.tag("component_block")
@@ -187,9 +191,9 @@ def do_component(parser, token):
     component_class = registry.get(component_name)
     component = component_class()
 
-    extra_context = {}
+    context_kwargs = {}
     if len(bits) > 2:
-        extra_context = component.context(**token_kwargs(bits[2:], parser))
+        context_kwargs = token_kwargs(bits[2:], parser)
 
     slots_filled = NodeList()
     tag_name = bits[0]
@@ -205,4 +209,4 @@ def do_component(parser, token):
         elif tag_name == "endcomponent_block":
             break
 
-    return ComponentNode(component, extra_context, slots_filled)
+    return ComponentNode(component, context_kwargs, slots_filled)

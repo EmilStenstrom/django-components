@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+from django.template import Context
+
 from django_components import component
 
 from .django_test_setup import *  # NOQA
@@ -29,13 +31,14 @@ class ComponentRegistryTest(SimpleTestCase):
                 js = ["script.js"]
 
         comp = SimpleComponent()
+        context = Context(comp.context(variable="test"))
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script src="script.js"></script>
         """).strip())
 
-        self.assertHTMLEqual(comp.render(variable="test"), dedent("""
+        self.assertHTMLEqual(comp.render(context), dedent("""
             Variable: <strong>test</strong>
         """).lstrip())
 
@@ -66,8 +69,9 @@ class ComponentRegistryTest(SimpleTestCase):
                 return "filtered_template.html"
 
         comp = FilteredComponent()
+        context = Context(comp.context(var1="test1", var2="test2"))
 
-        self.assertHTMLEqual(comp.render(var1="test1", var2="test2"), dedent("""
+        self.assertHTMLEqual(comp.render(context), dedent("""
             Var1: <strong>test1</strong>
             Var2 (uppercased): <strong>TEST2</strong>
         """).lstrip())
