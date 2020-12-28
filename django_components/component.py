@@ -7,7 +7,6 @@ from six import with_metaclass
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
 
-
 # Django < 2.1 compatibility
 try:
     from django.template.base import TokenType
