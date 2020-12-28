@@ -45,7 +45,7 @@ class Component(with_metaclass(MediaDefiningClass)):
         return NodeList(node for node in template.template.nodelist if is_slot_node(node))
 
     def render(self, context, slots_filled=None):
-        slots_filled = slots_filled or []
+        slots_filled = slots_filled or {}
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
 
