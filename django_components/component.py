@@ -7,11 +7,6 @@ from six import with_metaclass
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
 
-# Python 2 compatibility
-try:
-    from inspect import getfullargspec
-except ImportError:
-    from inspect import getargspec as getfullargspec
 
 # Django < 2.1 compatibility
 try:

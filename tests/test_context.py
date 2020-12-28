@@ -151,7 +151,8 @@ class ContextTests(SimpleTestCase):
 class ParentArgsTests(SimpleTestCase):
     def test_parent_args_can_be_drawn_from_context(self):
         template = Template("{% load component_tags %}{% component_dependencies %}"
-                            "{% component_block 'parent_with_args' parent_value=parent_value %}{%endcomponent_block %}")
+                            "{% component_block 'parent_with_args' parent_value=parent_value %}"
+                            "{% endcomponent_block %}")
         rendered = template.render(Context({'parent_value': 'passed_in'}))
 
         self.assertIn('<h1>Shadowing variable = passed_in</h1>', rendered, rendered)
@@ -224,4 +225,3 @@ class ContextCalledOnceTests(SimpleTestCase):
         rendered = template.render(Context()).strip()
 
         self.assertEqual(rendered, '<p class="incrementer">value=4;calls=1</p>\n<p>slot</p>', rendered)
-
