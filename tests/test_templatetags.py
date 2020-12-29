@@ -331,10 +331,10 @@ class MultiComponentTests(SimpleTestCase):
                         + second_component_slot + '{% endcomponent_block %}')
 
     def expected_result(self, first_component_slot='', second_component_slot=''):
-        return (f'<custom-template><header>{first_component_slot or "Default header"}</header>'
-                '<main>Default main</main><footer>Default footer</footer></custom-template>'
-                f'<custom-template><header>{second_component_slot or "Default header"}</header>'
-                '<main>Default main</main><footer>Default footer</footer></custom-template>')
+        return ('<custom-template><header>{}</header>'.format(first_component_slot or "Default header")
+                + '<main>Default main</main><footer>Default footer</footer></custom-template>'
+                + '<custom-template><header>{}</header>'.format(second_component_slot or "Default header")
+                + '<main>Default main</main><footer>Default footer</footer></custom-template>')
 
     def wrap_with_slot_tags(self, s):
         return '{% slot "header" %}' + s + '{% endslot %}'
