@@ -313,3 +313,56 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered,
                              "Provided variable: <strong>provided value</strong>\nDefault: <p>default text</p>")
+
+
+class MultiComponentTests(SimpleTestCase):
+    def setUp(self):
+        component.registry.clear()
+
+    def register_components(self):
+        component.registry.register('first_component', SlottedComponent)
+        component.registry.register('second_component', SlottedComponentWithContext)
+
+    def make_template(self, first_component_slot='', second_component_slot=''):
+        return Template('{% load component_tags %}'
+                        "{% component_block 'first_component' %}"
+                        + first_component_slot + '{% endcomponent_block %}'
+                        "{% component_block 'second_component' variable='xyz' %}"
+                        + second_component_slot + '{% endcomponent_block %}')
+
+    def expected_result(self, first_component_slot='', second_component_slot=''):
+        return ('<custom-template><header>{}</header>'.format(first_component_slot or "Default header")
+                + '<main>Default main</main><footer>Default footer</footer></custom-template>'
+                + '<custom-template><header>{}</header>'.format(second_component_slot or "Default header")
+                + '<main>Default main</main><footer>Default footer</footer></custom-template>')
+
+    def wrap_with_slot_tags(self, s):
+        return '{% slot "header" %}' + s + '{% endslot %}'
+
+    def test_both_components_render_correctly_with_no_slots(self):
+        self.register_components()
+        rendered = self.make_template().render(Context({}))
+        self.assertHTMLEqual(rendered, self.expected_result())
+
+    def test_both_components_render_correctly_with_slots(self):
+        self.register_components()
+        first_slot_content = '<p>Slot #1</p>'
+        second_slot_content = '<div>Slot #2</div>'
+        first_slot = self.wrap_with_slot_tags(first_slot_content)
+        second_slot = self.wrap_with_slot_tags(second_slot_content)
+        rendered = self.make_template(first_slot, second_slot).render(Context({}))
+        self.assertHTMLEqual(rendered, self.expected_result(first_slot_content, second_slot_content))
+
+    def test_both_components_render_correctly_when_only_first_has_slots(self):
+        self.register_components()
+        first_slot_content = '<p>Slot #1</p>'
+        first_slot = self.wrap_with_slot_tags(first_slot_content)
+        rendered = self.make_template(first_slot).render(Context({}))
+        self.assertHTMLEqual(rendered, self.expected_result(first_slot_content))
+
+    def test_both_components_render_correctly_when_only_second_has_slots(self):
+        self.register_components()
+        second_slot_content = '<div>Slot #2</div>'
+        second_slot = self.wrap_with_slot_tags(second_slot_content)
+        rendered = self.make_template('', second_slot).render(Context({}))
+        self.assertHTMLEqual(rendered, self.expected_result('', second_slot_content))

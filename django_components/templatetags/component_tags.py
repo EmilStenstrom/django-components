@@ -148,11 +148,7 @@ class ComponentNode(Node):
 
         with context.update(extra_context):
             self.slots.render(context)
-            if COMPONENT_CONTEXT_KEY in context.render_context:
-                slots_filled = context.render_context[COMPONENT_CONTEXT_KEY][self.component]
-            else:
-                slots_filled = []
-
+            slots_filled = context.render_context.get(COMPONENT_CONTEXT_KEY, {}).get(self.component, {})
             return self.component.render(context, slots_filled=slots_filled)
 
 
