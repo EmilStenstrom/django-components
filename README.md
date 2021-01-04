@@ -54,7 +54,7 @@ TEMPLATES = [
 
 # Compatiblity
 
-| Python version | Django version           |
+| Python version | Django version                |
 |----------------|-------------------------------|
 | 2.7            | 1.11                          |
 | 3.4            | 1.11, 2.0                     |
