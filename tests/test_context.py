@@ -6,6 +6,18 @@ from .django_test_setup import *  # NOQA
 from .testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
 
 
+class SimpleComponent(component.Component):
+    def context(self, variable=None):
+        return {"variable": variable} if variable is not None else {}
+
+    def template(self, context):
+        return "simple_template.html"
+
+    @staticmethod
+    def expected_output(variable_value):
+        return 'Variable: < strong > {} < / strong >'.format(variable_value)
+
+
 class ParentComponent(component.Component):
     def context(self):
         return {
@@ -27,11 +39,13 @@ class ParentComponentWithArgs(component.Component):
 
 
 class VariableDisplay(component.Component):
-    def context(self, shadowing_variable, new_variable):
-        return {
-            "shadowing_variable": shadowing_variable,
-            "unique_variable": new_variable
-        }
+    def context(self, shadowing_variable=None, new_variable=None):
+        context = {}
+        if shadowing_variable is not None:
+            context['shadowing_variable'] = shadowing_variable
+        if new_variable is not None:
+            context['unique_variable'] = new_variable
+        return context
 
     def template(self, context):
         return "variable_display.html"
@@ -57,6 +71,7 @@ component.registry.register(name='parent_component', component=ParentComponent)
 component.registry.register(name='parent_with_args', component=ParentComponentWithArgs)
 component.registry.register(name='variable_display', component=VariableDisplay)
 component.registry.register(name='incrementer', component=IncrementerComponent)
+component.registry.register(name='simple_component', component=SimpleComponent)
 
 
 class ContextTests(SimpleTestCase):
@@ -225,3 +240,25 @@ class ContextCalledOnceTests(SimpleTestCase):
         rendered = template.render(Context()).strip()
 
         self.assertEqual(rendered, '<p class="incrementer">value=4;calls=1</p>\n<p>slot</p>', rendered)
+
+
+class ComponentsCanAccessOuterContext(SimpleTestCase):
+    def test_simple_component_can_use_outer_context(self):
+        template = Template("{% load component_tags %}{% component_dependencies %}"
+                            "{% component 'simple_component' %}")
+        rendered = template.render(Context({'variable': 'outer_value'})).strip()
+        self.assertIn('outer_value', rendered, rendered)
+
+
+class IsolatedContextTests(SimpleTestCase):
+    def test_simple_component_can_pass_outer_context_in_args(self):
+        template = Template("{% load component_tags %}{% component_dependencies %}"
+                            "{% component 'simple_component' variable only %}")
+        rendered = template.render(Context({'variable': 'outer_value'})).strip()
+        self.assertIn('outer_value', rendered, rendered)
+
+    def test_simple_component_cannot_use_outer_context(self):
+        template = Template("{% load component_tags %}{% component_dependencies %}"
+                            "{% component 'simple_component' only %}")
+        rendered = template.render(Context({'variable': 'outer_value'})).strip()
+        self.assertNotIn('outer_value', rendered, rendered)
