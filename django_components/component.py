@@ -25,7 +25,7 @@ except ImportError:
 
 class Component(with_metaclass(MediaDefiningClass)):
 
-    def __init__(self, component_name):
+    def __init__(self, component_name='unnamed component'):
         self.__component_name = component_name
 
     def context(self):
