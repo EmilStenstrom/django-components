@@ -17,7 +17,7 @@ TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get('TEMPLATE_CACHE_SI
 
 class Component(metaclass=MediaDefiningClass):
 
-    def __init__(self, component_name):
+    def __init__(self, component_name='unnamed component'):
         self.__component_name = component_name
         self.instance_template = None
         self.slots = {}
