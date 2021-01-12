@@ -1,6 +1,8 @@
+from collections import defaultdict
+
 import django
 from django import template
-from django.template.base import Node, NodeList, TemplateSyntaxError, token_kwargs
+from django.template.base import Node, NodeList, TemplateSyntaxError
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
@@ -129,9 +131,11 @@ def do_slot(parser, token, component=None):
 
 class ComponentNode(Node):
     def __init__(self, component, context_args, context_kwargs, slots=None, isolated_context=False):
+        self.slots = defaultdict(NodeList)
+        for slot in slots or []:
+            self.slots[slot.name].extend(slot.nodelist)
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
-        self.slots = slots or NodeList()
         self.component, self.isolated_context = component, isolated_context
 
     def __repr__(self):
@@ -151,37 +155,47 @@ class ComponentNode(Node):
             context = context.new()
 
         with context.update(component_context):
-            self.slots.render(context)
-            slots_filled = context.render_context.get(COMPONENT_CONTEXT_KEY, {}).get(self.component, {})
-            return self.component.render(context, slots_filled=slots_filled)
+            return self.component.render(context, slots_filled=self.slots)
 
 
 @register.tag("component_block")
-def do_component(parser, token):
+def do_component_block(parser, token):
     """
-        {% component_block "name" variable="value" variable2="value2" ... %}
+    To give the component access to the template context:
+        {% component_block "name" "positional_arg" keyword_arg="value" ... %}
+
+    To render the component in an isolated context:
+        {% component_block "name" "positional_arg" keyword_arg="value" ... only %}
     """
 
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context(bits)
+
+    tag_name, token = next_block_token(parser)
     component, context_args, context_kwargs = parse_component_args(parser, bits, 'component_block')
 
     slots_filled = NodeList()
-    tag_name = bits[0]
     while tag_name != "endcomponent_block":
+        if tag_name == "slot":
+            slots_filled += do_slot(parser, token, component=component)
+        tag_name, token = next_block_token(parser)
+
+    return ComponentNode(component, context_args, context_kwargs, slots=slots_filled,
+                         isolated_context=isolated_context)
+
+
+def next_block_token(parser):
+    """Return next tag and token of type block.
+
+    Raises IndexError if there are not more block tokens in the remainder of the template."""
+
+    while True:
         token = parser.next_token()
         if token.token_type != TokenType.BLOCK:
             continue
 
         tag_name = token.split_contents()[0]
-
-        if tag_name == "slot":
-            slots_filled += do_slot(parser, token, component=component)
-        elif tag_name == "endcomponent_block":
-            break
-
-    return ComponentNode(component, context_args, context_kwargs, slots=slots_filled,
-                         isolated_context=isolated_context)
+        return tag_name, token
 
 
 def check_for_isolated_context(bits):
@@ -196,7 +210,7 @@ def parse_component_args(parser, bits, tag_name):
     tag_args, tag_kwargs = parse_bits(
         parser=parser,
         bits=bits,
-        params=["tag_name", "component_name"],
+        params=["tag_name", "name"],
         takes_context=False,
         name=tag_name,
         varargs=True,
@@ -205,21 +219,20 @@ def parse_component_args(parser, bits, tag_name):
 
     assert tag_name == tag_args[0].token, "Internal error: Expected tag_name to be {}, but it was {}".format(
         tag_name, tag_args[0].token)
-    try:
-        _tag_name, component_name_filter_expression, *context_args = tag_args
-        context_kwargs = tag_kwargs
-    except ValueError:
+    if len(tag_args) == 1:  # look for component name as keyword arg
         try:
-            _tag_name = tag_args[0]
-            component_name_filter_expression = tag_kwargs.pop('component_name')
+            component_name = tag_kwargs.pop('name').token
             context_args = []
             context_kwargs = tag_kwargs
         except IndexError:
             raise TemplateSyntaxError(
                 "Call the '%s' tag with a component name as the first parameter" % tag_name
             )
+    else:
+        component_name = tag_args[1].token
+        context_args = tag_args[2:]
+        context_kwargs = tag_kwargs
 
-    component_name = component_name_filter_expression.token
     if not (component_name.startswith(('"', "'")) and component_name[0] == component_name[-1]):
         raise TemplateSyntaxError(
             "Component name '%s' should be in quotes" % component_name

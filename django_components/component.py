@@ -1,5 +1,7 @@
+from itertools import chain
+
 from django.forms.widgets import MediaDefiningClass
-from django.template.base import NodeList, TextNode
+from django.template.base import NodeList
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 from six import with_metaclass
@@ -41,32 +43,24 @@ class Component(with_metaclass(MediaDefiningClass)):
 
         return mark_safe("\n".join(self.media.render_js()))
 
-    def slots_in_template(self, template):
+    @staticmethod
+    def slots_in_template(template):
         return NodeList(node for node in template.template.nodelist if is_slot_node(node))
 
     def render(self, context, slots_filled=None):
         slots_filled = slots_filled or {}
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
+        for default_slot in slots_in_template:
+            if default_slot.name not in slots_filled:
+                slots_filled[default_slot.name] = default_slot.nodelist
 
-        # If there are no slots, then we can simply render the template
-        if not slots_in_template:
-            return template.template.render(context)
+        # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
+        node_iterator = ([node] if not is_slot_node(node) else slots_filled[node.name]
+                         for node in template.template.nodelist)
+        flattened_nodelist = NodeList(chain.from_iterable(node_iterator))
 
-        # Otherwise, we need to assemble and render a nodelist containing the nodes from the template, slots that were
-        # provided when the component was called (previously rendered by the component's render method) and the
-        # unrendered default slots
-        nodelist = NodeList()
-        for node in template.template.nodelist:
-            if is_slot_node(node):
-                if node.name in slots_filled:
-                    nodelist.append(TextNode(slots_filled[node.name]))
-                else:
-                    nodelist.extend(node.nodelist)
-            else:
-                nodelist.append(node)
-
-        return nodelist.render(context)
+        return flattened_nodelist.render(context)
 
     class Media:
         css = {}
