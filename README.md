@@ -98,7 +98,7 @@ Finally, we use django-components to tie this together. We create a Component by
 from django_components import component
 
 
-class Calendar(component.BaseComponent):
+class Calendar(component.Component):
     def context(self, date):
         return {
             "date": date,
