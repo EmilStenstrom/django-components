@@ -67,11 +67,20 @@ class IncrementerComponent(component.Component):
         return "incrementer.html"
 
 
+class OuterContextComponent(component.Component):
+    def context(self):
+        return self.outer_context
+
+    def template(self, context):
+        return "simple_template.html"
+
+
 component.registry.register(name='parent_component', component=ParentComponent)
 component.registry.register(name='parent_with_args', component=ParentComponentWithArgs)
 component.registry.register(name='variable_display', component=VariableDisplay)
 component.registry.register(name='incrementer', component=IncrementerComponent)
 component.registry.register(name='simple_component', component=SimpleComponent)
+component.registry.register(name='outer_context_component', component=OuterContextComponent)
 
 
 class ContextTests(SimpleTestCase):
@@ -262,3 +271,17 @@ class IsolatedContextTests(SimpleTestCase):
                             "{% component 'simple_component' only %}")
         rendered = template.render(Context({'variable': 'outer_value'})).strip()
         self.assertNotIn('outer_value', rendered, rendered)
+
+
+class OuterContextPropertyTests(SimpleTestCase):
+    def test_outer_context_property_with_component(self):
+        template = Template("{% load component_tags %}{% component_dependencies %}"
+                            "{% component 'outer_context_component' only %}")
+        rendered = template.render(Context({'variable': 'outer_value'})).strip()
+        self.assertIn('outer_value', rendered, rendered)
+
+    def test_outer_context_property_with_component_block(self):
+        template = Template("{% load component_tags %}{% component_dependencies %}"
+                            "{% component_block 'outer_context_component' only %}{% endcomponent_block %}")
+        rendered = template.render(Context({'variable': 'outer_value'})).strip()
+        self.assertIn('outer_value', rendered, rendered)

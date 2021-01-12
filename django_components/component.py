@@ -60,8 +60,8 @@ class Component(with_metaclass(MediaDefiningClass)):
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
 
-        defined_slot_names = {slots_in_template.keys()}
-        filled_slot_names = {slots_filled.keys()}
+        defined_slot_names = set(slots_in_template.keys())
+        filled_slot_names = set(slots_filled.keys())
         unexpected_slots = filled_slot_names - defined_slot_names
         if unexpected_slots:
             if settings.DEBUG:

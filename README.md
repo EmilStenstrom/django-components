@@ -97,7 +97,8 @@ Finally, we use django-components to tie this together. We create a Component by
 ```python
 from django_components import component
 
-class Calendar(component.Component):
+
+class Calendar(component.BaseComponent):
     def context(self, date):
         return {
             "date": date,
@@ -109,6 +110,7 @@ class Calendar(component.Component):
     class Media:
         css = {'all': ['[your app]/components/calendar/calendar.css']}
         js = ['[your app]/components/calendar/calendar.js']
+
 
 component.registry.register(name="calendar", component=Calendar)
 ```
@@ -199,6 +201,8 @@ By default, components can access context variables from the parent template, ju
 ```
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
+
+Components can also access the outer context in their context methods by accessing the property `outer_context`.
 
 # Running the tests
 

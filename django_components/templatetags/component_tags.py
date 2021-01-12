@@ -42,11 +42,11 @@ COMPONENT_CONTEXT_KEY = "component_context"
 def get_components_from_registry(registry):
     """Returns a list unique components from the registry."""
 
-    unique_component_classes = set(registry.all().values())
+    unique_component_classes = set(registry.all().items())
 
     components = []
-    for component_class in unique_component_classes:
-        components.append(component_class())
+    for name, component_class in unique_component_classes:
+        components.append(component_class(name))
 
     return components
 
@@ -131,6 +131,8 @@ class ComponentNode(Node):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.slots)
 
     def render(self, context):
+        self.component.outer_context = context.flatten()
+
         # Resolve FilterExpressions and Variables that were passed as args to the component, then call component's
         # context method to get values to insert into the context
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
