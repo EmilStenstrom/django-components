@@ -42,11 +42,11 @@ COMPONENT_CONTEXT_KEY = "component_context"
 def get_components_from_registry(registry):
     """Returns a list unique components from the registry."""
 
-    unique_component_classes = set(registry.all().items())
+    unique_component_classes = set(registry.all().values())
 
     components = []
-    for name, component_class in unique_component_classes:
-        components.append(component_class(name))
+    for component_class in unique_component_classes:
+        components.append(component_class())
 
     return components
 

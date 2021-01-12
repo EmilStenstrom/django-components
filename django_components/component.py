@@ -24,9 +24,8 @@ except ImportError:
 
 
 class Component(with_metaclass(MediaDefiningClass)):
-    __cached_slot_nodes = None
 
-    def __init__(self, component_name):
+    def __init__(self, component_name='unnamed component'):
         self.__component_name = component_name
 
     def context(self):
@@ -55,7 +54,7 @@ class Component(with_metaclass(MediaDefiningClass)):
         return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
 
     def render(self, context, slots_filled=None):
-        slots_filled = dict(slots_filled) or {}
+        slots_filled = slots_filled or {}
 
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
