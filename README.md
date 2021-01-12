@@ -190,6 +190,16 @@ Since the header block is unspecified, it's taken from the base template. If you
 
 As you can see, component slots lets you write reusable containers, that you fill out when you use a component. This makes for highly reusable components, that can be used in different circumstances.
 
+# Component context
+
+By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component_block %}` tag):
+
+```htmldjango
+   {% component name="calendar" date="2015-06-19" only %}
+```
+
+NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
+
 # Running the tests
 
 To quickly run the tests install the local dependencies by running
