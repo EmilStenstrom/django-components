@@ -1,5 +1,6 @@
 # django-reusable-components
 <a href="https://github.com/EmilStenstrom/django-components/actions?query=workflow%3ABuild"><img align="right" src="https://github.com/EmilStenstrom/django-components/workflows/Build/badge.svg"></a>
+<a href="https://pepy.tech/project/django-reusable-components"><img align="right" src="https://pepy.tech/badge/django-reusable-components"></a>
 
 A way to create simple reusable template components in Django.
 
