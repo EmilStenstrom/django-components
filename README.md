@@ -1,5 +1,6 @@
 # django-reusable-components
-<a href="https://travis-ci.org/EmilStenstrom/django-components"><img align="right" src="https://travis-ci.org/EmilStenstrom/django-components.svg?branch=master"></a>
+<a href="https://github.com/EmilStenstrom/django-components/actions?query=workflow%3ABuild"><img align="right" src="https://github.com/EmilStenstrom/django-components/workflows/Build/badge.svg"></a>
+
 A way to create simple reusable template components in Django.
 
 It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
