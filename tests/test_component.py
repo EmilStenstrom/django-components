@@ -14,7 +14,7 @@ class ComponentRegistryTest(SimpleTestCase):
             pass
 
         with self.assertRaises(NotImplementedError):
-            EmptyComponent().template({})
+            EmptyComponent("empty_component").template({})
 
     def test_simple_component(self):
         class SimpleComponent(component.Component):
@@ -30,7 +30,7 @@ class ComponentRegistryTest(SimpleTestCase):
                 css = {"all": ["style.css"]}
                 js = ["script.js"]
 
-        comp = SimpleComponent()
+        comp = SimpleComponent("simple_component")
         context = Context(comp.context(variable="test"))
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
@@ -48,7 +48,7 @@ class ComponentRegistryTest(SimpleTestCase):
                 css = {"all": ["style.css", "style2.css"]}
                 js = ["script.js", "script2.js"]
 
-        comp = MultistyleComponent()
+        comp = MultistyleComponent("multistyle_component")
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
@@ -68,7 +68,7 @@ class ComponentRegistryTest(SimpleTestCase):
             def template(self, context):
                 return "filtered_template.html"
 
-        comp = FilteredComponent()
+        comp = FilteredComponent("filtered_component")
         context = Context(comp.context(var1="test1", var2="test2"))
 
         self.assertHTMLEqual(comp.render(context), dedent("""

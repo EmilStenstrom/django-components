@@ -1,5 +1,9 @@
+import warnings
+from itertools import chain
+
+from django.conf import settings
 from django.forms.widgets import MediaDefiningClass
-from django.template.base import NodeList, TextNode
+from django.template.base import NodeList
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 from six import with_metaclass
@@ -20,6 +24,10 @@ except ImportError:
 
 
 class Component(with_metaclass(MediaDefiningClass)):
+
+    def __init__(self, component_name):
+        self.__component_name = component_name
+
     def context(self):
         return {}
 
@@ -41,32 +49,36 @@ class Component(with_metaclass(MediaDefiningClass)):
 
         return mark_safe("\n".join(self.media.render_js()))
 
-    def slots_in_template(self, template):
-        return NodeList(node for node in template.template.nodelist if is_slot_node(node))
+    @staticmethod
+    def slots_in_template(template):
+        return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
 
     def render(self, context, slots_filled=None):
         slots_filled = slots_filled or {}
+
         template = get_template(self.template(context))
         slots_in_template = self.slots_in_template(template)
 
-        # If there are no slots, then we can simply render the template
-        if not slots_in_template:
-            return template.template.render(context)
+        defined_slot_names = set(slots_in_template.keys())
+        filled_slot_names = set(slots_filled.keys())
+        unexpected_slots = filled_slot_names - defined_slot_names
+        if unexpected_slots:
+            if settings.DEBUG:
+                warnings.warn(
+                    "Component {} was provided with unexpected slots: {}".format(
+                        self.__component_name, unexpected_slots
+                    )
+                )
+            for unexpected_slot in unexpected_slots:
+                del slots_filled[unexpected_slot]
 
-        # Otherwise, we need to assemble and render a nodelist containing the nodes from the template, slots that were
-        # provided when the component was called (previously rendered by the component's render method) and the
-        # unrendered default slots
-        nodelist = NodeList()
-        for node in template.template.nodelist:
-            if is_slot_node(node):
-                if node.name in slots_filled:
-                    nodelist.append(TextNode(slots_filled[node.name]))
-                else:
-                    nodelist.extend(node.nodelist)
-            else:
-                nodelist.append(node)
+        combined_slots = dict(slots_in_template, **slots_filled)
+        # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
+        node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
+                         for node in template.template.nodelist)
+        flattened_nodelist = NodeList(chain.from_iterable(node_iterator))
 
-        return nodelist.render(context)
+        return flattened_nodelist.render(context)
 
     class Media:
         css = {}

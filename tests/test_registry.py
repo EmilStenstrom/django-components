@@ -6,6 +6,7 @@ from django_components import component
 class MockComponent(object):
     pass
 
+
 class ComponentRegistryTest(unittest.TestCase):
     def setUp(self):
         self.registry = component.ComponentRegistry()
