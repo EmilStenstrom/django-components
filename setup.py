@@ -3,7 +3,7 @@ import os
 
 from setuptools import find_packages, setup
 
-VERSION = '0.6'
+VERSION = '0.6.1'
 
 setup(
     name="django_reusable_components",
