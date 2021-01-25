@@ -46,7 +46,7 @@ def get_components_from_registry(registry):
 
     components = []
     for component_class in unique_component_classes:
-        components.append(component_class())
+        components.append(component_class(component_class.__name__))
 
     return components
 
