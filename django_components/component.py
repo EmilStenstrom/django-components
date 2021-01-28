@@ -28,6 +28,7 @@ class Component(with_metaclass(MediaDefiningClass)):
 
     def __init__(self, component_name):
         self.__component_name = component_name
+        self.instance_template = None
 
     def context(self):
         return {}
@@ -54,10 +55,11 @@ class Component(with_metaclass(MediaDefiningClass)):
     def slots_in_template(template):
         return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
 
-    def compile_instance_template(self, component_template, slots_for_instance):
+    def compile_instance_template(self, slots_for_instance):
         """Use component's base template and the slots used for this instance to compile
         a unified template for this instance."""
 
+        component_template = get_template(self.template({}))
         slots_in_template = self.slots_in_template(component_template)
 
         defined_slot_names = set(slots_in_template.keys())
@@ -79,19 +81,13 @@ class Component(with_metaclass(MediaDefiningClass)):
             node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
                              for node in component_template.template.nodelist)
 
-            instance_template = copy(component_template.template)
-            instance_template.nodelist = NodeList(chain.from_iterable(node_iterator))
-
-            return instance_template
-
-        return component_template.template
+            self.instance_template = copy(component_template.template)
+            self.instance_template.nodelist = NodeList(chain.from_iterable(node_iterator))
+        else:
+            self.instance_template = component_template.template
 
     def render(self, context, slots_filled=None):
-        slots_filled = slots_filled or {}
-        base_template = get_template(self.template(context))
-        final_template = self.compile_instance_template(base_template, slots_filled)
-
-        return final_template.render(context)
+        return self.instance_template.render(context)
 
     class Media:
         css = {}

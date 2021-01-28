@@ -32,6 +32,7 @@ class ComponentRegistryTest(SimpleTestCase):
 
         comp = SimpleComponent("simple_component")
         context = Context(comp.context(variable="test"))
+        comp.compile_instance_template({})
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
@@ -70,6 +71,7 @@ class ComponentRegistryTest(SimpleTestCase):
 
         comp = FilteredComponent("filtered_component")
         context = Context(comp.context(var1="test1", var2="test2"))
+        comp.compile_instance_template({})
 
         self.assertHTMLEqual(comp.render(context), dedent("""
             Var1: <strong>test1</strong>

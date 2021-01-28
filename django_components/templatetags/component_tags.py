@@ -126,6 +126,7 @@ class ComponentNode(Node):
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.component, self.isolated_context = component, isolated_context
+        self.component.compile_instance_template(self.slots)
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.slots)
