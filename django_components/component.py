@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy
 import warnings
 from itertools import chain
 
@@ -74,14 +74,17 @@ class Component(with_metaclass(MediaDefiningClass)):
                 del slots_filled[unexpected_slot]
 
         combined_slots = dict(slots_in_template, **slots_filled)
-        # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
-        node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
-                         for node in template.template.nodelist)
+        if combined_slots:
+            # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
+            node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
+                             for node in template.template.nodelist)
 
-        cloned_inner_template = deepcopy(template.template)
-        cloned_inner_template.nodelist = NodeList(chain.from_iterable(node_iterator))
+            template = copy(template.template)
+            template.nodelist = NodeList(chain.from_iterable(node_iterator))
+        else:
+            template = template.template
 
-        return cloned_inner_template.render(context)
+        return template.render(context)
 
     class Media:
         css = {}
