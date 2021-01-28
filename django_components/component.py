@@ -1,3 +1,4 @@
+from copy import deepcopy
 import warnings
 from itertools import chain
 
@@ -76,9 +77,11 @@ class Component(with_metaclass(MediaDefiningClass)):
         # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
         node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
                          for node in template.template.nodelist)
-        flattened_nodelist = NodeList(chain.from_iterable(node_iterator))
 
-        return flattened_nodelist.render(context)
+        cloned_template = deepcopy(template)
+        cloned_template.template.nodelist = NodeList(chain.from_iterable(node_iterator))
+
+        return cloned_template.template.render(context)
 
     class Media:
         css = {}
