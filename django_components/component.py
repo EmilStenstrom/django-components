@@ -1,5 +1,5 @@
-from copy import copy
 import warnings
+from copy import copy
 from itertools import chain
 
 from django.conf import settings
