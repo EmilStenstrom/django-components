@@ -86,7 +86,7 @@ class Component(with_metaclass(MediaDefiningClass)):
         else:
             self.instance_template = component_template.template
 
-    def render(self, context, slots_filled=None):
+    def render(self, context):
         return self.instance_template.render(context)
 
     class Media:

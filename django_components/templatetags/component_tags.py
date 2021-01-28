@@ -120,16 +120,16 @@ def do_slot(parser, token, component=None):
 
 class ComponentNode(Node):
     def __init__(self, component, context_args, context_kwargs, slots=None, isolated_context=False):
-        self.slots = defaultdict(NodeList)
-        for slot in slots or []:
-            self.slots[slot.name].extend(slot.nodelist)
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.component, self.isolated_context = component, isolated_context
-        self.component.compile_instance_template(self.slots)
+        slot_dict = defaultdict(NodeList)
+        for slot in slots or []:
+            slot_dict[slot.name].extend(slot.nodelist)
+        self.component.compile_instance_template(slot_dict)
 
     def __repr__(self):
-        return "<Component Node: %s. Contents: %r>" % (self.component, self.slots)
+        return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
 
     def render(self, context):
         self.component.outer_context = context.flatten()
@@ -147,7 +147,7 @@ class ComponentNode(Node):
             context = context.new()
 
         with context.update(component_context):
-            return self.component.render(context, slots_filled=self.slots)
+            return self.component.render(context)
 
 
 @register.tag("component_block")
