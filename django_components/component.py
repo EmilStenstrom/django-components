@@ -78,10 +78,10 @@ class Component(with_metaclass(MediaDefiningClass)):
         node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
                          for node in template.template.nodelist)
 
-        cloned_template = deepcopy(template)
-        cloned_template.template.nodelist = NodeList(chain.from_iterable(node_iterator))
+        cloned_inner_template = deepcopy(template.template)
+        cloned_inner_template.nodelist = NodeList(chain.from_iterable(node_iterator))
 
-        return cloned_template.template.render(context)
+        return cloned_inner_template.render(context)
 
     class Media:
         css = {}
