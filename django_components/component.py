@@ -54,14 +54,14 @@ class Component(with_metaclass(MediaDefiningClass)):
     def slots_in_template(template):
         return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
 
-    def render(self, context, slots_filled=None):
-        slots_filled = slots_filled or {}
+    def compile_instance_template(self, component_template, slots_for_instance):
+        """Use component's base template and the slots used for this instance to compile
+        a unified template for this instance."""
 
-        template = get_template(self.template(context))
-        slots_in_template = self.slots_in_template(template)
+        slots_in_template = self.slots_in_template(component_template)
 
         defined_slot_names = set(slots_in_template.keys())
-        filled_slot_names = set(slots_filled.keys())
+        filled_slot_names = set(slots_for_instance.keys())
         unexpected_slots = filled_slot_names - defined_slot_names
         if unexpected_slots:
             if settings.DEBUG:
@@ -71,20 +71,27 @@ class Component(with_metaclass(MediaDefiningClass)):
                     )
                 )
             for unexpected_slot in unexpected_slots:
-                del slots_filled[unexpected_slot]
+                del slots_for_instance[unexpected_slot]
 
-        combined_slots = dict(slots_in_template, **slots_filled)
+        combined_slots = dict(slots_in_template, **slots_for_instance)
         if combined_slots:
             # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
             node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
-                             for node in template.template.nodelist)
+                             for node in component_template.template.nodelist)
 
-            template = copy(template.template)
-            template.nodelist = NodeList(chain.from_iterable(node_iterator))
-        else:
-            template = template.template
+            instance_template = copy(component_template.template)
+            instance_template.nodelist = NodeList(chain.from_iterable(node_iterator))
 
-        return template.render(context)
+            return instance_template
+
+        return component_template.template
+
+    def render(self, context, slots_filled=None):
+        slots_filled = slots_filled or {}
+        base_template = get_template(self.template(context))
+        final_template = self.compile_instance_template(base_template, slots_filled)
+
+        return final_template.render(context)
 
     class Media:
         css = {}
