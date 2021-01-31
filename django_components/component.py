@@ -1,4 +1,5 @@
 import warnings
+from copy import copy
 from itertools import chain
 
 from django.conf import settings
@@ -73,12 +74,17 @@ class Component(with_metaclass(MediaDefiningClass)):
                 del slots_filled[unexpected_slot]
 
         combined_slots = dict(slots_in_template, **slots_filled)
-        # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
-        node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
-                         for node in template.template.nodelist)
-        flattened_nodelist = NodeList(chain.from_iterable(node_iterator))
+        if combined_slots:
+            # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
+            node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
+                             for node in template.template.nodelist)
 
-        return flattened_nodelist.render(context)
+            template = copy(template.template)
+            template.nodelist = NodeList(chain.from_iterable(node_iterator))
+        else:
+            template = template.template
+
+        return template.render(context)
 
     class Media:
         css = {}

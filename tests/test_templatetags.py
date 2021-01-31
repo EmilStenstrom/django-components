@@ -366,3 +366,49 @@ class MultiComponentTests(SimpleTestCase):
         second_slot = self.wrap_with_slot_tags(second_slot_content)
         rendered = self.make_template('', second_slot).render(Context({}))
         self.assertHTMLEqual(rendered, self.expected_result('', second_slot_content))
+
+
+class TemplateInstrumentationTest(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Emulate Django test instrumentation for TestCase (see setup_test_environment)"""
+        from django.test.utils import instrumented_test_render
+
+        cls.saved_render_method = Template._render
+        Template._render = instrumented_test_render
+
+    @classmethod
+    def tearDownClass(cls):
+        Template._render = cls.saved_render_method
+
+    def setUp(self):
+        component.registry.clear()
+        component.registry.register('test_component', SlottedComponent)
+        component.registry.register('inner_component', SimpleComponent)
+
+    def templates_used_to_render(self, subject_template, render_context=None):
+        """Emulate django.test.client.Client (see request method)."""
+        from django.test.signals import template_rendered
+
+        templates_used = []
+
+        def receive_template_signal(sender, template, context, **_kwargs):
+            templates_used.append(template.name)
+
+        template_rendered.connect(receive_template_signal, dispatch_uid='test_method')
+        subject_template.render(render_context or Context({}))
+        template_rendered.disconnect(dispatch_uid='test_method')
+        return templates_used
+
+    def test_template_shown_as_used(self):
+        template = Template("{% load component_tags %}{% component 'test_component' %}", name='root')
+        templates_used = self.templates_used_to_render(template)
+        self.assertIn('slotted_template.html', templates_used)
+
+    def test_nested_component_templates_all_shown_as_used(self):
+        template = Template("{% load component_tags %}{% component_block 'test_component' %}"
+                            "{% slot \"header\" %}{% component 'inner_component' variable='foo' %}{% endslot %}"
+                            "{% endcomponent_block %}", name='root')
+        templates_used = self.templates_used_to_render(template)
+        self.assertIn('slotted_template.html', templates_used)
+        self.assertIn('simple_template.html', templates_used)
