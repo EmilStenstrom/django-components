@@ -1,7 +1,7 @@
 try:
     from time import perf_counter
 except ImportError:
-    perf_counter = lambda: 0
+    perf_counter = lambda: 0  # NOQA
 
 from django.template import Context, Template
 
@@ -41,6 +41,6 @@ class RenderBenchmarks(SimpleTestCase):
         for _ in range(1000):
             template.render(Context({}))
         end_time = perf_counter()
-        _total_elapsed = end_time - start_time
+        _total_elapsed = end_time - start_time  # NOQA
         # Only runs in Python 3
         # print(f'{total_elapsed } ms per template')
