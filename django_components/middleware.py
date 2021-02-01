@@ -1,10 +1,13 @@
 import re
 
+from django.conf import settings
 from django.forms import Media
 
 RENDERED_COMPONENTS_CONTEXT_KEY = "_COMPONENT_DEPENDENCIES"
 CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER" href="#">'
 JS_DEPENDENCY_PLACEHOLDER = '<src name="JS_PLACEHOLDER" href="#">'
+
+SCRIPT_TAG_REGEX = re.compile('<script')
 
 
 class ComponentDependencyMiddleware:
@@ -15,6 +18,7 @@ class ComponentDependencyMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self.import_scripts_as_modules = getattr(settings, 'IMPORT_SCRIPTS_AS_MODULES', False)
 
     def __call__(self, request):
         return self.get_response(request)
@@ -26,12 +30,17 @@ class ComponentDependencyMiddleware:
             rendered_components = rendered_response.context_data.get(RENDERED_COMPONENTS_CONTEXT_KEY, [])
             required_media = join_media(rendered_components)
 
-            replacer = DependencyReplacer(required_media.render_css(), required_media.render_js())
+            replacer = DependencyReplacer(''.join(required_media.render_css()), ''.join(required_media.render_js()),
+                                          use_modules=self.import_scripts_as_modules)
             response.content = re.sub(self.dependency_regex, replacer, response.content)
 
         response.add_post_render_callback(component_dependency_callback)
 
         return response
+
+
+def add_module_attribute_to_scripts(scripts):
+    return re.sub(SCRIPT_TAG_REGEX, '<script type="module"', scripts)
 
 
 class DependencyReplacer:
@@ -41,9 +50,12 @@ class DependencyReplacer:
     CSS_PLACEHOLDER = bytes(CSS_DEPENDENCY_PLACEHOLDER, encoding='utf-8')
     JS_PLACEHOLDER = bytes(JS_DEPENDENCY_PLACEHOLDER, encoding='utf-8')
 
-    def __init__(self, css_string, js_string):
-        self.js_string = self.encode(js_string)
-        self.css_string = self.encode(css_string)
+    def __init__(self, css_string, js_string, use_modules):
+        self.use_modules = use_modules
+        if self.use_modules:
+            js_string = add_module_attribute_to_scripts(js_string)
+        self.js_string = bytes(js_string, encoding='utf-8')
+        self.css_string = bytes(css_string, encoding='utf-8')
 
     def __call__(self, match):
         if match[0] == self.CSS_PLACEHOLDER:
@@ -53,13 +65,6 @@ class DependencyReplacer:
         else:
             raise AssertionError('Invalid match for DependencyReplacer' + match)
         return replacement
-
-    @staticmethod
-    def encode(s):
-        """Encode iterable of strings as a single UTF-8 bytes object."""
-
-        s = ''.join(s)
-        return bytes(s, encoding="utf-8")
 
 
 def join_media(components):
