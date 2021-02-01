@@ -24,6 +24,8 @@ class ComponentDependencyMiddleware:
         return self.get_response(request)
 
     def process_template_response(self, _request, response):
+        if response.context_data is None:
+            response.context_data = {}
         response.context_data[RENDERED_COMPONENTS_CONTEXT_KEY] = set()
 
         def component_dependency_callback(rendered_response):
