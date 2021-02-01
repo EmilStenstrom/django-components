@@ -1,11 +1,15 @@
 from collections import defaultdict
 
 from django import template
-from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.template.base import Node, NodeList, TemplateSyntaxError, mark_safe, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
 from django_components.component import registry
+from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER, \
+    RENDERED_COMPONENTS_CONTEXT_KEY
 
 register = template.Library()
 
@@ -26,35 +30,23 @@ def get_components_from_registry(registry):
 
 @register.simple_tag(name="component_dependencies")
 def component_dependencies_tag():
-    """Render both the CSS and JS dependency tags."""
+    """Marks location where CSS link and JS script tags should be rendered."""
 
-    rendered_dependencies = []
-    for component in get_components_from_registry(registry):
-        rendered_dependencies.append(component.render_dependencies())
-
-    return mark_safe("\n".join(rendered_dependencies))
+    return mark_safe(CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER)
 
 
 @register.simple_tag(name="component_css_dependencies")
 def component_css_dependencies_tag():
-    """Render the CSS tags."""
+    """Marks location where CSS link tags should be rendered."""
 
-    rendered_dependencies = []
-    for component in get_components_from_registry(registry):
-        rendered_dependencies.append(component.render_css_dependencies())
-
-    return mark_safe("\n".join(rendered_dependencies))
+    return mark_safe(CSS_DEPENDENCY_PLACEHOLDER)
 
 
 @register.simple_tag(name="component_js_dependencies")
 def component_js_dependencies_tag():
-    """Render the JS tags."""
+    """Marks location where JS script tags should be rendered."""
 
-    rendered_dependencies = []
-    for component in get_components_from_registry(registry):
-        rendered_dependencies.append(component.render_js_dependencies())
-
-    return mark_safe("\n".join(rendered_dependencies))
+    return mark_safe(JS_DEPENDENCY_PLACEHOLDER)
 
 
 @register.tag(name='component')
@@ -108,6 +100,15 @@ class ComponentNode(Node):
     def render(self, context):
         self.component.outer_context = context.flatten()
 
+        if RENDERED_COMPONENTS_CONTEXT_KEY in context:
+            rendered_components_set = context[RENDERED_COMPONENTS_CONTEXT_KEY]
+            rendered_components_set.add(self.component)
+        elif str(self.component.media) != '' and settings.DEBUG:
+            raise ImproperlyConfigured('component_dependencies context processor must be '
+                                       'used for components that have Media')
+        else:
+            rendered_components_set = None
+
         # Resolve FilterExpressions and Variables that were passed as args to the component, then call component's
         # context method to get values to insert into the context
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
@@ -119,6 +120,9 @@ class ComponentNode(Node):
         # Create a fresh context if requested
         if self.isolated_context:
             context = context.new()
+            # Insert a reference to the rendered component set so that child components can register themselves
+            if rendered_components_set is not None:
+                context[RENDERED_COMPONENTS_CONTEXT_KEY] = rendered_components_set
 
         with context.update(component_context):
             return self.component.render(context)
