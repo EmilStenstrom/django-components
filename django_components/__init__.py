@@ -2,6 +2,8 @@ from importlib import import_module
 
 from django.utils.module_loading import autodiscover_modules
 
+default_app_config = "django_components.apps.ComponentsConfig"
+
 
 def autodiscover():
     # look for "components" module/pkg in each app
