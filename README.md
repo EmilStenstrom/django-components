@@ -54,6 +54,11 @@ TEMPLATES = [
 ]
 ```
 
+# Contributors
+
+<!-- readme: contributors -start -->
+<!-- readme: contributors -end -->
+
 # Compatiblity
 
 | Python version | Django version                |
