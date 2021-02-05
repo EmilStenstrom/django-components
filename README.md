@@ -56,7 +56,52 @@ TEMPLATES = [
 
 # Contributors
 
-<!-- readme: contributors -start -->
+<!-- readme: contributors -start --> 
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/EmilStenstrom">
+            <img src="https://avatars.githubusercontent.com/u/224130?v=4" width="100;" alt="EmilStenstrom"/>
+            <br />
+            <sub><b>Emil Stenström</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/ryanhiebert">
+            <img src="https://avatars.githubusercontent.com/u/425099?v=4" width="100;" alt="ryanhiebert"/>
+            <br />
+            <sub><b>Ryan Hiebert</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/rbeard0330">
+            <img src="https://avatars.githubusercontent.com/u/2442690?v=4" width="100;" alt="rbeard0330"/>
+            <br />
+            <sub><b>rbeard0330</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/BradleyKirton">
+            <img src="https://avatars.githubusercontent.com/u/6583221?v=4" width="100;" alt="BradleyKirton"/>
+            <br />
+            <sub><b>Bradley Stuart Kirton</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/danjac">
+            <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
+            <br />
+            <sub><b>Dan Jacob</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/telenieko">
+            <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
+            <br />
+            <sub><b>Marc Fargas</b></sub>
+        </a>
+    </td></tr>
+</table>
 <!-- readme: contributors -end -->
 
 # Compatiblity
@@ -121,7 +166,7 @@ class Calendar(component.Component):
 component.registry.register(name="calendar", component=Calendar)
 ```
 
-And voilá! We've created our first component.
+And voilC!! We've created our first component.
 
 # Use the component in a template
 
