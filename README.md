@@ -116,7 +116,7 @@ class Calendar(component.Component):
 component.registry.register(name="calendar", component=Calendar)
 ```
 
-You should add this code to a *components.py* module under any of your installed apps. Alternatively, you can specify the location of your components modules in your Django settings:
+You should add this code to a *components.py* module under any of your installed apps. You can also specify the location of your components modules in your Django settings:
 
 ```python
 
