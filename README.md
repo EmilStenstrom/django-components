@@ -116,6 +116,22 @@ class Calendar(component.Component):
 component.registry.register(name="calendar", component=Calendar)
 ```
 
+You should add this code to a *components.py* module under any of your installed apps. Alternatively, you can specify the location of your components modules in your Django settings:
+
+```python
+
+COMPONENTS = {
+    "libraries": [
+        "mysite.components.forms",
+        "mysite.components.buttons",
+        "mysite.components.cards",
+    ]
+}
+```
+
+Any registered components in these locations will be loaded at startup.
+
+
 And voilá! We've created our first component.
 
 # Use the component in a template
