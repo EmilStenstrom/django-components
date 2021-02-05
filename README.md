@@ -143,7 +143,9 @@ Now you need a Django template for your component. Feel free to define more vari
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
 
-Finally, we use django-components to tie this together. We create a Component by inheriting from the Component class and specifying the context method. We also register the global component registry so that we easily can render it anywhere in our templates.
+Finally, we use django-components to tie this together. Start by creating a file called `components.py` in any of your apps. It will be auto-detected and loaded by the app.
+
+Inside this file we create a Component by inheriting from the Component class and specifying the context method. We also register the global component registry so that we easily can render it anywhere in our templates.
 
 ```python
 from django_components import component
@@ -254,6 +256,20 @@ By default, components can access context variables from the parent template, ju
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
 
 Components can also access the outer context in their context methods by accessing the property `outer_context`.
+
+# Configuring the library location
+
+If you want to, you can configure the location where components are loaded. To do this, add a COMPONENTS variable to you settings.py with a list of libraries to look for. This allows you to build a structure of components that are independent from your apps.
+
+```python
+COMPONENTS = {
+    "libraries": [
+        "mysite.components.forms",
+        "mysite.components.buttons",
+        "mysite.components.cards",
+    ]
+}
+```
 
 # Running the tests
 
