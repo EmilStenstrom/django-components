@@ -1,14 +1,11 @@
-try:
-    from time import perf_counter
-except ImportError:
-    perf_counter = lambda: 0  # NOQA
+from time import perf_counter
 
 from django.template import Context, Template
 
 from django_components import component
 
-from .django_test_setup import *  # NOQA
-from .testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
+from tests.django_test_setup import *  # NOQA
+from tests.testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
 
 
 class SlottedComponent(component.Component):
@@ -41,6 +38,5 @@ class RenderBenchmarks(SimpleTestCase):
         for _ in range(1000):
             template.render(Context({}))
         end_time = perf_counter()
-        _total_elapsed = end_time - start_time  # NOQA
-        # Only runs in Python 3
-        # print(f'{total_elapsed } ms per template')
+        total_elapsed = end_time - start_time  # NOQA
+        print(f'{total_elapsed } ms per template')
