@@ -124,8 +124,9 @@ class ComponentNode(Node):
         self.context_kwargs = context_kwargs or {}
         self.component, self.isolated_context = component, isolated_context
         slot_dict = defaultdict(NodeList)
-        for slot in slots or []:
-            slot_dict[slot.name].extend(slot.nodelist)
+        if slots:
+            for slot in slots:
+                slot_dict[slot.name].extend(slot.nodelist)
         self.component.compile_instance_template(slot_dict)
 
     def __repr__(self):
