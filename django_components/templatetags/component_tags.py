@@ -100,7 +100,7 @@ class ComponentNode(Node):
         if slots:
             for slot in slots:
                 slot_dict[slot.name].extend(slot.nodelist)
-        self.component.compile_instance_template(slot_dict)
+        self.component.slots = slot_dict
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
