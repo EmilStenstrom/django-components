@@ -15,7 +15,7 @@ setup(
     author=u"Emil Stenström",
     author_email="emil@emilstenstrom.se",
     url="https://github.com/EmilStenstrom/django-components/",
-    install_requires=["Django>=1.11", "six"],
+    install_requires=["Django>=2.2"],
     license="MIT",
     keywords=["django", "components", "css", "js", "html"],
     classifiers=[
