@@ -7,13 +7,12 @@ from django.forms.widgets import MediaDefiningClass
 from django.template.base import NodeList, TokenType
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
-from six import with_metaclass
 
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
 
 
-class Component(with_metaclass(MediaDefiningClass)):
+class Component(metaclass=MediaDefiningClass):
 
     def __init__(self, component_name):
         self.__component_name = component_name

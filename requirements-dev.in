@@ -1,5 +1,4 @@
 django
-six
 tox
 pytest
 flake8
