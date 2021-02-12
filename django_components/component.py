@@ -1,6 +1,13 @@
 import warnings
 from copy import copy
-import functools
+try:
+    from functools import lru_cache
+except ImportError:
+    def lru_cache(maxsize=None):  # noqa
+        def decorator(func):
+            return func
+        return decorator
+
 from itertools import chain
 
 from django.conf import settings
@@ -45,7 +52,7 @@ class Component(metaclass=MediaDefiningClass):
     def slots_in_template(template):
         return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
 
-    @functools.lru_cache(maxsize=32)
+    @lru_cache(maxsize=128)
     def compile_instance_template(self, template_name):
         """Use component's base template and the slots used for this instance to compile
         a unified template for this instance."""
