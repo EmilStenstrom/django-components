@@ -3,7 +3,6 @@ from time import perf_counter
 from django.template import Context, Template
 
 from django_components import component
-
 from tests.django_test_setup import *  # NOQA
 from tests.testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
 

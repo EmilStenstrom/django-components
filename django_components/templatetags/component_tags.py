@@ -1,38 +1,11 @@
 from collections import defaultdict
 
-import django
 from django import template
-from django.template.base import Node, NodeList, TemplateSyntaxError
+from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
 from django_components.component import registry
-
-# Django < 2.1 compatibility
-try:
-    from django.template.base import TokenType
-except ImportError:
-    from django.template.base import TOKEN_BLOCK, TOKEN_TEXT, TOKEN_VAR
-
-    class TokenType:
-        TEXT = TOKEN_TEXT
-        VAR = TOKEN_VAR
-        BLOCK = TOKEN_BLOCK
-
-
-# Django < 2.0 compatibility
-if django.VERSION > (2, 0):
-    PARSE_BITS_DEFAULTS = {
-        "varkw": [],
-        "defaults": None,
-        "kwonly": [],
-        "kwonly_defaults": None,
-    }
-else:
-    PARSE_BITS_DEFAULTS = {
-        "varkw": [],
-        "defaults": None,
-    }
 
 register = template.Library()
 
@@ -212,7 +185,10 @@ def parse_component_with_args(parser, bits, tag_name):
         takes_context=False,
         name=tag_name,
         varargs=True,
-        **PARSE_BITS_DEFAULTS
+        varkw=[],
+        defaults=None,
+        kwonly=[],
+        kwonly_defaults=None,
     )
 
     assert tag_name == tag_args[0].token, "Internal error: Expected tag_name to be {}, but it was {}".format(

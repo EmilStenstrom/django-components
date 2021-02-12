@@ -106,14 +106,14 @@ TEMPLATES = [
 
 # Compatiblity
 
-| Python version | Django version                |
-|----------------|-------------------------------|
-| 2.7            | 1.11                          |
-| 3.5            | 1.11, 2.0, 2.1, 2.2           |
-| 3.6            | 1.11, 2.0, 2.1, 2.2, 3.0, 3.1 |
-| 3.7            | 1.11, 2.0, 2.1, 2.2, 3.0, 3.1 |
-| 3.8            | 2.1, 2.2, 3.0, 3.1            |
-| 3.9            | 2.1, 2.2, 3.0, 3.1            |
+Django-components supports all officially supported versions of Django and Python.
+
+| Python version | Django version           |
+|----------------|--------------------------|
+| 3.6            | 2.2, 3.0, 3.1            |
+| 3.7            | 2.2, 3.0, 3.1            |
+| 3.8            | 2.2, 3.0, 3.1            |
+| 3.9            | 2.2, 3.0, 3.1            |
 
 # Create your first component
 
