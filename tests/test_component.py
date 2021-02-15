@@ -2,10 +2,10 @@ from textwrap import dedent
 
 from django.template import Context
 
-from django_components import component
-
 from .django_test_setup import *  # NOQA
 from .testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
+
+from django_components import component
 
 
 class ComponentRegistryTest(SimpleTestCase):
@@ -32,7 +32,6 @@ class ComponentRegistryTest(SimpleTestCase):
 
         comp = SimpleComponent("simple_component")
         context = Context(comp.context(variable="test"))
-        #comp.compile_instance_template({})
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">

@@ -1,13 +1,6 @@
 import warnings
 from copy import copy
-try:
-    from functools import lru_cache
-except ImportError:
-    def lru_cache(maxsize=None):  # noqa
-        def decorator(func):
-            return func
-        return decorator
-
+from functools import lru_cache
 from itertools import chain
 
 from django.conf import settings
@@ -18,6 +11,8 @@ from django.utils.safestring import mark_safe
 
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
+
+TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get('TEMPLATE_CACHE_SIZE', 128)
 
 
 class Component(metaclass=MediaDefiningClass):
@@ -52,7 +47,7 @@ class Component(metaclass=MediaDefiningClass):
     def slots_in_template(template):
         return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=TEMPLATE_CACHE_SIZE)
     def compile_instance_template(self, template_name):
         """Use component's base template and the slots used for this instance to compile
         a unified template for this instance."""
