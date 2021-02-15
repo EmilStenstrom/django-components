@@ -5,7 +5,7 @@ from django.template import Context, Template
 from .django_test_setup import *  # NOQA
 from django_components import component
 
-from .testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
 class SimpleComponent(component.Component):

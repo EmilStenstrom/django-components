@@ -3,7 +3,7 @@ from textwrap import dedent
 from django.template import Context
 
 from .django_test_setup import *  # NOQA
-from .testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 from django_components import component
 

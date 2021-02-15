@@ -4,7 +4,7 @@ from django.template import Context, Template
 
 from django_components import component
 from tests.django_test_setup import *  # NOQA
-from tests.testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
+from tests.testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
 class SlottedComponent(component.Component):
