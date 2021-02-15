@@ -15,6 +15,10 @@ class AppSettings:
     def LIBRARIES(self):
         return self.settings.setdefault("libraries", [])
 
+    @property
+    def TEMPLATE_CACHE_SIZE(self):
+        return self.settings.setdefault("template_cache_size", 128)
+
 
 app_settings = AppSettings()
 app_settings.__name__ = __name__

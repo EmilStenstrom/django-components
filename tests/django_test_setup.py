@@ -10,7 +10,10 @@ if not settings.configured:
             TEMPLATES=[{
                 'BACKEND': 'django.template.backends.django.DjangoTemplates',
                 'DIRS': ["tests/templates/"],
-            }]
+            }],
+            COMPONENTS={
+                'TEMPLATE_CACHE_SIZE': 128
+            },
         )
     else:
         settings.configure(

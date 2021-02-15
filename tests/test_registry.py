@@ -1,5 +1,6 @@
 import unittest
 
+from .django_test_setup import *  # NOQA
 from django_components import component
 
 
