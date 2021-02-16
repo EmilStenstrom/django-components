@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 VERSION = '0.9'
 
 setup(
-    name="django_reusable_components",
+    name="django_components",
     packages=find_packages(exclude=["tests"]),
     version=VERSION,
     description="A way to create simple reusable template components in Django.",

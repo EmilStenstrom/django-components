@@ -1,6 +1,6 @@
-# django-reusable-components
+# django-components
 <a href="https://github.com/EmilStenstrom/django-components/actions?query=workflow%3ABuild"><img align="right" src="https://github.com/EmilStenstrom/django-components/workflows/Build/badge.svg"></a>
-<a href="https://pepy.tech/project/django-reusable-components"><img align="right" src="https://pepy.tech/badge/django-reusable-components"></a>
+<a href="https://pepy.tech/project/django-components"><img align="right" src="https://pepy.tech/badge/django-components"></a>
 
 A way to create simple reusable template components in Django.
 
@@ -22,7 +22,7 @@ Read on to learn about the details!
 
 Install the app into your environment:
 
-> ```pip install django_reusable_components```
+> ```pip install django_components```
 
 Then add the app into INSTALLED APPS in settings.py
 
@@ -56,7 +56,7 @@ TEMPLATES = [
 
 # Contributors
 
-<!-- readme: contributors -start --> 
+<!-- readme: contributors -start -->
 <table>
 <tr>
     <td align="center">
