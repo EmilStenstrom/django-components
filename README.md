@@ -7,7 +7,7 @@ A way to create simple reusable template components in Django.
 It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
 
 ```htmldjango
-{% component name="calendar" date="2015-06-19" %}
+{% component "calendar" date="2015-06-19" %}
 ```
 
 And this is what gets rendered (plus the CSS and Javascript you've specified):
@@ -183,7 +183,7 @@ First load the `component_tags` tag library, then use the `component_dependencie
     {% component_dependencies %}
 </head>
 <body>
-    {% component name="calendar" date="2015-06-19" %}
+    {% component "calendar" date="2015-06-19" %}
 </body>
 <html>
 ```
@@ -224,7 +224,7 @@ Components support something called slots. They work a lot like Django blocks, b
 When using the component, you specify what slots you want to fill and where you want to use the defaults from the template. It looks like this:
 
 ```htmldjango
-{% component_block %}
+{% component_block "calendar" %}
     {% slot "body" %}Today's date is <span>{{ date }}</span>{% endslot %}
 {% endcomponent_block %}
 ```
@@ -250,7 +250,7 @@ As you can see, component slots lets you write reusable containers, that you fil
 By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component_block %}` tag):
 
 ```htmldjango
-   {% component name="calendar" date="2015-06-19" only %}
+   {% component "calendar" date="2015-06-19" only %}
 ```
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
