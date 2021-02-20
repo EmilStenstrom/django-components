@@ -104,6 +104,15 @@ class ComponentTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
+    def test_single_component_positional_name(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            '{% load component_tags %}{% component "test" variable="variable" %}'
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
     def test_call_component_with_two_variables(self):
         component.registry.register(name="test", component=IffedComponent)
 
