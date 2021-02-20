@@ -75,3 +75,25 @@ class ComponentRegistryTest(SimpleTestCase):
             Var1: <strong>test1</strong>
             Var2 (uppercased): <strong>TEST2</strong>
         """).lstrip())
+
+    def test_component_with_dynamic_template(self):
+        class SvgComponent(component.Component):
+            def context(self, name, css_class="", title="", **attrs):
+                return {"name": name, "css_class": css_class, "title": title, **attrs}
+
+            def template(self, context):
+                return f"svg_{context['name']}.svg"
+
+        comp = SvgComponent("svg_component")
+        self.assertHTMLEqual(
+            comp.render(Context(comp.context(name="dynamic1"))),
+            dedent("""\
+                <svg>Dynamic1</svg>
+            """)
+        )
+        self.assertHTMLEqual(
+            comp.render(Context(comp.context(name="dynamic2"))),
+            dedent("""\
+                <svg>Dynamic2</svg>
+            """)
+        )
