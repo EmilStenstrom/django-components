@@ -56,7 +56,7 @@ TEMPLATES = [
 
 # Contributors
 
-<!-- readme: contributors -start -->
+<!-- readme: contributors -start --> 
 <table>
 <tr>
     <td align="center">
