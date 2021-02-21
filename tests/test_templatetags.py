@@ -64,37 +64,6 @@ class ComponentTemplateTagTest(SimpleTestCase):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
 
-    def test_single_component_dependencies(self):
-        component.registry.register(name="test", component=SimpleComponent)
-
-        template = Template("{% load component_tags %}{% component_dependencies %}")
-        rendered = template.render(Context())
-        expected_outcome = (
-            """<link href="style.css" type="text/css" media="all" rel="stylesheet">\n"""
-            """<script src="script.js"></script>"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
-
-    def test_single_component_css_dependencies(self):
-        component.registry.register(name="test", component=SimpleComponent)
-
-        template = Template("{% load component_tags %}{% component_css_dependencies %}")
-        rendered = template.render(Context())
-        expected_outcome = (
-            """<link href="style.css" type="text/css" media="all" rel="stylesheet">"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
-
-    def test_single_component_js_dependencies(self):
-        component.registry.register(name="test", component=SimpleComponent)
-
-        template = Template("{% load component_tags %}{% component_js_dependencies %}")
-        rendered = template.render(Context())
-        expected_outcome = (
-            """<script src="script.js"></script>"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
-
     def test_single_component(self):
         component.registry.register(name="test", component=SimpleComponent)
 
@@ -144,40 +113,6 @@ class ComponentTemplateTagTest(SimpleTestCase):
         )
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
-
-    def test_multiple_component_dependencies(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponent)
-
-        template = Template("{% load component_tags %}{% component_dependencies %}")
-        rendered = template.render(Context())
-        expected_outcome = (
-            """<link href="style.css" type="text/css" media="all" rel="stylesheet">\n"""
-            """<script src="script.js"></script>"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
-
-    def test_multiple_component_css_dependencies(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponent)
-
-        template = Template("{% load component_tags %}{% component_css_dependencies %}")
-        rendered = template.render(Context())
-        expected_outcome = (
-            """<link href="style.css" type="text/css" media="all" rel="stylesheet">"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
-
-    def test_multiple_component_js_dependencies(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponent)
-
-        template = Template("{% load component_tags %}{% component_js_dependencies %}")
-        rendered = template.render(Context())
-        expected_outcome = (
-            """<script src="script.js"></script>"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
 
 
 class ComponentSlottedTemplateTagTest(SimpleTestCase):
