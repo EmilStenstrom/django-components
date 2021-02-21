@@ -14,6 +14,8 @@ if not settings.configured:
             COMPONENTS={
                 'TEMPLATE_CACHE_SIZE': 128
             },
+            MIDDLEWARE = ['django_components.middleware.ComponentDependencyMiddleware'],
+            DATABASES = {},
         )
     else:
         settings.configure(
