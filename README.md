@@ -168,7 +168,7 @@ class Calendar(component.Component):
 component.registry.register(name="calendar", component=Calendar)
 ```
 
-And voilC!! We've created our first component.
+And voilá!! We've created our first component.
 
 # Use the component in a template
 
