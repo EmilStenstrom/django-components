@@ -63,7 +63,7 @@ TEMPLATES = [
         <a href="https://github.com/EmilStenstrom">
             <img src="https://avatars.githubusercontent.com/u/224130?v=4" width="100;" alt="EmilStenstrom"/>
             <br />
-            <sub><b>Emil StenstrC6m</b></sub>
+            <sub><b>Emil Stenström</b></sub>
         </a>
     </td>
     <td align="center">
