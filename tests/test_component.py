@@ -9,6 +9,14 @@ from .testutils import Django111CompatibleSimpleTestCase as SimpleTestCase
 
 
 class ComponentRegistryTest(SimpleTestCase):
+
+    def test_register_class_decorator(self):
+        @component.register("decorated_component")
+        class TestComponent(component.Component):
+            pass
+
+        self.assertEqual(component.registry.get("decorated_component"), TestComponent)
+
     def test_empty_component(self):
         class EmptyComponent(component.Component):
             pass

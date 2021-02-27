@@ -97,3 +97,20 @@ def is_slot_node(node):
 
 # This variable represents the global component registry
 registry = ComponentRegistry()
+
+def register(name):
+    """Class decorator to register a component.
+
+
+    Usage:
+
+    @register("my_component")
+    class MyComponent(component.Component):
+        ...
+
+    """
+    def decorator(component):
+        registry.register(name=name, component=component)
+        return component
+
+    return decorator
