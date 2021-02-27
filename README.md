@@ -150,7 +150,7 @@ Inside this file we create a Component by inheriting from the Component class an
 ```python
 from django_components import component
 
-
+@component.register("calendar")
 class Calendar(component.Component):
     def context(self, date):
         return {
@@ -163,9 +163,6 @@ class Calendar(component.Component):
     class Media:
         css = {'all': ['[your app]/components/calendar/calendar.css']}
         js = ['[your app]/components/calendar/calendar.js']
-
-
-component.registry.register(name="calendar", component=Calendar)
 ```
 
 And voilá!! We've created our first component.
