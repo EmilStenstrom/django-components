@@ -169,7 +169,7 @@ And voilá!! We've created our first component.
 
 # Use the component in a template
 
-First load the `component_tags` tag library, then use the `component_dependencies` and `component` tags to render the component to the page.
+First load the `component_tags` tag library, then use the `component_[js/css]_dependencies` and `component` tags to render the component to the page.
 
 ```htmldjango
 {% load component_tags %}
@@ -177,10 +177,11 @@ First load the `component_tags` tag library, then use the `component_dependencie
 <html>
 <head>
     <title>My example calendar</title>
-    {% component_dependencies %}
+    {% component_css_dependencies %}
 </head>
 <body>
     {% component "calendar" date="2015-06-19" %}
+    {% component_js_dependencies %}
 </body>
 <html>
 ```
