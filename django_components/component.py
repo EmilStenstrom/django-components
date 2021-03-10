@@ -14,8 +14,32 @@ from django_components.component_registry import AlreadyRegistered, ComponentReg
 
 TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get('TEMPLATE_CACHE_SIZE', 128)
 
+class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
+    def __new__(mcs, name, bases, attrs):
+        if "Media" in attrs:
+            media = attrs["Media"]
 
-class Component(metaclass=MediaDefiningClass):
+            # Allow: class Media: css = "style.css"
+            if isinstance(media.css, str):
+                media.css = [media.css]
+
+            # Allow: class Media: css = ["style.css"]
+            if isinstance(media.css, list):
+                media.css = {"all": media.css}
+
+            # Allow: class Media: css = {"all": "style.css"}
+            if isinstance(media.css, dict):
+                for media_type, path_list in media.css.items():
+                    if isinstance(path_list, str):
+                        media.css[media_type] = [path_list]
+
+            # Allow: class Media: js = "script.js"
+            if isinstance(media.js, str):
+                media.js = [media.js]
+
+        return super().__new__(mcs, name, bases, attrs)
+
+class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def __init__(self, component_name):
         self.__component_name = component_name

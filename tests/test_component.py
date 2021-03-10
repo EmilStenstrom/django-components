@@ -97,3 +97,70 @@ class ComponentTest(SimpleTestCase):
                 <svg>Dynamic2</svg>
             """)
         )
+
+    def test_component_media_with_strings(self):
+        class SimpleComponent(component.Component):
+            class Media:
+                css = "path/to/style.css"
+                js = "path/to/script.js"
+
+        comp = SimpleComponent("")
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent("""\
+                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
+                <script src="path/to/script.js"></script>
+            """)
+        )
+
+    def test_component_media_with_lists(self):
+        class SimpleComponent(component.Component):
+            class Media:
+                css = ["path/to/style.css", "path/to/style2.css"]
+                js = ["path/to/script.js"]
+
+        comp = SimpleComponent("")
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent("""\
+                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
+                <link href="path/to/style2.css" type="text/css" media="all" rel="stylesheet">
+                <script src="path/to/script.js"></script>
+            """)
+        )
+
+    def test_component_media_with_dict_and_list(self):
+        class SimpleComponent(component.Component):
+            class Media:
+                css = {
+                    "all": "path/to/style.css",
+                    "print": ["path/to/style2.css"],
+                    "screen": "path/to/style3.css",
+                }
+                js = ["path/to/script.js"]
+
+        comp = SimpleComponent("")
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent("""\
+                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
+                <link href="path/to/style2.css" type="text/css" media="print" rel="stylesheet">
+                <link href="path/to/style3.css" type="text/css" media="screen" rel="stylesheet">
+                <script src="path/to/script.js"></script>
+            """)
+        )
+
+    def test_component_media_with_dict_with_list_and_list(self):
+        class SimpleComponent(component.Component):
+            class Media:
+                css = {"all": ["path/to/style.css"]}
+                js = ["path/to/script.js"]
+
+        comp = SimpleComponent("")
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent("""\
+                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
+                <script src="path/to/script.js"></script>
+            """)
+        )
