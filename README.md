@@ -161,8 +161,8 @@ class Calendar(component.Component):
         return "[your app]/components/calendar/calendar.html"
 
     class Media:
-        css = {'all': ['[your app]/components/calendar/calendar.css']}
-        js = ['[your app]/components/calendar/calendar.js']
+        css = '[your app]/components/calendar/calendar.css'
+        js = '[your app]/components/calendar/calendar.js'
 ```
 
 And voilá!! We've created our first component.
