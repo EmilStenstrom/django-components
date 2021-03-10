@@ -45,7 +45,11 @@ class Component(metaclass=MediaDefiningClass):
 
     @staticmethod
     def slots_in_template(template):
-        return {node.name: node.nodelist for node in template.template.nodelist if is_slot_node(node)}
+        return {node.name: node.nodelist for node in template.template.nodelist if Component.is_slot_node(node)}
+
+    @staticmethod
+    def is_slot_node(node):
+        return node.token.token_type == TokenType.BLOCK and node.token.split_contents()[0] == "slot"
 
     @lru_cache(maxsize=TEMPLATE_CACHE_SIZE)
     def compile_instance_template(self, template_name):
@@ -53,7 +57,7 @@ class Component(metaclass=MediaDefiningClass):
         a unified template for this instance."""
 
         component_template = get_template(template_name)
-        slots_in_template = self.slots_in_template(component_template)
+        slots_in_template = Component.slots_in_template(component_template)
 
         defined_slot_names = set(slots_in_template.keys())
         filled_slot_names = set(self.slots.keys())
@@ -71,7 +75,7 @@ class Component(metaclass=MediaDefiningClass):
         combined_slots = dict(slots_in_template, **self.slots)
         if combined_slots:
             # Replace slot nodes with their nodelists, then combine into a single, flat nodelist
-            node_iterator = ([node] if not is_slot_node(node) else combined_slots[node.name]
+            node_iterator = ([node] if not Component.is_slot_node(node) else combined_slots[node.name]
                              for node in component_template.template.nodelist)
 
             instance_template = copy(component_template.template)
@@ -89,10 +93,6 @@ class Component(metaclass=MediaDefiningClass):
     class Media:
         css = {}
         js = []
-
-
-def is_slot_node(node):
-    return node.token.token_type == TokenType.BLOCK and node.token.split_contents()[0] == "slot"
 
 
 # This variable represents the global component registry
