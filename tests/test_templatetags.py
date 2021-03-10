@@ -19,8 +19,8 @@ class SimpleComponent(component.Component):
         return "simple_template.html"
 
     class Media:
-        css = {"all": ["style.css"]}
-        js = ["script.js"]
+        css = "style.css"
+        js = "script.js"
 
 
 class IffedComponent(SimpleComponent):

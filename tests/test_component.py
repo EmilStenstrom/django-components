@@ -27,8 +27,8 @@ class ComponentTest(SimpleTestCase):
                 return "simple_template.html"
 
             class Media:
-                css = {"all": ["style.css"]}
-                js = ["script.js"]
+                css = "style.css"
+                js = "script.js"
 
         comp = SimpleComponent("simple_component")
         context = Context(comp.context(variable="test"))
@@ -45,7 +45,7 @@ class ComponentTest(SimpleTestCase):
     def test_component_with_list_of_styles(self):
         class MultistyleComponent(component.Component):
             class Media:
-                css = {"all": ["style.css", "style2.css"]}
+                css = ["style.css", "style2.css"]
                 js = ["script.js", "script2.js"]
 
         comp = MultistyleComponent("multistyle_component")
