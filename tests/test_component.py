@@ -8,15 +8,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 from django_components import component
 
 
-class ComponentRegistryTest(SimpleTestCase):
-
-    def test_register_class_decorator(self):
-        @component.register("decorated_component")
-        class TestComponent(component.Component):
-            pass
-
-        self.assertEqual(component.registry.get("decorated_component"), TestComponent)
-
+class ComponentTest(SimpleTestCase):
     def test_empty_component(self):
         class EmptyComponent(component.Component):
             pass

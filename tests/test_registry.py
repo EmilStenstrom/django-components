@@ -12,6 +12,13 @@ class ComponentRegistryTest(unittest.TestCase):
     def setUp(self):
         self.registry = component.ComponentRegistry()
 
+    def test_register_class_decorator(self):
+        @component.register("decorated_component")
+        class TestComponent(component.Component):
+            pass
+
+        self.assertEqual(component.registry.get("decorated_component"), TestComponent)
+
     def test_simple_register(self):
         self.registry.register(name="testcomponent", component=MockComponent)
         self.assertEqual(
