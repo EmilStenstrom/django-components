@@ -18,7 +18,7 @@ filelock==3.0.12
     # via
     #   tox
     #   virtualenv
-flake8==3.8.4
+flake8==3.9.0
     # via -r requirements-dev.in
 iniconfig==1.1.1
     # via pytest
@@ -38,9 +38,9 @@ py==1.9.0
     # via
     #   pytest
     #   tox
-pycodestyle==2.6.0
+pycodestyle==2.7.0
     # via flake8
-pyflakes==2.2.0
+pyflakes==2.3.0
     # via flake8
 pyparsing==2.4.7
     # via packaging
