@@ -93,6 +93,7 @@ class ComponentNode(Node):
             for slot in slots:
                 slot_dict[slot.name].extend(slot.nodelist)
         self.component.slots = slot_dict
+        self.should_render_dependencies = getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False)
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
@@ -125,7 +126,11 @@ class ComponentNode(Node):
                 context[RENDERED_COMPONENTS_CONTEXT_KEY] = rendered_components_set
 
         with context.update(component_context):
-            return self.component.render(context)
+            rendered_component = self.component.render(context)
+            if self.should_render_dependencies:
+                return f'<!-- _RENDERED {self.component._component_name} -->' + rendered_component
+            else:
+                return rendered_component
 
 
 @register.tag("component_block")

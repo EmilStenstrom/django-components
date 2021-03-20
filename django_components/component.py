@@ -18,7 +18,7 @@ TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get('TEMPLATE_CACHE_SI
 class Component(metaclass=MediaDefiningClass):
 
     def __init__(self, component_name):
-        self.__component_name = component_name
+        self._component_name = component_name
         self.instance_template = None
         self.slots = {}
 
@@ -62,7 +62,7 @@ class Component(metaclass=MediaDefiningClass):
             if settings.DEBUG:
                 warnings.warn(
                     "Component {} was provided with unexpected slots: {}".format(
-                        self.__component_name, unexpected_slots
+                        self._component_name, unexpected_slots
                     )
                 )
             for unexpected_slot in unexpected_slots:

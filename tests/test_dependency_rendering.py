@@ -1,4 +1,5 @@
 from django.template import Template
+from django.test import override_settings
 
 from .django_test_setup import *  # NOQA
 from django_components import component
@@ -43,6 +44,7 @@ class MultistyleComponent(component.Component):
         js = ["script.js", "script2.js"]
 
 
+@override_settings(COMPONENTS={'RENDER_DEPENDENCIES': True})
 class ComponentMediaRenderingTests(SimpleTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
@@ -104,6 +106,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
                             "{% component 'test' variable='foo' %}")
         response = create_and_process_template_response(template)
         rendered = response.content.decode('utf-8')
+        print(rendered)
         self.assert_stylesheet_count(rendered, 'style.css', 1)
         self.assert_script_count(rendered, 'script.js', 1)
 
