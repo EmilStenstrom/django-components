@@ -16,11 +16,13 @@ class Django30CompatibleSimpleTestCase(SimpleTestCase):
         left = left.replace(' type="text/javascript"', '')
         super(Django30CompatibleSimpleTestCase, self).assertHTMLEqual(left, right)
 
+    def assertInHTML(self, needle, haystack, count=None, msg_prefix=''):
+        haystack = haystack.replace(' type="text/javascript"', '')
+        super().assertInHTML(needle, haystack, count, msg_prefix)
 
-class Django30CompatibleTestCase(TestCase):
-    def assertHTMLEqual(self, left, right):
-        left = left.replace(' type="text/javascript"', '')
-        super(Django30CompatibleTestCase, self).assertHTMLEqual(left, right)
+
+class Django30CompatibleTestCase(Django30CompatibleSimpleTestCase, TestCase):
+    pass
 
 
 request = Mock()
@@ -35,7 +37,7 @@ def create_and_process_template_response(template, context=None, use_middleware=
         response.render()
         global response_stash
         response_stash = response
-        return middleware(request)
+        response = middleware(request)
     else:
         response.render()
-        return response
+    return response.content.decode('utf-8')
