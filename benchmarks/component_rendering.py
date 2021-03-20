@@ -1,8 +1,7 @@
 from time import perf_counter
-from unittest.mock import Mock
 
 from django.template import Context, Template
-from django.template.response import TemplateResponse
+from django.test import override_settings
 
 from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from tests.django_test_setup import *  # NOQA
@@ -61,6 +60,7 @@ EXPECTED_CSS = """<link href="test.css" media="all" rel="stylesheet">"""
 EXPECTED_JS = """<script src="test.js"></script>"""
 
 
+@override_settings(COMPONENTS={'RENDER_DEPENDENCIES': True})
 class RenderBenchmarks(SimpleTestCase):
     def setUp(self):
         component.registry.clear()
@@ -68,7 +68,8 @@ class RenderBenchmarks(SimpleTestCase):
         component.registry.register('inner_component', SimpleComponent)
         component.registry.register('breadcrumb_component', BreadcrumbComponent)
 
-    def timed_loop(self, func, iterations=1000):
+    @staticmethod
+    def timed_loop(func, iterations=1000):
         """Run func iterations times, and return the time in ms per iteration."""
         start_time = perf_counter()
         for _ in range(iterations):
@@ -77,11 +78,11 @@ class RenderBenchmarks(SimpleTestCase):
         total_elapsed = end_time - start_time  # NOQA
         return total_elapsed * 1000 / iterations
 
-
     def test_render_time_for_small_component(self):
         template = Template("{% load component_tags %}{% component_block 'test_component' %}"
                             "{% slot \"header\" %}{% component 'inner_component' variable='foo' %}{% endslot %}"
                             "{% endcomponent_block %}", name='root')
+
         print(f'{self.timed_loop(lambda: template.render(Context({})))} ms per iteration')
 
     def test_middleware_time_with_dependency_for_small_page(self):
@@ -97,20 +98,12 @@ class RenderBenchmarks(SimpleTestCase):
         self.assertIn('style.css', response_content)
         self.assertIn('script.js', response_content)
 
-        without_middleware = self.timed_loop(lambda: create_and_process_template_response(template, use_middleware=False))
+        without_middleware = self.timed_loop(lambda: create_and_process_template_response(template,
+                                                                                          use_middleware=False))
         with_middleware = self.timed_loop(lambda: create_and_process_template_response(template, use_middleware=True))
 
         print('Small page middleware test')
         self.report_results(with_middleware, without_middleware)
-
-    def report_results(self, with_middleware, without_middleware):
-        print(f'Middleware active\t\t{with_middleware:.3f} ms per iteration')
-        print(f'Middleware inactive\t{without_middleware:.3f} ms per iteration')
-        time_difference = with_middleware - without_middleware
-        if without_middleware > with_middleware:
-            print(f'Decrease of {-100 * time_difference / with_middleware:.2f}%')
-        else:
-            print(f'Increase of {100 * time_difference / without_middleware:.2f}%')
 
     def test_render_time_with_dependency_for_large_page(self):
         from django.template.loader import get_template
@@ -130,3 +123,13 @@ class RenderBenchmarks(SimpleTestCase):
 
         print('Large page middleware test')
         self.report_results(with_middleware, without_middleware)
+
+    @staticmethod
+    def report_results(with_middleware, without_middleware):
+        print(f'Middleware active\t\t{with_middleware:.3f} ms per iteration')
+        print(f'Middleware inactive\t{without_middleware:.3f} ms per iteration')
+        time_difference = with_middleware - without_middleware
+        if without_middleware > with_middleware:
+            print(f'Decrease of {-100 * time_difference / with_middleware:.2f}%')
+        else:
+            print(f'Increase of {100 * time_difference / without_middleware:.2f}%')
