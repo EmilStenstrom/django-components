@@ -2,15 +2,17 @@ import re
 
 from django.conf import settings
 from django.forms import Media
-
+from django.http import StreamingHttpResponse
 
 RENDERED_COMPONENTS_CONTEXT_KEY = "_COMPONENT_DEPENDENCIES"
-CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER" href="#">'
+CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
 JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER">'
 
 SCRIPT_TAG_REGEX = re.compile('<script')
 COMPONENT_COMMENT_REGEX = re.compile(b'<!-- _RENDERED (?P<name>\w+?) -->')
-PLACEHOLDER_REGEX = re.compile(b'<link name="CSS_PLACEHOLDER" href="#">|<script name="JS_PLACEHOLDER">')
+PLACEHOLDER_REGEX = re.compile(b'<!-- _RENDERED (?P<name>\w+?) -->'
+                               b'|<link name="CSS_PLACEHOLDER">'
+                               b'|<script name="JS_PLACEHOLDER">')
 
 
 class ComponentDependencyMiddleware:
@@ -23,7 +25,9 @@ class ComponentDependencyMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
-        if getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False):
+        if getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False)\
+                and not isinstance(response, StreamingHttpResponse)\
+                and response['Content-Type'].startswith('text/html'):
             response.content = process_response_content(response.content)
         return response
 
@@ -60,7 +64,7 @@ class DependencyReplacer:
         elif match[0] == self.JS_PLACEHOLDER:
             replacement, self.js_string = self.js_string, b""
         else:
-            raise AssertionError('Invalid match for DependencyReplacer' + match)
+            replacement = b''
         return replacement
 
 
