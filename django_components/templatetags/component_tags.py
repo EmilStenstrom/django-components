@@ -2,14 +2,12 @@ from collections import defaultdict
 
 from django import template
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-from django.template.base import Node, NodeList, TemplateSyntaxError, mark_safe, TokenType
+from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
 from django_components.component import registry
-from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER, \
-    RENDERED_COMPONENTS_CONTEXT_KEY
+from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 
 register = template.Library()
 
@@ -32,21 +30,42 @@ def get_components_from_registry(registry):
 def component_dependencies_tag():
     """Marks location where CSS link and JS script tags should be rendered."""
 
-    return mark_safe(CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER)
+    if is_dependency_middleware_active():
+        return mark_safe(CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER)
+    else:
+        rendered_dependencies = []
+        for component in get_components_from_registry(registry):
+            rendered_dependencies.append(component.render_dependencies())
+
+        return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_css_dependencies")
 def component_css_dependencies_tag():
     """Marks location where CSS link tags should be rendered."""
 
-    return mark_safe(CSS_DEPENDENCY_PLACEHOLDER)
+    if is_dependency_middleware_active():
+        return mark_safe(CSS_DEPENDENCY_PLACEHOLDER)
+    else:
+        rendered_dependencies = []
+        for component in get_components_from_registry(registry):
+            rendered_dependencies.append(component.render_css_dependencies())
+
+        return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_js_dependencies")
 def component_js_dependencies_tag():
     """Marks location where JS script tags should be rendered."""
 
-    return mark_safe(JS_DEPENDENCY_PLACEHOLDER)
+    if is_dependency_middleware_active():
+        return mark_safe(JS_DEPENDENCY_PLACEHOLDER)
+    else:
+        rendered_dependencies = []
+        for component in get_components_from_registry(registry):
+            rendered_dependencies.append(component.render_js_dependencies())
+
+        return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.tag(name='component')
@@ -93,7 +112,7 @@ class ComponentNode(Node):
             for slot in slots:
                 slot_dict[slot.name].extend(slot.nodelist)
         self.component.slots = slot_dict
-        self.should_render_dependencies = getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False)
+        self.should_render_dependencies = is_dependency_middleware_active()
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
@@ -224,3 +243,7 @@ def safe_resolve(context_item, context):
 
 def is_wrapped_in_quotes(s):
     return s.startswith(('"', "'")) and s[0] == s[-1]
+
+
+def is_dependency_middleware_active():
+    return getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False)

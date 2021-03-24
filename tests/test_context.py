@@ -208,7 +208,8 @@ class ParentArgsTests(SimpleTestCase):
 
 class ContextCalledOnceTests(SimpleTestCase):
     def test_one_context_call_with_simple_component(self):
-        template = Template("{% load component_tags %}{% component name='incrementer' %}")
+        template = Template("{% load component_tags %}{% component_dependencies %}"
+                            "{% component name='incrementer' %}")
         rendered = template.render(Context()).strip()
 
         self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
