@@ -1,11 +1,13 @@
 from collections import defaultdict
 
 from django import template
+from django.conf import settings
 from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
 from django_components.component import registry
+from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 
 register = template.Library()
 
@@ -26,35 +28,44 @@ def get_components_from_registry(registry):
 
 @register.simple_tag(name="component_dependencies")
 def component_dependencies_tag():
-    """Render both the CSS and JS dependency tags."""
+    """Marks location where CSS link and JS script tags should be rendered."""
 
-    rendered_dependencies = []
-    for component in get_components_from_registry(registry):
-        rendered_dependencies.append(component.render_dependencies())
+    if is_dependency_middleware_active():
+        return mark_safe(CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER)
+    else:
+        rendered_dependencies = []
+        for component in get_components_from_registry(registry):
+            rendered_dependencies.append(component.render_dependencies())
 
-    return mark_safe("\n".join(rendered_dependencies))
+        return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_css_dependencies")
 def component_css_dependencies_tag():
-    """Render the CSS tags."""
+    """Marks location where CSS link tags should be rendered."""
 
-    rendered_dependencies = []
-    for component in get_components_from_registry(registry):
-        rendered_dependencies.append(component.render_css_dependencies())
+    if is_dependency_middleware_active():
+        return mark_safe(CSS_DEPENDENCY_PLACEHOLDER)
+    else:
+        rendered_dependencies = []
+        for component in get_components_from_registry(registry):
+            rendered_dependencies.append(component.render_css_dependencies())
 
-    return mark_safe("\n".join(rendered_dependencies))
+        return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_js_dependencies")
 def component_js_dependencies_tag():
-    """Render the JS tags."""
+    """Marks location where JS script tags should be rendered."""
 
-    rendered_dependencies = []
-    for component in get_components_from_registry(registry):
-        rendered_dependencies.append(component.render_js_dependencies())
+    if is_dependency_middleware_active():
+        return mark_safe(JS_DEPENDENCY_PLACEHOLDER)
+    else:
+        rendered_dependencies = []
+        for component in get_components_from_registry(registry):
+            rendered_dependencies.append(component.render_js_dependencies())
 
-    return mark_safe("\n".join(rendered_dependencies))
+        return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.tag(name='component')
@@ -101,6 +112,7 @@ class ComponentNode(Node):
             for slot in slots:
                 slot_dict[slot.name].extend(slot.nodelist)
         self.component.slots = slot_dict
+        self.should_render_dependencies = is_dependency_middleware_active()
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
@@ -121,7 +133,11 @@ class ComponentNode(Node):
             context = context.new()
 
         with context.update(component_context):
-            return self.component.render(context)
+            rendered_component = self.component.render(context)
+            if self.should_render_dependencies:
+                return f'<!-- _RENDERED {self.component._component_name} -->' + rendered_component
+            else:
+                return rendered_component
 
 
 @register.tag("component_block")
@@ -227,3 +243,7 @@ def safe_resolve(context_item, context):
 
 def is_wrapped_in_quotes(s):
     return s.startswith(('"', "'")) and s[0] == s[-1]
+
+
+def is_dependency_middleware_active():
+    return getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False)

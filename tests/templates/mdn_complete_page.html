@@ -1,0 +1,2101 @@
+{% load component_tags %}
+{# Source: https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure
+Page lightly modified and partially extracted as a component #}
+
+<!DOCTYPE html>
+<!-- saved from url=(0103)https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure -->
+<html lang="en-US">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://developer.mozilla.org/favicon144.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="https://developer.mozilla.org/favicon114.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="https://developer.mozilla.org/favicon72.png">
+    <link rel="apple-touch-icon-precomposed" href="https://developer.mozilla.org/favicon57.png">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="manifest" href="https://developer.mozilla.org/manifest.json">
+    <script>Array.prototype.flat && Array.prototype.includes || document.write('<script src="https://polyfill.io/v3/polyfill.min.js?features=Array.prototype.flat%2Ces6"><\/script>')</script>
+    {% component_css_dependencies %}
+    <title>Document and website structure - Learn web development | MDN</title>
+    <link rel="preload" as="font" type="font/woff2" crossorigin=""
+          href="https://developer.mozilla.org/static/media/ZillaSlab-Bold.subset.0beac26b.woff2">
+    <link rel="alternate" title="Document and website structure"
+          href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="en">
+    <link rel="alternate" title="Document and website structure"
+          href="https://developer.mozilla.org/zh-TW/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="zh-TW">
+    <link rel="alternate" title="文档与网站架构"
+          href="https://developer.mozilla.org/zh-CN/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="zh">
+    <link rel="alternate" title="Структура документа и веб-сайта"
+          href="https://developer.mozilla.org/ru/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="ru">
+    <link rel="alternate" title="Estrutura do documento e do website"
+          href="https://developer.mozilla.org/pt-PT/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="pt">
+    <link rel="alternate" title="Estrutura de documento e sites"
+          href="https://developer.mozilla.org/pt-BR/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="pt-BR">
+    <link rel="alternate" title="De structuur van je document en je website"
+          href="https://developer.mozilla.org/nl/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="nl">
+    <link rel="alternate" title="Document and website structure"
+          href="https://developer.mozilla.org/ko/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="ko">
+    <link rel="alternate" title="ドキュメントと Web サイトの構造"
+          href="https://developer.mozilla.org/ja/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="ja">
+    <link rel="alternate" title="Document and website structure"
+          href="https://developer.mozilla.org/id/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="id">
+    <link rel="alternate" title="Structure de Site Web et de document"
+          href="https://developer.mozilla.org/fr/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="fr">
+    <link rel="alternate" title="Estructura web y documentación"
+          href="https://developer.mozilla.org/es/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="es">
+    <link rel="alternate" title="Struktur in die Webseite bringen"
+          href="https://developer.mozilla.org/de/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="de">
+    <link rel="alternate" title="Document i estructura del lloc web"
+          href="https://developer.mozilla.org/ca/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure"
+          hreflang="ca">
+    <meta name="description"
+          content="At this point you should have a better idea about how to structure a web page/site. In the last article of this module, we&#39;ll study how to debug HTML.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical"
+          href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">
+    <style media="print">.breadcrumbs-locale-container, .document-toc-container, .on-github, .page-footer, .page-header-main, nav.sidebar, ul.prev-next {
+        display: none !important
+    }
+
+    .article, .article pre {
+        padding: 2px
+    }
+
+    .article pre {
+        border-left-width: 2px
+    }</style>
+    {% component_js_dependencies %}
+</head>
+<body>
+<div id="root">
+    <ul id="nav-access" class="a11y-nav">
+        <li><a id="skip-main"
+               href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#content">Skip
+            to main content</a></li>
+        <li><a id="skip-search"
+               href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#main-q">Skip
+            to search</a></li>
+    </ul>
+    <div class="page-wrapper document-page">
+        <header class="page-header"><a href="https://developer.mozilla.org/en-US/" class="logo"
+                                       aria-label="MDN Web Docs">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 451.74 135" role="img">
+                <g id="Layer_2" data-name="Layer 2">
+                    <path class="cls-1"
+                          d="M7.14,8.35V119.41H118.19V8.35Zm103.71,56c-.48.92-1,1.79-1.46,2.71a3.44,3.44,0,0,1-3.54,2,2.4,2.4,0,0,0-1.55.5c-1.37.9-2.76,1.79-4.18,2.63a7.33,7.33,0,0,1-6.35.34,29.71,29.71,0,0,0-10.63-2,11.7,11.7,0,0,0-9.46,4.31,14.84,14.84,0,0,0-2.13,4.29c-1.24,3.07-2.3,21.38-2.3,26.05,0,0-17.62-3.42-34.15-20.34l4.31-11.32H25.91l9.76-10.35H18.87l9.77-10.34H12.69L30.45,34A40.9,40.9,0,0,1,50.22,23.17c7.1-1.22,8.93-.53,13.31.77l2.43.73.85.25,3.1.95a12.56,12.56,0,0,0,6.21.09,11.37,11.37,0,0,1,8.25,1,8.24,8.24,0,0,1,4.1,6.22,7.29,7.29,0,0,0,3.61,5.49,59.45,59.45,0,0,0,9.32,4.11c2.27.86,4.54,1.84,6.79,2.72a6.81,6.81,0,0,1,2.86,2.06,4.81,4.81,0,0,1,1.1,2.73c.14,2,.37,4,.47,6h0A15.24,15.24,0,0,1,110.85,64.32Z"></path>
+                    <path class="cls-1"
+                          d="M320.12,39.62a5.42,5.42,0,0,0-4.53,2.13,7.36,7.36,0,0,0-1.7,4.43v2.36a6.28,6.28,0,0,0,1.7,4.46,5.63,5.63,0,0,0,4.3,1.82,5.12,5.12,0,0,0,4.57-2.27A9.7,9.7,0,0,0,326,47a8.11,8.11,0,0,0-1.67-5.52A5.36,5.36,0,0,0,320.12,39.62Z"></path>
+                    <path class="cls-1"
+                          d="M387.38,39.53a5.52,5.52,0,0,0-4.7,2.15,8.8,8.8,0,0,0-1.63,5.49,9.23,9.23,0,0,0,1.58,5.45,5.38,5.38,0,0,0,4.7,2.25,5.61,5.61,0,0,0,4.74-2.2,8.91,8.91,0,0,0,1.68-5.59A8.24,8.24,0,0,0,392,41.56,5.76,5.76,0,0,0,387.38,39.53Z"></path>
+                    <path class="cls-1"
+                          d="M299.47,41.35a4.34,4.34,0,0,0-4-1.92,4.55,4.55,0,0,0-3.89,1.73A8.37,8.37,0,0,0,290,45.33h10.48A6.3,6.3,0,0,0,299.47,41.35Z"></path>
+                    <path class="cls-1"
+                          d="M357.74,30.75H352V54.06h5.72q5.47,0,8.35-3T369,42.41q0-5.43-2.88-8.55T357.74,30.75Z"></path>
+                    <path class="cls-1"
+                          d="M121.55,8.35v70.8h323V8.35ZM163.76,30.8h-4V54h3.68v3.73H152.19V54h3.31V36.79h-.19l-9.63,19.12h-2.12l-10-19.4h-.19V54h3.45v3.73H125.67V54h3.68V30.8h-4V27.07H133l11.66,22.56h.19l11.18-22.56h7.7Zm29.12,22.67q-4.11,4.28-11.38,4.28H167.44V54.06h3.73V30.75h-3.73V27.07h13.83q7.59,0,11.66,4.29a15.4,15.4,0,0,1,4,11A15.33,15.33,0,0,1,192.88,53.47ZM231.77,30.8h-3.68v27h-2.6L208.08,35h-.19V54h4.67v3.73H200.34V54h3.49V30.8h-4V27.07h7.08l16.9,22.09H224V30.8h-4.58V27.07h12.32Zm43.8,27h-3.31l-7.83-23.18h-.19l-7.55,23.18h-3.35L244.56,30.8h-2.65V27.07H253V30.8h-3.87L255,50.71h.23l6.61-19.91H259V27.07h11V30.8h-2.78l6.61,20.1h.23l5.43-20.1h-4.15V27.07h11V30.8h-2.54Zm26.71-1.51a9.66,9.66,0,0,1-6.42,2,10.2,10.2,0,0,1-7.41-2.74c-1.89-1.82-2.83-4.47-2.83-7.93a12.37,12.37,0,0,1,2.64-8.12,9,9,0,0,1,7.32-3.21,8.62,8.62,0,0,1,6.75,2.69,9.65,9.65,0,0,1,2.45,6.52,13.67,13.67,0,0,1-.28,2.69H290q.29,6.71,6.18,6.7a5.2,5.2,0,0,0,3.71-1.18,5.82,5.82,0,0,0,1.67-2.83l3.45.71A7.21,7.21,0,0,1,302.28,56.24Zm25.77-1.63c-1.51,2.4-3.92,3.61-7.22,3.61s-5.84-1.29-7.22-3.87c0,.25-.1.82-.21,1.7s-.19,1.44-.22,1.7H309c.16-1,.31-2,.47-3.07a21.42,21.42,0,0,0,.24-3.16v-23h-3.4V25.27h7.55V40.9a9.76,9.76,0,0,1,2.67-3.28,7.33,7.33,0,0,1,4.74-1.4A8.48,8.48,0,0,1,327.77,39q2.55,2.74,2.55,7.74A14.6,14.6,0,0,1,328.05,54.61Zm41.39-1.14q-4.11,4.28-11.37,4.28H344V54.06h3.73V30.75H344V27.07h13.83q7.59,0,11.66,4.29a15.41,15.41,0,0,1,4.06,11A15.34,15.34,0,0,1,369.44,53.47Zm25.65,1.68a10.53,10.53,0,0,1-7.9,3.07,10,10,0,0,1-7.63-3,10.93,10.93,0,0,1-2.8-7.83,12.13,12.13,0,0,1,2.69-7.93q2.69-3.3,8-3.3t8,3.28a12,12,0,0,1,2.64,7.76A10.86,10.86,0,0,1,395.09,55.15Zm22.61.57c-1.4,1.66-3.63,2.5-6.68,2.5a9.58,9.58,0,0,1-7.15-2.76q-2.72-2.76-2.71-7.91a12.25,12.25,0,0,1,2.69-8,9.17,9.17,0,0,1,7.5-3.28,15,15,0,0,1,3.82.48,10.37,10.37,0,0,1,3.5,1.65l.85,5.47-3.35.38-.76-3.54a8.07,8.07,0,0,0-4.11-1,4.9,4.9,0,0,0-4.39,2.15,9.93,9.93,0,0,0-1.41,5.55A8.9,8.9,0,0,0,407,52.84a5.23,5.23,0,0,0,4.44,2c2.92,0,4.67-1.7,5.23-5.1l3.5.71A10.34,10.34,0,0,1,417.7,55.72Zm20.48.75a11.68,11.68,0,0,1-6.63,1.75,15.52,15.52,0,0,1-8.26-2.08L424,51l3.26.33-.1,2.74a7,7,0,0,0,2.06.66,12.63,12.63,0,0,0,2.19.19,8.68,8.68,0,0,0,3.66-.75,2.5,2.5,0,0,0,1.63-2.36,2.25,2.25,0,0,0-1.32-2.2,12.65,12.65,0,0,0-3.28-1c-1.31-.22-2.61-.49-3.9-.82a7.5,7.5,0,0,1-3.25-1.7,4.67,4.67,0,0,1-1.33-3.66c0-2.36.88-4,2.62-4.91a12,12,0,0,1,5.6-1.37,15,15,0,0,1,4.08.55,16.65,16.65,0,0,1,3.47,1.39l.47,5.1-3.3.37-.48-3.3a9.5,9.5,0,0,0-4.06-.9,5.62,5.62,0,0,0-2.87.66A2.33,2.33,0,0,0,428,42.27a2.13,2.13,0,0,0,1.3,2.07,11.91,11.91,0,0,0,3.21.92,36.69,36.69,0,0,1,3.82.83,7.46,7.46,0,0,1,3.21,1.74,4.9,4.9,0,0,1,1.3,3.73A5.56,5.56,0,0,1,438.18,56.47Z"></path>
+                    <path class="cls-1"
+                          d="M181.17,30.75h-5.71V54.06h5.71q5.47,0,8.36-3t2.88-8.61q0-5.43-2.88-8.55T181.17,30.75Z"></path>
+                    <path class="cls-1"
+                          d="M121.63,119.32V81.74H236.54v37.58ZM153.22,109h-2v-6.85a4.8,4.8,0,0,0-1.58-4,5.57,5.57,0,0,0-3.55-1.26,5,5,0,0,0-4.92,3.26,4.19,4.19,0,0,0-1.88-2.46,5.82,5.82,0,0,0-3-.8,4.89,4.89,0,0,0-4.56,2.56V97.24h-6.28v3.26h2V109h-2v3.23h9.11V109H131.7v-5.25a4.4,4.4,0,0,1,.69-2.56,2.47,2.47,0,0,1,2.21-1q2.57,0,2.56,3.63v8.41h6.29V109h-2v-5.25a4.47,4.47,0,0,1,.67-2.56,2.42,2.42,0,0,1,2.19-1q2.63,0,2.63,3.63v8.41h6.28Zm9.88-12.07q-4,0-6,2.36a8.41,8.41,0,0,0-2,5.66,7.25,7.25,0,0,0,2.17,5.62,8,8,0,0,0,5.65,2,8.54,8.54,0,0,0,5.94-2.11,7.27,7.27,0,0,0,2.34-5.67,8.21,8.21,0,0,0-2-5.51Q167.13,96.94,163.1,96.94ZM163,109.28a3,3,0,0,1-2.63-1.33,5.68,5.68,0,0,1-.9-3.26,5,5,0,0,1,1-3.28,3.23,3.23,0,0,1,2.61-1.18,3.5,3.5,0,0,1,2.59,1.08,4.56,4.56,0,0,1,1.07,3.31,5.21,5.21,0,0,1-1,3.41A3.33,3.33,0,0,1,163,109.28Zm25-2.3-3.39-.29-.7,2.32H179l8.32-9.54L187,97.24H173.81l-.53,5.25,3.16.34.67-2.36h4.65L173.51,110l.44,2.26h13.13Zm7.62-9.74h-4.46v5.39h4.46Zm0,9.61h-4.46v5.39h4.46Zm13.54-17.49h-4.23l-6.48,22.88h4.22Zm8.68,0h-4.23l-6.45,22.88h4.19Zm15,22.51-.07-2.26a1.22,1.22,0,0,1-.56.1c-.69,0-1-.39-1-1.16v-6.49a4.39,4.39,0,0,0-1.8-3.84,7,7,0,0,0-4.16-1.28,14.55,14.55,0,0,0-3.16.3,24.14,24.14,0,0,0-3.29,1.06l-.56,3.46,3.39.4.5-1.69a2.78,2.78,0,0,1,1.08-.37,11.3,11.3,0,0,1,1.25-.07c1.19,0,1.89.37,2.09,1.1a8.55,8.55,0,0,1,.3,2.26v.5a8.91,8.91,0,0,0-1.18-.11c-.41,0-.81,0-1.21,0a12.64,12.64,0,0,0-4.81.88,3.53,3.53,0,0,0-2.18,3.64,3.66,3.66,0,0,0,1.48,3.33,5.63,5.63,0,0,0,3.11,1,4.67,4.67,0,0,0,3-.91,6.78,6.78,0,0,0,1.8-2,3,3,0,0,0,3.33,3A5.54,5.54,0,0,0,232.85,111.87Zm-9.25-2.32a1.69,1.69,0,0,1-1.36-.52,1.81,1.81,0,0,1-.43-1.21,1.67,1.67,0,0,1,.86-1.68,4.63,4.63,0,0,1,2-.42,7.69,7.69,0,0,1,1.07.07l1.06.13a3.58,3.58,0,0,1-1.08,2.74A3.24,3.24,0,0,1,223.6,109.55Z"></path>
+                </g>
+            </svg>
+        </a>
+            <button type="button" class="ghost main-menu-toggle" aria-haspopup="true" aria-label="Show Menu"></button>
+            <div class="page-header-main ">
+                <nav class="main-nav" aria-label="Main menu">
+                    <ul class="main-menu">
+                        <li class="top-level-entry-container">
+                            <button id="technologies-button" type="button" class="top-level-entry" aria-haspopup="menu"
+                                    aria-expanded="false">Technologies
+                            </button>
+                            <ul class="technologies " role="menu" aria-labelledby="technologies-button">
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web" role="menuitem">Technologies
+                                    Overview</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/HTML"
+                                                   role="menuitem">HTML</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/CSS"
+                                                   role="menuitem">CSS</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
+                                                   role="menuitem">JavaScript</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/Guide/Graphics"
+                                                   role="menuitem">Graphics</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP"
+                                                   role="menuitem">HTTP</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/API"
+                                                   role="menuitem">APIs</a></li>
+                                <li role="none"><a
+                                        href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions"
+                                        role="menuitem">Browser Extensions</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/MathML"
+                                                   role="menuitem">MathML</a></li>
+                            </ul>
+                        </li>
+                        <li class="top-level-entry-container">
+                            <button id="references-guides-button" type="button" class="top-level-entry"
+                                    aria-haspopup="menu" aria-expanded="false">References &amp; Guides
+                            </button>
+                            <ul class="references-guides " role="menu" aria-labelledby="references-guides-button">
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Learn"
+                                                   role="menuitem">Learn web development</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/Tutorials"
+                                                   role="menuitem">Tutorials</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/Reference"
+                                                   role="menuitem">References</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/Guide"
+                                                   role="menuitem">Developer Guides</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web/Accessibility"
+                                                   role="menuitem">Accessibility</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Games"
+                                                   role="menuitem">Game development</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/Web" role="menuitem">...more
+                                    docs</a></li>
+                            </ul>
+                        </li>
+                        <li class="top-level-entry-container">
+                            <button id="feedback-button" type="button" class="top-level-entry" aria-haspopup="menu"
+                                    aria-expanded="false">Feedback
+                            </button>
+                            <ul class="feedback " role="menu" aria-labelledby="feedback-button">
+                                <li role="none"><a
+                                        href="https://developer.mozilla.org/en-US/docs/MDN/Contribute/Feedback"
+                                        role="menuitem">Send Feedback</a></li>
+                                <li role="none"><a href="https://developer.mozilla.org/en-US/docs/MDN/Contribute"
+                                                   role="menuitem">Contribute to MDN</a></li>
+                                <li role="none"><a target="_blank" rel="noopener noreferrer"
+                                                   href="https://github.com/mdn/content/issues/new" role="menuitem">Report
+                                    a content issue 🌐</a></li>
+                                <li role="none"><a target="_blank" rel="noopener noreferrer"
+                                                   href="https://github.com/mdn/yari/issues/new" role="menuitem">Report
+                                    a platform issue 🌐</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="header-search">
+                    <form action="https://developer.mozilla.org/en-US/search" class="search-form" role="search"><label
+                            for="main-q" class="visually-hidden">Search MDN</label><input type="search" name="q"
+                                                                                          id="main-q"
+                                                                                          class="search-input-field"
+                                                                                          placeholder="Search MDN"
+                                                                                          pattern="(.|\s)*\S(.|\s)*"
+                                                                                          required=""><input
+                            type="submit" class="ghost search-button" aria-label="Search" value=""></form>
+                </div>
+                <div class="auth-container"><a
+                        href="https://developer.mozilla.org/en-US/users/account/signup-landing?next=%2Fen-US%2Fdocs%2FLearn%2FHTML%2FIntroduction_to_HTML%2FDocument_and_website_structure"
+                        rel="nofollow" class="signin-link">Sign in</a></div>
+            </div>
+        </header>
+        <div class="titlebar-container"><h1 class="title">Document and website structure</h1></div>
+        {% component 'breadcrumb_component' items=5 %}
+            <div class="locale-container">
+                <form class="language-menu"><label for="select_language" class="visually-hidden">Select your preferred
+                    language</label> <select id="select_language" name="language">
+                    <option value="en-US">English (US)</option>
+                    <option value="/ca/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Català
+                    </option>
+                    <option value="/de/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Deutsch
+                    </option>
+                    <option value="/es/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Español
+                    </option>
+                    <option value="/fr/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Français
+                    </option>
+                    <option value="/id/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Bahasa
+                        Indonesia
+                    </option>
+                    <option value="/ja/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">日本語</option>
+                    <option value="/ko/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">한국어</option>
+                    <option value="/nl/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Nederlands
+                    </option>
+                    <option value="/pt-BR/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Português
+                        (do&nbsp;Brasil)
+                    </option>
+                    <option value="/pt-PT/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Português
+                        (Europeu)
+                    </option>
+                    <option value="/ru/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Русский
+                    </option>
+                    <option value="/zh-CN/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">中文 (简体)
+                    </option>
+                    <option value="/zh-TW/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">正體中文
+                        (繁體)
+                    </option>
+                </select>
+                    <button type="submit" class="button minimal">Change language</button>
+                </form>
+            </div>
+        </div>
+        <div class="page-content-container">
+            <aside class="document-toc-container">
+                <section class="document-toc">
+                    <header><h2>Table of contents</h2>
+                        <button type="button" class="ghost toc-trigger-mobile" aria-controls="toc-entries"
+                                aria-expanded="false">Table of contents
+                        </button>
+                    </header>
+                    <ul id="toc-entries">
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#basic_sections_of_a_document">Basic
+                                sections of a document</a></li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#html_for_structuring_content">HTML
+                                for structuring content</a></li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#html_layout_elements_in_more_detail">HTML
+                                layout elements in more detail</a></li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#planning_a_simple_website">Planning
+                                a simple website</a></li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#test_your_skills!">Test
+                                your skills!</a></li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#summary">Summary</a>
+                        </li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#see_also">See
+                                also</a></li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#in_this_module">In
+                                this module</a></li>
+                    </ul>
+                </section>
+            </aside>
+            <main id="content" class="main-content" role="main">
+                <article class="article" lang="en-US">
+                    <div>
+                        <div></div>
+
+                        <div>
+                            <ul class="prev-next">
+                                <li><a class="button minimal"
+                                       href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Advanced_text_formatting">
+                                    Previous </a></li>
+                                <li><a class="button minimal"
+                                       href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML">
+                                    Overview: Introduction to HTML</a></li>
+                                <li><a class="button minimal"
+                                       href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Debugging_HTML">
+                                    Next </a></li>
+                            </ul>
+                        </div>
+
+                        <p class="summary">In addition to defining individual parts of your page (such as "a paragraph"
+                            or "an image"), <a href="https://developer.mozilla.org/en-US/docs/Glossary/HTML">HTML</a>
+                            also boasts a number of block level elements used to define areas of your website (such as
+                            "the header", "the navigation menu", "the main content column"). This article looks into how
+                            to plan a basic website structure, and write the HTML to represent this structure.</p>
+
+                        <table class="learn-box standard-table">
+                            <tbody>
+                            <tr>
+                                <th scope="row">Prerequisites:</th>
+                                <td>Basic HTML familiarity, as covered in <a
+                                        href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started">Getting
+                                    started with HTML</a>. HTML text formatting, as covered in <a
+                                        href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/HTML_text_fundamentals">HTML
+                                    text fundamentals</a>. How hyperlinks work, as covered in <a
+                                        href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Creating_hyperlinks">Creating
+                                    hyperlinks</a>.
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Objective:</th>
+                                <td>Learn how to structure your document using semantic tags, and how to work out the
+                                    structure of a simple website.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <h2 id="basic_sections_of_a_document"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#basic_sections_of_a_document"
+                            title="Permalink to Basic sections of a document">Basic sections of a document</a></h2>
+                    <div><p>Webpages can and will look pretty different from one another, but they all tend to share
+                        similar standard components, unless the page is displaying a fullscreen video or game, is part
+                        of some kind of art project, or is just badly structured:</p>
+
+                        <dl>
+                            <dt>header:</dt>
+                            <dd>Usually a big strip across the top with a big heading, logo, and perhaps a tagline. This
+                                usually stays the same from one webpage to another.
+                            </dd>
+                            <dt>navigation bar:</dt>
+                            <dd>Links to the site's main sections; usually represented by menu buttons, links, or tabs.
+                                Like the header, this content usually remains consistent from one webpage to another —
+                                having inconsistent navigation on your website will just lead to confused, frustrated
+                                users. Many web designers consider the navigation bar to be part of the header rather
+                                than an individual component, but that's not a requirement; in fact, some also argue
+                                that having the two separate is better for <a
+                                        href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility">accessibility</a>,
+                                as screen readers can read the two features better if they are separate.
+                            </dd>
+                            <dt>main content:</dt>
+                            <dd>A big area in the center that contains most of the unique content of a given webpage,
+                                for example, the video you want to watch, or the main story you're reading, or the map
+                                you want to view, or the news headlines, etc. This is the one part of the website that
+                                definitely will vary from page to page!
+                            </dd>
+                            <dt>sidebar:</dt>
+                            <dd>Some peripheral info, links, quotes, ads, etc. Usually, this is contextual to what is
+                                contained in the main content (for example on a news article page, the sidebar might
+                                contain the author's bio, or links to related articles) but there are also cases where
+                                you'll find some recurring elements like a secondary navigation system.
+                            </dd>
+                            <dt>footer:</dt>
+                            <dd>A strip across the bottom of the page that generally contains fine print, copyright
+                                notices, or contact info. It's a place to put common information (like the header) but
+                                usually, that information is not critical or secondary to the website itself. The footer
+                                is also sometimes used for <a
+                                        href="https://developer.mozilla.org/en-US/docs/Glossary/SEO">SEO</a> purposes,
+                                by providing links for quick access to popular content.
+                            </dd>
+                        </dl>
+
+                        <p>A "typical website" could be structured something like this:</p>
+
+                        <p>
+                            <img alt="a simple website structure example featuring a main heading, navigation menu, main content, side bar, and footer."
+                                 src="./Document and website structure - Learn web development _ MDN_files/sample-website.png"
+                                 style="display: block; margin: 0 auto;" width="1298" height="855" loading="lazy"></p>
+                    </div>
+                    <h2 id="html_for_structuring_content"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#html_for_structuring_content"
+                            title="Permalink to HTML for structuring content">HTML for structuring content</a></h2>
+                    <div><p>The simple example shown above isn't pretty, but it is perfectly fine&nbsp;for illustrating
+                        a typical website layout example. Some websites have more columns, some are a lot&nbsp;more
+                        complex, but you get the idea. With the right CSS, you could use pretty much any elements to
+                        wrap around the different sections and get it looking how you wanted, but as discussed before,
+                        we need to respect semantics and <strong>use the right element for the right job</strong>.</p>
+
+                        <p>This is because visuals don't tell the whole story. We use color and font size to draw
+                            sighted users' attention to the most useful parts of the content, like the navigation menu
+                            and related links, but what about visually impaired people for example, who might not find
+                            concepts like "pink" and "large font" very useful?</p>
+
+                        <div class="note notecard">
+                            <p><strong>Note</strong>: <a
+                                    href="http://www.color-blindness.com/2006/04/28/colorblind-population/"
+                                    class="external" rel=" noopener">Roughy 8% of men and 0.5% of women</a> are
+                                colorblind; or, to put it another way, approximately 1 in every 12 men and 1 in every
+                                200 women. Blind and visually impaired people represent roughly 4-5% of the world
+                                population (in 2012 there were <a href="https://en.wikipedia.org/wiki/Visual_impairment"
+                                                                  class="external" rel=" noopener">285 million such
+                                    people in the world</a>, while the total population was <a
+                                        href="https://en.wikipedia.org/wiki/World_human_population#/media/File:World_population_history.svg"
+                                        class="external" rel=" noopener">around 7 billion</a>).</p>
+                        </div>
+
+                        <p>In your HTML code, you can mark up sections of content based on their <em>functionality</em>
+                            — you can use elements that represent the sections of content described above unambiguously,
+                            and assistive technologies like screenreaders can recognize those elements and help with
+                            tasks like "find the main navigation", or "find the main content." As we mentioned earlier
+                            in the course, there are a number of <a
+                                    href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/HTML_text_fundamentals#why_do_we_need_structure">consequences
+                                of not using the right element structure and semantics for the right job</a>.</p>
+
+                        <p>To implement such semantic mark up, HTML provides dedicated tags that you can use to
+                            represent such sections, for example:</p>
+
+                        <ul>
+                            <li><strong>header: </strong><a
+                                    href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header"><code>&lt;header&gt;</code></a>.
+                            </li>
+                            <li><strong>navigation bar: </strong><a
+                                    href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav"><code>&lt;nav&gt;</code></a>.
+                            </li>
+                            <li><strong>main content: </strong><a
+                                    href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main"><code>&lt;main&gt;</code></a>,
+                                with various content subsections represented by <a
+                                        href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article"><code>&lt;article&gt;</code></a>,
+                                <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section"><code>&lt;section&gt;</code></a>,
+                                and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div"><code>&lt;div&gt;</code></a>
+                                elements.
+                            </li>
+                            <li><strong>sidebar: </strong><a
+                                    href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside"><code>&lt;aside&gt;</code></a>;
+                                often placed inside <a
+                                        href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main"><code>&lt;main&gt;</code></a>.
+                            </li>
+                            <li><strong>footer: </strong><a
+                                    href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer"><code>&lt;footer&gt;</code></a>.
+                            </li>
+                        </ul>
+                    </div>
+                    <h3 id="active_learning_exploring_the_code_for_our_example"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#active_learning_exploring_the_code_for_our_example"
+                            title="Permalink to Active learning: exploring the code for our example">Active learning:
+                        exploring the code for our example</a></h3>
+                    <div><p>Our example seen above is represented by the following code (you can also <a
+                            href="https://github.com/mdn/learning-area/blob/master/html/introduction-to-html/document_and_website_structure/index.html"
+                            class="external" rel=" noopener">find the example in our GitHub repository</a>). We'd like
+                        you to look at the example above, and then look over the listing below to see what parts make up
+                        what section of the visual.</p>
+
+                        <pre class="brush: html notranslate"><code><span class="token doctype"><span
+                                class="token punctuation">&lt;!</span><span
+                                class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span
+                                class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span><span
+        class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span
+          class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span
+            class="token attr-name">charset</span><span class="token attr-value"><span
+            class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>utf-8<span
+            class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span
+            class="token punctuation">&gt;</span></span>My page title<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>title</span><span
+                                    class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>link</span> <span
+            class="token attr-name">href</span><span class="token attr-value"><span
+            class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Sonsie+One<span
+            class="token punctuation">"</span></span> <span class="token attr-name">rel</span><span
+            class="token attr-value"><span class="token punctuation attr-equals">=</span><span
+            class="token punctuation">"</span>stylesheet<span class="token punctuation">"</span></span> <span
+            class="token attr-name">type</span><span class="token attr-value"><span
+            class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>text/css<span
+            class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>link</span> <span
+            class="token attr-name">rel</span><span class="token attr-value"><span
+            class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>stylesheet<span
+            class="token punctuation">"</span></span> <span class="token attr-name">href</span><span
+            class="token attr-value"><span class="token punctuation attr-equals">=</span><span
+            class="token punctuation">"</span>style.css<span class="token punctuation">"</span></span><span
+            class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!-- the below three lines are a fix to get HTML5 semantic elements working in old versions of Internet Explorer--&gt;</span>
+    <span class="token comment">&lt;!--[if lt IE 9]&gt;
+      &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"&gt;&lt;/script&gt;
+    &lt;![endif]--&gt;</span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span
+          class="token punctuation">&gt;</span></span>
+
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span
+          class="token punctuation">&gt;</span></span>
+    <span class="token comment">&lt;!-- Here is our main header that is used across all the pages of our website --&gt;</span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>header</span><span
+            class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span><span
+              class="token punctuation">&gt;</span></span>Header<span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>h1</span><span
+                                    class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>header</span><span
+            class="token punctuation">&gt;</span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>nav</span><span
+            class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ul</span><span
+              class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Home<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Our team<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Projects<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Contact<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ul</span><span
+              class="token punctuation">&gt;</span></span>
+
+       <span class="token comment">&lt;!-- A Search form is another common non-linear way to navigate through a website. --&gt;</span>
+
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>form</span><span
+               class="token punctuation">&gt;</span></span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>input</span> <span
+                 class="token attr-name">type</span><span class="token attr-value"><span
+                 class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>search<span
+                 class="token punctuation">"</span></span> <span class="token attr-name">name</span><span
+                 class="token attr-value"><span class="token punctuation attr-equals">=</span><span
+                 class="token punctuation">"</span>q<span class="token punctuation">"</span></span> <span
+                 class="token attr-name">placeholder</span><span class="token attr-value"><span
+                 class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>Search query<span
+                 class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>input</span> <span
+                 class="token attr-name">type</span><span class="token attr-value"><span
+                 class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>submit<span
+                 class="token punctuation">"</span></span> <span class="token attr-name">value</span><span
+                 class="token attr-value"><span class="token punctuation attr-equals">=</span><span
+                 class="token punctuation">"</span>Go!<span class="token punctuation">"</span></span><span
+                 class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>form</span><span
+               class="token punctuation">&gt;</span></span>
+     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>nav</span><span
+             class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!-- Here is our page's main content --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>main</span><span
+            class="token punctuation">&gt;</span></span>
+
+      <span class="token comment">&lt;!-- It contains an article --&gt;</span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>article</span><span
+              class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h2</span><span
+                class="token punctuation">&gt;</span></span>Article heading<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>h2</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+                class="token punctuation">&gt;</span></span>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Donec a diam lectus. Set sit amet ipsum mauris. Maecenas congue ligula as quam viverra nec consectetur ant hendrerit. Donec et mollis dolor. Praesent et diam eget libero egestas mattis sit amet vitae augue. Nam tincidunt congue enim, ut porta lorem lacinia consectetur.<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h3</span><span
+                class="token punctuation">&gt;</span></span>Subsection<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>h3</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+                class="token punctuation">&gt;</span></span>Donec ut librero sed accu vehicula ultricies a non tortor. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aenean ut gravida lorem. Ut turpis felis, pulvinar a semper sed, adipiscing id dolor.<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+                class="token punctuation">&gt;</span></span>Pelientesque auctor nisi id magna consequat sagittis. Curabitur dapibus, enim sit amet elit pharetra tincidunt feugiat nist imperdiet. Ut convallis libero in urna ultrices accumsan. Donec sed odio eros.<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h3</span><span
+                class="token punctuation">&gt;</span></span>Another subsection<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>h3</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+                class="token punctuation">&gt;</span></span>Donec viverra mi quis quam pulvinar at malesuada arcu rhoncus. Cum soclis natoque penatibus et manis dis parturient montes, nascetur ridiculus mus. In rutrum accumsan ultricies. Mauris vitae nisi at sem facilisis semper ac in est.<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+                class="token punctuation">&gt;</span></span>Vivamus fermentum semper porta. Nunc diam velit, adipscing ut tristique vitae sagittis vel odio. Maecenas convallis ullamcorper ultricied. Curabitur ornare, ligula semper consectetur sagittis, nisi diam iaculis velit, is fringille sem nunc vet mi.<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>article</span><span
+              class="token punctuation">&gt;</span></span>
+
+      <span class="token comment">&lt;!-- the aside content can also be nested within the main content --&gt;</span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>aside</span><span
+              class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h2</span><span
+                class="token punctuation">&gt;</span></span>Related<span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>h2</span><span
+                                    class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ul</span><span
+                class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                  class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Oh I do like to be beside the seaside<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                  class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Oh I do like to be beside the sea<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                  class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Although in the North of England<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                  class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>It never stops raining<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+                  class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>#<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Oh well...<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span><span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+                                    class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ul</span><span
+                class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>aside</span><span
+              class="token punctuation">&gt;</span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>main</span><span
+            class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!-- And here is our main footer that is used across all the pages of our website --&gt;</span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>footer</span><span
+            class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+              class="token punctuation">&gt;</span></span>©Copyright 2050 by nobody. All rights reversed.<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>footer</span><span
+            class="token punctuation">&gt;</span></span>
+
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span
+          class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span
+        class="token punctuation">&gt;</span></span></code></pre>
+
+                        <p>Take some time to look over the code and understand it — the comments inside the code should
+                            also help you to understand it. We aren't asking you to do much else in this article,
+                            because the key to understanding document layout is writing a sound HTML structure, and then
+                            laying it out with CSS. We'll wait for this until you start to study CSS layout as part of
+                            the CSS topic.</p></div>
+                    <h2 id="html_layout_elements_in_more_detail"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#html_layout_elements_in_more_detail"
+                            title="Permalink to HTML layout elements in more detail">HTML layout elements in more
+                        detail</a></h2>
+                    <div><p>It's good to understand the overall meaning of all the HTML sectioning elements in detail —
+                        this is something you'll work on gradually as you start to get more experience with web
+                        development. You can find a lot of detail by reading our <a
+                                href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element">HTML element
+                            reference</a>. For now, these are the main definitions that you should try to understand:
+                    </p>
+
+                        <ul>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main"><code>&lt;main&gt;</code></a>
+                                is for content <em>unique to this page.</em> Use <code>&lt;main&gt;</code> only
+                                <em>once</em> per page, and put it directly inside <a
+                                        href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body"><code>&lt;body&gt;</code></a>.
+                                Ideally this shouldn't be nested within other elements.
+                            </li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article"><code>&lt;article&gt;</code></a>
+                                encloses a block of related content that makes sense on its own without the rest of the
+                                page (e.g., a single blog post).
+                            </li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section"><code>&lt;section&gt;</code></a>
+                                is similar to <code>&lt;article&gt;</code>, but it is more for grouping together a
+                                single part of the page that constitutes one single piece of functionality (e.g., a mini
+                                map, or a set of article headlines and summaries), or a theme. It's considered best
+                                practice to begin each section with a <a
+                                        href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/HTML_text_fundamentals">heading</a>;
+                                also note that you can break <code>&lt;article&gt;</code>s up into different <code>&lt;section&gt;</code>s,
+                                or <code>&lt;section&gt;</code>s up into different <code>&lt;article&gt;</code>s,
+                                depending on the context.
+                            </li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside"><code>&lt;aside&gt;</code></a>
+                                contains content that is not directly related to the main content but can provide
+                                additional information indirectly related to it (glossary entries, author biography,
+                                related links, etc.).
+                            </li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header"><code>&lt;header&gt;</code></a>
+                                represents a group of introductory content. If it is a child of <a
+                                        href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body"><code>&lt;body&gt;</code></a>
+                                it defines the global header of a webpage, but if it's a child of an <a
+                                        href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article"><code>&lt;article&gt;</code></a>
+                                or <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section"><code>&lt;section&gt;</code></a>
+                                it defines a specific header for that section (try not to confuse this with <a
+                                        href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/The_head_metadata_in_HTML#adding_a_title">titles
+                                    and headings</a>).
+                            </li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav"><code>&lt;nav&gt;</code></a>
+                                contains the main navigation functionality for the page. Secondary links, etc., would
+                                not go in the navigation.
+                            </li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer"><code>&lt;footer&gt;</code></a>
+                                represents a group of end content for a page.
+                            </li>
+                        </ul>
+
+                        <p>Each of the aforementioned elements can be clicked on to read the corresponding article in
+                            the "HTML element reference" section, providing more detail about each one.</p></div>
+                    <h3 id="non-semantic_wrappers"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#non-semantic_wrappers"
+                            title="Permalink to Non-semantic wrappers">Non-semantic wrappers</a></h3>
+                    <div><p>Sometimes you'll come across a situation where you can't find an ideal semantic element to
+                        group some items together or wrap some content. Sometimes you might want to just group a set of
+                        elements together to affect them all as a single entity with some&nbsp;<a
+                                href="https://developer.mozilla.org/en-US/docs/Glossary/CSS">CSS</a> or <a
+                                href="https://developer.mozilla.org/en-US/docs/Glossary/JavaScript">JavaScript</a>. For
+                        cases like these, HTML provides the&nbsp;<a
+                                href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div"><code>&lt;div&gt;</code></a>
+                        and&nbsp;<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span"><code>&lt;span&gt;</code></a>
+                        elements. You should use these preferably with a suitable <a
+                                href="https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes#attr-class"><code>class</code></a>
+                        attribute, to provide some kind of label for them so they can be easily targeted.</p>
+
+                        <p>
+                            <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span"><code>&lt;span&gt;</code></a>
+                            is an inline non-semantic element, which you should only use if you can't think of a better
+                            semantic text element to wrap your content, or don't want to add any specific meaning. For
+                            example:</p>
+
+                        <pre class="brush: html notranslate"><code><span class="token tag"><span class="token tag"><span
+                                class="token punctuation">&lt;</span>p</span><span class="token punctuation">&gt;</span></span>The King walked drunkenly back to his room at 01:00, the beer doing nothing to aid
+him as he staggered through the door <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>span</span> <span
+                                    class="token attr-name">class</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span>editor-note<span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>[Editor's note: At this point in the
+play, the lights should be down low]<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>span</span><span
+                                    class="token punctuation">&gt;</span></span>.<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span></code></pre>
+
+                        <p>In this case, the editor's note is supposed to merely provide extra direction for the
+                            director of the play; it is not supposed to have extra semantic meaning. For sighted users,
+                            CSS would perhaps be used to distance the note slightly from the main text.</p>
+
+                        <p>
+                            <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div"><code>&lt;div&gt;</code></a>
+                            is a block level non-semantic element, which you should only use if you can't think of a
+                            better semantic block element to use, or don't want to add any specific meaning. For
+                            example, imagine a shopping cart widget that you could choose to pull up at any point during
+                            your time on an e-commerce site:</p>
+
+                        <pre class="brush: html notranslate"><code><span class="token tag"><span class="token tag"><span
+                                class="token punctuation">&lt;</span>div</span> <span
+                                class="token attr-name">class</span><span class="token attr-value"><span
+                                class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>shopping-cart<span
+                                class="token punctuation">"</span></span><span
+                                class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h2</span><span
+          class="token punctuation">&gt;</span></span>Shopping cart<span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>h2</span><span
+                                    class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ul</span><span
+          class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+            class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+              class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>a</span> <span
+                                    class="token attr-name">href</span><span class="token attr-value"><span
+                                    class="token punctuation attr-equals">=</span><span
+                                    class="token punctuation">"</span><span
+                                    class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;</span>strong</span><span class="token punctuation">&gt;</span></span>Silver earrings<span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>strong</span><span class="token punctuation">&gt;</span></span><span
+                                    class="token tag"><span class="token tag"><span
+                                    class="token punctuation">&lt;/</span>a</span><span
+                                    class="token punctuation">&gt;</span></span>: $99.95.<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>img</span> <span
+              class="token attr-name">src</span><span class="token attr-value"><span
+              class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>../products/3333-0985/thumb.png<span
+              class="token punctuation">"</span></span> <span class="token attr-name">alt</span><span
+              class="token attr-value"><span class="token punctuation attr-equals">=</span><span
+              class="token punctuation">"</span>Silver earrings<span class="token punctuation">"</span></span><span
+              class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+            class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span
+            class="token punctuation">&gt;</span></span>
+      ...
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span
+            class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ul</span><span
+          class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+          class="token punctuation">&gt;</span></span>Total cost: $237.89<span class="token tag"><span
+                                    class="token tag"><span class="token punctuation">&lt;/</span>p</span><span
+                                    class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span
+        class="token punctuation">&gt;</span></span></code></pre>
+
+                        <p>This isn't really an <code>&lt;aside&gt;</code>, as it doesn't necessarily relate to the main
+                            content of the page (you want it viewable from anywhere). It doesn't even particularly
+                            warrant using a&nbsp; <code>&lt;section&gt;</code>, as it isn't part of the main content of
+                            the page. So a <code>&lt;div&gt;</code> is fine in this case. We've included a heading as a
+                            signpost to aid screenreader users in finding it.</p>
+
+                        <div class="warning notecard">
+                            <p><strong>Warning</strong>: Divs are so convenient to use that it's easy to use them too
+                                much. As they carry no semantic value, they just clutter your HTML code. Take care to
+                                use them only when there is no better semantic solution and try to reduce their usage to
+                                the minimum otherwise you'll have a hard time updating and maintaining your documents.
+                            </p>
+                        </div>
+                    </div>
+                    <h3 id="line_breaks_and_horizontal_rules"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#line_breaks_and_horizontal_rules"
+                            title="Permalink to Line breaks and horizontal rules">Line breaks and horizontal rules</a>
+                    </h3>
+                    <div><p>Two elements that you'll use occasionally and will want to know about are <a
+                            href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br"><code>&lt;br&gt;</code></a>
+                        and
+                        <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr"><code>&lt;hr&gt;</code></a>:
+                    </p>
+
+                        <p><code>&lt;br&gt;</code> creates a line break in a paragraph; it is the only way to force a
+                            rigid structure in a situation where you want a series of fixed short lines, such as in a
+                            postal address or a poem. For example:</p>
+
+                        <div id="line-break-live-sample">
+<pre class="brush: html notranslate"><code><span class="token tag"><span class="token tag"><span
+        class="token punctuation">&lt;</span>p</span><span class="token punctuation">&gt;</span></span>There once was a man named O'Dell<span
+        class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>br</span><span
+        class="token punctuation">&gt;</span></span>
+Who loved to write HTML<span class="token tag"><span class="token tag"><span
+            class="token punctuation">&lt;</span>br</span><span class="token punctuation">&gt;</span></span>
+But his structure was bad, his semantics were sad<span class="token tag"><span class="token tag"><span
+            class="token punctuation">&lt;</span>br</span><span class="token punctuation">&gt;</span></span>
+and his markup didn't read very well.<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span
+            class="token punctuation">&gt;</span></span></code></pre>
+                        </div>
+
+                        <p>Without the <code>&lt;br&gt;</code> elements, the paragraph would just be rendered in one
+                            long line (as we said earlier in the course, <a
+                                    href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started#whitespace_in_html">HTML
+                                ignores most whitespace</a>); with <code>&lt;br&gt;</code> elements in the code, the
+                            markup renders like this:</p>
+
+                        <p>
+                            <iframe class="hide-codepen-jsfiddle" id="frame_line-break-live-sample" width="100%"
+                                    height="125px"
+                                    src="./Document and website structure - Learn web development _ MDN_files/line-break-live-sample.html"
+                                    loading="lazy"></iframe>
+                        </p>
+
+                        <p><code>&lt;hr&gt;</code> elements create a horizontal rule in the document that denotes a
+                            thematic change in the text (such as a change in topic or scene). Visually it just looks
+                            like a horizontal line. As an example:</p>
+
+                        <div id="horizantal-rule-live-sample">
+<pre class="brush: html notranslate"><code><span class="token tag"><span class="token tag"><span
+        class="token punctuation">&lt;</span>p</span><span class="token punctuation">&gt;</span></span>Ron was backed into a corner by the marauding netherbeasts. Scared, but determined to protect his friends, he raised his wand and prepared to do battle, hoping that his distress call had made it through.<span
+        class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span
+        class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>hr</span><span
+        class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span
+        class="token punctuation">&gt;</span></span>Meanwhile, Harry was sitting at home, staring at his royalty statement and pondering when the next spin off series would come out, when an enchanted distress letter flew through his window and landed in his lap. He read it hazily and sighed; "better get back to work then", he mused.<span
+            class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span
+            class="token punctuation">&gt;</span></span></code></pre>
+                        </div>
+
+                        <p>Would render like this:</p>
+
+                        <p>
+                            <iframe class="hide-codepen-jsfiddle" id="frame_horizantal-rule-live-sample" width="100%"
+                                    height="185px"
+                                    src="./Document and website structure - Learn web development _ MDN_files/horizantal-rule-live-sample.html"
+                                    loading="lazy"></iframe>
+                        </p>
+                    </div>
+                    <h2 id="planning_a_simple_website"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#planning_a_simple_website"
+                            title="Permalink to Planning a simple website">Planning a simple website</a></h2>
+                    <div><p>Once you've planned out the structure of a simple webpage, the next logical step is to try
+                        to work out what content you want to put on a whole website, what pages you need, and how they
+                        should be arranged and link to one another for the best possible user experience. This is called
+                        <a href="https://developer.mozilla.org/en-US/docs/Glossary/Information_architecture">Information
+                            architecture</a>. In a large, complex website, a lot of planning can go into this process,
+                        but for a simple website of a few pages, this can be fairly simple, and fun!</p>
+
+                        <ol>
+                            <li>Bear in mind that you'll have a few elements common to most (if not all) pages — such as
+                                the navigation menu, and the footer content. If your site is for a business, for
+                                example, it's a good idea to have your contact information available in the footer on
+                                each page. Note down what you want to have common to every page.<img
+                                        alt="the common features of the travel site to go on every page: title and logo, contact, copyright, terms and conditions, language chooser, accessibility policy"
+                                        src="./Document and website structure - Learn web development _ MDN_files/common-features.png"
+                                        style="border-style: solid; border-width: 1px; display: block; margin: 0px auto;"
+                                        width="700" height="438" loading="lazy"></li>
+                            <li>Next, draw a rough sketch of what you might want the structure of each page to look like
+                                (it might look like our simple website above). Note what each block is going to be.<img
+                                        alt="A simple diagram of a sample site structure, with a header, main content area, two optional sidebars, and footer"
+                                        src="./Document and website structure - Learn web development _ MDN_files/site-structure.png"
+                                        style="border-style: solid; border-width: 1px; display: block; margin: 0px auto;"
+                                        width="700" height="271" loading="lazy"></li>
+                            <li>Now, brainstorm all the other (not common to every page) content you want to have on
+                                your website — write a big list down.<img
+                                        alt="A long list of all the features that we could put on our travel site, from searching, to special offers and country-specific info"
+                                        src="./Document and website structure - Learn web development _ MDN_files/feature-list.png"
+                                        style="border-style: solid; border-width: 1px; display: block; margin: 0px auto;"
+                                        width="700" height="1244" loading="lazy"></li>
+                            <li>Next, try to sort all these content items into groups, to give you an idea of what parts
+                                might live together on different pages. This is very similar to a technique called <a
+                                        href="https://developer.mozilla.org/en-US/docs/Glossary/Card_sorting">Card
+                                    sorting</a>.<img
+                                        alt="The items that should appear on a holiday site sorted into 5 categories: Search, Specials, Country-specific info, Search results, and Buy things"
+                                        src="./Document and website structure - Learn web development _ MDN_files/card-sorting.png"
+                                        style="border-style: solid; border-width: 1px; display: block; margin: 0px auto;"
+                                        width="700" height="675" loading="lazy"></li>
+                            <li>Now try to sketch a rough sitemap — have a bubble for each page on your site, and draw
+                                lines to show the typical workflow between pages. The homepage will probably be in the
+                                center, and link to most if not all of the others; most of the pages in a small site
+                                should be available from the main navigation, although there are exceptions. You might
+                                also want to include notes about how things might be presented.<img
+                                        alt="A map of the site showing the homepage, country page, search results, specials page, checkout, and buy page"
+                                        src="./Document and website structure - Learn web development _ MDN_files/site-map.png"
+                                        style="border-style: solid; border-width: 1px; display: block; margin: 0px auto;"
+                                        width="700" height="1017" loading="lazy"></li>
+                        </ol>
+                    </div>
+                    <h3 id="active_learning_create_your_own_sitemap"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#active_learning_create_your_own_sitemap"
+                            title="Permalink to Active learning: create your own sitemap">Active learning: create your
+                        own sitemap</a></h3>
+                    <div><p>Try carrying out the above exercise for a website of your own creation. What would you like
+                        to make a site about?</p>
+
+                        <div class="note notecard">
+                            <p><strong>Note</strong>: Save your work somewhere; you might need it later on.</p>
+                        </div>
+                    </div>
+                    <h2 id="test_your_skills!"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#test_your_skills!"
+                            title="Permalink to Test your skills!">Test your skills!</a></h2>
+                    <div><p>You've reached the end of this article, but can you remember the most important information?
+                        You can find a detailed assessment that tests these skills at the end of the module; see <a
+                                href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Structuring_a_page_of_content">Structuring
+                            a page of content</a>. We'd advise going through the next article in the series first and
+                        not just skipping to it though!</p></div>
+                    <h2 id="summary"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#summary"
+                            title="Permalink to Summary">Summary</a></h2>
+                    <div><p>At this point you should have a better idea about how to structure a web page/site. In the
+                        last article of this module, we'll study how to debug HTML.</p></div>
+                    <h2 id="see_also"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#see_also"
+                            title="Permalink to See also">See also</a></h2>
+                    <div>
+                        <ul>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Using_HTML_sections_and_outlines">Using
+                                    HTML sections and outlines</a>: Advanced guide to HTML5 semantic elements and the
+                                HTML5 outline algorithm.
+                            </li>
+                        </ul>
+
+                        <p></p>
+                        <ul class="prev-next">
+                            <li><a class="button minimal"
+                                   href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Advanced_text_formatting">
+                                Previous </a></li>
+                            <li><a class="button minimal"
+                                   href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML">
+                                Overview: Introduction to HTML</a></li>
+                            <li><a class="button minimal"
+                                   href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Debugging_HTML">
+                                Next </a></li>
+                        </ul>
+                        <p></p></div>
+                    <h2 id="in_this_module"><a
+                            href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#in_this_module"
+                            title="Permalink to In this module">In this module</a></h2>
+                    <div>
+                        <ul>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started">Getting
+                                    started with HTML</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/The_head_metadata_in_HTML">What’s
+                                    in the head? Metadata in HTML</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/HTML_text_fundamentals">HTML
+                                    text fundamentals</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Creating_hyperlinks">Creating
+                                    hyperlinks</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Advanced_text_formatting">Advanced
+                                    text formatting</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Document
+                                    and website structure</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Debugging_HTML">Debugging
+                                    HTML</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Marking_up_a_letter">Marking
+                                    up a letter</a></li>
+                            <li>
+                                <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Structuring_a_page_of_content">Structuring
+                                    a page of content</a></li>
+                        </ul>
+                    </div>
+                </article>
+            </main>
+            <nav id="sidebar-quicklinks" class="sidebar"><h4>Related Topics</h4>
+                <div>
+
+                    <ol>
+                        <li data-default-state=""><a
+                                href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web"><strong>Complete
+                            beginners start here!</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Getting started with the Web</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web">Getting
+                                            started with the Web overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/Installing_basic_software">Installing
+                                            basic software</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/What_will_your_website_look_like">What
+                                            will your website look like?</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/Dealing_with_files">Dealing
+                                            with files</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/HTML_basics">HTML
+                                            basics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/CSS_basics">CSS
+                                            basics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/JavaScript_basics">JavaScript
+                                            basics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/Publishing_your_website">Publishing
+                                            your website</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/How_the_Web_works">How
+                                            the Web works</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li data-default-state="open"><a
+                                href="https://developer.mozilla.org/en-US/docs/Learn/HTML"><strong>HTML — Structuring
+                            the Web</strong></a></li>
+                        <li class="toggle">
+                            <details open="">
+                                <summary>Introduction to HTML</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML">Introduction
+                                            to HTML overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started">Getting
+                                            started with HTML</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/The_head_metadata_in_HTML">What's
+                                            in the head? Metadata in HTML</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/HTML_text_fundamentals">HTML
+                                            text fundamentals</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Creating_hyperlinks">Creating
+                                            hyperlinks</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Advanced_text_formatting">Advanced
+                                            text formatting</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure">Document
+                                            and website structure</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Debugging_HTML">Debugging
+                                            HTML</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Marking_up_a_letter">Assessment:
+                                            Marking up a letter</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Structuring_a_page_of_content">Assessment:
+                                            Structuring a page of content</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Multimedia and embedding</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding">Multimedia
+                                            and embedding overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Images_in_HTML">Images
+                                            in HTML</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Video_and_audio_content">Video
+                                            and audio content</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Other_embedding_technologies">From
+                                            object to iframe — other embedding technologies</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Adding_vector_graphics_to_the_Web">Adding
+                                            vector graphics to the Web</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Responsive_images">Responsive
+                                            images</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Mozilla_splash_page">Assessment:
+                                            Mozilla splash page</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>HTML tables</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Tables">HTML tables
+                                        overview</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Tables/Basics">HTML
+                                        table basics</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Tables/Advanced">HTML
+                                        Table advanced features and accessibility</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Tables/Structuring_planet_data">Assessment:
+                                            Structuring planet data</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li data-default-state=""><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS"><strong>CSS
+                            — Styling the Web</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>CSS first steps</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps">CSS
+                                        first steps overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps/What_is_CSS">What
+                                            is CSS?</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps/Getting_started">Getting
+                                            started with CSS</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps/How_CSS_is_structured">How
+                                            CSS is structured</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps/How_CSS_works">How
+                                            CSS works</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps/Using_your_new_knowledge">Using
+                                            your new knowledge</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>CSS building blocks</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks">CSS
+                                        building blocks overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Cascade_and_inheritance">Cascade
+                                            and inheritance</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Selectors">CSS
+                                            selectors</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/The_box_model">The
+                                            box model</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Backgrounds_and_borders">Backgrounds
+                                            and borders</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Handling_different_text_directions">Handling
+                                            different text directions</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Overflowing_content">Overflowing
+                                            content</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Values_and_units">Values
+                                            and units</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Sizing_items_in_CSS">Sizing
+                                            items in CSS</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Images_media_form_elements">Images,
+                                            media, and form elements</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Styling_tables">Styling
+                                            tables</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Debugging_CSS">Debugging
+                                            CSS</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Organizing">Organizing
+                                            your CSS</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Styling text</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Styling_text">Styling
+                                        text overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Styling_text/Fundamentals">Fundamental
+                                            text and font styling</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Styling_text/Styling_lists">Styling
+                                            lists</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Styling_text/Styling_links">Styling
+                                            links</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Styling_text/Web_fonts">Web
+                                            fonts</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Styling_text/Typesetting_a_homepage">Assessment:
+                                            Typesetting a community school homepage</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>CSS layout</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout">CSS
+                                        layout overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Introduction">Introduction
+                                            to CSS layout</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Normal_Flow">Normal
+                                            Flow</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox">Flexbox</a>
+                                    </li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Grids">Grids</a>
+                                    </li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Floats">Floats</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Positioning">Positioning</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Multiple-column_Layout">Multiple-column
+                                            Layout</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design">Responsive
+                                            design</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Media_queries">Beginner's
+                                            guide to media queries</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Legacy_Layout_Methods">Legacy
+                                            Layout Methods</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Supporting_Older_Browsers">Supporting
+                                            Older Browsers</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Fundamental_Layout_Comprehension">Fundamental
+                                            Layout Comprehension</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li data-default-state=""><a
+                                href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript"><strong>JavaScript —
+                            Dynamic client-side scripting</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>JavaScript first steps</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps">JavaScript
+                                        first steps overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/What_is_JavaScript">What
+                                            is JavaScript?</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/A_first_splash">A
+                                            first splash into JavaScript</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/What_went_wrong">What
+                                            went wrong? Troubleshooting JavaScript</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/Variables">Storing
+                                            the information you need — Variables</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/Math">Basic
+                                            math in JavaScript — Numbers and operators</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/Strings">Handling
+                                            text — Strings in JavaScript</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/Useful_string_methods">Useful
+                                            string methods</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/Arrays">Arrays</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps/Silly_story_generator">Assessment:
+                                            Silly story generator</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>JavaScript building blocks</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks">JavaScript
+                                            building blocks overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/conditionals">Making
+                                            decisions in your code — Conditionals</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Looping_code">Looping
+                                            code</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Functions">Functions
+                                            — Reusable blocks of code</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Build_your_own_function">Build
+                                            your own function</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Return_values">Function
+                                            return values</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Events">Introduction
+                                            to events</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Image_gallery">Assessment:
+                                            Image gallery</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Introducing JavaScript objects</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects">Introducing
+                                        JavaScript objects overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Basics">Object
+                                            basics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Object-oriented_JS">Object-oriented
+                                            JavaScript for beginners</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Object_prototypes">Object
+                                            prototypes</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Inheritance">Inheritance
+                                            in JavaScript</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON">Working
+                                            with JSON data</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Object_building_practice">Object
+                                            building practice</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/Adding_bouncing_balls_features">Assessment:
+                                            Adding features to our bouncing balls demo</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Asynchronous JavaScript</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous">Asynchronous
+                                            JavaScript overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Concepts">General
+                                            asynchronous programming concepts</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Introducing">Introducing
+                                            asynchronous JavaScript</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Timeouts_and_intervals">Cooperative
+                                            asynchronous Java​Script: Timeouts and intervals</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Promises">Graceful
+                                            asynchronous programming with Promises</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Async_await">Making
+                                            asynchronous programming easier with async and await</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Choosing_the_right_approach">Choosing
+                                            the right approach</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Client-side web APIs</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs">Client-side
+                                            web APIs</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Introduction">Introduction
+                                            to web APIs</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Manipulating_documents">Manipulating
+                                            documents</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Fetching_data">Fetching
+                                            data from the server</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Third_party_APIs">Third
+                                            party APIs</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Drawing_graphics">Drawing
+                                            graphics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Video_and_audio_APIs">Video
+                                            and audio APIs</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Client-side_storage">Client-side
+                                            storage</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Forms"><strong>Web forms — Working
+                            with user data</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Core forms learning pathway</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Forms">Web forms
+                                        overview</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Your_first_form">Your
+                                        first form</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/How_to_structure_a_web_form">How
+                                            to structure a web form</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Basic_native_form_controls">Basic
+                                            native form controls</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/HTML5_input_types">The
+                                            HTML5 input types</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Other_form_controls">Other
+                                            form controls</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Styling_web_forms">Styling
+                                            web forms</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Advanced_form_styling">Advanced
+                                            form styling</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/UI_pseudo-classes">UI
+                                            pseudo-classes</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Form_validation">Client-side
+                                        form validation</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data">Sending
+                                            form data</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Advanced forms articles</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/How_to_build_custom_form_controls">How
+                                            to build custom form controls</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_forms_through_JavaScript">Sending
+                                            forms through JavaScript</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Forms/Property_compatibility_table_for_form_controls">CSS
+                                            property compatibility table for form controls</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility"><strong>Accessibility
+                            — Make the web usable by everyone</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Accessibility guides</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility">Accessibility
+                                        overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/What_is_accessibility">What
+                                            is accessibility?</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/HTML">HTML:
+                                        A good basis for accessibility</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/CSS_and_JavaScript">CSS
+                                            and JavaScript accessibility best practices</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/WAI-ARIA_basics">WAI-ARIA
+                                            basics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/Multimedia">Accessible
+                                            multimedia</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/Mobile">Mobile
+                                        accessibility</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Accessibility assessment</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Accessibility/Accessibility_troubleshooting">Assessment:
+                                            Accessibility troubleshooting</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing"><strong>Tools and
+                            testing</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Client-side web development tools</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Understanding_client-side_tools">Client-side
+                                            web development tools index</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Understanding_client-side_tools/Overview">Client-side
+                                            tooling overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Understanding_client-side_tools/Command_line">Command
+                                            line crash course</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Understanding_client-side_tools/Package_management">Package
+                                            management basics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Understanding_client-side_tools/Introducing_complete_toolchain">Introducing
+                                            a complete toolchain</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Understanding_client-side_tools/Deployment">Deploying
+                                            our app</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Introduction to client-side frameworks</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Introduction">Client-side
+                                            frameworks overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Main_features">Framework
+                                            main features</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>React</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_getting_started">Getting
+                                            started with React</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_todo_list_beginning">Beginning
+                                            our React todo list</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_components">Componentizing
+                                            our React app</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_interactivity_events_state">React
+                                            interactivity: Events and state</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_interactivity_filtering_conditional_rendering">React
+                                            interactivity: Editing, filtering, conditional rendering</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_accessibility">Accessibility
+                                            in React</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/React_resources">React
+                                            resources</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Ember</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Ember_getting_started">Getting
+                                            started with Ember</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Ember_structure_componentization">Ember
+                                            app structure and componentization</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Ember_interactivity_events_state">Ember
+                                            interactivity: Events, classes and state</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Ember_conditional_footer">Ember
+                                            Interactivity: Footer functionality, conditional rendering</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Ember_routing">Routing
+                                            in Ember</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Ember_resources">Ember
+                                            resources and troubleshooting</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Vue</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_getting_started">Getting
+                                            started with Vue</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_first_component">Creating
+                                            our first Vue component</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_rendering_lists">Rendering
+                                            a list of Vue components</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_methods_events_models">Adding
+                                            a new todo form: Vue events, methods, and models</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_styling">Styling
+                                            Vue components with CSS</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_computed_properties">Using
+                                            Vue computed properties</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_conditional_rendering">Vue
+                                            conditional rendering: editing existing todos</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_refs_focus_management">Focus
+                                            management with Vue refs</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Vue_resources">Vue
+                                            resources</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Svelte</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_getting_started">Getting
+                                            started with Svelte</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_Todo_list_beginning">Starting
+                                            our Svelte Todo list app</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_variables_props">Dynamic
+                                            behavior in Svelte: working with variables and props</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_components">Componentizing
+                                            our Svelte app</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_reactivity_lifecycle_accessibility">Advanced
+                                            Svelte: Reactivity, lifecycle, accessibility</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_stores">Working
+                                            with Svelte stores</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_TypeScript">TypeScript
+                                            support in Svelte</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Client-side_JavaScript_frameworks/Svelte_deployment_next">Deployment
+                                            and next steps</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Git and GitHub</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/GitHub">Git
+                                            and GitHub overview</a></li>
+                                    <li><a href="https://guides.github.com/activities/hello-world/">Hello World</a></li>
+                                    <li><a href="https://guides.github.com/introduction/git-handbook/">Git Handbook</a>
+                                    </li>
+                                    <li><a href="https://guides.github.com/activities/forking/">Forking Projects</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests">About
+                                            pull requests</a></li>
+                                    <li><a href="https://guides.github.com/features/issues/">Mastering Issues</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Cross browser testing</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing">Cross
+                                            browser testing overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Introduction">Introduction
+                                            to cross browser testing</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Testing_strategies">Strategies
+                                            for carrying out testing</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/HTML_and_CSS">Handling
+                                            common HTML and CSS problems</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/JavaScript">Handling
+                                            common JavaScript problems</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Accessibility">Handling
+                                            common accessibility problems</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Feature_detection">Implementing
+                                            feature detection</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Automated_testing">Introduction
+                                            to automated testing</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Tools_and_testing/Cross_browser_testing/Your_own_automation_environment">Setting
+                                            up your own test automation environment</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li data-default-state=""><a
+                                href="https://developer.mozilla.org/en-US/docs/Learn/Server-side"><strong>Server-side
+                            website programming</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>First steps</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/First_steps">First
+                                            steps overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/First_steps/Introduction">Introduction
+                                            to the server-side</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/First_steps/Client-Server_overview">Client-Server
+                                            overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/First_steps/Web_frameworks">Server-side
+                                            web frameworks</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/First_steps/Website_security">Website
+                                            security</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Django web framework (Python)</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django">Django
+                                        web framework (Python) overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Introduction">Introduction</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/development_environment">Setting
+                                            up a development environment</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Tutorial_local_library_website">Tutorial:
+                                            The Local Library website</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/skeleton_website">Tutorial
+                                            Part 2: Creating a skeleton website</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Models">Tutorial
+                                            Part 3: Using models</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Admin_site">Tutorial
+                                            Part 4: Django admin site</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Home_page">Tutorial
+                                            Part 5: Creating our home page</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Generic_views">Tutorial
+                                            Part 6: Generic list and detail views</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Sessions">Tutorial
+                                            Part 7: Sessions framework</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Authentication">Tutorial
+                                            Part 8: User authentication and permissions</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Forms">Tutorial
+                                            Part 9: Working with forms</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Testing">Tutorial
+                                            Part 10: Testing a Django web application</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/Deployment">Tutorial
+                                            Part 11: Deploying Django to production</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/web_application_security">Web
+                                            application security</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Django/django_assessment_blog">Assessment:
+                                            DIY mini blog</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Express Web Framework (node.js/JavaScript)</summary>
+                                <ol>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs">Express
+                                            Web Framework (Node.js/JavaScript) overview</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Introduction">Express/Node
+                                            introduction</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/development_environment">Setting
+                                            up a Node (Express) development environment</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Tutorial_local_library_website">Express
+                                            tutorial: The Local Library website</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/skeleton_website">Express
+                                            Tutorial Part 2: Creating a skeleton website</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/mongoose">Express
+                                            Tutorial Part 3: Using a database (with Mongoose)</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/routes">Express
+                                            Tutorial Part 4: Routes and controllers</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Displaying_data">Express
+                                            Tutorial Part 5: Displaying library data</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/forms">Express
+                                            Tutorial Part 6: Working with forms</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/deployment">Express
+                                            Tutorial Part 7: Deploying to production</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                        <li>
+                            <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure#"><strong>Further
+                                resources</strong></a></li>
+                        <li class="toggle">
+                            <details>
+                                <summary>Common questions</summary>
+                                <ol>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Howto">HTML
+                                        questions</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/Howto">CSS
+                                        questions</a></li>
+                                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Howto">JavaScript
+                                        questions</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Common_questions#Web_mechanics">Web
+                                            mechanics</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Common_questions#Tools_and_setup">Tools
+                                            and setup</a></li>
+                                    <li>
+                                        <a href="https://developer.mozilla.org/en-US/docs/Learn/Common_questions#Design_and_accessibility">Design
+                                            and accessibility</a></li>
+                                </ol>
+                            </details>
+                        </li>
+                    </ol>
+
+                </div>
+            </nav>
+        </div>
+        <aside class="metadata">
+            <div class="metadata-content-container">
+                <div id="on-github" class="on-github"><h4>Found a problem with this page?</h4>
+                    <ul>
+                        <li>
+                            <a href="https://github.com/mdn/content/blob/main/files/en-us/learn/html/introduction_to_html/document_and_website_structure/index.html"
+                               title="Folder: en-us/learn/html/introduction_to_html/document_and_website_structure (Opens in a new tab)"
+                               target="_blank" rel="noopener noreferrer">Source on <b>GitHub</b></a></li>
+                        <li>
+                            <a href="https://github.com/mdn/content/issues/new?body=MDN+URL%3A+https%3A%2F%2Fdeveloper.mozilla.org%2Fen-US%2Fdocs%2FLearn%2FHTML%2FIntroduction_to_HTML%2FDocument_and_website_structure%0A%0A%23%23%23%23+What+information+was+incorrect%2C+unhelpful%2C+or+incomplete%3F%0A%0A%0A%23%23%23%23+Specific+section+or+headline%3F%0A%0A%0A%23%23%23%23+What+did+you+expect+to+see%3F%0A%0A%0A%23%23%23%23+Did+you+test+this%3F+If+so%2C+how%3F%0A%0A%0A%3C%21--+Do+not+make+changes+below+this+line+--%3E%0A%3Cdetails%3E%0A%3Csummary%3EMDN+Content+page+report+details%3C%2Fsummary%3E%0A%0A*+Folder%3A+%60en-us%2Flearn%2Fhtml%2Fintroduction_to_html%2Fdocument_and_website_structure%60%0A*+MDN+URL%3A+https%3A%2F%2Fdeveloper.mozilla.org%2Fen-US%2Fdocs%2FLearn%2FHTML%2FIntroduction_to_HTML%2FDocument_and_website_structure%0A*+GitHub+URL%3A+https%3A%2F%2Fgithub.com%2Fmdn%2Fcontent%2Fblob%2Fmain%2Ffiles%2Fen-us%2Flearn%2Fhtml%2Fintroduction_to_html%2Fdocument_and_website_structure%2Findex.html%0A*+Last+commit%3A+https%3A%2F%2Fgithub.com%2Fmdn%2Fcontent%2Fcommit%2F56454618b1f9ecad9714f68b219aedec1738e463%0A*+Document+last+modified%3A+2021-02-24T15%3A02%3A49.000Z%0A%0A%3C%2Fdetails%3E&amp;title=Issue+with+%22Document+and+website+structure%22%3A+%28short+summary+here+please%29&amp;labels=needs+triage&amp;labels=Content%3A+Learn"
+                               title="This will take you to https://github.com/mdn/content to file a new issue"
+                               target="_blank" rel="noopener noreferrer">Report a problem with this content on
+                                <b>GitHub</b></a></li>
+                        <li>Want to fix the problem yourself? See <a
+                                href="https://github.com/mdn/content/blob/main/README.md" target="_blank"
+                                rel="noopener noreferrer">our Contribution guide</a>.
+                        </li>
+                    </ul>
+                </div>
+                <p class="last-modified-date"><b>Last modified:</b>
+                    <time datetime="2021-02-24T15:02:49.000Z">Feb 24, 2021</time>
+                    ,
+                    <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure/contributors.txt">by
+                        MDN contributors</a></p>
+            </div>
+        </aside>
+        <footer id="nav-footer" class="page-footer">
+            <div class="content-container">
+                <div class="page-footer-logo"><a href="https://developer.mozilla.org/en-US/" class="logo"
+                                                 aria-label="MDN Web Docs">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 451.74 135" role="img" fill="#fff">
+                        <g id="Layer_2" data-name="Layer 2">
+                            <path class="cls-1"
+                                  d="M7.14,8.35V119.41H118.19V8.35Zm103.71,56c-.48.92-1,1.79-1.46,2.71a3.44,3.44,0,0,1-3.54,2,2.4,2.4,0,0,0-1.55.5c-1.37.9-2.76,1.79-4.18,2.63a7.33,7.33,0,0,1-6.35.34,29.71,29.71,0,0,0-10.63-2,11.7,11.7,0,0,0-9.46,4.31,14.84,14.84,0,0,0-2.13,4.29c-1.24,3.07-2.3,21.38-2.3,26.05,0,0-17.62-3.42-34.15-20.34l4.31-11.32H25.91l9.76-10.35H18.87l9.77-10.34H12.69L30.45,34A40.9,40.9,0,0,1,50.22,23.17c7.1-1.22,8.93-.53,13.31.77l2.43.73.85.25,3.1.95a12.56,12.56,0,0,0,6.21.09,11.37,11.37,0,0,1,8.25,1,8.24,8.24,0,0,1,4.1,6.22,7.29,7.29,0,0,0,3.61,5.49,59.45,59.45,0,0,0,9.32,4.11c2.27.86,4.54,1.84,6.79,2.72a6.81,6.81,0,0,1,2.86,2.06,4.81,4.81,0,0,1,1.1,2.73c.14,2,.37,4,.47,6h0A15.24,15.24,0,0,1,110.85,64.32Z"></path>
+                            <path class="cls-1"
+                                  d="M320.12,39.62a5.42,5.42,0,0,0-4.53,2.13,7.36,7.36,0,0,0-1.7,4.43v2.36a6.28,6.28,0,0,0,1.7,4.46,5.63,5.63,0,0,0,4.3,1.82,5.12,5.12,0,0,0,4.57-2.27A9.7,9.7,0,0,0,326,47a8.11,8.11,0,0,0-1.67-5.52A5.36,5.36,0,0,0,320.12,39.62Z"></path>
+                            <path class="cls-1"
+                                  d="M387.38,39.53a5.52,5.52,0,0,0-4.7,2.15,8.8,8.8,0,0,0-1.63,5.49,9.23,9.23,0,0,0,1.58,5.45,5.38,5.38,0,0,0,4.7,2.25,5.61,5.61,0,0,0,4.74-2.2,8.91,8.91,0,0,0,1.68-5.59A8.24,8.24,0,0,0,392,41.56,5.76,5.76,0,0,0,387.38,39.53Z"></path>
+                            <path class="cls-1"
+                                  d="M299.47,41.35a4.34,4.34,0,0,0-4-1.92,4.55,4.55,0,0,0-3.89,1.73A8.37,8.37,0,0,0,290,45.33h10.48A6.3,6.3,0,0,0,299.47,41.35Z"></path>
+                            <path class="cls-1"
+                                  d="M357.74,30.75H352V54.06h5.72q5.47,0,8.35-3T369,42.41q0-5.43-2.88-8.55T357.74,30.75Z"></path>
+                            <path class="cls-1"
+                                  d="M121.55,8.35v70.8h323V8.35ZM163.76,30.8h-4V54h3.68v3.73H152.19V54h3.31V36.79h-.19l-9.63,19.12h-2.12l-10-19.4h-.19V54h3.45v3.73H125.67V54h3.68V30.8h-4V27.07H133l11.66,22.56h.19l11.18-22.56h7.7Zm29.12,22.67q-4.11,4.28-11.38,4.28H167.44V54.06h3.73V30.75h-3.73V27.07h13.83q7.59,0,11.66,4.29a15.4,15.4,0,0,1,4,11A15.33,15.33,0,0,1,192.88,53.47ZM231.77,30.8h-3.68v27h-2.6L208.08,35h-.19V54h4.67v3.73H200.34V54h3.49V30.8h-4V27.07h7.08l16.9,22.09H224V30.8h-4.58V27.07h12.32Zm43.8,27h-3.31l-7.83-23.18h-.19l-7.55,23.18h-3.35L244.56,30.8h-2.65V27.07H253V30.8h-3.87L255,50.71h.23l6.61-19.91H259V27.07h11V30.8h-2.78l6.61,20.1h.23l5.43-20.1h-4.15V27.07h11V30.8h-2.54Zm26.71-1.51a9.66,9.66,0,0,1-6.42,2,10.2,10.2,0,0,1-7.41-2.74c-1.89-1.82-2.83-4.47-2.83-7.93a12.37,12.37,0,0,1,2.64-8.12,9,9,0,0,1,7.32-3.21,8.62,8.62,0,0,1,6.75,2.69,9.65,9.65,0,0,1,2.45,6.52,13.67,13.67,0,0,1-.28,2.69H290q.29,6.71,6.18,6.7a5.2,5.2,0,0,0,3.71-1.18,5.82,5.82,0,0,0,1.67-2.83l3.45.71A7.21,7.21,0,0,1,302.28,56.24Zm25.77-1.63c-1.51,2.4-3.92,3.61-7.22,3.61s-5.84-1.29-7.22-3.87c0,.25-.1.82-.21,1.7s-.19,1.44-.22,1.7H309c.16-1,.31-2,.47-3.07a21.42,21.42,0,0,0,.24-3.16v-23h-3.4V25.27h7.55V40.9a9.76,9.76,0,0,1,2.67-3.28,7.33,7.33,0,0,1,4.74-1.4A8.48,8.48,0,0,1,327.77,39q2.55,2.74,2.55,7.74A14.6,14.6,0,0,1,328.05,54.61Zm41.39-1.14q-4.11,4.28-11.37,4.28H344V54.06h3.73V30.75H344V27.07h13.83q7.59,0,11.66,4.29a15.41,15.41,0,0,1,4.06,11A15.34,15.34,0,0,1,369.44,53.47Zm25.65,1.68a10.53,10.53,0,0,1-7.9,3.07,10,10,0,0,1-7.63-3,10.93,10.93,0,0,1-2.8-7.83,12.13,12.13,0,0,1,2.69-7.93q2.69-3.3,8-3.3t8,3.28a12,12,0,0,1,2.64,7.76A10.86,10.86,0,0,1,395.09,55.15Zm22.61.57c-1.4,1.66-3.63,2.5-6.68,2.5a9.58,9.58,0,0,1-7.15-2.76q-2.72-2.76-2.71-7.91a12.25,12.25,0,0,1,2.69-8,9.17,9.17,0,0,1,7.5-3.28,15,15,0,0,1,3.82.48,10.37,10.37,0,0,1,3.5,1.65l.85,5.47-3.35.38-.76-3.54a8.07,8.07,0,0,0-4.11-1,4.9,4.9,0,0,0-4.39,2.15,9.93,9.93,0,0,0-1.41,5.55A8.9,8.9,0,0,0,407,52.84a5.23,5.23,0,0,0,4.44,2c2.92,0,4.67-1.7,5.23-5.1l3.5.71A10.34,10.34,0,0,1,417.7,55.72Zm20.48.75a11.68,11.68,0,0,1-6.63,1.75,15.52,15.52,0,0,1-8.26-2.08L424,51l3.26.33-.1,2.74a7,7,0,0,0,2.06.66,12.63,12.63,0,0,0,2.19.19,8.68,8.68,0,0,0,3.66-.75,2.5,2.5,0,0,0,1.63-2.36,2.25,2.25,0,0,0-1.32-2.2,12.65,12.65,0,0,0-3.28-1c-1.31-.22-2.61-.49-3.9-.82a7.5,7.5,0,0,1-3.25-1.7,4.67,4.67,0,0,1-1.33-3.66c0-2.36.88-4,2.62-4.91a12,12,0,0,1,5.6-1.37,15,15,0,0,1,4.08.55,16.65,16.65,0,0,1,3.47,1.39l.47,5.1-3.3.37-.48-3.3a9.5,9.5,0,0,0-4.06-.9,5.62,5.62,0,0,0-2.87.66A2.33,2.33,0,0,0,428,42.27a2.13,2.13,0,0,0,1.3,2.07,11.91,11.91,0,0,0,3.21.92,36.69,36.69,0,0,1,3.82.83,7.46,7.46,0,0,1,3.21,1.74,4.9,4.9,0,0,1,1.3,3.73A5.56,5.56,0,0,1,438.18,56.47Z"></path>
+                            <path class="cls-1"
+                                  d="M181.17,30.75h-5.71V54.06h5.71q5.47,0,8.36-3t2.88-8.61q0-5.43-2.88-8.55T181.17,30.75Z"></path>
+                            <path class="cls-1"
+                                  d="M121.63,119.32V81.74H236.54v37.58ZM153.22,109h-2v-6.85a4.8,4.8,0,0,0-1.58-4,5.57,5.57,0,0,0-3.55-1.26,5,5,0,0,0-4.92,3.26,4.19,4.19,0,0,0-1.88-2.46,5.82,5.82,0,0,0-3-.8,4.89,4.89,0,0,0-4.56,2.56V97.24h-6.28v3.26h2V109h-2v3.23h9.11V109H131.7v-5.25a4.4,4.4,0,0,1,.69-2.56,2.47,2.47,0,0,1,2.21-1q2.57,0,2.56,3.63v8.41h6.29V109h-2v-5.25a4.47,4.47,0,0,1,.67-2.56,2.42,2.42,0,0,1,2.19-1q2.63,0,2.63,3.63v8.41h6.28Zm9.88-12.07q-4,0-6,2.36a8.41,8.41,0,0,0-2,5.66,7.25,7.25,0,0,0,2.17,5.62,8,8,0,0,0,5.65,2,8.54,8.54,0,0,0,5.94-2.11,7.27,7.27,0,0,0,2.34-5.67,8.21,8.21,0,0,0-2-5.51Q167.13,96.94,163.1,96.94ZM163,109.28a3,3,0,0,1-2.63-1.33,5.68,5.68,0,0,1-.9-3.26,5,5,0,0,1,1-3.28,3.23,3.23,0,0,1,2.61-1.18,3.5,3.5,0,0,1,2.59,1.08,4.56,4.56,0,0,1,1.07,3.31,5.21,5.21,0,0,1-1,3.41A3.33,3.33,0,0,1,163,109.28Zm25-2.3-3.39-.29-.7,2.32H179l8.32-9.54L187,97.24H173.81l-.53,5.25,3.16.34.67-2.36h4.65L173.51,110l.44,2.26h13.13Zm7.62-9.74h-4.46v5.39h4.46Zm0,9.61h-4.46v5.39h4.46Zm13.54-17.49h-4.23l-6.48,22.88h4.22Zm8.68,0h-4.23l-6.45,22.88h4.19Zm15,22.51-.07-2.26a1.22,1.22,0,0,1-.56.1c-.69,0-1-.39-1-1.16v-6.49a4.39,4.39,0,0,0-1.8-3.84,7,7,0,0,0-4.16-1.28,14.55,14.55,0,0,0-3.16.3,24.14,24.14,0,0,0-3.29,1.06l-.56,3.46,3.39.4.5-1.69a2.78,2.78,0,0,1,1.08-.37,11.3,11.3,0,0,1,1.25-.07c1.19,0,1.89.37,2.09,1.1a8.55,8.55,0,0,1,.3,2.26v.5a8.91,8.91,0,0,0-1.18-.11c-.41,0-.81,0-1.21,0a12.64,12.64,0,0,0-4.81.88,3.53,3.53,0,0,0-2.18,3.64,3.66,3.66,0,0,0,1.48,3.33,5.63,5.63,0,0,0,3.11,1,4.67,4.67,0,0,0,3-.91,6.78,6.78,0,0,0,1.8-2,3,3,0,0,0,3.33,3A5.54,5.54,0,0,0,232.85,111.87Zm-9.25-2.32a1.69,1.69,0,0,1-1.36-.52,1.81,1.81,0,0,1-.43-1.21,1.67,1.67,0,0,1,.86-1.68,4.63,4.63,0,0,1,2-.42,7.69,7.69,0,0,1,1.07.07l1.06.13a3.58,3.58,0,0,1-1.08,2.74A3.24,3.24,0,0,1,223.6,109.55Z"></path>
+                        </g>
+                    </svg>
+                </a></div>
+                <ul class="link-list-mdn">
+                    <li><a href="https://developer.mozilla.org/en-US/docs/Web">Web Technologies</a></li>
+                    <li><a href="https://developer.mozilla.org/en-US/docs/Learn">Learn Web Development</a></li>
+                    <li><a href="https://developer.mozilla.org/en-US/docs/MDN/About">About MDN</a></li>
+                    <li><a href="https://developer.mozilla.org/en-US/docs/MDN/Feedback">Feedback</a></li>
+                </ul>
+                <ul class="link-list-moz">
+                    <li><a href="https://www.mozilla.org/about/" target="_blank" rel="noopener noreferrer">About</a>
+                    </li>
+                    <li><a href="https://shop.spreadshirt.com/mdn-store/" target="_blank" rel="noopener noreferrer">MDN
+                        Web Docs Store</a></li>
+                    <li><a href="https://www.mozilla.org/contact/" target="_blank" rel="noopener noreferrer">Contact
+                        Us</a></li>
+                    <li>
+                        <a href="https://www.mozilla.org/firefox/?utm_source=developer.mozilla.org&amp;utm_campaign=footer&amp;utm_medium=referral"
+                           target="_blank" rel="noopener noreferrer">Firefox</a></li>
+                </ul>
+                <div class="social social-mdn"><h4>MDN</h4>
+                    <ul>
+                        <li><a href="https://twitter.com/mozdevnet" target="_blank" rel="noopener noreferrer"
+                               aria-label="Twitter">
+                            <svg class="icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+                                 aria-hidden="true" role="img">
+                                <path d="M97.5 20.59a42 42 0 01-9.76 10.06c.06.85.06 1.69.06 2.53 0 25.74-19.59 55.4-55.4 55.4a55 55 0 01-29.9-8.74 40.41 40.41 0 004.7.24 39 39 0 0024.18-8.32 19.5 19.5 0 01-18.21-13.5 24.69 24.69 0 003.68.3A20.65 20.65 0 0022 57.9 19.48 19.48 0 016.36 38.79v-.24a19.69 19.69 0 008.8 2.45 19.5 19.5 0 01-6-26 55.33 55.33 0 0040.12 20.35 21.6 21.6 0 01-.48-4.46 19.45 19.45 0 0119.45-19.47 19.4 19.4 0 0114.22 6.15 38.42 38.42 0 0012.36-4.7 19.44 19.44 0 01-8.54 10.73 38.89 38.89 0 0011.21-3z"
+                                      fill="currentColor"></path>
+                            </svg>
+                        </a></li>
+                        <li><a href="https://github.com/mdn/" target="_blank" rel="noopener noreferrer"
+                               aria-label="Github">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
+                                <path clip-rule="evenodd"
+                                      d="M50 5.7C24.9 5.7 4.5 26 4.6 51.2c0 19.6 12.5 36.9 31.1 43.1 2.3.4 3.1-1 3.1-2.2s0-3.9-.1-7.7c-12.6 2.7-15.3-6.1-15.3-6.1-2.1-5.3-5-6.7-5-6.7-4.1-2.9.3-2.8.3-2.8 4.6.3 7 4.7 7 4.7 4.1 6.9 10.6 4.9 13.2 3.8.2-2.3 1.2-4.5 2.9-6.1-10.2-1.1-20.8-5-20.8-22.5-.1-4.5 1.6-8.9 4.7-12.2-.5-1.1-2-5.7.4-12 0 0 3.8-1.2 12.5 4.7 7.4-2 15.3-2 22.8 0 8.7-5.9 12.4-4.7 12.4-4.7 2.5 6.3 1 10.9.5 12 3.1 3.3 4.8 7.7 4.7 12.2 0 17.5-10.6 21.4-20.8 22.4 1.6 1.4 3.1 4.2 3.1 8.4 0 6.1-.1 11-.1 12.4 0 1.2.8 2.6 3.1 2.2 23.8-8 36.6-33.8 28.6-57.6C86.8 18.2 69.5 5.7 50 5.7z"
+                                      fill="currentColor" fill-rule="evenodd"></path>
+                            </svg>
+                        </a></li>
+                    </ul>
+                </div>
+                <div class="social social-moz"><h4>Mozilla</h4>
+                    <ul>
+                        <li><a href="https://twitter.com/mozilla" target="_blank" rel="noopener noreferrer"
+                               aria-label="Twitter">
+                            <svg class="icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+                                 aria-hidden="true" role="img">
+                                <path d="M97.5 20.59a42 42 0 01-9.76 10.06c.06.85.06 1.69.06 2.53 0 25.74-19.59 55.4-55.4 55.4a55 55 0 01-29.9-8.74 40.41 40.41 0 004.7.24 39 39 0 0024.18-8.32 19.5 19.5 0 01-18.21-13.5 24.69 24.69 0 003.68.3A20.65 20.65 0 0022 57.9 19.48 19.48 0 016.36 38.79v-.24a19.69 19.69 0 008.8 2.45 19.5 19.5 0 01-6-26 55.33 55.33 0 0040.12 20.35 21.6 21.6 0 01-.48-4.46 19.45 19.45 0 0119.45-19.47 19.4 19.4 0 0114.22 6.15 38.42 38.42 0 0012.36-4.7 19.44 19.44 0 01-8.54 10.73 38.89 38.89 0 0011.21-3z"
+                                      fill="currentColor"></path>
+                            </svg>
+                        </a></li>
+                        <li><a href="https://www.instagram.com/mozillagram/" target="_blank" rel="noopener noreferrer"
+                               aria-label="Instagram">
+                            <svg class="icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+                                 aria-hidden="true" role="img">
+                                <path d="M65 50a15 15 0 10-15 15 15 15 0 0015-15zm8.08 0A23.09 23.09 0 1150 26.92 23.05 23.05 0 0173.08 50zm6.33-24A5.39 5.39 0 1174 20.59 5.37 5.37 0 0179.41 26zM50 13.09c-6.57 0-20.63-.53-26.55 1.81a14.38 14.38 0 00-5.15 3.4 14.38 14.38 0 00-3.4 5.15c-2.34 5.92-1.81 20-1.81 26.55s-.53 20.62 1.81 26.54a15.39 15.39 0 008.55 8.55c5.92 2.35 20 1.82 26.55 1.82s20.62.53 26.54-1.82a15.39 15.39 0 008.55-8.55c2.35-5.92 1.82-20 1.82-26.54s.53-20.63-1.82-26.55a15.39 15.39 0 00-8.55-8.55c-5.92-2.34-19.98-1.81-26.54-1.81zM95 50c0 6.21.06 12.36-.3 18.57-.35 7.21-2 13.6-7.26 18.87s-11.66 6.91-18.87 7.26c-6.21.36-12.36.3-18.57.3s-12.36.06-18.57-.3c-7.21-.35-13.6-2-18.87-7.26S5.65 75.78 5.3 68.57C4.94 62.36 5 56.21 5 50s-.06-12.36.3-18.57c.35-7.21 2-13.6 7.26-18.87S24.22 5.65 31.43 5.3C37.64 4.94 43.79 5 50 5s12.36-.06 18.57.3c7.21.35 13.6 2 18.87 7.26s6.91 11.66 7.26 18.87c.36 6.21.3 12.36.3 18.57z"
+                                      fill="currentColor"></path>
+                            </svg>
+                        </a></li>
+                    </ul>
+                </div>
+                <p id="license" class="footer-license">© 2005-2021 Mozilla and individual contributors. Content is
+                    available under <a href="https://developer.mozilla.org/docs/MDN/About#Copyrights_and_licenses">these
+                        licenses</a>.</p>
+                <ul class="footer-legal">
+                    <li><a href="https://www.mozilla.org/about/legal/terms/mozilla" target="_blank"
+                           rel="noopener noreferrer">Terms</a></li>
+                    <li><a href="https://www.mozilla.org/privacy/websites/" target="_blank" rel="noopener noreferrer">Privacy</a>
+                    </li>
+                    <li><a href="https://www.mozilla.org/privacy/websites/#cookies" target="_blank"
+                           rel="noopener noreferrer">Cookies</a></li>
+                </ul>
+            </div>
+        </footer>
+    </div>
+    <div class="page-overlay hidden"></div>
+</div>
+</body>
+</html>

@@ -215,28 +215,27 @@ class ContextCalledOnceTests(SimpleTestCase):
         self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
 
     def test_one_context_call_with_simple_component_and_arg(self):
-        template = Template("{% load component_tags %}{% component_dependencies %}"
-                            "{% component name='incrementer' value='2' %}")
+        template = Template("{% load component_tags %}{% component name='incrementer' value='2' %}")
         rendered = template.render(Context()).strip()
 
         self.assertEqual(rendered, '<p class="incrementer">value=3;calls=1</p>', rendered)
 
     def test_one_context_call_with_component_block(self):
-        template = Template("{% load component_tags %}{% component_dependencies %}"
+        template = Template("{% load component_tags %}"
                             "{% component_block 'incrementer' %}{% endcomponent_block %}")
         rendered = template.render(Context()).strip()
 
         self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
 
     def test_one_context_call_with_component_block_and_arg(self):
-        template = Template("{% load component_tags %}{% component_dependencies %}"
+        template = Template("{% load component_tags %}"
                             "{% component_block 'incrementer' value='3' %}{% endcomponent_block %}")
         rendered = template.render(Context()).strip()
 
         self.assertEqual(rendered, '<p class="incrementer">value=4;calls=1</p>', rendered)
 
     def test_one_context_call_with_slot(self):
-        template = Template("{% load component_tags %}{% component_dependencies %}"
+        template = Template("{% load component_tags %}"
                             "{% component_block 'incrementer' %}{% slot 'content' %}"
                             "<p>slot</p>{% endslot %}{% endcomponent_block %}")
         rendered = template.render(Context()).strip()
@@ -244,7 +243,7 @@ class ContextCalledOnceTests(SimpleTestCase):
         self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>\n<p>slot</p>', rendered)
 
     def test_one_context_call_with_slot_and_arg(self):
-        template = Template("{% load component_tags %}{% component_dependencies %}"
+        template = Template("{% load component_tags %}"
                             "{% component_block 'incrementer' value='3' %}{% slot 'content' %}"
                             "<p>slot</p>{% endslot %}{% endcomponent_block %}")
         rendered = template.render(Context()).strip()
