@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from django.template import Template, Context
+from django.template import Context
 from django.template.response import TemplateResponse
 from django.test import SimpleTestCase, TestCase
 
