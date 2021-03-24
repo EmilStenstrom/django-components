@@ -16,8 +16,8 @@ class SimpleComponentAlternate(component.Component):
         return "simple_template.html"
 
     class Media:
-        css = {"all": ["style2.css"]}
-        js = ["script2.js"]
+        css = "style2.css"
+        js = "script2.js"
 
 
 class SimpleComponentWithSharedDependency(component.Component):
@@ -31,7 +31,7 @@ class SimpleComponentWithSharedDependency(component.Component):
         return "simple_template.html"
 
     class Media:
-        css = {"all": ["style.css", "style2.css"]}
+        css = ["style.css", "style2.css"]
         js = ["script.js", "script2.js"]
 
 
@@ -40,7 +40,7 @@ class MultistyleComponent(component.Component):
         return "simple_template.html"
 
     class Media:
-        css = {"all": ["style.css", "style2.css"]}
+        css = ["style.css", "style2.css"]
         js = ["script.js", "script2.js"]
 
 
