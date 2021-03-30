@@ -6,9 +6,9 @@
 #
 appdirs==1.4.4
     # via virtualenv
-asgiref==3.3.0
+asgiref==3.3.1
     # via django
-attrs==20.2.0
+attrs==20.3.0
     # via pytest
 distlib==0.3.1
     # via virtualenv
@@ -26,7 +26,7 @@ isort==5.8.0
     # via -r requirements-dev.in
 mccabe==0.6.1
     # via flake8
-packaging==20.4
+packaging==20.9
     # via
     #   pytest
     #   tox
@@ -34,23 +34,22 @@ pluggy==0.13.1
     # via
     #   pytest
     #   tox
-py==1.9.0
+py==1.10.0
     # via
     #   pytest
     #   tox
 pycodestyle==2.7.0
     # via flake8
-pyflakes==2.3.0
+pyflakes==2.3.1
     # via flake8
 pyparsing==2.4.7
     # via packaging
 pytest==6.2.2
     # via -r requirements-dev.in
-pytz==2020.4
+pytz==2021.1
     # via django
 six==1.15.0
     # via
-    #   packaging
     #   tox
     #   virtualenv
 sqlparse==0.4.1
@@ -61,5 +60,5 @@ toml==0.10.2
     #   tox
 tox==3.23.0
     # via -r requirements-dev.in
-virtualenv==20.1.0
+virtualenv==20.4.3
     # via tox
