@@ -44,7 +44,7 @@ pyflakes==2.3.1
     # via flake8
 pyparsing==2.4.7
     # via packaging
-pytest==6.2.2
+pytest==6.2.3
     # via -r requirements-dev.in
 pytz==2021.1
     # via django
