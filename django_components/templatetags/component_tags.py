@@ -79,14 +79,14 @@ def do_component(parser, token):
 class SlotNode(Node):
     def __init__(self, name, nodelist, component=None):
         self.name, self.nodelist, self.component = name, nodelist, component
+        self.parent_component = None
 
     def __repr__(self):
         return "<Slot Node: %s. Contents: %r>" % (self.name, self.nodelist)
 
     def render(self, context):
-        # This method should only be called if a slot tag is used outside of a component.
-        assert self.component is None
-        return self.nodelist.render(context)
+        overriding_nodelist = self.parent_component and self.parent_component.slots.get(self.name)
+        return (overriding_nodelist or self.nodelist).render(context)
 
 
 @register.tag("slot")
@@ -115,7 +115,8 @@ class ComponentNode(Node):
         self.should_render_dependencies = is_dependency_middleware_active()
 
     def __repr__(self):
-        return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
+        return "<Component Node: %s. Contents: %r>" % (self.component,
+                                                       getattr(self.component.instance_template, 'nodelist', None))
 
     def render(self, context):
         self.component.outer_context = context.flatten()
