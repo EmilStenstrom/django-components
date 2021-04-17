@@ -91,8 +91,7 @@ class RenderBenchmarks(SimpleTestCase):
                             "{% component 'inner_component' variable='foo' %}{% endslot %}{% endcomponent_block %}",
                             name='root')
         # Sanity tests
-        response = create_and_process_template_response(template)
-        response_content = response.content.decode('utf-8')
+        response_content = create_and_process_template_response(template)
         self.assertNotIn(CSS_DEPENDENCY_PLACEHOLDER, response_content)
         self.assertNotIn(JS_DEPENDENCY_PLACEHOLDER, response_content)
         self.assertIn('style.css', response_content)
@@ -109,8 +108,7 @@ class RenderBenchmarks(SimpleTestCase):
         from django.template.loader import get_template
 
         template = get_template('mdn_complete_page.html')
-        response = create_and_process_template_response(template, {})
-        response_content = response.content.decode('utf-8')
+        response_content = create_and_process_template_response(template, {})
         self.assertNotIn(CSS_DEPENDENCY_PLACEHOLDER, response_content)
         self.assertNotIn(JS_DEPENDENCY_PLACEHOLDER, response_content)
         self.assertIn('test.css', response_content)
