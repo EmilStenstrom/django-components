@@ -110,10 +110,10 @@ Django-components supports all officially supported versions of Django and Pytho
 
 | Python version | Django version           |
 |----------------|--------------------------|
-| 3.6            | 2.2, 3.0, 3.1            |
-| 3.7            | 2.2, 3.0, 3.1            |
-| 3.8            | 2.2, 3.0, 3.1            |
-| 3.9            | 2.2, 3.0, 3.1            |
+| 3.6            | 2.2, 3.0, 3.1, 3.2       |
+| 3.7            | 2.2, 3.0, 3.1, 3.2       |
+| 3.8            | 2.2, 3.0, 3.1, 3.2       |
+| 3.9            | 2.2, 3.0, 3.1, 3.2       |
 
 # Create your first component
 
