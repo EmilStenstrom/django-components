@@ -293,18 +293,34 @@ COMPONENTS = {
 }
 ```
 
-# Running the tests
+# Install locally and run the tests
 
-To quickly run the tests install the local dependencies by running
+Start by forking the project by clicking the **Fork button** up in the right corner in the GitHub . This makes a copy of the repository in your own name. Now you can clone this repository locally and start adding features:
+
+```sh
+git clone https://github.com/<your GitHub username>/django-components.git
+```
+
+To quickly run the tests install the local dependencies by running:
 
 ```sh
 pip install -r requirements-dev.txt
-./pytest
+```
+
+Now you can run the tests to make sure everything works as expected:
+
+```sh
+pytest
 ```
 
 The library is also tested across many versions of Python and Django. To run tests that way:
 
 ```sh
-pip install -r requirements-dev.txt
-tox
+pyenv install 3.6.9
+pyenv install 3.7.9
+pyenv install 3.8.9
+pyenv install 3.9.4
+pyenv local 3.6.9 3.7.9 3.8.9 3.9.4
+tox -p
 ```
+
