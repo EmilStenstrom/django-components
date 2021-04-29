@@ -578,3 +578,31 @@ class SlotSuperTests(SimpleTestCase):
             </custom-template>
         """,
         )
+
+    def test_super_under_if_node(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}
+                    {% for i in range %}
+                        {% if forloop.first %}First {{slot.super}}
+                        {% else %}Later {{ slot.super }}
+                        {% endif %}
+                    {%endfor %}
+                {% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({'range': range(3)}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>First Default header Later Default header Later Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """,
+        )
