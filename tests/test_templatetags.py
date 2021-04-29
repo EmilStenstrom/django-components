@@ -495,3 +495,86 @@ class ConditionalSlotTests(SimpleTestCase):
         )
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
+
+
+class SlotSuperTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.clear()
+        component.registry.register('test', SlottedComponent)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_basic_super_functionality(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}Before: {{ slot.super }}{% endslot %}
+                {% slot "main" %}{{ slot.super }}{% endslot %}
+                {% slot "footer" %}{{ slot.super }}, after{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Before: Default header</header>
+                <main>Default main</main>
+                <footer>Default footer, after</footer>
+            </custom-template>
+        """,
+        )
+
+    def test_multiple_super_calls(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}First: {{ slot.super }}; Second: {{slot.super }}{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>First: Default header; Second: Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """,
+        )
+
+    def test_super_is_scoped_to_slot(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}Override header{% endslot %}{{ slot.super }}
+                {% slot "main" %}{{ slot.super }}{% endslot %}{{ slot.super }}
+                {% slot "footer" %}{{ slot.super }}{% endslot %}{{ slot.super }}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Override header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """,
+        )

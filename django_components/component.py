@@ -1,3 +1,4 @@
+import time
 import warnings
 from copy import copy, deepcopy
 from functools import lru_cache

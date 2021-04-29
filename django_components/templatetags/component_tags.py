@@ -11,7 +11,7 @@ from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDEN
 
 register = template.Library()
 
-COMPONENT_CONTEXT_KEY = "component_context"
+SLOT_CONTEXT_KEY = "__slot_context"
 
 
 def get_components_from_registry(registry):
@@ -79,15 +79,28 @@ def do_component(parser, token):
 class SlotNode(Node):
     def __init__(self, name, nodelist, component=None):
         self.name, self.nodelist, self.component = name, nodelist, component
+        self.component = None
         self.parent_component = None
+        self.context = None
 
     def __repr__(self):
         return "<Slot Node: %s. Contents: %r>" % (self.name, self.nodelist)
 
     def render(self, context):
+        # Thread safety: storing the context as a property of the cloned SlotNode without using
+        # the render_context facility should be thread-safe, since each cloned_node
+        # is only used for a single render.
+        cloned_node = SlotNode(self.name, self.nodelist, self.component)
+        cloned_node.parent_component = self.parent_component
+        cloned_node.context = context
+
         assert not NodeList(), "Logic in SlotNode.render method assumes that empty nodelists are falsy."
-        overriding_nodelist = self.parent_component and self.parent_component.slots.get(self.name)
-        return (overriding_nodelist or self.nodelist).render(context)
+        with context.update({'slot': cloned_node}):
+            return cloned_node.parent_component.slots.get(cloned_node.name, cloned_node.nodelist).render(context)
+
+    def super(self):
+        """Render default slot content."""
+        return mark_safe(self.nodelist.render(self.context))
 
 
 @register.tag("slot")
@@ -133,6 +146,7 @@ class ComponentNode(Node):
             context = context.new()
 
         with context.update(component_context):
+            context.render_context[SLOT_CONTEXT_KEY] = {}
             rendered_component = self.component.render(context)
             if self.should_render_dependencies:
                 return f'<!-- _RENDERED {self.component._component_name} -->' + rendered_component
