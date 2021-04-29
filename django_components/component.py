@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from django.conf import settings
 from django.forms.widgets import MediaDefiningClass
-from django.template.base import TokenType, Node
+from django.template.base import TokenType, Node, NodeList
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
@@ -84,9 +84,12 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
         source_template = get_template(template_name)
         component_template = copy(source_template)
-        # Deep copy the nodes in the template to prevent any SlotNode from being shared with another component if
-        # a single Template object is shared between components (e.g., due to caching).
-        component_template.template.nodelist = deepcopy(source_template.template.nodelist)
+        # The template may be shared with another component if (e.g., due to caching). To ensure that each
+        # SlotNode is unique between components, we have to copy the nodes in the template nodelist and
+        # any contained nodelists.
+        nodelist_class = type(source_template.template.nodelist)
+        cloned_nodelist = [duplicate_node(node) for node in source_template.template.nodelist]
+        component_template.template.nodelist = nodelist_class(cloned_nodelist)
 
         # Traverse template nodes and descendants, and give each slot node a reference to this component.
         visited_nodes = set()
@@ -102,7 +105,6 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             if self.is_slot_node(current_node):
                 slots_seen.add(current_node.name)
                 current_node.parent_component = self
-
 
         # Check and warn for unknown slots
         if settings.DEBUG:
@@ -129,6 +131,24 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
 # This variable represents the global component registry
 registry = ComponentRegistry()
+
+
+def duplicate_node(source_node):
+    """Perform a shallow copy of source_node and then recursively copy over each of source_node's nodelists.
+
+    If a nodelist is a dynamic property that cannot be set, fall back to a deepcopy of source_node."""
+
+    try:
+        clone = copy(source_node)
+        for nodelist_name in source_node.child_nodelists:
+            nodelist = getattr(source_node, nodelist_name, NodeList())
+            nodelist_contents = [duplicate_node(n) for n in nodelist]
+            setattr(clone, nodelist_name, type(nodelist)(nodelist_contents))
+        return clone
+    except AttributeError:
+        # AttributeError is raised if an attribute cannot be set (e.g., IfNode's nodelist,
+        # which is a read-only property).
+        return deepcopy(source_node)
 
 
 def register(name):
