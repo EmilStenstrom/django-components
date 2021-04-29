@@ -1,11 +1,10 @@
 import warnings
 from copy import copy, deepcopy
 from functools import lru_cache
-from itertools import chain
 
 from django.conf import settings
 from django.forms.widgets import MediaDefiningClass
-from django.template.base import NodeList, TokenType, Node
+from django.template.base import TokenType, Node
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
@@ -13,6 +12,7 @@ from django.utils.safestring import mark_safe
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
 
 TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get('TEMPLATE_CACHE_SIZE', 128)
+
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
     def __new__(mcs, name, bases, attrs):
@@ -38,6 +38,7 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
                 media.js = [media.js]
 
         return super().__new__(mcs, name, bases, attrs)
+
 
 class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
@@ -87,6 +88,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         # a single Template object is shared between components (e.g., due to caching).
         component_template.template.nodelist = deepcopy(source_template.template.nodelist)
 
+        # Traverse template nodes and descendants, and give each slot node a reference to this component.
         visited_nodes = set()
         nodes_to_visit = list(component_template.template.nodelist)
         slots_seen = set()
@@ -95,21 +97,23 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             if current_node in visited_nodes:
                 continue
             visited_nodes.add(current_node)
+            for nodelist_name in current_node.child_nodelists:
+                nodes_to_visit.extend(getattr(current_node, nodelist_name, []))
             if self.is_slot_node(current_node):
                 slots_seen.add(current_node.name)
                 current_node.parent_component = self
-                for nodelist_name in current_node.child_nodelists:
-                    nodes_to_visit.extend(getattr(current_node, nodelist_name, []))
 
+
+        # Check and warn for unknown slots
         if settings.DEBUG:
             filled_slot_names = set(self.slots.keys())
             unused_slots = filled_slot_names - slots_seen
             if unused_slots:
-                    warnings.warn(
-                        "Component {} was provided with slots that were not used in a template: {}".format(
-                            self._component_name, unused_slots
-                        )
+                warnings.warn(
+                    "Component {} was provided with slots that were not used in a template: {}".format(
+                        self._component_name, unused_slots
                     )
+                )
 
         return component_template.template
 
@@ -126,6 +130,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 # This variable represents the global component registry
 registry = ComponentRegistry()
 
+
 def register(name):
     """Class decorator to register a component.
 
@@ -137,6 +142,7 @@ def register(name):
         ...
 
     """
+
     def decorator(component):
         registry.register(name=name, component=component)
         return component

@@ -85,6 +85,7 @@ class SlotNode(Node):
         return "<Slot Node: %s. Contents: %r>" % (self.name, self.nodelist)
 
     def render(self, context):
+        assert not NodeList(), "Logic in SlotNode.render method assumes that empty nodelists are falsy."
         overriding_nodelist = self.parent_component and self.parent_component.slots.get(self.name)
         return (overriding_nodelist or self.nodelist).render(context)
 
@@ -107,11 +108,11 @@ class ComponentNode(Node):
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.component, self.isolated_context = component, isolated_context
-        slot_dict = defaultdict(NodeList)
-        if slots:
-            for slot in slots:
-                slot_dict[slot.name].extend(slot.nodelist)
-        self.component.slots = slot_dict
+
+        # Group slot notes by name and concatenate their nodelists
+        self.component.slots = defaultdict(NodeList)
+        for slot in slots or []:
+            self.component.slots[slot.name].extend(slot.nodelist)
         self.should_render_dependencies = is_dependency_middleware_active()
 
     def __repr__(self):
@@ -124,9 +125,7 @@ class ComponentNode(Node):
         # Resolve FilterExpressions and Variables that were passed as args to the component, then call component's
         # context method to get values to insert into the context
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
-        resolved_context_kwargs = {
-            key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()
-        }
+        resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
         component_context = self.component.context(*resolved_context_args, **resolved_context_kwargs)
 
         # Create a fresh context if requested

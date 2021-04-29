@@ -356,3 +356,142 @@ class TemplateInstrumentationTest(SimpleTestCase):
         templates_used = self.templates_used_to_render(template)
         self.assertIn('slotted_template.html', templates_used)
         self.assertIn('simple_template.html', templates_used)
+
+
+class NestedSlotTests(SimpleTestCase):
+    class NestedComponent(component.Component):
+        def context(self):
+            return {}
+
+        def template(self, context):
+            return "nested_slot_template.html"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.clear()
+        component.registry.register('test', cls.NestedComponent)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_default_slots_render_correctly(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<div id="outer">Default</div>')
+
+    def test_inner_slot_overriden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% slot 'inner' %}Override{% endslot %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<div id="outer">Override</div>')
+
+    def test_outer_slot_overriden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% slot 'outer' %}<p>Override</p>{% endslot %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p>Override</p>')
+
+    def test_both_overriden_and_inner_removed(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}
+                {% slot 'outer' %}<p>Override</p>{% endslot %}
+                {% slot 'inner' %}<p>Will not appear</p>{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p>Override</p>')
+
+
+class ConditionalSlotTests(SimpleTestCase):
+    class ConditionalComponent(component.Component):
+        def context(self, branch=None):
+            return {'branch': branch}
+
+        def template(self, context):
+            return "conditional_template.html"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.clear()
+        component.registry.register('test', cls.ConditionalComponent)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_no_content_if_branches_are_false(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}
+                {% slot 'a' %}Override A{% endslot %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '')
+
+    def test_default_content_if_no_slots(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component 'test' branch='a' %}
+            {% component 'test' branch='b' %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Default B</p>')
+
+    def test_one_slot_overridden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' branch='a' %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+            {% component_block 'test' branch='b' %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Override B</p>')
+
+    def test_both_slots_overridden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' branch='a' %}
+                {% slot 'a' %}Override A{% endslot %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+            {% component_block 'test' branch='b' %}
+                {% slot 'a' %}Override A{% endslot %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
