@@ -18,7 +18,7 @@ filelock==3.0.12
     # via
     #   tox
     #   virtualenv
-flake8==3.9.1
+flake8==3.9.2
     # via -r requirements-dev.in
 iniconfig==1.1.1
     # via pytest
