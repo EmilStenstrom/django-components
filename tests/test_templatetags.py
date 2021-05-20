@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from django.template import Context, Template
+from django.template import Context, Template, TemplateSyntaxError
 
 from .django_test_setup import *  # NOQA
 from django_components import component
@@ -555,30 +555,6 @@ class SlotSuperTests(SimpleTestCase):
         """,
         )
 
-    def test_super_is_scoped_to_slot(self):
-        template = Template(
-            """
-            {% load component_tags %}
-            {% component_block "test" %}
-                {% slot "header" %}Override header{% endslot %}{{ slot.super }}
-                {% slot "main" %}{{ slot.super }}{% endslot %}{{ slot.super }}
-                {% slot "footer" %}{{ slot.super }}{% endslot %}{{ slot.super }}
-            {% endcomponent_block %}
-        """
-        )
-        rendered = template.render(Context({}))
-
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <custom-template>
-                <header>Override header</header>
-                <main>Default main</main>
-                <footer>Default footer</footer>
-            </custom-template>
-        """,
-        )
-
     def test_super_under_if_node(self):
         template = Template(
             """
@@ -606,3 +582,56 @@ class SlotSuperTests(SimpleTestCase):
             </custom-template>
         """,
         )
+
+
+class TemplateSyntaxErrorTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register('test', SlottedComponent)
+
+    def test_variable_outside_slot_tag_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    {{ slot.super }}
+                {% endcomponent_block %}
+            """
+            )
+
+    def test_text_outside_slot_tag_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    Text
+                {% endcomponent_block %}
+            """
+            )
+
+    def test_nonslot_block_outside_slot_tag_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    {% if True %}
+                        {% slot "header" %}{% endslot %}
+                    {% endif %}
+                {% endcomponent_block %}
+            """
+            )
+
+    def test_unclosed_component_block_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    {% slot "header" %}{% endslot %}
+            """
+            )
+

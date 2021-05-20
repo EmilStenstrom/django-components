@@ -176,31 +176,35 @@ def do_component_block(parser, token):
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
 
-    tag_name, token = next_block_token(parser)
     component, context_args, context_kwargs = parse_component_with_args(parser, bits, 'component_block')
 
-    slots_filled = NodeList()
-    while tag_name != "endcomponent_block":
-        if tag_name == "slot":
-            slots_filled += do_slot(parser, token, component=component)
-        tag_name, token = next_block_token(parser)
-
-    return ComponentNode(component, context_args, context_kwargs, slots=slots_filled,
+    return ComponentNode(component, context_args, context_kwargs,
+                         slots=[do_slot(parser, slot_token, component=component) for slot_token in slot_tokens(parser)],
                          isolated_context=isolated_context)
 
 
-def next_block_token(parser):
-    """Return tag and token for next block token.
+def slot_tokens(parser):
+    """Yield each 'slot' token appearing before the next 'endcomponent_block' token.
 
-    Raises IndexError if there are not more block tokens in the remainder of the template."""
+    Raises TemplateSyntaxError if there are other content tokens or if there is no endcomponent_block token."""
+
+    def is_whitespace(token):
+        return token.token_type == TokenType.TEXT and not token.contents.strip()
+
+    def is_block_tag(token, /, name):
+        return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
 
     while True:
-        token = parser.next_token()
-        if token.token_type != TokenType.BLOCK:
-            continue
-
-        tag_name = token.split_contents()[0]
-        return tag_name, token
+        try:
+            token = parser.next_token()
+        except IndexError:
+            raise TemplateSyntaxError('Unclosed component_block tag')
+        if is_block_tag(token, name='endcomponent_block'):
+            return
+        elif is_block_tag(token, name='slot'):
+            yield token
+        elif not is_whitespace(token) and token.token_type != TokenType.COMMENT:
+            raise TemplateSyntaxError(f'Content tokens in component blocks must be inside of slot tags: {token}')
 
 
 def check_for_isolated_context_keyword(bits):
