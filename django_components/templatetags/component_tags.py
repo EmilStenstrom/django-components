@@ -117,6 +117,10 @@ def do_slot(parser, token, component=None):
 
 
 class ComponentNode(Node):
+    class InvalidSlot:
+        def super(self):
+            raise TemplateSyntaxError('slot.super may only be called within a {% slot %}/{% endslot %} block.')
+
     def __init__(self, component, context_args, context_kwargs, slots=None, isolated_context=False):
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}

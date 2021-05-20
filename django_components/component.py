@@ -1,11 +1,10 @@
-import time
 import warnings
 from copy import copy, deepcopy
 from functools import lru_cache
 
 from django.conf import settings
 from django.forms.widgets import MediaDefiningClass
-from django.template.base import TokenType, Node, NodeList
+from django.template.base import Node, NodeList, TokenType
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
@@ -84,17 +83,17 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         """Retrieve the requested template and add a link to this component to each SlotNode in the template."""
 
         source_template = get_template(template_name)
-        component_template = copy(source_template)
-        # The template may be shared with another component if (e.g., due to caching). To ensure that each
+
+        # The template may be shared with another component (e.g., due to caching). To ensure that each
         # SlotNode is unique between components, we have to copy the nodes in the template nodelist and
         # any contained nodelists.
-        nodelist_class = type(source_template.template.nodelist)
-        cloned_nodelist = [duplicate_node(node) for node in source_template.template.nodelist]
-        component_template.template.nodelist = nodelist_class(cloned_nodelist)
+        component_template = copy(source_template.template)
+        cloned_nodelist = [duplicate_node(node) for node in component_template.nodelist]
+        component_template.nodelist = NodeList(cloned_nodelist)
 
         # Traverse template nodes and descendants, and give each slot node a reference to this component.
         visited_nodes = set()
-        nodes_to_visit = list(component_template.template.nodelist)
+        nodes_to_visit = list(component_template.nodelist)
         slots_seen = set()
         while nodes_to_visit:
             current_node = nodes_to_visit.pop()
@@ -118,7 +117,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                     )
                 )
 
-        return component_template.template
+        return component_template
 
     def render(self, context):
         template_name = self.template(context)
