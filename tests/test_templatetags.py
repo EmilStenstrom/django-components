@@ -271,7 +271,7 @@ class MultiComponentTests(SimpleTestCase):
         return Template('{% load component_tags %}'
                         "{% component_block 'first_component' %}"
                         + first_component_slot + '{% endcomponent_block %}'
-                        "{% component_block 'second_component' variable='xyz' %}"
+                                                 "{% component_block 'second_component' variable='xyz' %}"
                         + second_component_slot + '{% endcomponent_block %}')
 
     def expected_result(self, first_component_slot='', second_component_slot=''):
@@ -538,7 +538,7 @@ class SlotSuperTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test" %}
-                {% slot "header" %}First: {{ slot.super }}; Second: {{slot.super }}{% endslot %}
+                {% slot "header" %}First: {{ slot.super }}; Second: {{ slot.super }}{% endslot %}
             {% endcomponent_block %}
         """
         )
