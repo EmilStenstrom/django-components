@@ -1,0 +1,4 @@
+{% load component_tags %}
+{% slot 'outer' %}
+    <div id="outer">{% slot 'inner' %}Default{% endslot %}</div>
+{% endslot %}

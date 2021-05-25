@@ -11,7 +11,7 @@ from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDEN
 
 register = template.Library()
 
-COMPONENT_CONTEXT_KEY = "component_context"
+SLOT_CONTEXT_KEY = "__slot_context"
 
 
 def get_components_from_registry(registry):
@@ -79,14 +79,28 @@ def do_component(parser, token):
 class SlotNode(Node):
     def __init__(self, name, nodelist, component=None):
         self.name, self.nodelist, self.component = name, nodelist, component
+        self.component = None
+        self.parent_component = None
+        self.context = None
 
     def __repr__(self):
         return "<Slot Node: %s. Contents: %r>" % (self.name, self.nodelist)
 
     def render(self, context):
-        # This method should only be called if a slot tag is used outside of a component.
-        assert self.component is None
-        return self.nodelist.render(context)
+        # Thread safety: storing the context as a property of the cloned SlotNode without using
+        # the render_context facility should be thread-safe, since each cloned_node
+        # is only used for a single render.
+        cloned_node = SlotNode(self.name, self.nodelist, self.component)
+        cloned_node.parent_component = self.parent_component
+        cloned_node.context = context
+
+        assert not NodeList(), "Logic in SlotNode.render method assumes that empty nodelists are falsy."
+        with context.update({'slot': cloned_node}):
+            return cloned_node.parent_component.slots.get(cloned_node.name, cloned_node.nodelist).render(context)
+
+    def super(self):
+        """Render default slot content."""
+        return mark_safe(self.nodelist.render(self.context))
 
 
 @register.tag("slot")
@@ -103,19 +117,24 @@ def do_slot(parser, token, component=None):
 
 
 class ComponentNode(Node):
+    class InvalidSlot:
+        def super(self):
+            raise TemplateSyntaxError('slot.super may only be called within a {% slot %}/{% endslot %} block.')
+
     def __init__(self, component, context_args, context_kwargs, slots=None, isolated_context=False):
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.component, self.isolated_context = component, isolated_context
-        slot_dict = defaultdict(NodeList)
-        if slots:
-            for slot in slots:
-                slot_dict[slot.name].extend(slot.nodelist)
-        self.component.slots = slot_dict
+
+        # Group slot notes by name and concatenate their nodelists
+        self.component.slots = defaultdict(NodeList)
+        for slot in slots or []:
+            self.component.slots[slot.name].extend(slot.nodelist)
         self.should_render_dependencies = is_dependency_middleware_active()
 
     def __repr__(self):
-        return "<Component Node: %s. Contents: %r>" % (self.component, self.component.instance_template.nodelist)
+        return "<Component Node: %s. Contents: %r>" % (self.component,
+                                                       getattr(self.component.instance_template, 'nodelist', None))
 
     def render(self, context):
         self.component.outer_context = context.flatten()
@@ -123,9 +142,7 @@ class ComponentNode(Node):
         # Resolve FilterExpressions and Variables that were passed as args to the component, then call component's
         # context method to get values to insert into the context
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
-        resolved_context_kwargs = {
-            key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()
-        }
+        resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
         component_context = self.component.context(*resolved_context_args, **resolved_context_kwargs)
 
         # Create a fresh context if requested
@@ -133,6 +150,7 @@ class ComponentNode(Node):
             context = context.new()
 
         with context.update(component_context):
+            context.render_context[SLOT_CONTEXT_KEY] = {}
             rendered_component = self.component.render(context)
             if self.should_render_dependencies:
                 return f'<!-- _RENDERED {self.component._component_name} -->' + rendered_component
@@ -158,31 +176,36 @@ def do_component_block(parser, token):
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
 
-    tag_name, token = next_block_token(parser)
     component, context_args, context_kwargs = parse_component_with_args(parser, bits, 'component_block')
 
-    slots_filled = NodeList()
-    while tag_name != "endcomponent_block":
-        if tag_name == "slot":
-            slots_filled += do_slot(parser, token, component=component)
-        tag_name, token = next_block_token(parser)
-
-    return ComponentNode(component, context_args, context_kwargs, slots=slots_filled,
+    return ComponentNode(component, context_args, context_kwargs,
+                         slots=[do_slot(parser, slot_token, component=component)
+                                for slot_token in slot_tokens(parser)],
                          isolated_context=isolated_context)
 
 
-def next_block_token(parser):
-    """Return tag and token for next block token.
+def slot_tokens(parser):
+    """Yield each 'slot' token appearing before the next 'endcomponent_block' token.
 
-    Raises IndexError if there are not more block tokens in the remainder of the template."""
+    Raises TemplateSyntaxError if there are other content tokens or if there is no endcomponent_block token."""
+
+    def is_whitespace(token):
+        return token.token_type == TokenType.TEXT and not token.contents.strip()
+
+    def is_block_tag(token, /, name):
+        return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
 
     while True:
-        token = parser.next_token()
-        if token.token_type != TokenType.BLOCK:
-            continue
-
-        tag_name = token.split_contents()[0]
-        return tag_name, token
+        try:
+            token = parser.next_token()
+        except IndexError:
+            raise TemplateSyntaxError('Unclosed component_block tag')
+        if is_block_tag(token, name='endcomponent_block'):
+            return
+        elif is_block_tag(token, name='slot'):
+            yield token
+        elif not is_whitespace(token) and token.token_type != TokenType.COMMENT:
+            raise TemplateSyntaxError(f'Content tokens in component blocks must be inside of slot tags: {token}')
 
 
 def check_for_isolated_context_keyword(bits):

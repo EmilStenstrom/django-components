@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from django.template import Context, Template
+from django.template import Context, Template, TemplateSyntaxError
 
 from .django_test_setup import *  # NOQA
 from django_components import component
@@ -271,7 +271,7 @@ class MultiComponentTests(SimpleTestCase):
         return Template('{% load component_tags %}'
                         "{% component_block 'first_component' %}"
                         + first_component_slot + '{% endcomponent_block %}'
-                        "{% component_block 'second_component' variable='xyz' %}"
+                                                 "{% component_block 'second_component' variable='xyz' %}"
                         + second_component_slot + '{% endcomponent_block %}')
 
     def expected_result(self, first_component_slot='', second_component_slot=''):
@@ -356,3 +356,281 @@ class TemplateInstrumentationTest(SimpleTestCase):
         templates_used = self.templates_used_to_render(template)
         self.assertIn('slotted_template.html', templates_used)
         self.assertIn('simple_template.html', templates_used)
+
+
+class NestedSlotTests(SimpleTestCase):
+    class NestedComponent(component.Component):
+        def context(self):
+            return {}
+
+        def template(self, context):
+            return "nested_slot_template.html"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.clear()
+        component.registry.register('test', cls.NestedComponent)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_default_slots_render_correctly(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<div id="outer">Default</div>')
+
+    def test_inner_slot_overriden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% slot 'inner' %}Override{% endslot %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<div id="outer">Override</div>')
+
+    def test_outer_slot_overriden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}{% slot 'outer' %}<p>Override</p>{% endslot %}{% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p>Override</p>')
+
+    def test_both_overriden_and_inner_removed(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}
+                {% slot 'outer' %}<p>Override</p>{% endslot %}
+                {% slot 'inner' %}<p>Will not appear</p>{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p>Override</p>')
+
+
+class ConditionalSlotTests(SimpleTestCase):
+    class ConditionalComponent(component.Component):
+        def context(self, branch=None):
+            return {'branch': branch}
+
+        def template(self, context):
+            return "conditional_template.html"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.clear()
+        component.registry.register('test', cls.ConditionalComponent)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_no_content_if_branches_are_false(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}
+                {% slot 'a' %}Override A{% endslot %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '')
+
+    def test_default_content_if_no_slots(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component 'test' branch='a' %}
+            {% component 'test' branch='b' %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Default B</p>')
+
+    def test_one_slot_overridden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' branch='a' %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+            {% component_block 'test' branch='b' %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Override B</p>')
+
+    def test_both_slots_overridden(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' branch='a' %}
+                {% slot 'a' %}Override A{% endslot %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+            {% component_block 'test' branch='b' %}
+                {% slot 'a' %}Override A{% endslot %}
+                {% slot 'b' %}Override B{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
+
+
+class SlotSuperTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.clear()
+        component.registry.register('test', SlottedComponent)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_basic_super_functionality(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}Before: {{ slot.super }}{% endslot %}
+                {% slot "main" %}{{ slot.super }}{% endslot %}
+                {% slot "footer" %}{{ slot.super }}, after{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Before: Default header</header>
+                <main>Default main</main>
+                <footer>Default footer, after</footer>
+            </custom-template>
+        """,
+        )
+
+    def test_multiple_super_calls(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}First: {{ slot.super }}; Second: {{ slot.super }}{% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>First: Default header; Second: Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """,
+        )
+
+    def test_super_under_if_node(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test" %}
+                {% slot "header" %}
+                    {% for i in range %}
+                        {% if forloop.first %}First {{slot.super}}
+                        {% else %}Later {{ slot.super }}
+                        {% endif %}
+                    {%endfor %}
+                {% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({'range': range(3)}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>First Default header Later Default header Later Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+        """,
+        )
+
+
+class TemplateSyntaxErrorTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register('test', SlottedComponent)
+
+    def test_variable_outside_slot_tag_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    {{ slot.super }}
+                {% endcomponent_block %}
+            """
+            )
+
+    def test_text_outside_slot_tag_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    Text
+                {% endcomponent_block %}
+            """
+            )
+
+    def test_nonslot_block_outside_slot_tag_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    {% if True %}
+                        {% slot "header" %}{% endslot %}
+                    {% endif %}
+                {% endcomponent_block %}
+            """
+            )
+
+    def test_unclosed_component_block_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "test" %}
+                    {% slot "header" %}{% endslot %}
+            """
+            )
