@@ -179,7 +179,8 @@ def do_component_block(parser, token):
     component, context_args, context_kwargs = parse_component_with_args(parser, bits, 'component_block')
 
     return ComponentNode(component, context_args, context_kwargs,
-                         slots=[do_slot(parser, slot_token, component=component) for slot_token in slot_tokens(parser)],
+                         slots=[do_slot(parser, slot_token, component=component)
+                                for slot_token in slot_tokens(parser)],
                          isolated_context=isolated_context)
 
 

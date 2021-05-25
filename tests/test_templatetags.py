@@ -634,4 +634,3 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                     {% slot "header" %}{% endslot %}
             """
             )
-
