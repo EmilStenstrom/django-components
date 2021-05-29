@@ -1,3 +1,4 @@
+import inspect
 from collections import defaultdict
 
 from django import template
@@ -6,12 +7,10 @@ from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
-from django_components.component import registry
+from django_components.component import ACTIVE_SLOT_CONTEXT_KEY, Component, registry
 from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 
 register = template.Library()
-
-SLOT_CONTEXT_KEY = "__slot_context"
 
 
 def get_components_from_registry(registry):
@@ -94,9 +93,23 @@ class SlotNode(Node):
         cloned_node.parent_component = self.parent_component
         cloned_node.context = context
 
-        assert not NodeList(), "Logic in SlotNode.render method assumes that empty nodelists are falsy."
         with context.update({'slot': cloned_node}):
-            return cloned_node.parent_component.slots.get(cloned_node.name, cloned_node.nodelist).render(context)
+            return self.get_nodelist(context).render(context)
+
+    def get_nodelist(self, context):
+        overriding_nodelist = None
+        if ACTIVE_SLOT_CONTEXT_KEY in context:
+            overriding_nodelist = context[ACTIVE_SLOT_CONTEXT_KEY].get(self.name)
+        elif False:  # Alternative error-handling approach--not currently active
+            for stack_frame, *_ in inspect.stack():
+                if isinstance(stack_frame.f_locals.get('self'), Component):
+                    overriding_nodelist = stack_frame.f_locals.get('active_slots', {}).get(self.name)
+                    break
+        elif settings.DEBUG:
+            raise TemplateSyntaxError(f'Attempted to render SlotNode {self.name} outside of a parent Component or '
+                                      'without access to context provided by its parent Component. This will not'
+                                      'work properly.')
+        return overriding_nodelist if overriding_nodelist is not None else self.nodelist
 
     def super(self):
         """Render default slot content."""
@@ -150,7 +163,6 @@ class ComponentNode(Node):
             context = context.new()
 
         with context.update(component_context):
-            context.render_context[SLOT_CONTEXT_KEY] = {}
             rendered_component = self.component.render(context)
             if self.should_render_dependencies:
                 return f'<!-- _RENDERED {self.component._component_name} -->' + rendered_component
@@ -192,7 +204,7 @@ def slot_tokens(parser):
     def is_whitespace(token):
         return token.token_type == TokenType.TEXT and not token.contents.strip()
 
-    def is_block_tag(token, /, name):
+    def is_block_tag(token, name):
         return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
 
     while True:
