@@ -2,9 +2,9 @@ from textwrap import dedent
 
 from django.template import Context, Template, TemplateSyntaxError
 
-from .django_test_setup import *  # NOQA
 from django_components import component
 
+from .django_test_setup import *  # NOQA
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
@@ -31,6 +31,11 @@ class IffedComponent(SimpleComponent):
 class SlottedComponent(component.Component):
     def template(self, context):
         return "slotted_template.html"
+
+
+class BrokenComponent(component.Component):
+    def template(self, context):
+        return "template_with_illegal_slot.html"
 
 
 class SlottedComponentWithMissingVariable(component.Component):
@@ -589,6 +594,7 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         component.registry.register('test', SlottedComponent)
+        component.registry.register('broken_component', BrokenComponent)
 
     def test_variable_outside_slot_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
@@ -633,4 +639,68 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                 {% component_block "test" %}
                     {% slot "header" %}{% endslot %}
             """
+            )
+
+    def test_slot_with_no_parent_is_error_in_debug(self):
+        with self.settings(DEBUG=True):
+            with self.assertRaises(TemplateSyntaxError):
+                Template(
+                    """
+                    {% load component_tags %}
+                    {% slot "header" %}contents{% endslot %}
+                """
+                ).render(Context({}))
+
+    def test_slot_with_no_parent_returns_contents_in_production(self):
+        with self.settings(DEBUG=False):
+            template = Template(
+                """
+                {% load component_tags %}
+                    {% slot "header" %}<p>contents</p>{% endslot %}
+            """
+            )
+            rendered = template.render(Context({}))
+
+            self.assertHTMLEqual(
+                rendered,
+                """<p>contents</p>""",
+            )
+
+    def test_isolated_slot_is_error_in_debug(self):
+        with self.settings(DEBUG=True):
+            with self.assertRaises(TemplateSyntaxError):
+                Template(
+                    """
+                    {% load component_tags %}
+                    {% component_block "broken_component" %}
+                        {% slot "header" %}Custom header{% endslot %}
+                        {% slot "main" %}Custom main{% endslot %}
+                        {% slot "footer" %}Custom footer{% endslot %}
+                    {% endcomponent_block %}
+                """
+                ).render(Context({}))
+
+    def test_isolated_slot_returns_default_contents_in_production(self):
+        with self.settings(DEBUG=False):
+            template = Template(
+                """
+                {% load component_tags %}
+                {% component_block "broken_component" %}
+                    {% slot "header" %}Custom header{% endslot %}
+                    {% slot "main" %}Custom main{% endslot %}
+                    {% slot "footer" %}Custom footer{% endslot %}
+                {% endcomponent_block %}
+            """
+            )
+            rendered = template.render(Context({}))
+
+            self.assertHTMLEqual(
+                rendered,
+                """
+                <custom-template>
+                    <header>Default header</header>
+                    <main>Default main</main>
+                    <footer>Default footer</footer>
+                </custom-template>
+            """,
             )
