@@ -641,48 +641,18 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
             """
             )
 
-    def test_slot_with_no_parent_is_error_in_debug(self):
-        with self.settings(DEBUG=True):
-            with self.assertRaises(TemplateSyntaxError):
-                Template(
-                    """
-                    {% load component_tags %}
-                    {% slot "header" %}contents{% endslot %}
-                """
-                ).render(Context({}))
-
-    def test_slot_with_no_parent_returns_contents_in_production(self):
-        with self.settings(DEBUG=False):
-            template = Template(
+    def test_slot_with_no_parent_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
                 """
                 {% load component_tags %}
-                    {% slot "header" %}<p>contents</p>{% endslot %}
+                {% slot "header" %}contents{% endslot %}
             """
-            )
-            rendered = template.render(Context({}))
+            ).render(Context({}))
 
-            self.assertHTMLEqual(
-                rendered,
-                """<p>contents</p>""",
-            )
-
-    def test_isolated_slot_is_error_in_debug(self):
-        with self.settings(DEBUG=True):
-            with self.assertRaises(TemplateSyntaxError):
-                Template(
-                    """
-                    {% load component_tags %}
-                    {% component_block "broken_component" %}
-                        {% slot "header" %}Custom header{% endslot %}
-                        {% slot "main" %}Custom main{% endslot %}
-                        {% slot "footer" %}Custom footer{% endslot %}
-                    {% endcomponent_block %}
-                """
-                ).render(Context({}))
-
-    def test_isolated_slot_returns_default_contents_in_production(self):
-        with self.settings(DEBUG=False):
-            template = Template(
+    def test_isolated_slot_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
                 """
                 {% load component_tags %}
                 {% component_block "broken_component" %}
@@ -691,16 +661,4 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                     {% slot "footer" %}Custom footer{% endslot %}
                 {% endcomponent_block %}
             """
-            )
-            rendered = template.render(Context({}))
-
-            self.assertHTMLEqual(
-                rendered,
-                """
-                <custom-template>
-                    <header>Default header</header>
-                    <main>Default main</main>
-                    <footer>Default footer</footer>
-                </custom-template>
-            """,
-            )
+            ).render(Context({}))

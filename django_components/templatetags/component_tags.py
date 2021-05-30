@@ -97,18 +97,12 @@ class SlotNode(Node):
             return self.get_nodelist(context).render(context)
 
     def get_nodelist(self, context):
-        overriding_nodelist = None
-        if ACTIVE_SLOT_CONTEXT_KEY in context:
-            overriding_nodelist = context[ACTIVE_SLOT_CONTEXT_KEY].get(self.name)
-        elif False:  # Alternative error-handling approach--not currently active
-            for stack_frame, *_ in inspect.stack():
-                if isinstance(stack_frame.f_locals.get('self'), Component):
-                    overriding_nodelist = stack_frame.f_locals.get('active_slots', {}).get(self.name)
-                    break
-        elif settings.DEBUG:
+        if ACTIVE_SLOT_CONTEXT_KEY not in context:
             raise TemplateSyntaxError(f'Attempted to render SlotNode {self.name} outside of a parent Component or '
                                       'without access to context provided by its parent Component. This will not'
                                       'work properly.')
+
+        overriding_nodelist = context[ACTIVE_SLOT_CONTEXT_KEY].get(self.name, None)
         return overriding_nodelist if overriding_nodelist is not None else self.nodelist
 
     def super(self):
