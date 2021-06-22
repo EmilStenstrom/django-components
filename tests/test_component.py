@@ -1,4 +1,5 @@
 from textwrap import dedent
+from unittest import mock
 
 from django.template import Context, Template
 
@@ -214,4 +215,46 @@ class ComponentIsolationTests(SimpleTestCase):
                 <footer>Override footer</footer>
             </custom-template>
         """
+        )
+
+
+class RecursiveSlotNameTest(SimpleTestCase):
+    def setUp(self):
+        @component.register('outer')
+        class OuterComponent(component.Component):
+            def template(self, context):
+                return "slotted_template.html"
+
+        @component.register('inner')
+        class InnerComponent(component.Component):
+            def template(self, context):
+                return "slotted_template.html"
+
+    def test_no_infinite_recursion_when_slot_name_is_reused(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "outer" %}
+                {% slot "header" %}
+                    {% component_block "inner" %}{% endcomponent_block %}
+                {% endslot %}
+            {% endcomponent_block %}
+        """
+        )
+
+        self.assertHTMLEqual(
+            template.render(Context({})),
+            """
+            <custom-template>
+                <header>
+                    <custom-template>
+                        <header>Default header</header>
+                        <main>Default main</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """
         )
