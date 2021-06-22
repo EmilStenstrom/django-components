@@ -1,5 +1,4 @@
 from textwrap import dedent
-from unittest import mock
 
 from django.template import Context, Template
 

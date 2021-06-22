@@ -1,4 +1,3 @@
-import inspect
 from collections import defaultdict
 
 from django import template
@@ -7,7 +6,7 @@ from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
-from django_components.component import ACTIVE_SLOT_CONTEXT_KEY, Component, registry
+from django_components.component import ACTIVE_SLOT_CONTEXT_KEY, registry
 from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 
 register = template.Library()
