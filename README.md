@@ -214,7 +214,7 @@ Components support something called slots. They work a lot like Django blocks, b
         {% slot "header" %}Calendar header{% endslot %}
     </div>
     <div class="body">
-        {% slot "body" %}Calendar body{% endslot %}
+        {% slot "body" %}Today's date is <span>{{ date }}</span>{% endslot %}
     </div>
 </div>
 ```
@@ -222,8 +222,8 @@ Components support something called slots. They work a lot like Django blocks, b
 When using the component, you specify what slots you want to fill and where you want to use the defaults from the template. It looks like this:
 
 ```htmldjango
-{% component_block "calendar" %}
-    {% slot "body" %}Today's date is <span>{{ date }}</span>{% endslot %}
+{% component_block "calendar" date="2020-06-06" %}
+    {% slot "body" %}Can you belive it's already <span>{{ date }}</span>??{% endslot %}
 {% endcomponent_block %}
 ```
 
@@ -235,7 +235,7 @@ Since the header block is unspecified, it's taken from the base template. If you
         Calendar header
     </div>
     <div class="body">
-        Today's date is <span>2020-06-06</span>
+        Can you believe it's already <span>2020-06-06</span>??
     </div>
 </div>
 
@@ -243,7 +243,28 @@ Since the header block is unspecified, it's taken from the base template. If you
 
 As you can see, component slots lets you write reusable containers, that you fill out when you use a component. This makes for highly reusable components, that can be used in different circumstances.
 
-# Component context
+If you want to include a slot's default content while adding additional content, you can call `slot.super` to insert the base content, which works similarly to `block.super`.  
+
+```htmldjango
+{% component_block "calendar" date="2020-06-06" %}
+    {% slot "body" %}{ slot.super }. Have a great day!{% endslot %}
+{% endcomponent_block %}
+``` 
+
+Produces:
+
+```html
+<div class="calendar-component">
+    <div class="header">
+        Calendar header
+    </div>
+    <div class="body">
+        Today's date is <span>2020-06-06</span>.  Have a great day!
+    </div>
+</div>
+```
+
+# Component context and scope
 
 By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component_block %}` tag):
 
@@ -253,7 +274,8 @@ By default, components can access context variables from the parent template, ju
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
 
-Components can also access the outer context in their context methods by accessing the property `outer_context`.
+Components can also access the outer context in their context methods by accessing the property `outer_context`. 
+
 
 # Available settings
 

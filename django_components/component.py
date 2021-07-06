@@ -114,8 +114,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def render(self, context):
         template_name = self.template(context)
         instance_template = self.get_processed_template(template_name)
-        active_slots = {**context.get(ACTIVE_SLOT_CONTEXT_KEY, {}), **self.slots}
-        with context.update({ACTIVE_SLOT_CONTEXT_KEY: active_slots}):
+        with context.update({ACTIVE_SLOT_CONTEXT_KEY: self.slots}):
             return instance_template.render(context)
 
     class Media:
