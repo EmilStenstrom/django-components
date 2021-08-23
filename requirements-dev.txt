@@ -58,7 +58,7 @@ toml==0.10.2
     # via
     #   pytest
     #   tox
-tox==3.24.2
+tox==3.24.3
     # via -r requirements-dev.in
 virtualenv==20.4.3
     # via tox
