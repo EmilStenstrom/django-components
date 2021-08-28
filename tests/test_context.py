@@ -8,11 +8,10 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
 class SimpleComponent(component.Component):
-    def context(self, variable=None):
-        return {"variable": variable} if variable is not None else {}
+    template_name = "simple_template.html"
 
-    def template(self, context):
-        return "simple_template.html"
+    def get_context(self, variable=None):
+        return {"variable": variable} if variable is not None else {}
 
     @staticmethod
     def expected_output(variable_value):
@@ -20,27 +19,25 @@ class SimpleComponent(component.Component):
 
 
 class ParentComponent(component.Component):
-    def context(self):
+    template_name = "parent_template.html"
+
+    def get_context(self):
         return {
             "shadowing_variable": 'NOT SHADOWED'
         }
 
-    def template(self, context):
-        return "parent_template.html"
-
 
 class ParentComponentWithArgs(component.Component):
-    def context(self, parent_value):
-        return {
-            "inner_parent_value": parent_value
-        }
+    template_name = "parent_with_args_template.html"
 
-    def template(self, context):
-        return "parent_with_args_template.html"
+    def get_context(self, parent_value):
+        return {"inner_parent_value": parent_value}
 
 
 class VariableDisplay(component.Component):
-    def context(self, shadowing_variable=None, new_variable=None):
+    template_name = "variable_display.html"
+
+    def get_context(self, shadowing_variable=None, new_variable=None):
         context = {}
         if shadowing_variable is not None:
             context['shadowing_variable'] = shadowing_variable
@@ -48,32 +45,24 @@ class VariableDisplay(component.Component):
             context['unique_variable'] = new_variable
         return context
 
-    def template(self, context):
-        return "variable_display.html"
-
 
 class IncrementerComponent(component.Component):
-    def context(self, value=0):
+    template_name = "incrementer.html"
+
+    def get_context(self, value=0):
         value = int(value)
         if hasattr(self, 'call_count'):
             self.call_count += 1
         else:
             self.call_count = 1
-        return {
-            "value": value + 1,
-            "calls": self.call_count
-        }
-
-    def template(self, context):
-        return "incrementer.html"
+        return {"value": value + 1, "calls": self.call_count}
 
 
 class OuterContextComponent(component.Component):
-    def context(self):
-        return self.outer_context
+    template_name = "simple_template.html"
 
-    def template(self, context):
-        return "simple_template.html"
+    def get_context(self):
+        return self.outer_context
 
 
 component.registry.register(name='parent_component', component=ParentComponent)

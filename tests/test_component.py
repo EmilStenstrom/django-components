@@ -1,6 +1,7 @@
 from textwrap import dedent
 
 from django.template import Context, Template
+from django.core.exceptions import ImproperlyConfigured
 
 from .django_test_setup import *  # NOQA
 
@@ -13,25 +14,24 @@ class ComponentTest(SimpleTestCase):
         class EmptyComponent(component.Component):
             pass
 
-        with self.assertRaises(NotImplementedError):
-            EmptyComponent("empty_component").template({})
+        with self.assertRaises(ImproperlyConfigured):
+            EmptyComponent("empty_component").get_template_name()
 
     def test_simple_component(self):
         class SimpleComponent(component.Component):
-            def context(self, variable=None):
+            template_name = "simple_template.html"
+
+            def get_context(self, variable=None):
                 return {
                     "variable": variable,
                 }
-
-            def template(self, context):
-                return "simple_template.html"
 
             class Media:
                 css = "style.css"
                 js = "script.js"
 
         comp = SimpleComponent("simple_component")
-        context = Context(comp.context(variable="test"))
+        context = Context(comp.get_context(variable="test"))
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
@@ -59,17 +59,16 @@ class ComponentTest(SimpleTestCase):
 
     def test_component_with_filtered_template(self):
         class FilteredComponent(component.Component):
-            def context(self, var1=None, var2=None):
+            template_name = "filtered_template.html"
+
+            def get_context(self, var1=None, var2=None):
                 return {
                     "var1": var1,
                     "var2": var2,
                 }
 
-            def template(self, context):
-                return "filtered_template.html"
-
         comp = FilteredComponent("filtered_component")
-        context = Context(comp.context(var1="test1", var2="test2"))
+        context = Context(comp.get_context(var1="test1", var2="test2"))
 
         self.assertHTMLEqual(comp.render(context), dedent("""
             Var1: <strong>test1</strong>
@@ -78,21 +77,21 @@ class ComponentTest(SimpleTestCase):
 
     def test_component_with_dynamic_template(self):
         class SvgComponent(component.Component):
-            def context(self, name, css_class="", title="", **attrs):
+            def get_context(self, name, css_class="", title="", **attrs):
                 return {"name": name, "css_class": css_class, "title": title, **attrs}
 
-            def template(self, context):
+            def get_template_name(self, context):
                 return f"svg_{context['name']}.svg"
 
         comp = SvgComponent("svg_component")
         self.assertHTMLEqual(
-            comp.render(Context(comp.context(name="dynamic1"))),
+            comp.render(Context(comp.get_context(name="dynamic1"))),
             dedent("""\
                 <svg>Dynamic1</svg>
             """)
         )
         self.assertHTMLEqual(
-            comp.render(Context(comp.context(name="dynamic2"))),
+            comp.render(Context(comp.get_context(name="dynamic2"))),
             dedent("""\
                 <svg>Dynamic2</svg>
             """)
@@ -171,8 +170,7 @@ class ComponentMediaTests(SimpleTestCase):
 class ComponentIsolationTests(SimpleTestCase):
     def setUp(self):
         class SlottedComponent(component.Component):
-            def template(self, context):
-                return "slotted_template.html"
+            template_name = "slotted_template.html"
 
         component.registry.register('test', SlottedComponent)
 
@@ -221,13 +219,11 @@ class RecursiveSlotNameTest(SimpleTestCase):
     def setUp(self):
         @component.register('outer')
         class OuterComponent(component.Component):
-            def template(self, context):
-                return "slotted_template.html"
+            template_name = "slotted_template.html"
 
         @component.register('inner')
         class InnerComponent(component.Component):
-            def template(self, context):
-                return "slotted_template.html"
+            template_name = "slotted_template.html"
 
     def test_no_infinite_recursion_when_slot_name_is_reused(self):
         template = Template(
