@@ -56,3 +56,11 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# VSCode
+.vscode
+
+# Poetry
+# lock file is not needed for development
+# as project supports variety of Django versions
+poetry.lock

@@ -1,5 +1,0 @@
-django
-tox
-pytest
-flake8
-isort
