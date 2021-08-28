@@ -22,11 +22,11 @@ Read on to learn about the details!
 
 Install the app into your environment:
 
-> ```pip install django_components```
+```> pip install django_components```
 
 Then add the app into INSTALLED APPS in settings.py
 
-```
+```python
 INSTALLED_APPS = [
     ...,
     "django_components",
@@ -34,11 +34,33 @@ INSTALLED_APPS = [
 ]
 ```
 
+Modify `TEMPLATES` section of settings.py as follows:
+- Remove `'APP_DIRS': True,`
+- add `loaders` to `OPTIONS` list and set it to following value:
+```python
+TEMPLATES = [
+    {
+        ...,
+        'OPTIONS': {
+            'context_processors': [
+                ...
+            ],
+            'loaders':[(
+                'django.template.loaders.cached.Loader', [
+                    'django.template.loaders.filesystem.Loader',
+                    'django.template.loaders.app_directories.Loader',
+                    'django_components.template_loader.Loader',
+                ]
+            )],
+        },
+    },
+]
+```
 ## Optional
 
 To avoid loading the app in each template using ``` {% load django_components %} ```, you can add the tag as a 'builtin' in settings.py
 
-```
+```python
 TEMPLATES = [
     {
         ...,
@@ -122,7 +144,7 @@ A component in django-components is the combination of four things: CSS, Javascr
 First you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
 
 ```css
-/* In a file called style.css */
+/* In a file called [your app]/components/calendar/style.css */
 .calendar-component { width: 200px; background: pink; }
 .calendar-component span { font-weight: bold; }
 ```
@@ -130,7 +152,7 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
 ```js
-/* In a file called script.js */
+/* In a file called [your app]/components/calendar/script.js */
 (function(){
     $(".calendar-component").click(function(){ alert("Clicked calendar!"); })
 })()
@@ -139,7 +161,7 @@ Then you need a javascript file that specifies how you interact with this compon
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
 
 ```htmldjango
-{# In a file called calendar.html #}
+{# In a file called [your app]/components/calendar/calendar.html #}
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
 
@@ -157,8 +179,9 @@ class Calendar(component.Component):
             "date": date,
         }
 
+    # Note that Django will seek for templates inside `[your app]/components` dir
     def template(self, context):
-        return "[your app]/components/calendar/calendar.html"
+        return "calendar/calendar.html"
 
     class Media:
         css = '[your app]/components/calendar/calendar.css'
