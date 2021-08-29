@@ -22,7 +22,7 @@ Read on to learn about the details!
 
 Install the app into your environment:
 
-```> pip install django_components```
+> ```pip install django_components```
 
 Then add the app into INSTALLED APPS in settings.py
 
@@ -174,7 +174,7 @@ from django_components import component
 
 @component.register("calendar")
 class Calendar(component.Component):
-    # Note that Django will seek for templates inside `[your app]/components` dir
+    # Note that Django will look for templates inside `[your app]/components` dir
     template_name = "calendar/calendar.html"
 
     class Media:

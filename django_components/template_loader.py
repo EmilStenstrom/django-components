@@ -1,6 +1,5 @@
 """
-Wrapper for loading templates from "components" directories in INSTALLED_APPS
-packages.
+Template loader that loads templates from each Django app's "components" directory.
 """
 
 from django.template.loaders.filesystem import Loader as FilesystemLoader
