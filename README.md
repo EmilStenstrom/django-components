@@ -95,6 +95,14 @@ TEMPLATES = [
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/hanifbirgani">
+            <img src="https://avatars.githubusercontent.com/u/53351186?v=4" width="100;" alt="hanifbirgani"/>
+            <br />
+            <sub><b>Hanif Birgani</b></sub>
+        </a>
+    </td></tr>
+<tr>
+    <td align="center">
         <a href="https://github.com/telenieko">
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
             <br />
