@@ -2,7 +2,6 @@ import warnings
 from functools import lru_cache
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import MediaDefiningClass
 from django.template.base import Node, TokenType
 from django.template.loader import get_template
@@ -42,21 +41,17 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
 
 
 class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
-    template_name = None
 
     def __init__(self, component_name):
         self._component_name = component_name
         self.instance_template = None
         self.slots = {}
 
-    def get_context(self, *args, **kwargs):
-        return kwargs
+    def context(self):
+        return {}
 
-    def get_template_name(self, context=None):
-        if not self.template_name:
-            raise ImproperlyConfigured(f'Template name is not set for Component {self.__class__.__name__}')
-
-        return self.template_name
+    def template(self, context):
+        raise NotImplementedError("Missing template() method on component")
 
     def render_dependencies(self):
         """Helper function to access media.render()"""
@@ -117,21 +112,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         return component_template
 
     def render(self, context):
-        if hasattr(self, 'context'):
-            warnings.warn(
-                f'{self.__class__.__name__}: `context` method is deprecated, use `get_context` instead',
-                DeprecationWarning
-            )
-
-        if hasattr(self, 'template'):
-            warnings.warn(
-                f'{self.__class__.__name__}: `template` method is deprecated, set `template_name` or override `get_template_name` instead',
-                DeprecationWarning
-            )
-            template_name = self.template(context)
-        else:
-            template_name = self.get_template_name(context)
-
+        template_name = self.template(context)
         instance_template = self.get_processed_template(template_name)
         with context.update({ACTIVE_SLOT_CONTEXT_KEY: self.slots}):
             return instance_template.render(context)

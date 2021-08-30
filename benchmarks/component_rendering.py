@@ -10,17 +10,19 @@ from tests.testutils import Django30CompatibleSimpleTestCase as SimpleTestCase, 
 
 
 class SlottedComponent(component.Component):
-    template_name = "slotted_template.html"
+    def template(self, context):
+        return "slotted_template.html"
 
 
 class SimpleComponent(component.Component):
-    template_name = "simple_template.html"
-
-    def get_context(self, variable, variable2="default"):
+    def context(self, variable, variable2="default"):
         return {
             "variable": variable,
             "variable2": variable2,
         }
+
+    def template(self, context):
+        return "simple_template.html"
 
     class Media:
         css = {"all": ["style.css"]}
@@ -28,24 +30,26 @@ class SimpleComponent(component.Component):
 
 
 class BreadcrumbComponent(component.Component):
-    template_name = "mdn_component_template.html"
-
     LINKS = [
-        ('https://developer.mozilla.org/en-US/docs/Learn', 'Learn web development'),
-        ('https://developer.mozilla.org/en-US/docs/Learn/HTML', 'Structuring the web with HTML'),
-        ('https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML', 'Introduction to HTML'),
-        (
-            'https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure',
-            'Document and website structure'
-        )
+        ('https://developer.mozilla.org/en-US/docs/Learn',
+         'Learn web development'),
+        ('https://developer.mozilla.org/en-US/docs/Learn/HTML',
+         'Structuring the web with HTML'),
+        ('https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML',
+         'Introduction to HTML'),
+        ('https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Document_and_website_structure',
+         'Document and website structure')
     ]
 
-    def get_context(self, items):
+    def context(self, items):
         if items > 4:
             items = 4
         elif items < 0:
             items = 0
         return {'links': self.LINKS[:items - 1]}
+
+    def template(self, context):
+        return "mdn_component_template.html"
 
     class Media:
         css = {"all": ["test.css"]}
