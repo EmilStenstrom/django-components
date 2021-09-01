@@ -16,7 +16,7 @@ class SlottedComponent(component.Component):
 class SimpleComponent(component.Component):
     template_name = "simple_template.html"
 
-    def get_context(self, variable, variable2="default"):
+    def get_context_data(self, variable, variable2="default"):
         return {
             "variable": variable,
             "variable2": variable2,
@@ -41,7 +41,7 @@ class BreadcrumbComponent(component.Component):
          'Document and website structure')
     ]
 
-    def get_context(self, items):
+    def get_context_data(self, items):
         if items > 4:
             items = 4
         elif items < 0:

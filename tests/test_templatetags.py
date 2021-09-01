@@ -10,7 +10,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 class SimpleComponent(component.Component):
     template_name = "simple_template.html"
 
-    def get_context(self, variable, variable2="default"):
+    def get_context_data(self, variable, variable2="default"):
         return {
             "variable": variable,
             "variable2": variable2,
@@ -44,14 +44,14 @@ class SlottedComponentNoSlots(component.Component):
 class SlottedComponentWithContext(component.Component):
     template_name = "slotted_template.html"
 
-    def get_context(self, variable):
+    def get_context_data(self, variable):
         return {"variable": variable}
 
 
 class ComponentWithProvidedAndDefaultParameters(component.Component):
     template_name = "template_with_provided_and_default_parameters.html"
 
-    def get_context(self, variable, default_param="default text"):
+    def get_context_data(self, variable, default_param="default text"):
         return {"variable": variable, 'default_param': default_param}
 
 
@@ -417,7 +417,7 @@ class ConditionalSlotTests(SimpleTestCase):
     class ConditionalComponent(component.Component):
         template_name = "conditional_template.html"
 
-        def get_context(self, branch=None):
+        def get_context_data(self, branch=None):
             return {'branch': branch}
 
     @classmethod

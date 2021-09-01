@@ -10,7 +10,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 class SimpleComponent(component.Component):
     template_name = "simple_template.html"
 
-    def get_context(self, variable=None):
+    def get_context_data(self, variable=None):
         return {"variable": variable} if variable is not None else {}
 
     @staticmethod
@@ -21,7 +21,7 @@ class SimpleComponent(component.Component):
 class ParentComponent(component.Component):
     template_name = "parent_template.html"
 
-    def get_context(self):
+    def get_context_data(self):
         return {
             "shadowing_variable": 'NOT SHADOWED'
         }
@@ -30,14 +30,14 @@ class ParentComponent(component.Component):
 class ParentComponentWithArgs(component.Component):
     template_name = "parent_with_args_template.html"
 
-    def get_context(self, parent_value):
+    def get_context_data(self, parent_value):
         return {"inner_parent_value": parent_value}
 
 
 class VariableDisplay(component.Component):
     template_name = "variable_display.html"
 
-    def get_context(self, shadowing_variable=None, new_variable=None):
+    def get_context_data(self, shadowing_variable=None, new_variable=None):
         context = {}
         if shadowing_variable is not None:
             context['shadowing_variable'] = shadowing_variable
@@ -49,7 +49,7 @@ class VariableDisplay(component.Component):
 class IncrementerComponent(component.Component):
     template_name = "incrementer.html"
 
-    def get_context(self, value=0):
+    def get_context_data(self, value=0):
         value = int(value)
         if hasattr(self, 'call_count'):
             self.call_count += 1
@@ -65,7 +65,7 @@ class IncrementerComponent(component.Component):
 class OuterContextComponent(component.Component):
     template_name = "simple_template.html"
 
-    def get_context(self):
+    def get_context_data(self):
         return self.outer_context
 
 

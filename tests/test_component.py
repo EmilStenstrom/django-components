@@ -21,7 +21,7 @@ class ComponentTest(SimpleTestCase):
         class SimpleComponent(component.Component):
             template_name = "simple_template.html"
 
-            def get_context(self, variable=None):
+            def get_context_data(self, variable=None):
                 return {
                     "variable": variable,
                 }
@@ -31,7 +31,7 @@ class ComponentTest(SimpleTestCase):
                 js = "script.js"
 
         comp = SimpleComponent("simple_component")
-        context = Context(comp.get_context(variable="test"))
+        context = Context(comp.get_context_data(variable="test"))
 
         self.assertHTMLEqual(comp.render_dependencies(), dedent("""
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
@@ -61,14 +61,14 @@ class ComponentTest(SimpleTestCase):
         class FilteredComponent(component.Component):
             template_name = "filtered_template.html"
 
-            def get_context(self, var1=None, var2=None):
+            def get_context_data(self, var1=None, var2=None):
                 return {
                     "var1": var1,
                     "var2": var2,
                 }
 
         comp = FilteredComponent("filtered_component")
-        context = Context(comp.get_context(var1="test1", var2="test2"))
+        context = Context(comp.get_context_data(var1="test1", var2="test2"))
 
         self.assertHTMLEqual(comp.render(context), dedent("""
             Var1: <strong>test1</strong>
@@ -77,7 +77,7 @@ class ComponentTest(SimpleTestCase):
 
     def test_component_with_dynamic_template(self):
         class SvgComponent(component.Component):
-            def get_context(self, name, css_class="", title="", **attrs):
+            def get_context_data(self, name, css_class="", title="", **attrs):
                 return {"name": name, "css_class": css_class, "title": title, **attrs}
 
             def get_template_name(self, context):
@@ -85,13 +85,13 @@ class ComponentTest(SimpleTestCase):
 
         comp = SvgComponent("svg_component")
         self.assertHTMLEqual(
-            comp.render(Context(comp.get_context(name="dynamic1"))),
+            comp.render(Context(comp.get_context_data(name="dynamic1"))),
             dedent("""\
                 <svg>Dynamic1</svg>
             """)
         )
         self.assertHTMLEqual(
-            comp.render(Context(comp.get_context(name="dynamic2"))),
+            comp.render(Context(comp.get_context_data(name="dynamic2"))),
             dedent("""\
                 <svg>Dynamic2</svg>
             """)
