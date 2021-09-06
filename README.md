@@ -110,17 +110,17 @@ TEMPLATES = [
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/danjac">
-            <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
-            <br />
-            <sub><b>Dan Jacob</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/hanifbirgani">
             <img src="https://avatars.githubusercontent.com/u/53351186?v=4" width="100;" alt="hanifbirgani"/>
             <br />
             <sub><b>Hanif Birgani</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/danjac">
+            <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
+            <br />
+            <sub><b>Dan Jacob</b></sub>
         </a>
     </td></tr>
 <tr>
@@ -129,6 +129,13 @@ TEMPLATES = [
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
             <br />
             <sub><b>Marc Fargas</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Real-Gecko">
+            <img src="https://avatars.githubusercontent.com/u/2231969?v=4" width="100;" alt="Real-Gecko"/>
+            <br />
+            <sub><b>Real-Gecko</b></sub>
         </a>
     </td></tr>
 </table>
