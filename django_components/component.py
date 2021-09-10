@@ -139,7 +139,8 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
         if hasattr(self, "template"):
             warnings.warn(
-                f"{self.__class__.__name__}: `template` method is deprecated, set `template_name` or override `get_template_name` instead",
+                f"{self.__class__.__name__}: `template` method is deprecated, \
+                set `template_name` or override `get_template_name` instead",
                 DeprecationWarning,
             )
             template_name = self.template(context)
