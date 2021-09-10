@@ -149,7 +149,7 @@ class ComponentNode(Node):
         # context method to get values to insert into the context
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
         resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
-        component_context = self.component.context(*resolved_context_args, **resolved_context_kwargs)
+        component_context = self.component.get_context(*resolved_context_args, **resolved_context_kwargs)
 
         # Create a fresh context if requested
         if self.isolated_context:

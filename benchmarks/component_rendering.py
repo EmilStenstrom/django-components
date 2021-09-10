@@ -10,19 +10,17 @@ from tests.testutils import Django30CompatibleSimpleTestCase as SimpleTestCase, 
 
 
 class SlottedComponent(component.Component):
-    def template(self, context):
-        return "slotted_template.html"
+    template_name = "slotted_template.html"
 
 
 class SimpleComponent(component.Component):
-    def context(self, variable, variable2="default"):
+    template_name = "simple_template.html"
+
+    def get_context(self, variable, variable2="default"):
         return {
             "variable": variable,
             "variable2": variable2,
         }
-
-    def template(self, context):
-        return "simple_template.html"
 
     class Media:
         css = {"all": ["style.css"]}
@@ -30,6 +28,8 @@ class SimpleComponent(component.Component):
 
 
 class BreadcrumbComponent(component.Component):
+    template_name = "mdn_component_template.html"
+
     LINKS = [
         ('https://developer.mozilla.org/en-US/docs/Learn',
          'Learn web development'),
@@ -41,15 +41,12 @@ class BreadcrumbComponent(component.Component):
          'Document and website structure')
     ]
 
-    def context(self, items):
+    def get_context(self, items):
         if items > 4:
             items = 4
         elif items < 0:
             items = 0
         return {'links': self.LINKS[:items - 1]}
-
-    def template(self, context):
-        return "mdn_component_template.html"
 
     class Media:
         css = {"all": ["test.css"]}

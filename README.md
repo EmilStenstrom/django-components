@@ -189,14 +189,8 @@ from django_components import component
 
 @component.register("calendar")
 class Calendar(component.Component):
-    def context(self, date):
-        return {
-            "date": date,
-        }
-
     # Note that Django will look for templates inside `[your app]/components` dir
-    def template(self, context):
-        return "calendar/calendar.html"
+    template_name = "calendar/calendar.html"
 
     class Media:
         css = '[your app]/components/calendar/calendar.css'
