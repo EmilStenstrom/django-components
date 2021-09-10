@@ -8,14 +8,13 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
 class SimpleComponent(component.Component):
-    def context(self, variable, variable2="default"):
+    template_name = "simple_template.html"
+
+    def get_context_data(self, variable, variable2="default"):
         return {
             "variable": variable,
             "variable2": variable2,
         }
-
-    def template(self, context):
-        return "simple_template.html"
 
     class Media:
         css = "style.css"
@@ -23,44 +22,37 @@ class SimpleComponent(component.Component):
 
 
 class IffedComponent(SimpleComponent):
-    def template(self, context):
-        return "iffed_template.html"
+    template_name = "iffed_template.html"
 
 
 class SlottedComponent(component.Component):
-    def template(self, context):
-        return "slotted_template.html"
+    template_name = "slotted_template.html"
 
 
 class BrokenComponent(component.Component):
-    def template(self, context):
-        return "template_with_illegal_slot.html"
+    template_name = "template_with_illegal_slot.html"
 
 
 class SlottedComponentWithMissingVariable(component.Component):
-    def template(self, context):
-        return "slotted_template_with_missing_variable.html"
+    template_name = "slotted_template_with_missing_variable.html"
 
 
 class SlottedComponentNoSlots(component.Component):
-    def template(self, context):
-        return "slotted_template_no_slots.html"
+    template_name = "slotted_template_no_slots.html"
 
 
 class SlottedComponentWithContext(component.Component):
-    def context(self, variable):
-        return {"variable": variable}
+    template_name = "slotted_template.html"
 
-    def template(self, context):
-        return "slotted_template.html"
+    def get_context_data(self, variable):
+        return {"variable": variable}
 
 
 class ComponentWithProvidedAndDefaultParameters(component.Component):
-    def context(self, variable, default_param="default text"):
-        return {"variable": variable, 'default_param': default_param}
+    template_name = "template_with_provided_and_default_parameters.html"
 
-    def template(self, context):
-        return "template_with_provided_and_default_parameters.html"
+    def get_context_data(self, variable, default_param="default text"):
+        return {"variable": variable, 'default_param': default_param}
 
 
 class ComponentTemplateTagTest(SimpleTestCase):
@@ -364,11 +356,7 @@ class TemplateInstrumentationTest(SimpleTestCase):
 
 class NestedSlotTests(SimpleTestCase):
     class NestedComponent(component.Component):
-        def context(self):
-            return {}
-
-        def template(self, context):
-            return "nested_slot_template.html"
+        template_name = "nested_slot_template.html"
 
     @classmethod
     def setUpClass(cls):
@@ -427,11 +415,10 @@ class NestedSlotTests(SimpleTestCase):
 
 class ConditionalSlotTests(SimpleTestCase):
     class ConditionalComponent(component.Component):
-        def context(self, branch=None):
-            return {'branch': branch}
+        template_name = "conditional_template.html"
 
-        def template(self, context):
-            return "conditional_template.html"
+        def get_context_data(self, branch=None):
+            return {'branch': branch}
 
     @classmethod
     def setUpClass(cls):
