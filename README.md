@@ -125,17 +125,17 @@ TEMPLATES = [
     </td></tr>
 <tr>
     <td align="center">
-        <a href="https://github.com/telenieko">
-            <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
-            <br />
-            <sub><b>Marc Fargas</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/Real-Gecko">
             <img src="https://avatars.githubusercontent.com/u/2231969?v=4" width="100;" alt="Real-Gecko"/>
             <br />
             <sub><b>Real-Gecko</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/telenieko">
+            <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
+            <br />
+            <sub><b>Marc Fargas</b></sub>
         </a>
     </td></tr>
 </table>
@@ -189,14 +189,15 @@ from django_components import component
 
 @component.register("calendar")
 class Calendar(component.Component):
-    def context(self, date):
+    # Note that Django will look for templates inside `[your app]/components` dir
+    # To customize which template to use based on context override get_template_name instead
+    template_name = "calendar/calendar.html"
+
+    # This component takes one parameter, a date string to show in the template
+    def get_context_data(self, date):
         return {
             "date": date,
         }
-
-    # Note that Django will look for templates inside `[your app]/components` dir
-    def template(self, context):
-        return "calendar/calendar.html"
 
     class Media:
         css = '[your app]/components/calendar/calendar.css'

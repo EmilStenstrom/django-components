@@ -9,11 +9,10 @@ from .testutils import create_and_process_template_response, Django30CompatibleS
 
 
 class SimpleComponentAlternate(component.Component):
-    def context(self, variable):
-        return {}
+    template_name = "simple_template.html"
 
-    def template(self, context):
-        return "simple_template.html"
+    def get_context_data(self, variable):
+        return {}
 
     class Media:
         css = "style2.css"
@@ -21,14 +20,10 @@ class SimpleComponentAlternate(component.Component):
 
 
 class SimpleComponentWithSharedDependency(component.Component):
-    def context(self, variable, variable2="default"):
-        return {
-            "variable": variable,
-            "variable2": variable2,
-        }
+    template_name = "simple_template.html"
 
-    def template(self, context):
-        return "simple_template.html"
+    def get_context_data(self, variable, variable2="default"):
+        return {}
 
     class Media:
         css = ["style.css", "style2.css"]
@@ -36,8 +31,7 @@ class SimpleComponentWithSharedDependency(component.Component):
 
 
 class MultistyleComponent(component.Component):
-    def template(self, context):
-        return "simple_template.html"
+    template_name = "simple_template.html"
 
     class Media:
         css = ["style.css", "style2.css"]
