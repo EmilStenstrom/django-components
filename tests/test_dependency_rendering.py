@@ -11,6 +11,9 @@ from .testutils import create_and_process_template_response, Django30CompatibleS
 class SimpleComponentAlternate(component.Component):
     template_name = "simple_template.html"
 
+    def get_context_data(self, variable):
+        return {}
+
     class Media:
         css = "style2.css"
         js = "script2.js"
