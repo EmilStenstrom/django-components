@@ -103,17 +103,17 @@ TEMPLATES = [
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/BradleyKirton">
-            <img src="https://avatars.githubusercontent.com/u/6583221?v=4" width="100;" alt="BradleyKirton"/>
-            <br />
-            <sub><b>Bradley Stuart Kirton</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/hanifbirgani">
             <img src="https://avatars.githubusercontent.com/u/53351186?v=4" width="100;" alt="hanifbirgani"/>
             <br />
             <sub><b>Hanif Birgani</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/BradleyKirton">
+            <img src="https://avatars.githubusercontent.com/u/6583221?v=4" width="100;" alt="BradleyKirton"/>
+            <br />
+            <sub><b>Bradley Stuart Kirton</b></sub>
         </a>
     </td>
     <td align="center">
