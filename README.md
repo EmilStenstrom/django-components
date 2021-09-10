@@ -18,6 +18,10 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 Read on to learn about the details!
 
+# Release notes
+
+*Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
+
 # Installation
 
 Install the app into your environment:
