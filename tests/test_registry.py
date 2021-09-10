@@ -1,7 +1,8 @@
 import unittest
 
-from .django_test_setup import *  # NOQA
 from django_components import component
+
+from .django_test_setup import *  # NOQA
 
 
 class MockComponent(object):
@@ -17,14 +18,13 @@ class ComponentRegistryTest(unittest.TestCase):
         class TestComponent(component.Component):
             pass
 
-        self.assertEqual(component.registry.get("decorated_component"), TestComponent)
+        self.assertEqual(
+            component.registry.get("decorated_component"), TestComponent
+        )
 
     def test_simple_register(self):
         self.registry.register(name="testcomponent", component=MockComponent)
-        self.assertEqual(
-            self.registry.all(),
-            {"testcomponent": MockComponent}
-        )
+        self.assertEqual(self.registry.all(), {"testcomponent": MockComponent})
 
     def test_register_two_components(self):
         self.registry.register(name="testcomponent", component=MockComponent)
@@ -34,13 +34,15 @@ class ComponentRegistryTest(unittest.TestCase):
             {
                 "testcomponent": MockComponent,
                 "testcomponent2": MockComponent,
-            }
+            },
         )
 
     def test_prevent_registering_twice(self):
         self.registry.register(name="testcomponent", component=MockComponent)
         with self.assertRaises(component.AlreadyRegistered):
-            self.registry.register(name="testcomponent", component=MockComponent)
+            self.registry.register(
+                name="testcomponent", component=MockComponent
+            )
 
     def test_simple_unregister(self):
         self.registry.register(name="testcomponent", component=MockComponent)

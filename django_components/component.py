@@ -9,10 +9,16 @@ from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
-from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered  # noqa
+from django_components.component_registry import (  # noqa
+    AlreadyRegistered,
+    ComponentRegistry,
+    NotRegistered,
+)
 
-TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get('TEMPLATE_CACHE_SIZE', 128)
-ACTIVE_SLOT_CONTEXT_KEY = '_DJANGO_COMPONENTS_ACTIVE_SLOTS'
+TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get(
+    "TEMPLATE_CACHE_SIZE", 128
+)
+ACTIVE_SLOT_CONTEXT_KEY = "_DJANGO_COMPONENTS_ACTIVE_SLOTS"
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
@@ -54,7 +60,9 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def get_template_name(self, context=None):
         if not self.template_name:
-            raise ImproperlyConfigured(f'Template name is not set for Component {self.__class__.__name__}')
+            raise ImproperlyConfigured(
+                f"Template name is not set for Component {self.__class__.__name__}"
+            )
 
         return self.template_name
 
@@ -75,13 +83,19 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     @staticmethod
     def slots_in_template(template):
-        return {node.name: node.nodelist for node in template.template.nodelist if Component.is_slot_node(node)}
+        return {
+            node.name: node.nodelist
+            for node in template.template.nodelist
+            if Component.is_slot_node(node)
+        }
 
     @staticmethod
     def is_slot_node(node):
-        return (isinstance(node, Node)
-                and node.token.token_type == TokenType.BLOCK
-                and node.token.split_contents()[0] == "slot")
+        return (
+            isinstance(node, Node)
+            and node.token.token_type == TokenType.BLOCK
+            and node.token.split_contents()[0] == "slot"
+        )
 
     @lru_cache(maxsize=TEMPLATE_CACHE_SIZE)
     def get_processed_template(self, template_name):
@@ -117,16 +131,16 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         return component_template
 
     def render(self, context):
-        if hasattr(self, 'context'):
+        if hasattr(self, "context"):
             warnings.warn(
-                f'{self.__class__.__name__}: `context` method is deprecated, use `get_context` instead',
-                DeprecationWarning
+                f"{self.__class__.__name__}: `context` method is deprecated, use `get_context` instead",
+                DeprecationWarning,
             )
 
-        if hasattr(self, 'template'):
+        if hasattr(self, "template"):
             warnings.warn(
-                f'{self.__class__.__name__}: `template` method is deprecated, set `template_name` or override `get_template_name` instead',
-                DeprecationWarning
+                f"{self.__class__.__name__}: `template` method is deprecated, set `template_name` or override `get_template_name` instead",
+                DeprecationWarning,
             )
             template_name = self.template(context)
         else:

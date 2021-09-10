@@ -3,14 +3,16 @@ import os
 
 from setuptools import find_packages, setup
 
-VERSION = '0.16'
+VERSION = "0.16"
 
 setup(
     name="django_components",
     packages=find_packages(exclude=["tests"]),
     version=VERSION,
     description="A way to create simple reusable template components in Django.",
-    long_description=open(os.path.join(os.path.dirname(__file__), "README.md")).read(),
+    long_description=open(
+        os.path.join(os.path.dirname(__file__), "README.md")
+    ).read(),
     long_description_content_type="text/markdown",
     author=u"Emil Stenström",
     author_email="emil@emilstenstrom.se",

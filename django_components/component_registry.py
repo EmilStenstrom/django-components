@@ -12,7 +12,9 @@ class ComponentRegistry(object):
 
     def register(self, name=None, component=None):
         if name in self._registry:
-            raise AlreadyRegistered('The component "%s" is already registered' % name)
+            raise AlreadyRegistered(
+                'The component "%s" is already registered' % name
+            )
 
         self._registry[name] = component
 
