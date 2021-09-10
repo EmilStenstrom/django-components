@@ -2,8 +2,9 @@ from textwrap import dedent
 
 from django.template import Context, Template, TemplateSyntaxError
 
-from .django_test_setup import *  # NOQA
 from django_components import component
+
+from .django_test_setup import *  # NOQA
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
@@ -52,7 +53,7 @@ class ComponentWithProvidedAndDefaultParameters(component.Component):
     template_name = "template_with_provided_and_default_parameters.html"
 
     def get_context_data(self, variable, default_param="default text"):
-        return {"variable": variable, 'default_param': default_param}
+        return {"variable": variable, "default_param": default_param}
 
 
 class ComponentTemplateTagTest(SimpleTestCase):
@@ -105,7 +106,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         component.registry.register(name="test", component=SimpleComponent)
 
         template = Template(
-            '{% load component_tags %}{% component \'test\' variable="variable" %}'
+            "{% load component_tags %}{% component 'test' variable=\"variable\" %}"
         )
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
@@ -147,7 +148,9 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         )
 
     def test_slotted_template_with_context_var(self):
-        component.registry.register(name="test1", component=SlottedComponentWithContext)
+        component.registry.register(
+            name="test1", component=SlottedComponentWithContext
+        )
 
         template = Template(
             """
@@ -197,7 +200,9 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         )
 
     def test_slotted_template_without_slots(self):
-        component.registry.register(name="test", component=SlottedComponentNoSlots)
+        component.registry.register(
+            name="test", component=SlottedComponentNoSlots
+        )
         template = Template(
             """
             {% load component_tags %}
@@ -209,7 +214,9 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
 
     def test_slotted_template_without_slots_and_single_quotes(self):
-        component.registry.register(name="test", component=SlottedComponentNoSlots)
+        component.registry.register(
+            name="test", component=SlottedComponentNoSlots
+        )
         template = Template(
             """
             {% load component_tags %}
@@ -227,7 +234,9 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         component.registry.clear()
 
     def test_slotted_template_that_uses_missing_variable(self):
-        component.registry.register(name="test", component=SlottedComponentWithMissingVariable)
+        component.registry.register(
+            name="test", component=SlottedComponentWithMissingVariable
+        )
         template = Template(
             """
             {% load component_tags %}
@@ -236,23 +245,30 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         )
         rendered = template.render(Context({}))
 
-        self.assertHTMLEqual(rendered, """
+        self.assertHTMLEqual(
+            rendered,
+            """
             <custom-template>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
-        """)
+        """,
+        )
 
     def test_component_block_accepts_provided_and_default_parameters(self):
-        component.registry.register(name="test", component=ComponentWithProvidedAndDefaultParameters)
+        component.registry.register(
+            name="test", component=ComponentWithProvidedAndDefaultParameters
+        )
 
         template = Template(
             '{% load component_tags %}{% component_block "test" variable="provided value" %}{% endcomponent_block %}'
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered,
-                             "Provided variable: <strong>provided value</strong>\nDefault: <p>default text</p>")
+        self.assertHTMLEqual(
+            rendered,
+            "Provided variable: <strong>provided value</strong>\nDefault: <p>default text</p>",
+        )
 
 
 class MultiComponentTests(SimpleTestCase):
@@ -260,24 +276,38 @@ class MultiComponentTests(SimpleTestCase):
         component.registry.clear()
 
     def register_components(self):
-        component.registry.register('first_component', SlottedComponent)
-        component.registry.register('second_component', SlottedComponentWithContext)
+        component.registry.register("first_component", SlottedComponent)
+        component.registry.register(
+            "second_component", SlottedComponentWithContext
+        )
 
-    def make_template(self, first_component_slot='', second_component_slot=''):
-        return Template('{% load component_tags %}'
-                        "{% component_block 'first_component' %}"
-                        + first_component_slot + '{% endcomponent_block %}'
-                                                 "{% component_block 'second_component' variable='xyz' %}"
-                        + second_component_slot + '{% endcomponent_block %}')
+    def make_template(self, first_component_slot="", second_component_slot=""):
+        return Template(
+            "{% load component_tags %}"
+            "{% component_block 'first_component' %}"
+            + first_component_slot
+            + "{% endcomponent_block %}"
+            "{% component_block 'second_component' variable='xyz' %}"
+            + second_component_slot
+            + "{% endcomponent_block %}"
+        )
 
-    def expected_result(self, first_component_slot='', second_component_slot=''):
-        return ('<custom-template><header>{}</header>'.format(first_component_slot or "Default header")
-                + '<main>Default main</main><footer>Default footer</footer></custom-template>'
-                + '<custom-template><header>{}</header>'.format(second_component_slot or "Default header")
-                + '<main>Default main</main><footer>Default footer</footer></custom-template>')
+    def expected_result(
+        self, first_component_slot="", second_component_slot=""
+    ):
+        return (
+            "<custom-template><header>{}</header>".format(
+                first_component_slot or "Default header"
+            )
+            + "<main>Default main</main><footer>Default footer</footer></custom-template>"
+            + "<custom-template><header>{}</header>".format(
+                second_component_slot or "Default header"
+            )
+            + "<main>Default main</main><footer>Default footer</footer></custom-template>"
+        )
 
     def wrap_with_slot_tags(self, s):
-        return '{% slot "header" %}' + s + '{% endslot %}'
+        return '{% slot "header" %}' + s + "{% endslot %}"
 
     def test_both_components_render_correctly_with_no_slots(self):
         self.register_components()
@@ -286,26 +316,35 @@ class MultiComponentTests(SimpleTestCase):
 
     def test_both_components_render_correctly_with_slots(self):
         self.register_components()
-        first_slot_content = '<p>Slot #1</p>'
-        second_slot_content = '<div>Slot #2</div>'
+        first_slot_content = "<p>Slot #1</p>"
+        second_slot_content = "<div>Slot #2</div>"
         first_slot = self.wrap_with_slot_tags(first_slot_content)
         second_slot = self.wrap_with_slot_tags(second_slot_content)
-        rendered = self.make_template(first_slot, second_slot).render(Context({}))
-        self.assertHTMLEqual(rendered, self.expected_result(first_slot_content, second_slot_content))
+        rendered = self.make_template(first_slot, second_slot).render(
+            Context({})
+        )
+        self.assertHTMLEqual(
+            rendered,
+            self.expected_result(first_slot_content, second_slot_content),
+        )
 
     def test_both_components_render_correctly_when_only_first_has_slots(self):
         self.register_components()
-        first_slot_content = '<p>Slot #1</p>'
+        first_slot_content = "<p>Slot #1</p>"
         first_slot = self.wrap_with_slot_tags(first_slot_content)
         rendered = self.make_template(first_slot).render(Context({}))
-        self.assertHTMLEqual(rendered, self.expected_result(first_slot_content))
+        self.assertHTMLEqual(
+            rendered, self.expected_result(first_slot_content)
+        )
 
     def test_both_components_render_correctly_when_only_second_has_slots(self):
         self.register_components()
-        second_slot_content = '<div>Slot #2</div>'
+        second_slot_content = "<div>Slot #2</div>"
         second_slot = self.wrap_with_slot_tags(second_slot_content)
-        rendered = self.make_template('', second_slot).render(Context({}))
-        self.assertHTMLEqual(rendered, self.expected_result('', second_slot_content))
+        rendered = self.make_template("", second_slot).render(Context({}))
+        self.assertHTMLEqual(
+            rendered, self.expected_result("", second_slot_content)
+        )
 
 
 class TemplateInstrumentationTest(SimpleTestCase):
@@ -323,8 +362,8 @@ class TemplateInstrumentationTest(SimpleTestCase):
 
     def setUp(self):
         component.registry.clear()
-        component.registry.register('test_component', SlottedComponent)
-        component.registry.register('inner_component', SimpleComponent)
+        component.registry.register("test_component", SlottedComponent)
+        component.registry.register("inner_component", SimpleComponent)
 
     def templates_used_to_render(self, subject_template, render_context=None):
         """Emulate django.test.client.Client (see request method)."""
@@ -335,23 +374,31 @@ class TemplateInstrumentationTest(SimpleTestCase):
         def receive_template_signal(sender, template, context, **_kwargs):
             templates_used.append(template.name)
 
-        template_rendered.connect(receive_template_signal, dispatch_uid='test_method')
+        template_rendered.connect(
+            receive_template_signal, dispatch_uid="test_method"
+        )
         subject_template.render(render_context or Context({}))
-        template_rendered.disconnect(dispatch_uid='test_method')
+        template_rendered.disconnect(dispatch_uid="test_method")
         return templates_used
 
     def test_template_shown_as_used(self):
-        template = Template("{% load component_tags %}{% component 'test_component' %}", name='root')
+        template = Template(
+            "{% load component_tags %}{% component 'test_component' %}",
+            name="root",
+        )
         templates_used = self.templates_used_to_render(template)
-        self.assertIn('slotted_template.html', templates_used)
+        self.assertIn("slotted_template.html", templates_used)
 
     def test_nested_component_templates_all_shown_as_used(self):
-        template = Template("{% load component_tags %}{% component_block 'test_component' %}"
-                            "{% slot \"header\" %}{% component 'inner_component' variable='foo' %}{% endslot %}"
-                            "{% endcomponent_block %}", name='root')
+        template = Template(
+            "{% load component_tags %}{% component_block 'test_component' %}"
+            "{% slot \"header\" %}{% component 'inner_component' variable='foo' %}{% endslot %}"
+            "{% endcomponent_block %}",
+            name="root",
+        )
         templates_used = self.templates_used_to_render(template)
-        self.assertIn('slotted_template.html', templates_used)
-        self.assertIn('simple_template.html', templates_used)
+        self.assertIn("slotted_template.html", templates_used)
+        self.assertIn("simple_template.html", templates_used)
 
 
 class NestedSlotTests(SimpleTestCase):
@@ -362,7 +409,7 @@ class NestedSlotTests(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         component.registry.clear()
-        component.registry.register('test', cls.NestedComponent)
+        component.registry.register("test", cls.NestedComponent)
 
     @classmethod
     def tearDownClass(cls):
@@ -397,7 +444,7 @@ class NestedSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p>Override</p>')
+        self.assertHTMLEqual(rendered, "<p>Override</p>")
 
     def test_both_overriden_and_inner_removed(self):
         template = Template(
@@ -410,7 +457,7 @@ class NestedSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p>Override</p>')
+        self.assertHTMLEqual(rendered, "<p>Override</p>")
 
 
 class ConditionalSlotTests(SimpleTestCase):
@@ -418,13 +465,13 @@ class ConditionalSlotTests(SimpleTestCase):
         template_name = "conditional_template.html"
 
         def get_context_data(self, branch=None):
-            return {'branch': branch}
+            return {"branch": branch}
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         component.registry.clear()
-        component.registry.register('test', cls.ConditionalComponent)
+        component.registry.register("test", cls.ConditionalComponent)
 
     @classmethod
     def tearDownClass(cls):
@@ -442,7 +489,7 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '')
+        self.assertHTMLEqual(rendered, "")
 
     def test_default_content_if_no_slots(self):
         template = Template(
@@ -453,7 +500,9 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Default B</p>')
+        self.assertHTMLEqual(
+            rendered, '<p id="a">Default A</p><p id="b">Default B</p>'
+        )
 
     def test_one_slot_overridden(self):
         template = Template(
@@ -468,7 +517,9 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Override B</p>')
+        self.assertHTMLEqual(
+            rendered, '<p id="a">Default A</p><p id="b">Override B</p>'
+        )
 
     def test_both_slots_overridden(self):
         template = Template(
@@ -485,7 +536,9 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
+        self.assertHTMLEqual(
+            rendered, '<p id="a">Override A</p><p id="b">Override B</p>'
+        )
 
 
 class SlotSuperTests(SimpleTestCase):
@@ -493,7 +546,7 @@ class SlotSuperTests(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         component.registry.clear()
-        component.registry.register('test', SlottedComponent)
+        component.registry.register("test", SlottedComponent)
 
     @classmethod
     def tearDownClass(cls):
@@ -561,7 +614,7 @@ class SlotSuperTests(SimpleTestCase):
             {% endcomponent_block %}
         """
         )
-        rendered = template.render(Context({'range': range(3)}))
+        rendered = template.render(Context({"range": range(3)}))
 
         self.assertHTMLEqual(
             rendered,
@@ -579,8 +632,8 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        component.registry.register('test', SlottedComponent)
-        component.registry.register('broken_component', BrokenComponent)
+        component.registry.register("test", SlottedComponent)
+        component.registry.register("broken_component", BrokenComponent)
 
     def test_variable_outside_slot_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):

@@ -1,11 +1,11 @@
 from textwrap import dedent
 
-from django.template import Context, Template
 from django.core.exceptions import ImproperlyConfigured
-
-from .django_test_setup import *  # NOQA
+from django.template import Context, Template
 
 from django_components import component
+
+from .django_test_setup import *  # NOQA
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
@@ -33,14 +33,24 @@ class ComponentTest(SimpleTestCase):
         comp = SimpleComponent("simple_component")
         context = Context(comp.get_context_data(variable="test"))
 
-        self.assertHTMLEqual(comp.render_dependencies(), dedent("""
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <script src="script.js"></script>
-        """).strip())
+        """
+            ).strip(),
+        )
 
-        self.assertHTMLEqual(comp.render(context), dedent("""
+        self.assertHTMLEqual(
+            comp.render(context),
+            dedent(
+                """
             Variable: <strong>test</strong>
-        """).lstrip())
+        """
+            ).lstrip(),
+        )
 
     def test_component_with_list_of_styles(self):
         class MultistyleComponent(component.Component):
@@ -50,12 +60,17 @@ class ComponentTest(SimpleTestCase):
 
         comp = MultistyleComponent("multistyle_component")
 
-        self.assertHTMLEqual(comp.render_dependencies(), dedent("""
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """
             <link href="style.css" type="text/css" media="all" rel="stylesheet">
             <link href="style2.css" type="text/css" media="all" rel="stylesheet">
             <script src="script.js"></script>
             <script src="script2.js"></script>
-        """).strip())
+        """
+            ).strip(),
+        )
 
     def test_component_with_filtered_template(self):
         class FilteredComponent(component.Component):
@@ -70,15 +85,25 @@ class ComponentTest(SimpleTestCase):
         comp = FilteredComponent("filtered_component")
         context = Context(comp.get_context_data(var1="test1", var2="test2"))
 
-        self.assertHTMLEqual(comp.render(context), dedent("""
+        self.assertHTMLEqual(
+            comp.render(context),
+            dedent(
+                """
             Var1: <strong>test1</strong>
             Var2 (uppercased): <strong>TEST2</strong>
-        """).lstrip())
+        """
+            ).lstrip(),
+        )
 
     def test_component_with_dynamic_template(self):
         class SvgComponent(component.Component):
             def get_context_data(self, name, css_class="", title="", **attrs):
-                return {"name": name, "css_class": css_class, "title": title, **attrs}
+                return {
+                    "name": name,
+                    "css_class": css_class,
+                    "title": title,
+                    **attrs,
+                }
 
             def get_template_name(self, context):
                 return f"svg_{context['name']}.svg"
@@ -86,15 +111,19 @@ class ComponentTest(SimpleTestCase):
         comp = SvgComponent("svg_component")
         self.assertHTMLEqual(
             comp.render(Context(comp.get_context_data(name="dynamic1"))),
-            dedent("""\
+            dedent(
+                """\
                 <svg>Dynamic1</svg>
-            """)
+            """
+            ),
         )
         self.assertHTMLEqual(
             comp.render(Context(comp.get_context_data(name="dynamic2"))),
-            dedent("""\
+            dedent(
+                """\
                 <svg>Dynamic2</svg>
-            """)
+            """
+            ),
         )
 
 
@@ -108,10 +137,12 @@ class ComponentMediaTests(SimpleTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent("""\
+            dedent(
+                """\
                 <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
                 <script src="path/to/script.js"></script>
-            """)
+            """
+            ),
         )
 
     def test_component_media_with_lists(self):
@@ -123,11 +154,13 @@ class ComponentMediaTests(SimpleTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent("""\
+            dedent(
+                """\
                 <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
                 <link href="path/to/style2.css" type="text/css" media="all" rel="stylesheet">
                 <script src="path/to/script.js"></script>
-            """)
+            """
+            ),
         )
 
     def test_component_media_with_dict_and_list(self):
@@ -143,12 +176,14 @@ class ComponentMediaTests(SimpleTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent("""\
+            dedent(
+                """\
                 <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
                 <link href="path/to/style2.css" type="text/css" media="print" rel="stylesheet">
                 <link href="path/to/style3.css" type="text/css" media="screen" rel="stylesheet">
                 <script src="path/to/script.js"></script>
-            """)
+            """
+            ),
         )
 
     def test_component_media_with_dict_with_list_and_list(self):
@@ -160,10 +195,12 @@ class ComponentMediaTests(SimpleTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent("""\
+            dedent(
+                """\
                 <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
                 <script src="path/to/script.js"></script>
-            """)
+            """
+            ),
         )
 
 
@@ -172,7 +209,7 @@ class ComponentIsolationTests(SimpleTestCase):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
 
-        component.registry.register('test', SlottedComponent)
+        component.registry.register("test", SlottedComponent)
 
     def test_instances_of_component_do_not_share_slots(self):
         template = Template(
@@ -211,17 +248,17 @@ class ComponentIsolationTests(SimpleTestCase):
                 <main>Default main</main>
                 <footer>Override footer</footer>
             </custom-template>
-        """
+        """,
         )
 
 
 class RecursiveSlotNameTest(SimpleTestCase):
     def setUp(self):
-        @component.register('outer')
+        @component.register("outer")
         class OuterComponent(component.Component):
             template_name = "slotted_template.html"
 
-        @component.register('inner')
+        @component.register("inner")
         class InnerComponent(component.Component):
             template_name = "slotted_template.html"
 
@@ -251,5 +288,5 @@ class RecursiveSlotNameTest(SimpleTestCase):
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
-            """
+            """,
         )

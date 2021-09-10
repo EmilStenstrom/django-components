@@ -8,11 +8,13 @@ RENDERED_COMPONENTS_CONTEXT_KEY = "_COMPONENT_DEPENDENCIES"
 CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
 JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER">'
 
-SCRIPT_TAG_REGEX = re.compile('<script')
-COMPONENT_COMMENT_REGEX = re.compile(rb'<!-- _RENDERED (?P<name>\w+?) -->')
-PLACEHOLDER_REGEX = re.compile(rb'<!-- _RENDERED (?P<name>\w+?) -->'
-                               rb'|<link name="CSS_PLACEHOLDER">'
-                               rb'|<script name="JS_PLACEHOLDER">')
+SCRIPT_TAG_REGEX = re.compile("<script")
+COMPONENT_COMMENT_REGEX = re.compile(rb"<!-- _RENDERED (?P<name>\w+?) -->")
+PLACEHOLDER_REGEX = re.compile(
+    rb"<!-- _RENDERED (?P<name>\w+?) -->"
+    rb'|<link name="CSS_PLACEHOLDER">'
+    rb'|<script name="JS_PLACEHOLDER">'
+)
 
 
 class ComponentDependencyMiddleware:
@@ -25,9 +27,13 @@ class ComponentDependencyMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
-        if getattr(settings, "COMPONENTS", {}).get('RENDER_DEPENDENCIES', False)\
-                and not isinstance(response, StreamingHttpResponse)\
-                and response['Content-Type'].startswith('text/html'):
+        if (
+            getattr(settings, "COMPONENTS", {}).get(
+                "RENDER_DEPENDENCIES", False
+            )
+            and not isinstance(response, StreamingHttpResponse)
+            and response["Content-Type"].startswith("text/html")
+        ):
             response.content = process_response_content(response.content)
         return response
 
@@ -35,12 +41,23 @@ class ComponentDependencyMiddleware:
 def process_response_content(content):
     from django_components.component import registry
 
-    component_names_seen = {match.group('name') for match in COMPONENT_COMMENT_REGEX.finditer(content)}
-    all_components = [registry.get(name.decode('utf-8'))('') for name in component_names_seen]
+    component_names_seen = {
+        match.group("name")
+        for match in COMPONENT_COMMENT_REGEX.finditer(content)
+    }
+    all_components = [
+        registry.get(name.decode("utf-8"))("") for name in component_names_seen
+    ]
     all_media = join_media(all_components)
-    js_dependencies = b''.join(media.encode('utf-8') for media in all_media.render_js())
-    css_dependencies = b''.join(media.encode('utf-8') for media in all_media.render_css())
-    return PLACEHOLDER_REGEX.sub(DependencyReplacer(css_dependencies, js_dependencies), content)
+    js_dependencies = b"".join(
+        media.encode("utf-8") for media in all_media.render_js()
+    )
+    css_dependencies = b"".join(
+        media.encode("utf-8") for media in all_media.render_css()
+    )
+    return PLACEHOLDER_REGEX.sub(
+        DependencyReplacer(css_dependencies, js_dependencies), content
+    )
 
 
 def add_module_attribute_to_scripts(scripts):
@@ -51,8 +68,8 @@ class DependencyReplacer:
     """Replacer for use in re.sub that replaces the first placeholder CSS and JS
     tags it encounters and removes any subsequent ones."""
 
-    CSS_PLACEHOLDER = bytes(CSS_DEPENDENCY_PLACEHOLDER, encoding='utf-8')
-    JS_PLACEHOLDER = bytes(JS_DEPENDENCY_PLACEHOLDER, encoding='utf-8')
+    CSS_PLACEHOLDER = bytes(CSS_DEPENDENCY_PLACEHOLDER, encoding="utf-8")
+    JS_PLACEHOLDER = bytes(JS_DEPENDENCY_PLACEHOLDER, encoding="utf-8")
 
     def __init__(self, css_string, js_string):
         self.js_string = js_string
@@ -64,7 +81,7 @@ class DependencyReplacer:
         elif match[0] == self.JS_PLACEHOLDER:
             replacement, self.js_string = self.js_string, b""
         else:
-            replacement = b''
+            replacement = b""
         return replacement
 
 
