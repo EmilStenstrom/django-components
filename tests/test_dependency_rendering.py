@@ -20,10 +20,7 @@ class SimpleComponentWithSharedDependency(component.Component):
     template_name = "simple_template.html"
 
     def get_context_data(self, variable, variable2="default"):
-        return {
-            "variable": variable,
-            "variable2": variable2,
-        }
+        return {}
 
     class Media:
         css = ["style.css", "style2.css"]
