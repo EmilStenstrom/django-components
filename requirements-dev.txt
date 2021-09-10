@@ -52,7 +52,7 @@ six==1.15.0
     # via
     #   tox
     #   virtualenv
-sqlparse==0.4.1
+sqlparse==0.4.2
     # via django
 toml==0.10.2
     # via
