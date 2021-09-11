@@ -19,3 +19,5 @@ exclude = '''
 [tool.isort]
 profile = "black"
 multi_line_output = 3
+include_trailing_comma = "True"
+known_first_party = "django_components"
