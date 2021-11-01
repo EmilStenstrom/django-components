@@ -93,6 +93,13 @@ TEMPLATES = [
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/hanifbirgani">
+            <img src="https://avatars.githubusercontent.com/u/53351186?v=4" width="100;" alt="hanifbirgani"/>
+            <br />
+            <sub><b>Hanif Birgani</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/ryanhiebert">
             <img src="https://avatars.githubusercontent.com/u/425099?v=4" width="100;" alt="ryanhiebert"/>
             <br />
@@ -104,13 +111,6 @@ TEMPLATES = [
             <img src="https://avatars.githubusercontent.com/u/2442690?v=4" width="100;" alt="rbeard0330"/>
             <br />
             <sub><b>Rbeard0330</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/hanifbirgani">
-            <img src="https://avatars.githubusercontent.com/u/53351186?v=4" width="100;" alt="hanifbirgani"/>
-            <br />
-            <sub><b>Hanif Birgani</b></sub>
         </a>
     </td>
     <td align="center">
@@ -237,10 +237,10 @@ The output from the above template will be:
 <head>
     <title>My example calendar</title>
     <link href="style.css" type="text/css" media="all" rel="stylesheet">
-    <script src="script.js"></script>
 </head>
 <body>
     <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
+    <script src="script.js"></script>
 </body>
 <html>
 ```

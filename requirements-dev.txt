@@ -12,13 +12,13 @@ attrs==20.3.0
     # via pytest
 distlib==0.3.1
     # via virtualenv
-django==3.2.7
+django==3.2.9
     # via -r requirements-dev.in
 filelock==3.0.12
     # via
     #   tox
     #   virtualenv
-flake8==3.9.2
+flake8==4.0.1
     # via -r requirements-dev.in
 iniconfig==1.1.1
     # via pytest
@@ -38,9 +38,9 @@ py==1.10.0
     # via
     #   pytest
     #   tox
-pycodestyle==2.7.0
+pycodestyle==2.8.0
     # via flake8
-pyflakes==2.3.1
+pyflakes==2.4.0
     # via flake8
 pyparsing==2.4.7
     # via packaging
@@ -52,13 +52,13 @@ six==1.15.0
     # via
     #   tox
     #   virtualenv
-sqlparse==0.4.1
+sqlparse==0.4.2
     # via django
 toml==0.10.2
     # via
     #   pytest
     #   tox
-tox==3.24.3
+tox==3.24.4
     # via -r requirements-dev.in
 virtualenv==20.4.3
     # via tox
