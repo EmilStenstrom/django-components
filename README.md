@@ -141,6 +141,13 @@ TEMPLATES = [
             <br />
             <sub><b>Marc Fargas</b></sub>
         </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/spollard">
+            <img src="https://avatars.githubusercontent.com/u/1459574?v=4" width="100;" alt="spollard"/>
+            <br />
+            <sub><b>spollard</b></sub>
+        </a>
     </td></tr>
 </table>
 <!-- readme: contributors -end -->
