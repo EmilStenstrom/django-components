@@ -146,7 +146,7 @@ TEMPLATES = [
         <a href="https://github.com/spollard">
             <img src="https://avatars.githubusercontent.com/u/1459574?v=4" width="100;" alt="spollard"/>
             <br />
-            <sub><b>spollard</b></sub>
+            <sub><b>Spollard</b></sub>
         </a>
     </td></tr>
 </table>
