@@ -19,6 +19,7 @@ TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get(
     "TEMPLATE_CACHE_SIZE", 128
 )
 ACTIVE_SLOT_CONTEXT_KEY = "_DJANGO_COMPONENTS_ACTIVE_SLOTS"
+ALL_SLOT_CONTEXT_KEY = "_DJANGO_COMPONENTS_ALL_SLOTS"
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
@@ -54,6 +55,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self._component_name = component_name
         self.instance_template = None
         self.slots = {}
+        self.exported_slots = {}
 
     def get_context_data(self):
         return {}
@@ -148,7 +150,14 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             template_name = self.get_template_name(context)
 
         instance_template = self.get_processed_template(template_name)
-        with context.update({ACTIVE_SLOT_CONTEXT_KEY: self.slots}):
+
+        available_slots = {**context.get(ALL_SLOT_CONTEXT_KEY, {})}
+        exported_slots_filled = {}
+        for slot in self.exported_slots:
+            if slot.export_name in available_slots:
+                exported_slots_filled[slot.name] = available_slots.pop(slot.export_name)
+        with context.update({ACTIVE_SLOT_CONTEXT_KEY: {**self.slots, **exported_slots_filled},
+                             ALL_SLOT_CONTEXT_KEY: {**available_slots, **self.slots}}):
             return instance_template.render(context)
 
     class Media:

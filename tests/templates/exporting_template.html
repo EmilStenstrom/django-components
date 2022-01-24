@@ -1,0 +1,5 @@
+{% load component_tags %}
+{% component_block 'inner' %}
+    {% slot header export_as='exported_header' %}{% endslot %}
+    {% slot main export_as='exported_main' with_new_default_content=True %}Replacement main{% endslot %}
+{% endcomponent_block %}

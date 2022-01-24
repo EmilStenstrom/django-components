@@ -2,9 +2,9 @@ from textwrap import dedent
 
 from django.template import Context, Template, TemplateSyntaxError
 
+from .django_test_setup import *  # NOQA
 from django_components import component
 
-from .django_test_setup import *  # NOQA
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 

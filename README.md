@@ -314,6 +314,36 @@ Produces:
 </div>
 ```
 
+Normal slots can only be filled with "local" content, meaning content that is included between the `component_block` tags that create the component that has the slot.  If you need more flexibility, you can "export" a slot. This can be useful when you're creating a nested component. Exporting a slot is as simple as including the slot in the right component and adding an `export_as` argument to the tag. For example, if we wanted to create a dashboard component that uses our calendar component, we could do it with a template like this:
+
+```
+<div id="dashboard">
+{% component_block "calendar" date="2020-06-06" %}
+    {% slot header export_as=calendar_header %}{% endslot %}
+    {% slot body %}Here are your to-do items for today:{% endslot %}
+{% endcomponent_block %}
+<ol>
+{% for item in items %}
+    <li>{{ item }} </li>
+{% endfor %}
+</ol>
+</div>
+```
+
+A user of this component will be able to specify content to go in the header slot (using the slot name "calendar_header"), but they won't be able to customize the body slot, which is local.  If no content is provided for the new calendar_header slot, the default content for the inner component will be used.  If you want to provide different default content, you can put it inside the slot tags and add `with_new_default_content=True` to the tag:
+
+```
+<div id="dashboard">
+{% component_block "calendar" date="2020-06-06" %}
+    {% slot header export_as=calendar_header with_new_default_content=True %}
+        Welcome to your dashboard!
+    {% endslot %}
+    {% slot body %}Here are your to-do items for today:{% endslot %}
+{% endcomponent_block %}
+...
+```
+
+
 # Component context and scope
 
 By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component_block %}` tag):

@@ -1,9 +1,9 @@
 from django.template import Template
 from django.test import override_settings
 
+from .django_test_setup import *  # NOQA
 from django_components import component
 
-from .django_test_setup import *  # NOQA
 from .test_templatetags import SimpleComponent
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 from .testutils import create_and_process_template_response
