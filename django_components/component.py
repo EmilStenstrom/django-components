@@ -155,9 +155,18 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         exported_slots_filled = {}
         for slot in self.exported_slots:
             if slot.export_name in available_slots:
-                exported_slots_filled[slot.name] = available_slots.pop(slot.export_name)
-        with context.update({ACTIVE_SLOT_CONTEXT_KEY: {**self.slots, **exported_slots_filled},
-                             ALL_SLOT_CONTEXT_KEY: {**available_slots, **self.slots}}):
+                exported_slots_filled[slot.name] = available_slots.pop(
+                    slot.export_name
+                )
+        with context.update(
+            {
+                ACTIVE_SLOT_CONTEXT_KEY: {
+                    **self.slots,
+                    **exported_slots_filled,
+                },
+                ALL_SLOT_CONTEXT_KEY: {**available_slots, **self.slots},
+            }
+        ):
             return instance_template.render(context)
 
     class Media:

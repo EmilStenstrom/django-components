@@ -6,7 +6,11 @@ from django.template.base import Node, NodeList, TemplateSyntaxError, TokenType
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
-from django_components.component import ACTIVE_SLOT_CONTEXT_KEY, registry, ALL_SLOT_CONTEXT_KEY
+from django_components.component import (
+    ACTIVE_SLOT_CONTEXT_KEY,
+    ALL_SLOT_CONTEXT_KEY,
+    registry,
+)
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
     JS_DEPENDENCY_PLACEHOLDER,
@@ -87,10 +91,16 @@ def do_component(parser, token):
 
 
 class SlotNode(Node):
-    def __init__(self, name, nodelist, export_name, new_default_content, component=None):
+    def __init__(
+        self, name, nodelist, export_name, new_default_content, component=None
+    ):
         self.new_default_content = new_default_content
-        self.name, self.nodelist, self.component, self.export_name = \
-            name, nodelist, component, export_name
+        self.name, self.nodelist, self.component, self.export_name = (
+            name,
+            nodelist,
+            component,
+            export_name,
+        )
         self.component = None
         self.parent_component = None
         self.context = None
@@ -102,7 +112,9 @@ class SlotNode(Node):
         # Thread safety: storing the context as a property of the cloned SlotNode without using
         # the render_context facility should be thread-safe, since each cloned_node
         # is only used for a single render.
-        cloned_node = SlotNode(self.name, self.nodelist, self.component, self.new_default_content)
+        cloned_node = SlotNode(
+            self.name, self.nodelist, self.component, self.new_default_content
+        )
         cloned_node.parent_component = self.parent_component
         cloned_node.context = context
 
@@ -120,7 +132,9 @@ class SlotNode(Node):
         overriding_nodelist = context[ACTIVE_SLOT_CONTEXT_KEY].get(self.name)
         # If the slot was exported and wasn't filled, look for a filled slot used in a containing scope.
         if overriding_nodelist is None and self.export_name is not None:
-            overriding_nodelist = context[ALL_SLOT_CONTEXT_KEY].get(self.export_name)
+            overriding_nodelist = context[ALL_SLOT_CONTEXT_KEY].get(
+                self.export_name
+            )
 
         return (
             overriding_nodelist
@@ -136,31 +150,39 @@ class SlotNode(Node):
 @register.tag("slot")
 def do_slot(parser, token, component=None):
     bits = token.split_contents()
-    default_kwargs = {'export_as': None, 'with_new_default_content': False}
+    default_kwargs = {"export_as": None, "with_new_default_content": False}
     tag_args, tag_kwargs = parse_bits(
         parser=parser,
         bits=bits,
         params=["tag_name", "name"],
         takes_context=False,
-        name='slot',
+        name="slot",
         varargs=None,
         varkw=None,
         defaults=None,
-        kwonly=['export_as', 'with_new_default_content'],
+        kwonly=["export_as", "with_new_default_content"],
         kwonly_defaults=default_kwargs,
     )
     tag_kwargs = {**default_kwargs, **tag_kwargs}
 
     slot_name = bits[1].strip('"')
-    if tag_kwargs['export_as'] is not None:
-        tag_kwargs['export_as'] = tag_kwargs['export_as'].var
+    if tag_kwargs["export_as"] is not None:
+        tag_kwargs["export_as"] = tag_kwargs["export_as"].var
     nodelist = parser.parse(parse_until=["endslot"])
-    if tag_kwargs['export_as'] is not None and tag_kwargs['with_new_default_content'] is False:
+    if (
+        tag_kwargs["export_as"] is not None
+        and tag_kwargs["with_new_default_content"] is False
+    ):
         nodelist = NodeList([])
     parser.delete_first_token()
 
-    return SlotNode(slot_name, nodelist, component=component, export_name=tag_kwargs['export_as'],
-                    new_default_content=tag_kwargs['with_new_default_content'])
+    return SlotNode(
+        slot_name,
+        nodelist,
+        component=component,
+        export_name=tag_kwargs["export_as"],
+        new_default_content=tag_kwargs["with_new_default_content"],
+    )
 
 
 class ComponentNode(Node):
@@ -253,15 +275,19 @@ def do_component_block(parser, token):
         parser, bits, "component_block"
     )
 
-    slots = [do_slot(parser, slot_token, component=component)
-             for slot_token in slot_tokens(parser)]
+    slots = [
+        do_slot(parser, slot_token, component=component)
+        for slot_token in slot_tokens(parser)
+    ]
 
     return ComponentNode(
         component,
         context_args,
         context_kwargs,
         slots=list(filter(lambda s: s.export_name is None, slots)),
-        exported_slots=list(filter(lambda s: s.export_name is not None, slots)),
+        exported_slots=list(
+            filter(lambda s: s.export_name is not None, slots)
+        ),
         isolated_context=isolated_context,
     )
 

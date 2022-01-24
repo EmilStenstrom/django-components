@@ -1,7 +1,8 @@
 import unittest
 
-from .django_test_setup import *  # NOQA
 from django_components import component
+
+from .django_test_setup import *  # NOQA
 
 
 class MockComponent(object):
