@@ -14,7 +14,7 @@ setup(
         os.path.join(os.path.dirname(__file__), "README.md")
     ).read(),
     long_description_content_type="text/markdown",
-    author=u"Emil Stenström",
+    author="Emil Stenström",
     author_email="emil@emilstenstrom.se",
     url="https://github.com/EmilStenstrom/django-components/",
     install_requires=["Django>=2.2"],
