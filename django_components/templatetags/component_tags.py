@@ -15,6 +15,9 @@ from django_components.middleware import (
 register = template.Library()
 
 
+RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
+
+
 def get_components_from_registry(registry):
     """Returns a list unique components from the registry."""
 
@@ -197,7 +200,9 @@ class ComponentNode(Node):
             rendered_component = self.component.render(context)
             if self.should_render_dependencies:
                 return (
-                    f"<!-- _RENDERED {self.component._component_name} -->"
+                    RENDERED_COMMENT_TEMPLATE.format(
+                        name=self.component._component_name
+                    )
                     + rendered_component
                 )
             else:
