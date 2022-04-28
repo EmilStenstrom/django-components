@@ -30,13 +30,36 @@ def get_components_from_registry(registry):
     return components
 
 
+def get_components_from_preload_str(preload_str):
+    """Returns a list of unique components from a comma-separated str"""
+
+    components = []
+    for component_name in preload_str.split(","):
+        component_name = component_name.strip()
+        if not component_name:
+            continue
+        component_class = registry.get(component_name)
+        components.append(component_class(component_name))
+
+    return components
+
+
 @register.simple_tag(name="component_dependencies")
-def component_dependencies_tag():
+def component_dependencies_tag(preload=""):
     """Marks location where CSS link and JS script tags should be rendered."""
 
     if is_dependency_middleware_active():
+        preloaded_dependencies = []
+        for component in get_components_from_preload_str(preload):
+            preloaded_dependencies.append(
+                RENDERED_COMMENT_TEMPLATE.format(
+                    name=component._component_name
+                )
+            )
         return mark_safe(
-            CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER
+            "\n".join(preloaded_dependencies)
+            + CSS_DEPENDENCY_PLACEHOLDER
+            + JS_DEPENDENCY_PLACEHOLDER
         )
     else:
         rendered_dependencies = []
@@ -47,11 +70,20 @@ def component_dependencies_tag():
 
 
 @register.simple_tag(name="component_css_dependencies")
-def component_css_dependencies_tag():
+def component_css_dependencies_tag(preload=""):
     """Marks location where CSS link tags should be rendered."""
 
     if is_dependency_middleware_active():
-        return mark_safe(CSS_DEPENDENCY_PLACEHOLDER)
+        preloaded_dependencies = []
+        for component in get_components_from_preload_str(preload):
+            preloaded_dependencies.append(
+                RENDERED_COMMENT_TEMPLATE.format(
+                    name=component._component_name
+                )
+            )
+        return mark_safe(
+            "\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER
+        )
     else:
         rendered_dependencies = []
         for component in get_components_from_registry(registry):
@@ -61,11 +93,20 @@ def component_css_dependencies_tag():
 
 
 @register.simple_tag(name="component_js_dependencies")
-def component_js_dependencies_tag():
+def component_js_dependencies_tag(preload=""):
     """Marks location where JS script tags should be rendered."""
 
     if is_dependency_middleware_active():
-        return mark_safe(JS_DEPENDENCY_PLACEHOLDER)
+        preloaded_dependencies = []
+        for component in get_components_from_preload_str(preload):
+            preloaded_dependencies.append(
+                RENDERED_COMMENT_TEMPLATE.format(
+                    name=component._component_name
+                )
+            )
+        return mark_safe(
+            "\n".join(preloaded_dependencies) + JS_DEPENDENCY_PLACEHOLDER
+        )
     else:
         rendered_dependencies = []
         for component in get_components_from_registry(registry):

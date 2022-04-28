@@ -86,11 +86,62 @@ class ComponentMediaRenderingTests(SimpleTestCase):
             count=0,
         )
 
+    def test_preload_dependencies_render_when_no_components_used(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            "{% load component_tags %}{% component_dependencies preload='test' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertInHTML('<script src="script.js">', rendered, count=1)
+        self.assertInHTML(
+            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            rendered,
+            count=1,
+        )
+
+    def test_preload_js_dependencies_render_when_no_components_used(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            "{% load component_tags %}{% component_js_dependencies preload='test' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertInHTML('<script src="script.js">', rendered, count=1)
+
+    def test_preload_css_dependencies_render_when_no_components_used(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            "{% load component_tags %}{% component_css_dependencies preload='test' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertInHTML(
+            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            rendered,
+            count=1,
+        )
+
     def test_single_component_dependencies_render_when_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
+            "{% component 'test' variable='foo' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertInHTML(
+            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            rendered,
+            count=1,
+        )
+        self.assertInHTML('<script src="script.js">', rendered, count=1)
+
+    def test_preload_dependencies_render_once_when_used(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            "{% load component_tags %}{% component_dependencies preload='test' %}"
             "{% component 'test' variable='foo' %}"
         )
         rendered = create_and_process_template_response(template)
@@ -107,6 +158,15 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component 'test' variable='foo' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertNotIn("_RENDERED", rendered)
+
+    def test_placeholder_removed_when_preload_rendered(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            "{% load component_tags %}{% component_dependencies preload='test' %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
