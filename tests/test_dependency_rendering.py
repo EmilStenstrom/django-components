@@ -52,12 +52,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
         )
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js>"', rendered, count=0)
-        self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
+        self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML(
             '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
             rendered,
@@ -71,7 +66,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
             "{% load component_tags %}{% component_js_dependencies %}"
         )
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js>"', rendered, count=0)
+        self.assertInHTML('<script src="script.js">', rendered, count=0)
 
     def test_no_css_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
