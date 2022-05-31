@@ -121,13 +121,20 @@ TEMPLATES = [
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/David-Guillot">
+            <img src="https://avatars.githubusercontent.com/u/1136694?v=4" width="100;" alt="David-Guillot"/>
+            <br />
+            <sub><b>David Guillot</b></sub>
+        </a>
+    </td></tr>
+<tr>
+    <td align="center">
         <a href="https://github.com/danjac">
             <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
             <br />
             <sub><b>Dan Jacob</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/Real-Gecko">
             <img src="https://avatars.githubusercontent.com/u/2231969?v=4" width="100;" alt="Real-Gecko"/>
