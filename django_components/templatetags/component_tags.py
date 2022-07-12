@@ -206,7 +206,6 @@ class ComponentNode(Node):
         self.component, self.isolated_context = component, isolated_context
         self.slots = slots
 
-
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (
             self.component,
@@ -216,14 +215,16 @@ class ComponentNode(Node):
     def render(self, context):
         if type(self.component) == str:
             try:
-                component_name = template.Variable(self.component).resolve(context)
+                component_name = template.Variable(self.component).resolve(
+                    context
+                )
                 component_class = registry.get(component_name)
                 self.component = component_class(component_name)
             except:
-                 raise TemplateSyntaxError(
-                f"Component name is not defined or not registred: {self.component}"
-            )
-                # Group slot notes by name and concatenate their nodelists
+                raise TemplateSyntaxError(
+                    f"Component name is not defined or not registred: {self.component}"
+                )
+            # Group slot notes by name and concatenate their nodelists
         self.component.slots = defaultdict(NodeList)
         for slot in self.slots or []:
             self.component.slots[slot.name].extend(slot.nodelist)
@@ -367,7 +368,7 @@ def parse_component_with_args(parser, bits, tag_name):
                 "Call the '%s' tag with a component name as the first parameter"
                 % tag_name
             )
-    if  not is_wrapped_in_quotes(component_name):
+    if not is_wrapped_in_quotes(component_name):
         # raise TemplateSyntaxError(
         #     "Component name '%s' should be in quotes" % component_name
         # )
