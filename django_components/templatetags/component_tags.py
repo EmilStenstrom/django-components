@@ -204,12 +204,8 @@ class ComponentNode(Node):
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.component, self.isolated_context = component, isolated_context
+        self.slots = slots
 
-        # Group slot notes by name and concatenate their nodelists
-        self.component.slots = defaultdict(NodeList)
-        for slot in slots or []:
-            self.component.slots[slot.name].extend(slot.nodelist)
-        self.should_render_dependencies = is_dependency_middleware_active()
 
     def __repr__(self):
         return "<Component Node: %s. Contents: %r>" % (
@@ -218,6 +214,20 @@ class ComponentNode(Node):
         )
 
     def render(self, context):
+        if type(self.component) == str:
+            try:
+                component_name = template.Variable(self.component).resolve(context)
+                component_class = registry.get(component_name)
+                self.component = component_class(component_name)
+            except:
+                 raise TemplateSyntaxError(
+                f"Component name is not defined or not registred: {self.component}"
+            )
+                # Group slot notes by name and concatenate their nodelists
+        self.component.slots = defaultdict(NodeList)
+        for slot in self.slots or []:
+            self.component.slots[slot.name].extend(slot.nodelist)
+        self.should_render_dependencies = is_dependency_middleware_active()
         self.component.outer_context = context.flatten()
 
         # Resolve FilterExpressions and Variables that were passed as args to the component, then call component's
@@ -250,7 +260,7 @@ class ComponentNode(Node):
                 return rendered_component
 
 
-@register.tag("component_block")
+@register.tag(name="component_block")
 def do_component_block(parser, token):
     """
     To give the component access to the template context:
@@ -267,11 +277,9 @@ def do_component_block(parser, token):
 
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
-
     component, context_args, context_kwargs = parse_component_with_args(
         parser, bits, "component_block"
     )
-
     return ComponentNode(
         component,
         context_args,
@@ -338,7 +346,6 @@ def parse_component_with_args(parser, bits, tag_name):
         kwonly=[],
         kwonly_defaults=None,
     )
-
     assert (
         tag_name == tag_args[0].token
     ), "Internal error: Expected tag_name to be {}, but it was {}".format(
@@ -360,15 +367,15 @@ def parse_component_with_args(parser, bits, tag_name):
                 "Call the '%s' tag with a component name as the first parameter"
                 % tag_name
             )
-
-    if not is_wrapped_in_quotes(component_name):
-        raise TemplateSyntaxError(
-            "Component name '%s' should be in quotes" % component_name
-        )
-
-    trimmed_component_name = component_name[1:-1]
-    component_class = registry.get(trimmed_component_name)
-    component = component_class(trimmed_component_name)
+    if  not is_wrapped_in_quotes(component_name):
+        # raise TemplateSyntaxError(
+        #     "Component name '%s' should be in quotes" % component_name
+        # )
+        component = component_name
+    else:
+        trimmed_component_name = component_name[1:-1]
+        component_class = registry.get(trimmed_component_name)
+        component = component_class(trimmed_component_name)
 
     return component, context_args, context_kwargs
 
