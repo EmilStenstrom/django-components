@@ -2,6 +2,7 @@ from textwrap import dedent
 
 from django.template import Context, Template, TemplateSyntaxError
 
+import django_components
 from django_components import component
 
 from .django_test_setup import *  # NOQA
@@ -70,6 +71,17 @@ class ComponentTemplateTagTest(SimpleTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
+    def test_call_with_invalid_name(self):
+        # Note: No component registered
+
+        template = Template(
+            '{% load component_tags %}{% component name="test" variable="variable" %}'
+        )
+        with self.assertRaises(
+            django_components.component_registry.NotRegistered
+        ):
+            template.render(Context({}))
+
     def test_single_component_positional_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
@@ -110,6 +122,36 @@ class ComponentTemplateTagTest(SimpleTestCase):
         )
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    def test_component_called_with_variable_as_name(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component component_name variable="variable" %}
+            {% endwith %}
+        """
+        )
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    def test_component_called_with_invalid_variable_as_name(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% with component_name="BLAHONGA" %}
+                {% component component_name variable="variable" %}
+            {% endwith %}
+        """
+        )
+        with self.assertRaises(
+            django_components.component_registry.NotRegistered
+        ):
+            template.render(Context({}))
 
 
 class ComponentSlottedTemplateTagTest(SimpleTestCase):
