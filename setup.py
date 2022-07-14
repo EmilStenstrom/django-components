@@ -17,7 +17,7 @@ setup(
     author="Emil Stenström",
     author_email="emil@emilstenstrom.se",
     url="https://github.com/EmilStenstrom/django-components/",
-    install_requires=["Django>=2.2"],
+    install_requires=["Django>=3.2"],
     license="MIT",
     keywords=["django", "components", "css", "js", "html"],
     classifiers=[
@@ -27,11 +27,10 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
         "Framework :: Django",
-        "Framework :: Django :: 2.2",
-        "Framework :: Django :: 3.0",
-        "Framework :: Django :: 3.1",
         "Framework :: Django :: 3.2",
+        "Framework :: Django :: 4.0",
     ],
 )
