@@ -1,7 +1,9 @@
+import re
 from textwrap import dedent
 
 from django.template import Context, Template, TemplateSyntaxError
 
+import django_components
 from django_components import component
 
 from .django_test_setup import *  # NOQA
@@ -61,55 +63,119 @@ class ComponentTemplateTagTest(SimpleTestCase):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
 
+    def inline_to_block(self, tag):
+        return re.sub(
+            r"({% component (.*) %})",
+            r"{% component_block \2 %}{% endcomponent_block %}",
+            tag,
+        )
+
     def test_single_component(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            '{% load component_tags %}{% component name="test" variable="variable" %}'
-        )
-        rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+        simple_tag_tempate = '{% load component_tags %}{% component name="test" variable="variable" %}'
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
 
-    def test_single_component_positional_name(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+            rendered = template.render(Context({}))
+            self.assertHTMLEqual(
+                rendered, "Variable: <strong>variable</strong>\n"
+            )
 
-        template = Template(
-            '{% load component_tags %}{% component "test" variable="variable" %}'
-        )
-        rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+    def test_call_with_invalid_name(self):
+        # Note: No tag registered
 
-    def test_call_component_with_two_variables(self):
-        component.registry.register(name="test", component=IffedComponent)
+        simple_tag_tempate = '{% load component_tags %}{% component name="test" variable="variable" %}'
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
 
-        template = Template(
-            "{% load component_tags %}"
-            '{% component name="test" variable="variable" variable2="hej" %}'
-        )
-        rendered = template.render(Context({}))
-        expected_outcome = (
-            """Variable: <strong>variable</strong>\n"""
-            """Variable2: <strong>hej</strong>"""
-        )
-        self.assertHTMLEqual(rendered, dedent(expected_outcome))
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+            with self.assertRaises(
+                django_components.component_registry.NotRegistered
+            ):
+                template.render(Context({}))
 
     def test_component_called_with_positional_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            '{% load component_tags %}{% component "test" variable="variable" %}'
-        )
-        rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+        simple_tag_tempate = '{% load component_tags %}{% component "test" variable="variable" %}'
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
+
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+            rendered = template.render(Context({}))
+            self.assertHTMLEqual(
+                rendered, "Variable: <strong>variable</strong>\n"
+            )
+
+    def test_call_component_with_two_variables(self):
+        component.registry.register(name="test", component=IffedComponent)
+
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% component name="test" variable="variable" variable2="hej" %}
+        """
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
+
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+            rendered = template.render(Context({}))
+            expected_outcome = (
+                """Variable: <strong>variable</strong>\n"""
+                """Variable2: <strong>hej</strong>"""
+            )
+            self.assertHTMLEqual(rendered, dedent(expected_outcome))
 
     def test_component_called_with_singlequoted_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component 'test' variable=\"variable\" %}"
-        )
-        rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+        simple_tag_tempate = """{% load component_tags %}{% component 'test' variable="variable" %}"""
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
+
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+            rendered = template.render(Context({}))
+            self.assertHTMLEqual(
+                rendered, "Variable: <strong>variable</strong>\n"
+            )
+
+    def test_component_called_with_variable_as_name(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component component_name variable="variable" %}
+            {% endwith %}
+        """
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
+
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+            rendered = template.render(Context({}))
+            self.assertHTMLEqual(
+                rendered, "Variable: <strong>variable</strong>\n"
+            )
+
+    def test_component_called_with_invalid_variable_as_name(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% with component_name="BLAHONGA" %}
+                {% component component_name variable="variable" %}
+            {% endwith %}
+        """
+        block_tag_template = self.inline_to_block(simple_tag_tempate)
+
+        for tag in [simple_tag_tempate, block_tag_template]:
+            template = Template(tag)
+
+        with self.assertRaises(
+            django_components.component_registry.NotRegistered
+        ):
+            template.render(Context({}))
 
 
 class ComponentSlottedTemplateTagTest(SimpleTestCase):
