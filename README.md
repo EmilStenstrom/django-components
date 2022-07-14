@@ -161,14 +161,15 @@ TEMPLATES = [
 
 # Compatiblity
 
-Django-components supports all officially supported versions of Django and Python.
+Django-components supports all <a href="https://docs.djangoproject.com/en/dev/faq/install/#what-python-version-can-i-use-with-django">officially supported versions</a> of Django and Python.
 
 | Python version | Django version           |
 |----------------|--------------------------|
-| 3.6            | 2.2, 3.0, 3.1, 3.2       |
-| 3.7            | 2.2, 3.0, 3.1, 3.2       |
-| 3.8            | 2.2, 3.0, 3.1, 3.2       |
-| 3.9            | 2.2, 3.0, 3.1, 3.2       |
+| 3.6            | 3.2                      |
+| 3.7            | 3.2                      |
+| 3.8            | 3.2, 4.0                 |
+| 3.9            | 3.2, 4.0                 |
+| 3.10           | 4.0                      |
 
 # Create your first component
 
