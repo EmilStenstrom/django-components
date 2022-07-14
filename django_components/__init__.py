@@ -1,8 +1,10 @@
 from importlib import import_module
 
+import django
 from django.utils.module_loading import autodiscover_modules
 
-default_app_config = "django_components.apps.ComponentsConfig"
+if django.VERSION < (3, 2):
+    default_app_config = "django_components.apps.ComponentsConfig"
 
 
 def autodiscover():
