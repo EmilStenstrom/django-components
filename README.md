@@ -288,7 +288,7 @@ When using the component, you specify what slots you want to fill and where you 
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% slot "body" %}Can you belive it's already <span>{{ date }}</span>??{% endslot %}
+    {% slot "body" %}Can you believe it's already <span>{{ date }}</span>??{% endslot %}
 {% endcomponent_block %}
 ```
 
@@ -312,7 +312,7 @@ If you want to include a slot's default content while adding additional content,
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% slot "body" %}{ slot.super }. Have a great day!{% endslot %}
+    {% slot "body" %}{{ slot.super }}. Have a great day!{% endslot %}
 {% endcomponent_block %}
 ``` 
 
