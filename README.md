@@ -150,6 +150,13 @@ TEMPLATES = [
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/simkimsia">
+            <img src="https://avatars.githubusercontent.com/u/245021?v=4" width="100;" alt="simkimsia"/>
+            <br />
+            <sub><b>KimSia Sim</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/telenieko">
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
             <br />
