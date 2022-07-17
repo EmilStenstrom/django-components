@@ -2,8 +2,10 @@
 <html>
 <head>
     <title>django_components sample projects</title>
+    {% component_css_dependencies %}
 </head>
 <body>
-    Today's date is <span>{{ date }}</span>
+    {% component "calendar" date=date %}
+    {% component_js_dependencies %}
 </body>
 </html>
