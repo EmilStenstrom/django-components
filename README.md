@@ -129,6 +129,13 @@ TEMPLATES = [
     </td></tr>
 <tr>
     <td align="center">
+        <a href="https://github.com/housUnus">
+            <img src="https://avatars.githubusercontent.com/u/44384710?v=4" width="100;" alt="housUnus"/>
+            <br />
+            <sub><b><AIT ALI EL HOSAYN></b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/danjac">
             <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
             <br />
@@ -140,6 +147,13 @@ TEMPLATES = [
             <img src="https://avatars.githubusercontent.com/u/2231969?v=4" width="100;" alt="Real-Gecko"/>
             <br />
             <sub><b>Real-Gecko</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/simkimsia">
+            <img src="https://avatars.githubusercontent.com/u/245021?v=4" width="100;" alt="simkimsia"/>
+            <br />
+            <sub><b>KimSia Sim</b></sub>
         </a>
     </td>
     <td align="center">
@@ -281,7 +295,7 @@ When using the component, you specify what slots you want to fill and where you 
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% slot "body" %}Can you belive it's already <span>{{ date }}</span>??{% endslot %}
+    {% slot "body" %}Can you believe it's already <span>{{ date }}</span>??{% endslot %}
 {% endcomponent_block %}
 ```
 
@@ -305,7 +319,7 @@ If you want to include a slot's default content while adding additional content,
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% slot "body" %}{ slot.super }. Have a great day!{% endslot %}
+    {% slot "body" %}{{ slot.super }}. Have a great day!{% endslot %}
 {% endcomponent_block %}
 ``` 
 
