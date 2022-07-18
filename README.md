@@ -20,6 +20,8 @@ Read on to learn about the details!
 
 # Release notes
 
+*Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscovery": False in settings.COMPONENTS.
+
 *Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
 
 # Installation
@@ -28,19 +30,19 @@ Install the app into your environment:
 
 > ```pip install django_components```
 
-Then add the app into INSTALLED APPS in settings.py
+Then add the app into INSTALLED_APPS in settings.py
 
 ```python
 INSTALLED_APPS = [
     ...,
     "django_components",
-    ...
 ]
 ```
 
 Modify `TEMPLATES` section of settings.py as follows:
-- Remove `'APP_DIRS': True,`
+- *Remove `'APP_DIRS': True,`*
 - add `loaders` to `OPTIONS` list and set it to following value:
+
 ```python
 TEMPLATES = [
     {
@@ -60,6 +62,16 @@ TEMPLATES = [
     },
 ]
 ```
+
+Modify STATICFILES_DIRS (or add it if you don't have it) so django can find your static JS and CSS files:
+
+```python
+STATICFILES_DIRS = [
+    ...,
+    BASE_DIR / "components",
+]
+```
+
 ## Optional
 
 To avoid loading the app in each template using ``` {% load django_components %} ```, you can add the tag as a 'builtin' in settings.py
@@ -79,6 +91,8 @@ TEMPLATES = [
     },
 ]
 ```
+
+Read on to find out how to build your first component!
 
 # Contributors
 
@@ -192,7 +206,7 @@ A component in django-components is the combination of four things: CSS, Javascr
 First you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
 
 ```css
-/* In a file called [your app]/components/calendar/style.css */
+/* In a file called [project root]/components/calendar/style.css */
 .calendar-component { width: 200px; background: pink; }
 .calendar-component span { font-weight: bold; }
 ```
@@ -200,30 +214,31 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
 ```js
-/* In a file called [your app]/components/calendar/script.js */
+/* In a file called [project root]/components/calendar/script.js */
 (function(){
-    $(".calendar-component").click(function(){ alert("Clicked calendar!"); })
+    document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!") }
 })()
 ```
 
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
 
 ```htmldjango
-{# In a file called [your app]/components/calendar/calendar.html #}
+{# In a file called [project root]/components/calendar/calendar.html #}
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
 
-Finally, we use django-components to tie this together. Start by creating a file called `components.py` in any of your apps. It will be auto-detected and loaded by the app.
+Finally, we use django-components to tie this together. Start by creating a file called `calendar.py` in your component calendar directory. It will be auto-detected and loaded by the app.
 
 Inside this file we create a Component by inheriting from the Component class and specifying the context method. We also register the global component registry so that we easily can render it anywhere in our templates.
 
 ```python
+# In a file called [project root]/components/calendar/calendar.py
 from django_components import component
 
 @component.register("calendar")
 class Calendar(component.Component):
-    # Note that Django will look for templates inside `[your app]/components` dir
-    # To customize which template to use based on context override get_template_name instead
+    # Templates inside `[your apps]/components` dir and `[project root]/components` dir will be automatically found. To customize which template to use based on context
+    # you can override def get_template_name() instead of specifying the below variable.
     template_name = "calendar/calendar.html"
 
     # This component takes one parameter, a date string to show in the template
@@ -233,9 +248,11 @@ class Calendar(component.Component):
         }
 
     class Media:
-        css = '[your app]/components/calendar/calendar.css'
-        js = '[your app]/components/calendar/calendar.js'
+        css = "calendar/calendar.css"
+        js = "calendar/calendar.js"
 ```
+
+This file
 
 And voilá!! We've created our first component.
 
@@ -331,7 +348,7 @@ Produces:
         Calendar header
     </div>
     <div class="body">
-        Today's date is <span>2020-06-06</span>.  Have a great day!
+        Today's date is <span>2020-06-06</span>. Have a great day!
     </div>
 </div>
 ```
@@ -414,7 +431,8 @@ pyenv install 3.6.9
 pyenv install 3.7.9
 pyenv install 3.8.9
 pyenv install 3.9.4
-pyenv local 3.6.9 3.7.9 3.8.9 3.9.4
+pyenv install 3.10.5
+pyenv local 3.6.9 3.7.9 3.8.9 3.9.4 3.10.5
 tox -p
 ```
 
