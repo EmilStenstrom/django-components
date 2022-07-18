@@ -189,6 +189,10 @@ Django-components supports all <a href="https://docs.djangoproject.com/en/dev/fa
 
 A component in django-components is the combination of four things: CSS, Javascript, a Django template, and some Python code to put them all together.
 
+![Directory structure for django_components](https://user-images.githubusercontent.com/224130/179460219-fb51eae1-aab2-4f69-b71f-90cd5ab51bb1.png)
+
+Start by creating empty files in the structure above.
+
 First you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
 
 ```css
