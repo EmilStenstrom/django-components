@@ -15,12 +15,12 @@ class Loader(FilesystemLoader):
         directories = list(get_app_template_dirs(component_dir))
         settings_path = Path(*settings.SETTINGS_MODULE.split("."))
 
-        if (path := (settings_path / ".." / component_dir).resolve()).is_dir():
+        path = (settings_path / ".." / component_dir).resolve()
+        if path.is_dir():
             directories.append(path)
 
-        if (
-            path := (settings_path / ".." / ".." / component_dir).resolve()
-        ).is_dir():
+        path = (settings_path / ".." / ".." / component_dir).resolve()
+        if path.is_dir():
             directories.append(path)
 
         return directories
