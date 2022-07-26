@@ -157,17 +157,17 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/Real-Gecko">
-            <img src="https://avatars.githubusercontent.com/u/2231969?v=4" width="100;" alt="Real-Gecko"/>
-            <br />
-            <sub><b>Real-Gecko</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/simkimsia">
             <img src="https://avatars.githubusercontent.com/u/245021?v=4" width="100;" alt="simkimsia"/>
             <br />
             <sub><b>KimSia Sim</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Real-Gecko">
+            <img src="https://avatars.githubusercontent.com/u/2231969?v=4" width="100;" alt="Real-Gecko"/>
+            <br />
+            <sub><b>Real-Gecko</b></sub>
         </a>
     </td>
     <td align="center">
