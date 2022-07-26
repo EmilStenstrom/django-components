@@ -220,7 +220,9 @@ Then you need a javascript file that specifies how you interact with this compon
 ```js
 /* In a file called [project root]/components/calendar/script.js */
 (function(){
-    document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!") }
+    if (document.querySelector(".calendar-component")) {
+        document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
+    }
 })()
 ```
 
@@ -336,13 +338,13 @@ Since the header block is unspecified, it's taken from the base template. If you
 
 As you can see, component slots lets you write reusable containers, that you fill out when you use a component. This makes for highly reusable components, that can be used in different circumstances.
 
-If you want to include a slot's default content while adding additional content, you can call `slot.super` to insert the base content, which works similarly to `block.super`.  
+If you want to include a slot's default content while adding additional content, you can call `slot.super` to insert the base content, which works similarly to `block.super`.
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
     {% slot "body" %}{{ slot.super }}. Have a great day!{% endslot %}
 {% endcomponent_block %}
-``` 
+```
 
 Produces:
 
@@ -367,7 +369,7 @@ By default, components can access context variables from the parent template, ju
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
 
-Components can also access the outer context in their context methods by accessing the property `outer_context`. 
+Components can also access the outer context in their context methods by accessing the property `outer_context`.
 
 
 # Available settings
