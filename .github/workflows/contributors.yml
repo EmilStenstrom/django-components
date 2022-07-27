@@ -12,7 +12,7 @@ jobs:
     name: Add contributors to readme
     steps:
       - name: Contribute List
-        uses: akhilmhdh/contributors-readme-action@v2.3.3
+        uses: akhilmhdh/contributors-readme-action@v2.3.5
         with:
           is_protected: true
         env:
