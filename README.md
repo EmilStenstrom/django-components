@@ -146,7 +146,7 @@ Read on to find out how to build your first component!
         <a href="https://github.com/housUnus">
             <img src="https://avatars.githubusercontent.com/u/44384710?v=4" width="100;" alt="housUnus"/>
             <br />
-            <sub><b><AIT ALI EL HOSAYN></b></sub>
+            <sub><b>&lt;AIT ALI EL HOSAYN&gt;</b></sub>
         </a>
     </td>
     <td align="center">
