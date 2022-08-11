@@ -13,7 +13,5 @@ jobs:
     steps:
       - name: Contribute List
         uses: akhilmhdh/contributors-readme-action@v2.3.6
-        with:
-          is_protected: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
