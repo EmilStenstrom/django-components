@@ -35,3 +35,5 @@ class Command(BaseCommand):
         if not comp_path.exists():
             comp_path.mkdir()
         self.create_file(comp_path.joinpath(comp_path.joinpath(file_name + '.py')),py_file)
+        for f in ['html','css','js']:
+            self.create_file(comp_path.joinpath(comp_path.joinpath(file_name + f'.{f}')),'')
