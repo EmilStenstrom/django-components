@@ -171,12 +171,20 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/mands">
+            <img src="https://avatars.githubusercontent.com/u/1010043?v=4" width="100;" alt="mands"/>
+            <br />
+            <sub><b>Mandeep Gill</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/telenieko">
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
             <br />
             <sub><b>Marc Fargas</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/spollard">
             <img src="https://avatars.githubusercontent.com/u/1459574?v=4" width="100;" alt="spollard"/>
