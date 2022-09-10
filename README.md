@@ -20,7 +20,7 @@ Read on to learn about the details!
 
 # Release notes
 
-*Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscovery": False in settings.COMPONENTS.
+*Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscover": False in settings.COMPONENTS.
 
 *Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
 
@@ -396,7 +396,7 @@ If you specify all the component locations with the setting above and have a lot
 
 ```python
 COMPONENTS = {
-    "autodiscovery": False,
+    "autodiscover": False,
 }
 ```
 
