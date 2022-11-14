@@ -50,7 +50,7 @@ six==1.15.0
     #   virtualenv
 sqlparse==0.4.2
     # via django
-tox==3.27.0
+tox==3.27.1
     # via -r requirements-dev.in
 virtualenv==20.4.3
     # via tox
