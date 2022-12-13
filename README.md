@@ -20,7 +20,7 @@ Read on to learn about the details!
 
 # Release notes
 
-*Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscovery": False in settings.COMPONENTS.
+*Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscover": False in settings.COMPONENTS.
 
 *Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
 
@@ -171,12 +171,20 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/mands">
+            <img src="https://avatars.githubusercontent.com/u/1010043?v=4" width="100;" alt="mands"/>
+            <br />
+            <sub><b>Mandeep Gill</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/telenieko">
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
             <br />
             <sub><b>Marc Fargas</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/spollard">
             <img src="https://avatars.githubusercontent.com/u/1459574?v=4" width="100;" alt="spollard"/>
@@ -396,7 +404,7 @@ If you specify all the component locations with the setting above and have a lot
 
 ```python
 COMPONENTS = {
-    "autodiscovery": False,
+    "autodiscover": False,
 }
 ```
 
