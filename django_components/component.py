@@ -55,7 +55,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.instance_template = None
         self.slots = {}
 
-    def get_context_data(self):
+    def get_context_data(self, *args, **kwargs):
         return {}
 
     def get_template_name(self, context=None):
