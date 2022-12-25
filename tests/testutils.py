@@ -16,12 +16,14 @@ middleware = ComponentDependencyMiddleware(
 class Django30CompatibleSimpleTestCase(SimpleTestCase):
     def assertHTMLEqual(self, left, right):
         left = left.replace(' type="text/javascript"', "")
+        left = left.replace(' type="text/css"', "")
         super(Django30CompatibleSimpleTestCase, self).assertHTMLEqual(
             left, right
         )
 
     def assertInHTML(self, needle, haystack, count=None, msg_prefix=""):
         haystack = haystack.replace(' type="text/javascript"', "")
+        haystack = haystack.replace(' type="text/css"', "")
         super().assertInHTML(needle, haystack, count, msg_prefix)
 
 
