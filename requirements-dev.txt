@@ -49,7 +49,7 @@ pluggy==1.0.0
     # via
     #   pytest
     #   tox
-pre-commit==2.20.0
+pre-commit==2.21.0
     # via -r requirements-dev.in
 pycodestyle==2.10.0
     # via flake8
@@ -63,8 +63,6 @@ pyyaml==6.0
     # via pre-commit
 sqlparse==0.4.3
     # via django
-toml==0.10.2
-    # via pre-commit
 tox==4.0.16
     # via -r requirements-dev.in
 virtualenv==20.17.1
