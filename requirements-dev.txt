@@ -63,7 +63,7 @@ pyyaml==6.0
     # via pre-commit
 sqlparse==0.4.3
     # via django
-tox==4.0.19
+tox==4.1.1
     # via -r requirements-dev.in
 virtualenv==20.17.1
     # via
