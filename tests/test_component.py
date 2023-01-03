@@ -41,7 +41,7 @@ class ComponentTest(SimpleTestCase):
             comp.render_dependencies(),
             dedent(
                 """
-            <link href="style.css" type="text/css" media="all" rel="stylesheet">
+            <link href="style.css" media="all" rel="stylesheet">
             <script src="script.js"></script>
         """
             ).strip(),
@@ -68,8 +68,8 @@ class ComponentTest(SimpleTestCase):
             comp.render_dependencies(),
             dedent(
                 """
-            <link href="style.css" type="text/css" media="all" rel="stylesheet">
-            <link href="style2.css" type="text/css" media="all" rel="stylesheet">
+            <link href="style.css" media="all" rel="stylesheet">
+            <link href="style2.css" media="all" rel="stylesheet">
             <script src="script.js"></script>
             <script src="script2.js"></script>
         """
@@ -143,7 +143,7 @@ class ComponentMediaTests(SimpleTestCase):
             comp.render_dependencies(),
             dedent(
                 """\
-                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
+                <link href="path/to/style.css" media="all" rel="stylesheet">
                 <script src="path/to/script.js"></script>
             """
             ),
@@ -160,8 +160,8 @@ class ComponentMediaTests(SimpleTestCase):
             comp.render_dependencies(),
             dedent(
                 """\
-                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
-                <link href="path/to/style2.css" type="text/css" media="all" rel="stylesheet">
+                <link href="path/to/style.css" media="all" rel="stylesheet">
+                <link href="path/to/style2.css" media="all" rel="stylesheet">
                 <script src="path/to/script.js"></script>
             """
             ),
@@ -182,9 +182,9 @@ class ComponentMediaTests(SimpleTestCase):
             comp.render_dependencies(),
             dedent(
                 """\
-                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
-                <link href="path/to/style2.css" type="text/css" media="print" rel="stylesheet">
-                <link href="path/to/style3.css" type="text/css" media="screen" rel="stylesheet">
+                <link href="path/to/style.css" media="all" rel="stylesheet">
+                <link href="path/to/style2.css" media="print" rel="stylesheet">
+                <link href="path/to/style3.css" media="screen" rel="stylesheet">
                 <script src="path/to/script.js"></script>
             """
             ),
@@ -201,7 +201,7 @@ class ComponentMediaTests(SimpleTestCase):
             comp.render_dependencies(),
             dedent(
                 """\
-                <link href="path/to/style.css" type="text/css" media="all" rel="stylesheet">
+                <link href="path/to/style.css" media="all" rel="stylesheet">
                 <script src="path/to/script.js"></script>
             """
             ),

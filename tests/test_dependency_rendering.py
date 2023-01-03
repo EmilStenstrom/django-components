@@ -54,7 +54,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
@@ -76,7 +76,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
@@ -90,7 +90,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -112,7 +112,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -126,7 +126,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -141,7 +141,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -175,7 +175,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -201,12 +201,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -222,12 +222,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
@@ -243,12 +243,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -266,12 +266,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
@@ -288,12 +288,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
@@ -326,12 +326,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=0,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
@@ -354,12 +354,12 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
         self.assertInHTML(
-            '<link href="style.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )
         self.assertInHTML(
-            '<link href="style2.css" type="text/css" media="all" rel="stylesheet"/>',
+            '<link href="style2.css" media="all" rel="stylesheet"/>',
             rendered,
             count=1,
         )

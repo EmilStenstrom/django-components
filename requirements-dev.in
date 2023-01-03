@@ -3,3 +3,4 @@ tox
 pytest
 flake8
 isort
+pre-commit
