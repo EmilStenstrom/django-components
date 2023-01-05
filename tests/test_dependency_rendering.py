@@ -1,7 +1,11 @@
+from unittest.mock import Mock
+
+from django.http import HttpResponseNotModified
 from django.template import Template
 from django.test import override_settings
 
 from django_components import component
+from django_components.middleware import ComponentDependencyMiddleware
 
 from .django_test_setup import *  # NOQA
 from .test_templatetags import SimpleComponent
@@ -380,3 +384,11 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
+
+    def test_middleware_response_without_content_type(self):
+        response = HttpResponseNotModified()
+        middleware = ComponentDependencyMiddleware(
+            get_response=lambda _: response
+        )
+        request = Mock()
+        self.assertEqual(response, middleware(request=request))
