@@ -32,7 +32,7 @@ class ComponentDependencyMiddleware:
                 "RENDER_DEPENDENCIES", False
             )
             and not isinstance(response, StreamingHttpResponse)
-            and response["Content-Type"].startswith("text/html")
+            and response.get("Content-Type", "").startswith("text/html")
         ):
             response.content = process_response_content(response.content)
         return response
