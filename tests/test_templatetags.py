@@ -1,13 +1,18 @@
 import re
 from textwrap import dedent
+from typing import Callable
 
 from django.template import Context, Template, TemplateSyntaxError
 
-import django_components
-from django_components import component
-
+# isort: off
 from .django_test_setup import *  # NOQA
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+
+# isort: on
+
+import django_components
+import django_components.component_registry
+from django_components import component
 
 
 class SimpleComponent(component.Component):
@@ -36,6 +41,10 @@ class BrokenComponent(component.Component):
     template_name = "template_with_illegal_slot.html"
 
 
+class NonUniqueSlotsComponent(component.Component):
+    template_name = "template_with_nonunique_slots.html"
+
+
 class SlottedComponentWithMissingVariable(component.Component):
     template_name = "slotted_template_with_missing_variable.html"
 
@@ -56,6 +65,16 @@ class ComponentWithProvidedAndDefaultParameters(component.Component):
 
     def get_context_data(self, variable, default_param="default text"):
         return {"variable": variable, "default_param": default_param}
+
+
+class _CalendarComponent(component.Component):
+    """Nested in ComponentWithNestedComponent"""
+
+    template_name = "slotted_component_nesting_template_pt1_calendar.html"
+
+
+class _DashboardComponent(component.Component):
+    template_name = "slotted_component_nesting_template_pt2_dashboard.html"
 
 
 class ComponentTemplateTagTest(SimpleTestCase):
@@ -191,12 +210,12 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test1" %}
-                {% slot "header" %}
+                {% fill "header" %}
                     Custom header
-                {% endslot %}
-                {% slot "main" %}
+                {% endfill %}
+                {% fill "main" %}
                     {% component "test2" variable="variable" %}
-                {% endslot %}
+                {% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -223,12 +242,12 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             {% load component_tags %}
             {% with my_first_variable="test123" %}
                 {% component_block "test1" variable="test456" %}
-                    {% slot "main" %}
+                    {% fill "main" %}
                         {{ my_first_variable }} - {{ variable }}
-                    {% endslot %}
-                    {% slot "footer" %}
+                    {% endfill %}
+                    {% fill "footer" %}
                         {{ my_second_variable }}
-                    {% endslot %}
+                    {% endfill %}
                 {% endcomponent_block %}
             {% endwith %}
         """
@@ -293,6 +312,28 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
 
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
 
+    def test_variable_fill_name(self):
+        component.registry.register(name="test", component=SlottedComponent)
+        template = Template(
+            """
+            {% load component_tags %}
+            {% with slotname="header" %}
+                {% component_block 'test' %}
+                    {% fill slotname %}Hi there!{% endfill %}
+            {% endcomponent_block %}
+            {% endwith %}
+            """
+        )
+        rendered = template.render(Context({}))
+        expected = """
+        <custom-template>
+            <header>Hi there!</header>
+            <main>Default main</main>
+            <footer>Default footer</footer>
+        </custom-template>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
 
 class SlottedTemplateRegressionTests(SimpleTestCase):
     def setUp(self):
@@ -307,7 +348,7 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block 'test' %}{% endcomponent_block %}
-        """
+            """
         )
         rendered = template.render(Context({}))
 
@@ -328,7 +369,11 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         )
 
         template = Template(
-            '{% load component_tags %}{% component_block "test" variable="provided value" %}{% endcomponent_block %}'
+            """
+            {% load component_tags %}
+            {% component_block "test" variable="provided value" %}
+            {% endcomponent_block %}
+            """
         )
         rendered = template.render(Context({}))
         self.assertHTMLEqual(
@@ -373,7 +418,7 @@ class MultiComponentTests(SimpleTestCase):
         )
 
     def wrap_with_slot_tags(self, s):
-        return '{% slot "header" %}' + s + "{% endslot %}"
+        return '{% fill "header" %}' + s + "{% endfill %}"
 
     def test_both_components_render_correctly_with_no_slots(self):
         self.register_components()
@@ -414,6 +459,8 @@ class MultiComponentTests(SimpleTestCase):
 
 
 class TemplateInstrumentationTest(SimpleTestCase):
+    saved_render_method: Callable  # Assigned during setup.
+
     @classmethod
     def setUpClass(cls):
         """Emulate Django test instrumentation for TestCase (see setup_test_environment)"""
@@ -449,7 +496,10 @@ class TemplateInstrumentationTest(SimpleTestCase):
 
     def test_template_shown_as_used(self):
         template = Template(
-            "{% load component_tags %}{% component 'test_component' %}",
+            """
+            {% load component_tags %}
+            {% component 'test_component' %}
+            """,
             name="root",
         )
         templates_used = self.templates_used_to_render(template)
@@ -457,9 +507,14 @@ class TemplateInstrumentationTest(SimpleTestCase):
 
     def test_nested_component_templates_all_shown_as_used(self):
         template = Template(
-            "{% load component_tags %}{% component_block 'test_component' %}"
-            "{% slot \"header\" %}{% component 'inner_component' variable='foo' %}{% endslot %}"
-            "{% endcomponent_block %}",
+            """
+            {% load component_tags %}
+            {% component_block 'test_component' %}
+              {% fill "header" %}
+                {% component 'inner_component' variable='foo' %}
+              {% endfill %}
+            {% endcomponent_block %}
+            """,
             name="root",
         )
         templates_used = self.templates_used_to_render(template)
@@ -496,7 +551,7 @@ class NestedSlotTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component_block 'test' %}{% slot 'inner' %}Override{% endslot %}{% endcomponent_block %}
+            {% component_block 'test' %}{% fill 'inner' %}Override{% endfill %}{% endcomponent_block %}
         """
         )
         rendered = template.render(Context({}))
@@ -506,7 +561,7 @@ class NestedSlotTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component_block 'test' %}{% slot 'outer' %}<p>Override</p>{% endslot %}{% endcomponent_block %}
+            {% component_block 'test' %}{% fill 'outer' %}<p>Override</p>{% endfill %}{% endcomponent_block %}
         """
         )
         rendered = template.render(Context({}))
@@ -517,8 +572,8 @@ class NestedSlotTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block 'test' %}
-                {% slot 'outer' %}<p>Override</p>{% endslot %}
-                {% slot 'inner' %}<p>Will not appear</p>{% endslot %}
+                {% fill 'outer' %}<p>Override</p>{% endfill %}
+                {% fill 'inner' %}<p>Will not appear</p>{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -549,8 +604,8 @@ class ConditionalSlotTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block 'test' %}
-                {% slot 'a' %}Override A{% endslot %}
-                {% slot 'b' %}Override B{% endslot %}
+                {% fill 'a' %}Override A{% endfill %}
+                {% fill 'b' %}Override B{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -575,10 +630,10 @@ class ConditionalSlotTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block 'test' branch='a' %}
-                {% slot 'b' %}Override B{% endslot %}
+                {% fill 'b' %}Override B{% endfill %}
             {% endcomponent_block %}
             {% component_block 'test' branch='b' %}
-                {% slot 'b' %}Override B{% endslot %}
+                {% fill 'b' %}Override B{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -592,12 +647,12 @@ class ConditionalSlotTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block 'test' branch='a' %}
-                {% slot 'a' %}Override A{% endslot %}
-                {% slot 'b' %}Override B{% endslot %}
+                {% fill 'a' %}Override A{% endfill %}
+                {% fill 'b' %}Override B{% endfill %}
             {% endcomponent_block %}
             {% component_block 'test' branch='b' %}
-                {% slot 'a' %}Override A{% endslot %}
-                {% slot 'b' %}Override B{% endslot %}
+                {% fill 'a' %}Override A{% endfill %}
+                {% fill 'b' %}Override B{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -624,9 +679,9 @@ class SlotSuperTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test" %}
-                {% slot "header" %}Before: {{ slot.super }}{% endslot %}
-                {% slot "main" %}{{ slot.super }}{% endslot %}
-                {% slot "footer" %}{{ slot.super }}, after{% endslot %}
+                {% fill "header" as "header" %}Before: {{ header.default }}{% endfill %}
+                {% fill "main" as "main" %}{{ main.default }}{% endfill %}
+                {% fill "footer" as "footer" %}{{ footer.default }}, after{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -648,7 +703,7 @@ class SlotSuperTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test" %}
-                {% slot "header" %}First: {{ slot.super }}; Second: {{ slot.super }}{% endslot %}
+                {% fill "header" as "header" %}First: {{ header.default }}; Second: {{ header.default }}{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -670,13 +725,13 @@ class SlotSuperTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test" %}
-                {% slot "header" %}
+                {% fill "header" as "header" %}
                     {% for i in range %}
-                        {% if forloop.first %}First {{slot.super}}
-                        {% else %}Later {{ slot.super }}
+                        {% if forloop.first %}First {{ header.default }}
+                        {% else %}Later {{ header.default }}
                         {% endif %}
-                    {%endfor %}
-                {% endslot %}
+                    {% endfor %}
+                {% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -700,19 +755,27 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
         super().setUpClass()
         component.registry.register("test", SlottedComponent)
         component.registry.register("broken_component", BrokenComponent)
+        component.registry.register(
+            "nonunique_slot_component", NonUniqueSlotsComponent
+        )
 
-    def test_variable_outside_slot_tag_is_error(self):
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_variable_outside_fill_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
             Template(
                 """
                 {% load component_tags %}
                 {% component_block "test" %}
-                    {{ slot.super }}
+                    {{ anything }}
                 {% endcomponent_block %}
             """
             )
 
-    def test_text_outside_slot_tag_is_error(self):
+    def test_text_outside_fill_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
             Template(
                 """
@@ -723,14 +786,14 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
             """
             )
 
-    def test_nonslot_block_outside_slot_tag_is_error(self):
+    def test_nonfill_block_outside_fill_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
             Template(
                 """
                 {% load component_tags %}
                 {% component_block "test" %}
                     {% if True %}
-                        {% slot "header" %}{% endslot %}
+                        {% fill "header" %}{% endfill %}
                     {% endif %}
                 {% endcomponent_block %}
             """
@@ -742,16 +805,16 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                 """
                 {% load component_tags %}
                 {% component_block "test" %}
-                    {% slot "header" %}{% endslot %}
+                {% fill "header" %}{% endfill %}
             """
             )
 
-    def test_slot_with_no_parent_is_error(self):
+    def test_fill_with_no_parent_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
             Template(
                 """
                 {% load component_tags %}
-                {% slot "header" %}contents{% endslot %}
+                {% fill "header" %}contents{% endfill %}
             """
             ).render(Context({}))
 
@@ -761,9 +824,222 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                 """
                 {% load component_tags %}
                 {% component_block "broken_component" %}
-                    {% slot "header" %}Custom header{% endslot %}
-                    {% slot "main" %}Custom main{% endslot %}
-                    {% slot "footer" %}Custom footer{% endslot %}
+                    {% fill "header" %}Custom header {% endfill %}
+                    {% fill "main" %}Custom main{% endfill %}
+                    {% fill "footer" %}Custom footer{% endfill %}
                 {% endcomponent_block %}
             """
             ).render(Context({}))
+
+    def test_non_unique_fill_names_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "broken_component" %}
+                    {% fill "header" %}Custom header {% endfill %}
+                    {% fill "header" %}Other header{% endfill %}
+                {% endcomponent_block %}
+            """
+            ).render(Context({}))
+
+    def test_non_unique_slot_names_is_error(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block "nonunique_slot_component" %}
+                {% endcomponent_block %}
+                """
+            ).render(Context({}))
+
+
+class ComponentNestingTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        component.registry.register("dashboard", _DashboardComponent)
+        component.registry.register("calendar", _CalendarComponent)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_component_nesting_component_without_fill(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "dashboard" %}
+            """
+        )
+        rendered = template.render(Context({"items": [1, 2, 3]}))
+        expected = """
+        <div class="dashboard-component">
+          <div class="calendar-component">
+            <h1>
+              Welcome to your dashboard!
+            </h1>
+            <main>
+              Here are your to-do items for today:
+            </main>
+          </div>
+          <ol>
+            <li>1</li>
+            <li>2</li>
+            <li>3</li>
+          </ol>
+        </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_component_nesting_component_with_fill_and_super(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "dashboard" %}
+              {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
+            {% endcomponent_block %}
+            """
+        )
+        import sys
+
+        sys.setrecursionlimit(100)
+        rendered = template.render(Context({"items": [1, 2]}))
+        expected = """
+        <div class="dashboard-component">
+          <div class="calendar-component">
+            <h1>
+              Hello! Welcome to your dashboard!
+            </h1>
+            <main>
+              Here are your to-do items for today:
+            </main>
+          </div>
+          <ol>
+            <li>1</li>
+            <li>2</li>
+          </ol>
+        </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+
+class ConditionalIfFilledSlotsTests(SimpleTestCase):
+    class ComponentWithConditionalSlots(component.Component):
+        template_name = "template_with_conditional_slots.html"
+
+    class ComponentWithComplexConditionalSlots(component.Component):
+        template_name = "template_with_if_elif_else_conditional_slots.html"
+
+    class ComponentWithNegatedConditionalSlot(component.Component):
+        template_name = "template_with_negated_conditional_slots.html"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        component.registry.register(
+            "conditional_slots", cls.ComponentWithConditionalSlots
+        )
+        component.registry.register(
+            "complex_conditional_slots",
+            cls.ComponentWithComplexConditionalSlots,
+        )
+        component.registry.register(
+            "negated_conditional_slot", cls.ComponentWithNegatedConditionalSlot
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_simple_component_with_conditional_slot(self):
+        template = """
+        {% load component_tags %}
+        {% component "conditional_slots" %}
+        """
+        expected = """
+        <div class="frontmatter-component">
+          <div class="title">
+          Title
+          </div>
+        </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_component_block_with_filled_conditional_slot(self):
+        template = """
+        {% load component_tags %}
+        {% component_block "conditional_slots" %}
+          {% fill "subtitle" %} My subtitle {% endfill %}
+        {% endcomponent_block %}
+        """
+        expected = """
+        <div class="frontmatter-component">
+          <div class="title">
+          Title
+          </div>
+          <div class="subtitle">
+            My subtitle
+          </div>
+        </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_elif_of_complex_conditional_slots(self):
+        template = """
+        {% load component_tags %}
+        {% component_block "complex_conditional_slots" %}
+            {% fill "alt_subtitle" %} A different subtitle {% endfill %}
+        {% endcomponent_block %}
+        """
+        expected = """
+           <div class="frontmatter-component">
+             <div class="title">
+             Title
+             </div>
+             <div class="subtitle">
+             A different subtitle
+             </div>
+           </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_else_of_complex_conditional_slots(self):
+        template = """
+           {% load component_tags %}
+           {% component_block "complex_conditional_slots" %}
+           {% endcomponent_block %}
+        """
+        expected = """
+           <div class="frontmatter-component">
+             <div class="title">
+             Title
+             </div>
+            <div class="warning">Nothing filled!</div>
+           </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_component_block_with_negated_conditional_slot(self):
+        template = """
+        {% load component_tags %}
+        {% component_block "negated_conditional_slot" %}
+            {# Whoops! Forgot to fill a slot! #}
+        {% endcomponent_block %}
+        """
+        expected = """
+        <div class="frontmatter-component">
+          <div class="title">
+          Title
+          </div>
+          <div class="warning">Subtitle not filled!</div>
+        </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)

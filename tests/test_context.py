@@ -157,8 +157,8 @@ class ContextTests(SimpleTestCase):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'parent_component' %}"
-            "{% slot 'content' %}{% component name='variable_display' "
-            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endslot %}"
+            "{% fill 'content' %}{% component name='variable_display' "
+            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endfill %}"
             "{% endcomponent_block %}"
         )
         rendered = template.render(Context())
@@ -181,8 +181,8 @@ class ContextTests(SimpleTestCase):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'parent_component' %}"
-            "{% slot 'content' %}{% component name='variable_display' "
-            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endslot %}"
+            "{% fill 'content' %}{% component name='variable_display' "
+            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endfill %}"
             "{% endcomponent_block %}"
         )
         rendered = template.render(Context())
@@ -248,8 +248,8 @@ class ContextTests(SimpleTestCase):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'parent_component' %}"
-            "{% slot 'content' %}{% component name='variable_display' "
-            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endslot %}"
+            "{% fill 'content' %}{% component name='variable_display' "
+            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endfill %}"
             "{% endcomponent_block %}"
         )
         rendered = template.render(
@@ -309,8 +309,8 @@ class ParentArgsTests(SimpleTestCase):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'parent_with_args' parent_value='passed_in' %}"
-            "{% slot 'content' %}{% component name='variable_display' "
-            "shadowing_variable='value_from_slot' new_variable=inner_parent_value %}{% endslot %}"
+            "{% fill 'content' %}{% component name='variable_display' "
+            "shadowing_variable='value_from_slot' new_variable=inner_parent_value %}{% endfill %}"
             "{%endcomponent_block %}"
         )
         rendered = template.render(Context())
@@ -373,8 +373,8 @@ class ContextCalledOnceTests(SimpleTestCase):
     def test_one_context_call_with_slot(self):
         template = Template(
             "{% load component_tags %}"
-            "{% component_block 'incrementer' %}{% slot 'content' %}"
-            "<p>slot</p>{% endslot %}{% endcomponent_block %}"
+            "{% component_block 'incrementer' %}{% fill 'content' %}"
+            "<p>slot</p>{% endfill %}{% endcomponent_block %}"
         )
         rendered = template.render(Context()).strip()
 
@@ -387,8 +387,8 @@ class ContextCalledOnceTests(SimpleTestCase):
     def test_one_context_call_with_slot_and_arg(self):
         template = Template(
             "{% load component_tags %}"
-            "{% component_block 'incrementer' value='3' %}{% slot 'content' %}"
-            "<p>slot</p>{% endslot %}{% endcomponent_block %}"
+            "{% component_block 'incrementer' value='3' %}{% fill 'content' %}"
+            "<p>slot</p>{% endfill %}{% endcomponent_block %}"
         )
         rendered = template.render(Context()).strip()
 
