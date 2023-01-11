@@ -1,12 +1,28 @@
+from __future__ import annotations
+
 import warnings
+from collections import defaultdict
+from contextlib import contextmanager
 from functools import lru_cache
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+)
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import MediaDefiningClass
-from django.template.base import Node, TokenType
+from django.template import TemplateSyntaxError
+from django.template.base import Node, NodeList, Template
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
+
+from django_components.app_settings import app_settings
 
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import (  # noqa
@@ -15,10 +31,17 @@ from django_components.component_registry import (  # noqa
     NotRegistered,
 )
 
-TEMPLATE_CACHE_SIZE = getattr(settings, "COMPONENTS", {}).get(
-    "TEMPLATE_CACHE_SIZE", 128
-)
-ACTIVE_SLOT_CONTEXT_KEY = "_DJANGO_COMPONENTS_ACTIVE_SLOTS"
+if TYPE_CHECKING:
+    from django_components.templatetags.component_tags import (
+        FillNode,
+        SlotNode,
+    )
+
+
+T = TypeVar("T")
+
+
+FILLED_SLOTS_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
@@ -48,18 +71,21 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
 
 
 class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
-    template_name = None
+    # Must be set on subclass OR subclass must implement get_template_name() with
+    # non-null return.
+    template_name: ClassVar[str]
 
     def __init__(self, component_name):
-        self._component_name = component_name
-        self.instance_template = None
-        self.slots = {}
+        self._component_name: str = component_name
+        self._instance_fills: Optional[List[FillNode]] = None
+        self._outer_context: Optional[dict] = None
 
     def get_context_data(self, *args, **kwargs):
         return {}
 
-    def get_template_name(self, context=None):
-        if not self.template_name:
+    # Can be overridden for dynamic templates
+    def get_template_name(self, context):
+        if not hasattr(self, "template_name") or not self.template_name:
             raise ImproperlyConfigured(
                 f"Template name is not set for Component {self.__class__.__name__}"
             )
@@ -68,92 +94,129 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def render_dependencies(self):
         """Helper function to access media.render()"""
-
         return self.media.render()
 
     def render_css_dependencies(self):
         """Render only CSS dependencies available in the media class."""
-
         return mark_safe("\n".join(self.media.render_css()))
 
     def render_js_dependencies(self):
         """Render only JS dependencies available in the media class."""
-
         return mark_safe("\n".join(self.media.render_js()))
 
-    @staticmethod
-    def slots_in_template(template):
-        return {
-            node.name: node.nodelist
-            for node in template.template.nodelist
-            if Component.is_slot_node(node)
-        }
+    @classmethod
+    @lru_cache(maxsize=app_settings.TEMPLATE_CACHE_SIZE)
+    def fetch_and_analyze_template(
+        cls, template_name: str
+    ) -> Tuple[Template, Dict[str, SlotNode]]:
+        template: Template = get_template(template_name).template
+        slots = {}
+        for slot in iter_slots_in_nodelist(template.nodelist, template.name):
+            slot.component_cls = cls
+            slots[slot.name] = slot
+        return template, slots
 
-    @staticmethod
-    def is_slot_node(node):
-        return (
-            isinstance(node, Node)
-            and node.token.token_type == TokenType.BLOCK
-            and node.token.split_contents()[0] == "slot"
+    def get_processed_template(self, context):
+        template_name = self.get_template_name(context)
+        # Note: return of method below is cached.
+        template, slots = self.fetch_and_analyze_template(template_name)
+        self._raise_if_fills_do_not_match_slots(
+            slots, self.instance_fills, self._component_name
         )
+        self._raise_if_declared_slots_are_unfilled(
+            slots, self.instance_fills, self._component_name
+        )
+        return template
 
-    @lru_cache(maxsize=TEMPLATE_CACHE_SIZE)
-    def get_processed_template(self, template_name):
-        """Retrieve the requested template and check for unused slots."""
+    @staticmethod
+    def _raise_if_declared_slots_are_unfilled(
+        slots: Dict[str, SlotNode], fills: Dict[str, FillNode], comp_name: str
+    ):
+        # 'unconditional_slots' are slots that were encountered within an 'if_filled'
+        # context. They are exempt from filling checks.
+        unconditional_slots = {
+            slot.name for slot in slots.values() if not slot.is_conditional
+        }
+        unused_slots = unconditional_slots - fills.keys()
+        if unused_slots:
+            msg = (
+                f"Component '{comp_name}' declares slots that "
+                f"are not filled: '{unused_slots}'"
+            )
+            if app_settings.STRICT_SLOTS:
+                raise TemplateSyntaxError(msg)
+            elif settings.DEBUG:
+                warnings.warn(msg)
 
-        component_template = get_template(template_name).template
+    @staticmethod
+    def _raise_if_fills_do_not_match_slots(
+        slots: Dict[str, SlotNode], fills: Dict[str, FillNode], comp_name: str
+    ):
+        unmatchable_fills = fills.keys() - slots.keys()
+        if unmatchable_fills:
+            msg = (
+                f"Component '{comp_name}' passed fill(s) "
+                f"refering to undefined slot(s). Bad fills: {list(unmatchable_fills)}."
+            )
+            raise TemplateSyntaxError(msg)
 
-        # Traverse template nodes and descendants
-        visited_nodes = set()
-        nodes_to_visit = list(component_template.nodelist)
-        slots_seen = set()
-        while nodes_to_visit:
-            current_node = nodes_to_visit.pop()
-            if current_node in visited_nodes:
-                continue
-            visited_nodes.add(current_node)
-            for nodelist_name in current_node.child_nodelists:
-                nodes_to_visit.extend(getattr(current_node, nodelist_name, []))
-            if self.is_slot_node(current_node):
-                slots_seen.add(current_node.name)
+    @property
+    def instance_fills(self):
+        return self._instance_fills or {}
 
-        # Check and warn for unknown slots
-        if settings.DEBUG:
-            filled_slot_names = set(self.slots.keys())
-            unused_slots = filled_slot_names - slots_seen
-            if unused_slots:
-                warnings.warn(
-                    "Component {} was provided with slots that were not used in a template: {}".format(
-                        self._component_name, unused_slots
-                    )
-                )
+    @property
+    def outer_context(self):
+        return self._outer_context or {}
 
-        return component_template
+    @contextmanager
+    def assign(
+        self: T,
+        fills: Optional[Dict[str, FillNode]] = None,
+        outer_context: Optional[dict] = None,
+    ) -> T:
+        if fills is not None:
+            self._instance_fills = fills
+        if outer_context is not None:
+            self._outer_context = outer_context
+        yield self
+        self._instance_fills = None
+        self._outer_context = None
 
     def render(self, context):
-        if hasattr(self, "context"):
-            warnings.warn(
-                f"{self.__class__.__name__}: `context` method is deprecated, use `get_context` instead",
-                DeprecationWarning,
-            )
-
-        if hasattr(self, "template"):
-            warnings.warn(
-                f"{self.__class__.__name__}: `template` method is deprecated, \
-                set `template_name` or override `get_template_name` instead",
-                DeprecationWarning,
-            )
-            template_name = self.template(context)
-        else:
-            template_name = self.get_template_name(context)
-
-        instance_template = self.get_processed_template(template_name)
-        with context.update({ACTIVE_SLOT_CONTEXT_KEY: self.slots}):
-            return instance_template.render(context)
+        template = self.get_processed_template(context)
+        current_fills_stack = context.get(
+            FILLED_SLOTS_CONTEXT_KEY, defaultdict(list)
+        )
+        for name, fill in self.instance_fills.items():
+            current_fills_stack[name].append(fill)
+        with context.update({FILLED_SLOTS_CONTEXT_KEY: current_fills_stack}):
+            return template.render(context)
 
     class Media:
         css = {}
         js = []
+
+
+def iter_slots_in_nodelist(nodelist: NodeList, template_name: str = None):
+    from django_components.templatetags.component_tags import SlotNode
+
+    nodes: List[Node] = list(nodelist)
+    slot_names = set()
+    while nodes:
+        node = nodes.pop()
+        if isinstance(node, SlotNode):
+            slot_name = node.name
+            if slot_name in slot_names:
+                context = (
+                    f" in template '{template_name}'" if template_name else ""
+                )
+                raise TemplateSyntaxError(
+                    f"Encountered non-unique slot '{slot_name}'{context}"
+                )
+            slot_names.add(slot_name)
+            yield node
+        for nodelist_name in node.child_nodelists:
+            nodes.extend(reversed(getattr(node, nodelist_name, [])))
 
 
 # This variable represents the global component registry
@@ -163,13 +226,11 @@ registry = ComponentRegistry()
 def register(name):
     """Class decorator to register a component.
 
-
     Usage:
 
     @register("my_component")
     class MyComponent(component.Component):
         ...
-
     """
 
     def decorator(component):

@@ -1,7 +1,7 @@
 import glob
 import importlib
+import importlib.util
 import sys
-from importlib import import_module
 from pathlib import Path
 
 import django
@@ -15,7 +15,7 @@ if django.VERSION < (3, 2):
 
 
 def autodiscover():
-    from . import app_settings
+    from django_components.app_settings import app_settings
 
     if app_settings.AUTODISCOVER:
         # Autodetect a components.py file in each app directory
@@ -30,7 +30,7 @@ def autodiscover():
                 import_file(path)
 
     for path in app_settings.LIBRARIES:
-        import_module(path)
+        importlib.import_module(path)
 
 
 def import_file(path):

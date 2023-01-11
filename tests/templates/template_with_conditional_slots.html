@@ -1,0 +1,8 @@
+{# Example from django-components/issues/98 #}
+{% load component_tags %}
+<div class="frontmatter-component">
+    <div class="title">{% slot "title" %}Title{% endslot %}</div>
+    {% if_filled "subtitle" %}
+        <div class="subtitle">{% slot "subtitle" %}Optional subtitle{% endslot %}</div>
+    {% endif_filled %}
+</div>

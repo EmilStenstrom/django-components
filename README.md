@@ -323,7 +323,18 @@ This makes it possible to organize your front-end around reusable components. In
 
 # Using slots in templates
 
-Components support something called slots. They work a lot like Django blocks, but only inside components you define. Let's update our calendar component to support more customization, by updating our calendar.html template:
+_New in version 0.26_ (__breaking change__): Defining slots and passing content to them used to be achieved by a single block tag `{% slot %}`. To make component nesting easier these functions have been split across two separate tags. Now, `{% slot %}` serves only to declare/define/open new slots inside the component template. The function of passing in content to a slot has been moved to a newly introduced `{% fill %}` tag.
+
+Components support something called 'slots'.
+When a component is used inside another template, slots allow the parent template to override specific parts of the child component by passing in different content.
+This mechanism makes components more reusable and composable.
+
+In the example below we introduce two block tags that work hand in hand to make this work. These are...
+
+- `{% slot <name> %}`/`{% endslot %}`: Declare new slot on component template.
+- `{% fill <name> %}`/`{% endfill %}`: Used inside component block. The content of this block is injected into the slot with the same name.
+
+Let's update our calendar component to support more customization by updating our calendar.html template.
 
 ```htmldjango
 <div class="calendar-component">
@@ -336,17 +347,17 @@ Components support something called slots. They work a lot like Django blocks, b
 </div>
 ```
 
-When using the component, you specify what slots you want to fill and where you want to use the defaults from the template. It looks like this:
+When using the component, you specify which slots you want to fill and where you want to use the defaults from the template. It looks like this:
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% slot "body" %}Can you believe it's already <span>{{ date }}</span>??{% endslot %}
+    {% fill "body" %}Can you believe it's already <span>{{ date }}</span>??{% endfill %}
 {% endcomponent_block %}
 ```
 
 Since the header block is unspecified, it's taken from the base template. If you put this in a template, and send in date=2020-06-06, this is what's rendered:
 
-```html
+```htmldjango
 <div class="calendar-component">
     <div class="header">
         Calendar header
@@ -360,17 +371,17 @@ Since the header block is unspecified, it's taken from the base template. If you
 
 As you can see, component slots lets you write reusable containers, that you fill out when you use a component. This makes for highly reusable components, that can be used in different circumstances.
 
-If you want to include a slot's default content while adding additional content, you can call `slot.super` to insert the base content, which works similarly to `block.super`.
+Certain properties of a slot can be accessed from within a 'fill' context. They are provided as attributes on a user-defined alias of the targeted slot. For instance, let's say you're filling a slot called 'body'. To access properties of this slot, alias it using the 'as' keyword to a new name -- or keep the original name. With the new slot alias, you can call `<alias>.default` to insert the default content.
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% slot "body" %}{{ slot.super }}. Have a great day!{% endslot %}
+    {% fill "body" as "body" %}{{ body.default }}. Have a great day!{% endslot %}
 {% endcomponent_block %}
 ```
 
 Produces:
 
-```html
+```htmldjango
 <div class="calendar-component">
     <div class="header">
         Calendar header
@@ -379,6 +390,99 @@ Produces:
         Today's date is <span>2020-06-06</span>. Have a great day!
     </div>
 </div>
+```
+
+## Advanced
+
+### Conditional slots
+
+_Added in version 0.26._
+
+In certain circumstances, you may want the behavior of slot filling to depend on
+whether or not a particular slot is filled. 
+
+For example, suppose we have the following component template:
+
+```htmldjango
+<div class="frontmatter-component">
+    <div class="title">
+        {% slot "title" %}Title{% endslot %}
+    </div>
+    <div class="subtitle">
+        {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
+    </div>
+</div>
+```
+
+By default the slot named 'subtitle' is empty. Yet when the component is used without
+explicit fills, the div containing the slot is still rendered, as shown below:
+
+```html
+<div class="frontmatter-component">
+    <div class="title">
+        Title
+    </div>
+    <div class="subtitle">
+    </div>
+</div>
+```
+
+This may not be what you want. What if instead the outer 'subtitle' div should only
+be included when the inner slot is in fact filled?
+
+The answer is to use the `{% if_filled <name> %}` tag. Together with `{% endif_filled %}`,
+these define a block whose contents will be rendered only if the component slot with 
+the corresponding 'name' is filled.
+
+This is what our example looks like with an 'if_filled' tag.
+
+```htmldjango
+<div class="frontmatter-component">
+    <div class="title">
+        {% slot "title" %}Title{% endslot %}
+    </div>
+    {% if_filled "subtitle" %}
+    <div class="subtitle">
+        {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
+    </div>
+    {% endif_filled %}
+</div>
+```
+
+Just as Django's builtin 'if' tag has 'elif' and 'else' counterparts, so does 'if_filled'
+include additional tags for more complex branching. These tags are 'elif_filled' and
+'else_filled'. Here's what our example looks like with them.
+
+```htmldjango
+<div class="frontmatter-component">
+    <div class="title">
+        {% slot "title" %}Title{% endslot %}
+    </div>
+    {% if_filled "subtitle" %}
+    <div class="subtitle">
+        {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
+    </div>
+    {% elif_filled "title" %}
+        ...
+    {% else_filled %}
+        ...
+    {% endif_filled %}
+</div>
+```
+
+Sometimes you're not interested in whether a slot is filled, but rather that it _isn't_.
+To negate the meaning of 'if_filled' in this way, an optional boolean can be passed to
+the 'if_filled' and 'elif_filled' tags.
+
+In the example below we use `False` to indicate that the content should be rendered
+only if the slot 'subtitle' is _not_ filled.
+
+```htmldjango
+{% if_filled subtitle False %}
+<div class="subtitle">
+    {% slot "subtitle" %}{% endslot %}
+</div>
+{% endif_filled %}
 ```
 
 # Component context and scope

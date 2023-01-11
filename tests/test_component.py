@@ -5,12 +5,11 @@ from django.template import Context, Template
 
 # isort: off
 from .django_test_setup import *  # NOQA
+from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
 
 from django_components import component
-
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 
 class ComponentTest(SimpleTestCase):
@@ -19,7 +18,7 @@ class ComponentTest(SimpleTestCase):
             pass
 
         with self.assertRaises(ImproperlyConfigured):
-            EmptyComponent("empty_component").get_template_name()
+            EmptyComponent("empty_component").get_template_name(Context({}))
 
     def test_simple_component(self):
         class SimpleComponent(component.Component):
@@ -275,13 +274,13 @@ class ComponentIsolationTests(SimpleTestCase):
             """
             {% load component_tags %}
             {% component_block "test" %}
-                {% slot "header" %}Override header{% endslot %}
+                {% fill "header" %}Override header{% endfill %}
             {% endcomponent_block %}
             {% component_block "test" %}
-                {% slot "main" %}Override main{% endslot %}
+                {% fill "main" %}Override main{% endfill %}
             {% endcomponent_block %}
             {% component_block "test" %}
-                {% slot "footer" %}Override footer{% endslot %}
+                {% fill "footer" %}Override footer{% endfill %}
             {% endcomponent_block %}
         """
         )
@@ -308,44 +307,4 @@ class ComponentIsolationTests(SimpleTestCase):
                 <footer>Override footer</footer>
             </custom-template>
         """,
-        )
-
-
-class RecursiveSlotNameTest(SimpleTestCase):
-    def setUp(self):
-        @component.register("outer")
-        class OuterComponent(component.Component):
-            template_name = "slotted_template.html"
-
-        @component.register("inner")
-        class InnerComponent(component.Component):
-            template_name = "slotted_template.html"
-
-    def test_no_infinite_recursion_when_slot_name_is_reused(self):
-        template = Template(
-            """
-            {% load component_tags %}
-            {% component_block "outer" %}
-                {% slot "header" %}
-                    {% component_block "inner" %}{% endcomponent_block %}
-                {% endslot %}
-            {% endcomponent_block %}
-        """
-        )
-
-        self.assertHTMLEqual(
-            template.render(Context({})),
-            """
-            <custom-template>
-                <header>
-                    <custom-template>
-                        <header>Default header</header>
-                        <main>Default main</main>
-                        <footer>Default footer</footer>
-                    </custom-template>
-                </header>
-                <main>Default main</main>
-                <footer>Default footer</footer>
-            </custom-template>
-            """,
         )
