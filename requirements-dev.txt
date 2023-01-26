@@ -49,7 +49,7 @@ pluggy==1.0.0
     # via
     #   pytest
     #   tox
-pre-commit==2.21.0
+pre-commit==3.0.1
     # via -r requirements-dev.in
 pycodestyle==2.10.0
     # via flake8
