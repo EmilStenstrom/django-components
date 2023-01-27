@@ -8,7 +8,7 @@ asgiref==3.6.0
     # via django
 attrs==22.2.0
     # via pytest
-cachetools==5.2.0
+cachetools==5.3.0
     # via tox
 cfgv==3.3.1
     # via pre-commit
@@ -20,7 +20,7 @@ distlib==0.3.6
     # via virtualenv
 django==4.1.5
     # via -r requirements-dev.in
-filelock==3.8.2
+filelock==3.9.0
     # via
     #   tox
     #   virtualenv
@@ -36,12 +36,12 @@ mccabe==0.7.0
     # via flake8
 nodeenv==1.7.0
     # via pre-commit
-packaging==22.0
+packaging==23.0
     # via
     #   pyproject-api
     #   pytest
     #   tox
-platformdirs==2.6.0
+platformdirs==2.6.2
     # via
     #   tox
     #   virtualenv
@@ -55,7 +55,7 @@ pycodestyle==2.10.0
     # via flake8
 pyflakes==3.0.1
     # via flake8
-pyproject-api==1.2.1
+pyproject-api==1.5.0
     # via tox
 pytest==7.2.1
     # via -r requirements-dev.in
@@ -63,7 +63,7 @@ pyyaml==6.0
     # via pre-commit
 sqlparse==0.4.3
     # via django
-tox==4.1.1
+tox==4.4.2
     # via -r requirements-dev.in
 virtualenv==20.17.1
     # via
