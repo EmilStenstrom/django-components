@@ -292,7 +292,8 @@ def do_component_block(parser, token):
 def slot_tokens(parser):
     """Yield each 'slot' token appearing before the next 'endcomponent_block' token.
 
-    Raises TemplateSyntaxError if there are other content tokens or if there is no endcomponent_block token."""
+    Raises TemplateSyntaxError if there are other content tokens or if there is no endcomponent_block token.
+    """
 
     def is_whitespace(token):
         return (
