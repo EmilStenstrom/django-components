@@ -27,21 +27,21 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
             media = attrs["Media"]
 
             # Allow: class Media: css = "style.css"
-            if isinstance(media.css, str):
+            if hasattr(media, "css") and isinstance(media.css, str):
                 media.css = [media.css]
 
             # Allow: class Media: css = ["style.css"]
-            if isinstance(media.css, list):
+            if hasattr(media, "css") and isinstance(media.css, list):
                 media.css = {"all": media.css}
 
             # Allow: class Media: css = {"all": "style.css"}
-            if isinstance(media.css, dict):
+            if hasattr(media, "css") and isinstance(media.css, dict):
                 for media_type, path_list in media.css.items():
                     if isinstance(path_list, str):
                         media.css[media_type] = [path_list]
 
             # Allow: class Media: js = "script.js"
-            if isinstance(media.js, str):
+            if hasattr(media, "js") and isinstance(media.js, str):
                 media.js = [media.js]
 
         return super().__new__(mcs, name, bases, attrs)

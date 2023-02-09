@@ -56,6 +56,61 @@ class ComponentTest(SimpleTestCase):
             ).lstrip(),
         )
 
+    def test_css_only_component(self):
+        class SimpleComponent(component.Component):
+            template_name = "simple_template.html"
+
+            class Media:
+                css = "style.css"
+
+        comp = SimpleComponent("simple_component")
+
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """
+            <link href="style.css" media="all" rel="stylesheet">
+        """
+            ).strip(),
+        )
+
+    def test_js_only_component(self):
+        class SimpleComponent(component.Component):
+            template_name = "simple_template.html"
+
+            class Media:
+                js = "script.js"
+
+        comp = SimpleComponent("simple_component")
+
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """
+            <script src="script.js"></script>
+        """
+            ).strip(),
+        )
+
+    def test_empty_media_component(self):
+        class SimpleComponent(component.Component):
+            template_name = "simple_template.html"
+
+            class Media:
+                pass
+
+        comp = SimpleComponent("simple_component")
+
+        self.assertHTMLEqual(comp.render_dependencies(), "")
+
+    def test_missing_media_component(self):
+        class SimpleComponent(component.Component):
+            template_name = "simple_template.html"
+
+        comp = SimpleComponent("simple_component")
+
+        self.assertHTMLEqual(comp.render_dependencies(), "")
+
     def test_component_with_list_of_styles(self):
         class MultistyleComponent(component.Component):
             class Media:
