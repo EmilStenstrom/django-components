@@ -323,16 +323,21 @@ This makes it possible to organize your front-end around reusable components. In
 
 # Using slots in templates
 
-_New in version 0.26_ (__breaking change__): Defining slots and passing content to them used to be achieved by a single block tag `{% slot %}`. To make component nesting easier these functions have been split across two separate tags. Now, `{% slot %}` serves only to declare/define/open new slots inside the component template. The function of passing in content to a slot has been moved to a newly introduced `{% fill %}` tag.
+_New in version 0.26_:
 
-Components support something called 'slots'.
+- The `slot` tag now serves only to declare new slots inside the component template.
+  - To override the content of a declared slot, use the newly introduced `fill` tag instead.
+- Whereas unfilled slots used to raise a warning, filling a slot is now optional by default.
+  - To indicate that a slot must be filled, the new keyword `required` should be added at the end of the `slot` tag.  
+
+Components support something called 'slots'. 
 When a component is used inside another template, slots allow the parent template to override specific parts of the child component by passing in different content.
 This mechanism makes components more reusable and composable.
 
 In the example below we introduce two block tags that work hand in hand to make this work. These are...
 
-- `{% slot <name> %}`/`{% endslot %}`: Declare new slot on component template.
-- `{% fill <name> %}`/`{% endfill %}`: Used inside component block. The content of this block is injected into the slot with the same name.
+- `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
+- `{% fill <name> %}`/`{% endfill %}`: (Used inside a component block.) Fills a declared slot with the specified content.
 
 Let's update our calendar component to support more customization by updating our calendar.html template.
 

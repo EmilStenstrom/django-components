@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, DefaultDict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from django import template
 from django.conf import settings
@@ -164,11 +164,13 @@ class UserSlotVar:
 
 
 class SlotNode(Node):
-    def __init__(self, name, nodelist):
+    def __init__(
+        self, name, nodelist, template_name: str = "", required=False
+    ):
         self.name = name
         self.nodelist = nodelist
-        self.component_cls = None
-        self.is_conditional: bool = False
+        self.template_name = template_name
+        self.is_required = required
 
     def __repr__(self):
         return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}>"
@@ -178,13 +180,19 @@ class SlotNode(Node):
             raise TemplateSyntaxError(
                 f"Attempted to render SlotNode '{self.name}' outside a parent component."
             )
-        filled_slots: DefaultDict[str, List[FillNode]] = context[
+        filled_slots: Dict[str, List[FillNode]] = context[
             FILLED_SLOTS_CONTEXT_KEY
         ]
-        fill_node_stack = filled_slots[self.name]
+        fill_node_stack = filled_slots.get(self.name, None)
         extra_context = {}
-        if not fill_node_stack:  # if []
+        if not fill_node_stack:  # if None or []
             nodelist = self.nodelist
+            # Raise if slot is 'required'
+            if self.is_required:
+                raise TemplateSyntaxError(
+                    f"Slot '{self.name}' is marked as 'required' (i.e. non-optional), "
+                    f"yet no fill is provided. Check template '{self.template_name}'"
+                )
         else:
             fill_node = fill_node_stack.pop()
             nodelist = fill_node.nodelist
@@ -204,6 +212,16 @@ def do_slot(parser, token):
     # e.g. {% slot <name> %}
     if len(args) == 1:
         slot_name: str = args[0]
+        required = False
+    elif len(args) == 2:
+        slot_name: str = args[0]
+        required_keyword = args[1]
+        if required_keyword != "required":
+            raise TemplateSyntaxError(
+                f"'{bits[0]}' only accepts 'required' keyword as optional second argument"
+            )
+        else:
+            required = True
     else:
         raise TemplateSyntaxError(
             f"{bits[0]}' tag takes only one argument (the slot name)"
@@ -220,7 +238,8 @@ def do_slot(parser, token):
     nodelist = parser.parse(parse_until=["endslot"])
     parser.delete_first_token()
 
-    return SlotNode(slot_name, nodelist)
+    template_name = parser.origin.template_name
+    return SlotNode(slot_name, nodelist, template_name, required)
 
 
 class FillNode(Node):
@@ -328,17 +347,16 @@ class ComponentNode(Node):
             for fill_node in self.fill_nodes
         }
 
-        # Create a fresh isolated context if requested w 'only' keyword.
-        with component.assign(
-            fills=resolved_fills, outer_context=context.flatten()
-        ):
-            component_context = component.get_context_data(
-                *resolved_context_args, **resolved_context_kwargs
-            )
-            if self.isolated_context:
-                context = context.new()
-            with context.update(component_context):
-                rendered_component = component.render(context)
+        component.set_instance_fills(resolved_fills)
+        component.set_outer_context(context)
+
+        component_context = component.get_context_data(
+            *resolved_context_args, **resolved_context_kwargs
+        )
+        if self.isolated_context:
+            context = context.new()
+        with context.update(component_context):
+            rendered_component = component.render(context)
 
         if is_dependency_middleware_active():
             return (
@@ -432,7 +450,9 @@ def fill_tokens(parser):
             not is_whitespace(token) and token.token_type != TokenType.COMMENT
         ):
             raise TemplateSyntaxError(
-                f"Content tokens in component blocks must be placed inside 'fill' tags: {token}"
+                "Component block EITHER contains illegal tokens tag that are not "
+                "{{% fill ... %}} tags OR the proper closing tag -- "
+                "{{% endcomponent_block %}} -- is missing."
             )
 
 
@@ -536,7 +556,6 @@ class IfSlotFilledNode(Node):
     ):
         # [(<slot name var | None (= condition)>, nodelist, <is_positive>)]
         self.branches = branches
-        self.visit_and_mark_slots_as_conditional_()
 
     def __iter__(self):
         for _, nodelist, _ in self.branches:
@@ -545,15 +564,6 @@ class IfSlotFilledNode(Node):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
-
-    def visit_and_mark_slots_as_conditional_(self):
-        stack = list(self.nodelist)
-        while stack:
-            node = stack.pop()
-            if isinstance(node, SlotNode):
-                node.is_conditional = True
-            for nodelist_name in node.child_nodelists:
-                stack.extend(getattr(node, nodelist_name, ()))
 
     @property
     def nodelist(self):

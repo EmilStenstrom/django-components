@@ -10,12 +10,11 @@ if not settings.configured:
                 "DIRS": ["tests/templates/"],
             }
         ],
-        COMPONENTS={"template_cache_size": 128, "strict_slots": False},
+        COMPONENTS={"template_cache_size": 128},
         MIDDLEWARE=[
             "django_components.middleware.ComponentDependencyMiddleware"
         ],
         DATABASES={},
-        # DEBUG=True
     )
 
     django.setup()

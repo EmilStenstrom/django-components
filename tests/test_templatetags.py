@@ -334,6 +334,21 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
+    def test_missing_required_slot_raises_error(self):
+        class Component(component.Component):
+            template_name = "slotted_template_with_required_slot.html"
+
+        component.registry.register("test", Component)
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test' %}
+            {% endcomponent_block %}
+            """
+        )
+        with self.assertRaises(TemplateSyntaxError):
+            template.render(Context({}))
+
 
 class SlottedTemplateRegressionTests(SimpleTestCase):
     def setUp(self):
@@ -902,9 +917,6 @@ class ComponentNestingTests(SimpleTestCase):
             {% endcomponent_block %}
             """
         )
-        import sys
-
-        sys.setrecursionlimit(100)
         rendered = template.render(Context({"items": [1, 2]}))
         expected = """
         <div class="dashboard-component">
