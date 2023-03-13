@@ -1,28 +1,22 @@
 from __future__ import annotations
 
-import warnings
-from collections import defaultdict
-from contextlib import contextmanager
-from functools import lru_cache
+import copy
 from typing import (
     TYPE_CHECKING,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Optional,
-    Tuple,
     TypeVar,
 )
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import MediaDefiningClass
-from django.template import TemplateSyntaxError
+from django.template import Context, TemplateSyntaxError
 from django.template.base import Node, NodeList, Template
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
-
-from django_components.app_settings import app_settings
 
 # Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import (  # noqa
@@ -104,61 +98,26 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         """Render only JS dependencies available in the media class."""
         return mark_safe("\n".join(self.media.render_js()))
 
-    @classmethod
-    @lru_cache(maxsize=app_settings.TEMPLATE_CACHE_SIZE)
-    def fetch_and_analyze_template(
-        cls, template_name: str
-    ) -> Tuple[Template, Dict[str, SlotNode]]:
-        template: Template = get_template(template_name).template
-        slots = {}
-        for slot in iter_slots_in_nodelist(template.nodelist, template.name):
-            slot.component_cls = cls
-            slots[slot.name] = slot
-        return template, slots
+    def get_declared_slots(
+        self, context: Context, template: Optional[Template] = None
+    ) -> List[SlotNode]:
+        if template is None:
+            template = self.get_template(context)
+        return list(
+            dfs_iter_slots_in_nodelist(template.nodelist, template.name)
+        )
 
-    def get_processed_template(self, context):
-        template_name = self.get_template_name(context)
-        # Note: return of method below is cached.
-        template, slots = self.fetch_and_analyze_template(template_name)
-        self._raise_if_fills_do_not_match_slots(
-            slots, self.instance_fills, self._component_name
-        )
-        self._raise_if_declared_slots_are_unfilled(
-            slots, self.instance_fills, self._component_name
-        )
+    def get_template(self, context, template_name: Optional[str] = None):
+        if template_name is None:
+            template_name = self.get_template_name(context)
+        template = get_template(template_name).template
         return template
 
-    @staticmethod
-    def _raise_if_declared_slots_are_unfilled(
-        slots: Dict[str, SlotNode], fills: Dict[str, FillNode], comp_name: str
-    ):
-        # 'unconditional_slots' are slots that were encountered within an 'if_filled'
-        # context. They are exempt from filling checks.
-        unconditional_slots = {
-            slot.name for slot in slots.values() if not slot.is_conditional
-        }
-        unused_slots = unconditional_slots - fills.keys()
-        if unused_slots:
-            msg = (
-                f"Component '{comp_name}' declares slots that "
-                f"are not filled: '{unused_slots}'"
-            )
-            if app_settings.STRICT_SLOTS:
-                raise TemplateSyntaxError(msg)
-            elif settings.DEBUG:
-                warnings.warn(msg)
+    def set_instance_fills(self, fills: Dict[str, FillNode]) -> None:
+        self._instance_fills = fills
 
-    @staticmethod
-    def _raise_if_fills_do_not_match_slots(
-        slots: Dict[str, SlotNode], fills: Dict[str, FillNode], comp_name: str
-    ):
-        unmatchable_fills = fills.keys() - slots.keys()
-        if unmatchable_fills:
-            msg = (
-                f"Component '{comp_name}' passed fill(s) "
-                f"refering to undefined slot(s). Bad fills: {list(unmatchable_fills)}."
-            )
-            raise TemplateSyntaxError(msg)
+    def set_outer_context(self, context):
+        self._outer_context = context
 
     @property
     def instance_fills(self):
@@ -168,28 +127,56 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def outer_context(self):
         return self._outer_context or {}
 
-    @contextmanager
-    def assign(
-        self: T,
-        fills: Optional[Dict[str, FillNode]] = None,
-        outer_context: Optional[dict] = None,
-    ) -> T:
-        if fills is not None:
-            self._instance_fills = fills
-        if outer_context is not None:
-            self._outer_context = outer_context
-        yield self
-        self._instance_fills = None
-        self._outer_context = None
-
-    def render(self, context):
-        template = self.get_processed_template(context)
-        current_fills_stack = context.get(
-            FILLED_SLOTS_CONTEXT_KEY, defaultdict(list)
+    def get_updated_fill_stacks(self, context):
+        current_fill_stacks = context.get(FILLED_SLOTS_CONTEXT_KEY, None)
+        updated_fill_stacks = (
+            copy.deepcopy(current_fill_stacks)
+            if current_fill_stacks is not None
+            else {}
         )
         for name, fill in self.instance_fills.items():
-            current_fills_stack[name].append(fill)
-        with context.update({FILLED_SLOTS_CONTEXT_KEY: current_fills_stack}):
+            if name in updated_fill_stacks:
+                updated_fill_stacks[name].append(fill)
+            else:
+                updated_fill_stacks[name] = [fill]
+        return updated_fill_stacks
+
+    def validate_fills_and_slots_(
+        self,
+        context,
+        template: Template,
+        fills: Optional[Dict[str, FillNode]] = None,
+    ) -> None:
+        if fills is None:
+            fills = self.instance_fills
+        all_slots: List[SlotNode] = self.get_declared_slots(context, template)
+        slots: Dict[str, SlotNode] = {}
+        # Each declared slot must have a unique name.
+        for slot in all_slots:
+            slot_name = slot.name
+            if slot_name in slots:
+                raise TemplateSyntaxError(
+                    f"Encountered non-unique slot '{slot_name}' in template "
+                    f"'{template.name}' of component '{self._component_name}'."
+                )
+            slots[slot_name] = slot
+        # All fill nodes must correspond to a declared slot.
+        unmatchable_fills = fills.keys() - slots.keys()
+        if unmatchable_fills:
+            msg = (
+                f"Component '{self._component_name}' passed fill(s) "
+                f"refering to undefined slot(s). Bad fills: {list(unmatchable_fills)}."
+            )
+            raise TemplateSyntaxError(msg)
+        # Note: Requirement that 'required' slots be filled is enforced
+        #  in SlotNode.render().
+
+    def render(self, context):
+        template_name = self.get_template_name(context)
+        template = self.get_template(context, template_name)
+        self.validate_fills_and_slots_(context, template)
+        updated_fill_stacks = self.get_updated_fill_stacks(context)
+        with context.update({FILLED_SLOTS_CONTEXT_KEY: updated_fill_stacks}):
             return template.render(context)
 
     class Media:
@@ -197,23 +184,15 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         js = []
 
 
-def iter_slots_in_nodelist(nodelist: NodeList, template_name: str = None):
+def dfs_iter_slots_in_nodelist(
+    nodelist: NodeList, template_name: str = None
+) -> Iterator[SlotNode]:
     from django_components.templatetags.component_tags import SlotNode
 
     nodes: List[Node] = list(nodelist)
-    slot_names = set()
     while nodes:
         node = nodes.pop()
         if isinstance(node, SlotNode):
-            slot_name = node.name
-            if slot_name in slot_names:
-                context = (
-                    f" in template '{template_name}'" if template_name else ""
-                )
-                raise TemplateSyntaxError(
-                    f"Encountered non-unique slot '{slot_name}'{context}"
-                )
-            slot_names.add(slot_name)
             yield node
         for nodelist_name in node.child_nodelists:
             nodes.extend(reversed(getattr(node, nodelist_name, [])))

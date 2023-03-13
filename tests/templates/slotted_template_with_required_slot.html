@@ -1,0 +1,5 @@
+{% load component_tags %}
+<div class="header-box">
+  <h1>{% slot "title" required %}{% endslot %}</h1>
+  <h2>{% slot "subtitle" %}{% endslot %}</h2>
+</div>
