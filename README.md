@@ -20,6 +20,8 @@ Read on to learn about the details!
 
 # Release notes
 
+*Version 0.26* changes the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill. We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
+
 *Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscover": False in settings.COMPONENTS.
 
 *Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
@@ -150,6 +152,13 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/lemontheme">
+            <img src="https://avatars.githubusercontent.com/u/15968876?v=4" width="100;" alt="lemontheme"/>
+            <br />
+            <sub><b>Adriaan</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/danjac">
             <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
             <br />
@@ -176,15 +185,15 @@ Read on to find out how to build your first component!
             <br />
             <sub><b>Humberto Alves</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/mands">
             <img src="https://avatars.githubusercontent.com/u/1010043?v=4" width="100;" alt="mands"/>
             <br />
             <sub><b>Mandeep Gill</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/telenieko">
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
