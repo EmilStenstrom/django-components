@@ -152,6 +152,13 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/lemontheme">
+            <img src="https://avatars.githubusercontent.com/u/15968876?v=4" width="100;" alt="lemontheme"/>
+            <br />
+            <sub><b>Adriaan</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/danjac">
             <img src="https://avatars.githubusercontent.com/u/249779?v=4" width="100;" alt="danjac"/>
             <br />
@@ -178,15 +185,15 @@ Read on to find out how to build your first component!
             <br />
             <sub><b>Humberto Alves</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/mands">
             <img src="https://avatars.githubusercontent.com/u/1010043?v=4" width="100;" alt="mands"/>
             <br />
             <sub><b>Mandeep Gill</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/telenieko">
             <img src="https://avatars.githubusercontent.com/u/10505?v=4" width="100;" alt="telenieko"/>
