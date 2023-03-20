@@ -315,7 +315,7 @@ class ComponentNode(Node):
         self.name_var = name_var
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
-        self.fill_nodes: List[FillNode] = []
+        self.fill_nodes: NodeList[FillNode] = NodeList()
         self.isolated_context = isolated_context
 
     def __repr__(self):
