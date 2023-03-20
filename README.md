@@ -209,6 +209,13 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/spapas">
+            <img src="https://avatars.githubusercontent.com/u/3911074?v=4" width="100;" alt="spapas"/>
+            <br />
+            <sub><b>Serafeim Papastefanos</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/spollard">
             <img src="https://avatars.githubusercontent.com/u/1459574?v=4" width="100;" alt="spollard"/>
             <br />
