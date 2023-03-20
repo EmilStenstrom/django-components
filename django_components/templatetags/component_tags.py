@@ -315,7 +315,7 @@ class ComponentNode(Node):
         self.name_var = name_var
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
-        self.fill_nodes: List[FillNode] = []
+        self.fill_nodes: NodeList[FillNode] = NodeList()
         self.isolated_context = isolated_context
 
     def __repr__(self):
@@ -409,7 +409,6 @@ def do_component_block(parser, token):
         seen_fill_name_vars.add(fill_node.name_var.var)
         fill_nodes.append(fill_node)
 
-    component_node.fill_nodes = NodeList(fill_nodes)
     return component_node
 
 
