@@ -409,6 +409,7 @@ def do_component_block(parser, token):
         seen_fill_name_vars.add(fill_node.name_var.var)
         fill_nodes.append(fill_node)
 
+    component_node.fill_nodes = NodeList(fill_nodes)
     return component_node
 
 
