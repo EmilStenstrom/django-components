@@ -145,17 +145,17 @@ Read on to find out how to build your first component!
     </td></tr>
 <tr>
     <td align="center">
-        <a href="https://github.com/housUnus">
-            <img src="https://avatars.githubusercontent.com/u/44384710?v=4" width="100;" alt="housUnus"/>
-            <br />
-            <sub><b>&lt;AIT ALI EL HOSAYN&gt;</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/lemontheme">
             <img src="https://avatars.githubusercontent.com/u/15968876?v=4" width="100;" alt="lemontheme"/>
             <br />
             <sub><b>Adriaan</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/housUnus">
+            <img src="https://avatars.githubusercontent.com/u/44384710?v=4" width="100;" alt="housUnus"/>
+            <br />
+            <sub><b>&lt;AIT ALI EL HOSAYN&gt;</b></sub>
         </a>
     </td>
     <td align="center">
@@ -206,6 +206,13 @@ Read on to find out how to build your first component!
             <img src="https://avatars.githubusercontent.com/u/39964466?v=4" width="100;" alt="rafae56038"/>
             <br />
             <sub><b>Null</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/spapas">
+            <img src="https://avatars.githubusercontent.com/u/3911074?v=4" width="100;" alt="spapas"/>
+            <br />
+            <sub><b>Serafeim Papastefanos</b></sub>
         </a>
     </td>
     <td align="center">
