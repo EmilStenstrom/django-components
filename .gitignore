@@ -65,3 +65,9 @@ target/
 # as project supports variety of Django versions
 poetry.lock
 pyproject.toml
+
+# PyCharm
+.idea/
+
+# Python environment
+.venv/
