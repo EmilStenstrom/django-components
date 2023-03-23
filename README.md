@@ -137,18 +137,18 @@ Read on to find out how to build your first component!
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/David-Guillot">
-            <img src="https://avatars.githubusercontent.com/u/1136694?v=4" width="100;" alt="David-Guillot"/>
-            <br />
-            <sub><b>David Guillot</b></sub>
-        </a>
-    </td></tr>
-<tr>
-    <td align="center">
         <a href="https://github.com/lemontheme">
             <img src="https://avatars.githubusercontent.com/u/15968876?v=4" width="100;" alt="lemontheme"/>
             <br />
             <sub><b>Adriaan</b></sub>
+        </a>
+    </td></tr>
+<tr>
+    <td align="center">
+        <a href="https://github.com/David-Guillot">
+            <img src="https://avatars.githubusercontent.com/u/1136694?v=4" width="100;" alt="David-Guillot"/>
+            <br />
+            <sub><b>David Guillot</b></sub>
         </a>
     </td>
     <td align="center">
