@@ -1055,3 +1055,50 @@ class ConditionalIfFilledSlotsTests(SimpleTestCase):
         """
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
+
+
+class RegressionTests(SimpleTestCase):
+    """Ensure we don't break the same thing AGAIN."""
+
+    def setUp(self):
+        component.registry.clear()
+        super().setUp()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        component.registry.clear()
+
+    def test_extends_tag_works(self):
+        component.registry.register("slotted_component", SlottedComponent)
+        template = """
+        {% extends "extendable_template_with_blocks.html" %}
+        {% load component_tags %}
+        {% block body %}
+          {% component_block "slotted_component" %}
+            {% fill "header" %}{% endfill %}
+            {% fill "main" %}
+              TEST
+            {% endfill %}
+            {% fill "footer" %}{% endfill %}
+          {% endcomponent_block %}
+        {% endblock %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+        <main role="main">
+          <div class='container main-container'>
+            <custom-template>
+              <header></header>
+              <main>TEST</main>
+              <footer></footer>
+            </custom-template>
+          </div>
+        </main>
+        </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
