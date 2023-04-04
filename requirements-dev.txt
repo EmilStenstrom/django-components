@@ -20,7 +20,7 @@ distlib==0.3.6
     # via virtualenv
 django==4.1.7
     # via -r requirements-dev.in
-filelock==3.9.0
+filelock==3.10.7
     # via
     #   tox
     #   virtualenv
@@ -41,7 +41,7 @@ packaging==23.0
     #   pyproject-api
     #   pytest
     #   tox
-platformdirs==2.6.2
+platformdirs==3.2.0
     # via
     #   tox
     #   virtualenv
@@ -49,13 +49,13 @@ pluggy==1.0.0
     # via
     #   pytest
     #   tox
-pre-commit==3.2.0
+pre-commit==3.2.1
     # via -r requirements-dev.in
 pycodestyle==2.10.0
     # via flake8
 pyflakes==3.0.1
     # via flake8
-pyproject-api==1.5.0
+pyproject-api==1.5.1
     # via tox
 pytest==7.2.2
     # via -r requirements-dev.in
@@ -63,9 +63,9 @@ pyyaml==6.0
     # via pre-commit
 sqlparse==0.4.3
     # via django
-tox==4.4.7
+tox==4.4.8
     # via -r requirements-dev.in
-virtualenv==20.17.1
+virtualenv==20.21.0
     # via
     #   pre-commit
     #   tox
