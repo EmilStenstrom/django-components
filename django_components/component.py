@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import copy
 from typing import (
     TYPE_CHECKING,
@@ -71,7 +69,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def __init__(self, component_name):
         self._component_name: str = component_name
-        self._instance_fills: Optional[List[FillNode]] = None
+        self._instance_fills: Optional[List["FillNode"]] = None
         self._outer_context: Optional[dict] = None
 
     def get_context_data(self, *args, **kwargs):
@@ -100,7 +98,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def get_declared_slots(
         self, context: Context, template: Optional[Template] = None
-    ) -> List[SlotNode]:
+    ) -> List["SlotNode"]:
         if template is None:
             template = self.get_template(context)
         return list(
@@ -113,7 +111,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         template = get_template(template_name).template
         return template
 
-    def set_instance_fills(self, fills: Dict[str, FillNode]) -> None:
+    def set_instance_fills(self, fills: Dict[str, "FillNode"]) -> None:
         self._instance_fills = fills
 
     def set_outer_context(self, context):
@@ -145,12 +143,14 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         context,
         template: Template,
-        fills: Optional[Dict[str, FillNode]] = None,
+        fills: Optional[Dict[str, "FillNode"]] = None,
     ) -> None:
         if fills is None:
             fills = self.instance_fills
-        all_slots: List[SlotNode] = self.get_declared_slots(context, template)
-        slots: Dict[str, SlotNode] = {}
+        all_slots: List["SlotNode"] = self.get_declared_slots(
+            context, template
+        )
+        slots: Dict[str, "SlotNode"] = {}
         # Each declared slot must have a unique name.
         for slot in all_slots:
             slot_name = slot.name
@@ -186,7 +186,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
 def dfs_iter_slots_in_nodelist(
     nodelist: NodeList, template_name: str = None
-) -> Iterator[SlotNode]:
+) -> Iterator["SlotNode"]:
     from django_components.templatetags.component_tags import SlotNode
 
     nodes: List[Node] = list(nodelist)
