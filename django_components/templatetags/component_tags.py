@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from django import template
@@ -154,7 +152,7 @@ class UserSlotVar:
     SlotNode.render() for implementation).
     """
 
-    def __init__(self, slot: SlotNode, context: Context):
+    def __init__(self, slot: "SlotNode", context: Context):
         self._slot = slot
         self._context = context
 
@@ -245,9 +243,9 @@ def do_slot(parser, token):
 class FillNode(Node):
     def __init__(
         self,
-        name_var: NameVariable,
+        name_var: "NameVariable",
         nodelist: NodeList,
-        alias_var: Optional[NameVariable] = None,
+        alias_var: Optional["NameVariable"] = None,
     ):
         self.name_var = name_var
         self.nodelist = nodelist
@@ -307,7 +305,7 @@ class ComponentNode(Node):
 
     def __init__(
         self,
-        name_var: NameVariable,
+        name_var: "NameVariable",
         context_args,
         context_kwargs,
         isolated_context=False,
@@ -521,7 +519,7 @@ def do_if_filled_block(parser, token):
 
 def parse_if_filled_bits(
     bits: List[str],
-) -> Tuple[Optional[NameVariable], Optional[bool]]:
+) -> Tuple[Optional["NameVariable"], Optional[bool]]:
     tag, args = bits[0], bits[1:]
     if tag in ("else_filled", "endif_filled"):
         if len(args) != 0:
@@ -551,7 +549,7 @@ class IfSlotFilledNode(Node):
     def __init__(
         self,
         branches: List[
-            Tuple[Optional[NameVariable], NodeList, Optional[bool]]
+            Tuple[Optional["NameVariable"], NodeList, Optional[bool]]
         ],
     ):
         # [(<slot name var | None (= condition)>, nodelist, <is_positive>)]
