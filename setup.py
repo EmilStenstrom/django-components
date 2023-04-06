@@ -11,7 +11,7 @@ setup(
     version=VERSION,
     description="A way to create simple reusable template components in Django.",
     long_description=open(
-        os.path.join(os.path.dirname(__file__), "README.md")
+        os.path.join(os.path.dirname(__file__), "README.md"), encoding="utf8"
     ).read(),
     long_description_content_type="text/markdown",
     author="Emil Stenström",
