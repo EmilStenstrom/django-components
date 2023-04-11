@@ -20,11 +20,43 @@ Read on to learn about the details!
 
 # Release notes
 
+*Version 0.27* includes an additional installable app *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes). 
+
 *Version 0.26* changes the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill. We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
 
 *Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscover": False in settings.COMPONENTS.
 
 *Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
+
+# Security notes 🚨
+
+*You are advised to read this section before using django-components in production.*
+
+## Static files
+
+Components can be organized however you prefer.
+That said, our prefered way is to keep the files of a component close together by bundling them in the same directory.
+This means that files containing backend logic, such as Python modules and HTML templates, live in the same directory as static files, e.g. JS and CSS.
+
+If your are using _django.contrib.staticfiles_ to collect static files, no distinction is made between the different kinds of files.
+As a result, your Python code and templates may inadvertently become available on your static file server.
+You probably don't want this, as parts of your backend logic will be exposed, posing a __potential security vulnerability__.
+
+As of *v0.27*, django-components ships with an additional installable app *django_components.__safer_staticfiles__*.
+It is a drop-in replacement for *django.contrib.staticfiles*.
+Its behavior is 100% identical except it ignores .py and .html files, meaning these will not end up on your static files server.
+To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.
+
+```python
+INSTALLED_APPS = [
+    # django.contrib.staticfiles   # <-- REMOVE
+    "django_components",
+    "django_components.safer_staticfiles"  # <-- ADD
+]
+```
+
+If you are on an older version of django-components, your alternatives are a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command, or b) defining a subclass of StaticFilesConfig.
+Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).  
 
 # Installation
 
