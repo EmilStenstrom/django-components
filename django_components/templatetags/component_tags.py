@@ -194,7 +194,7 @@ class SlotNode(Node):
         else:
             fill_node = fill_node_stack.pop()
             nodelist = fill_node.nodelist
-            # context[FILLED_SLOTS_CONTEXT_KEY].pop(self.name)
+
             if fill_node.alias_var is not None:
                 aliased_slot_var = UserSlotVar(self, context)
                 resolved_alias_name = fill_node.alias_var.resolve(context)
