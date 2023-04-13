@@ -1,4 +1,3 @@
-import copy
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -126,12 +125,13 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         return self._outer_context or {}
 
     def get_updated_fill_stacks(self, context):
-        current_fill_stacks = context.get(FILLED_SLOTS_CONTEXT_KEY, None)
-        updated_fill_stacks = (
-            copy.deepcopy(current_fill_stacks)
-            if current_fill_stacks is not None
-            else {}
+        current_fill_stacks: Optional[Dict[str, List[FillNode]]] = context.get(
+            FILLED_SLOTS_CONTEXT_KEY, None
         )
+        updated_fill_stacks = {}
+        if current_fill_stacks:
+            for name, fill_nodes in current_fill_stacks.items():
+                updated_fill_stacks[name] = list(fill_nodes)
         for name, fill in self.instance_fills.items():
             if name in updated_fill_stacks:
                 updated_fill_stacks[name].append(fill)
