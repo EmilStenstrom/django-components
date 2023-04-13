@@ -3,7 +3,7 @@ import os
 
 from setuptools import find_packages, setup
 
-VERSION = "0.27.0"
+VERSION = "0.27.1"
 
 setup(
     name="django_components",
