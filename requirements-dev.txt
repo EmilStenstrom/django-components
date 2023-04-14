@@ -18,7 +18,7 @@ distlib==0.3.6
     # via virtualenv
 django==4.2
     # via -r requirements-dev.in
-filelock==3.10.7
+filelock==3.11.0
     # via
     #   tox
     #   virtualenv
@@ -61,7 +61,7 @@ pyyaml==6.0
     # via pre-commit
 sqlparse==0.4.3
     # via django
-tox==4.4.11
+tox==4.4.12
     # via -r requirements-dev.in
 virtualenv==20.21.0
     # via
