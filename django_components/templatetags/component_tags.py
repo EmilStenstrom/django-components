@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Iterator
+from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
 
 from django import template
 from django.conf import settings
@@ -7,10 +7,10 @@ from django.template.base import (
     Node,
     NodeList,
     TemplateSyntaxError,
+    TextNode,
     TokenType,
     Variable,
     VariableDoesNotExist,
-    TextNode,
 )
 from django.template.defaulttags import CommentNode
 from django.template.library import parse_bits
