@@ -77,6 +77,14 @@ class _DashboardComponent(component.Component):
     template_name = "slotted_component_nesting_template_pt2_dashboard.html"
 
 
+class ComponentWithDefaultSlot(component.Component):
+    template_name = "template_with_default_slot.html"
+
+
+class ComponentWithDefaultAndRequiredSlot(component.Component):
+    template_name = "template_with_default_and_required_slot.html"
+
+
 class ComponentTemplateTagTest(SimpleTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
@@ -349,6 +357,121 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
+    def test_default_slot_is_fillable_by_implicit_fill_content(self):
+        component.registry.register("test_comp", ComponentWithDefaultSlot)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test_comp' %}
+              <p>This fills the 'main' slot.</p>
+            {% endcomponent_block %}
+            """
+        )
+
+        expected = """
+        <div>
+          <main><p>This fills the 'main' slot.</p></main>
+        </div>
+        """
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_default_slot_is_fillable_by_explicit_fill_content(self):
+        component.registry.register("test_comp", ComponentWithDefaultSlot)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test_comp' %}
+              {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
+            {% endcomponent_block %}
+            """
+        )
+        expected = """
+        <div>
+          <main><p>This fills the 'main' slot.</p></main>
+        </div>
+        """
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_error_raised_when_default_and_required_slot_not_filled(self):
+        component.registry.register(
+            "test_comp", ComponentWithDefaultAndRequiredSlot
+        )
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test_comp' %}
+            {% endcomponent_block %}
+            """
+        )
+        with self.assertRaises(TemplateSyntaxError):
+            template.render(Context({}))
+
+    def test_fill_tag_can_occur_within_component_block_nested_in_implicit_fill(
+        self,
+    ):
+        component.registry.register("test_comp", ComponentWithDefaultSlot)
+        component.registry.register("slotted", SlottedComponent)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test_comp' %}
+              {% component_block "slotted" %}
+                {% fill "header" %}This Is Allowed{% endfill %}
+                {% fill "main" %}{% endfill %}
+                {% fill "footer" %}{% endfill %}
+              {% endcomponent_block %}
+            {% endcomponent_block %}
+            """
+        )
+        expected = """
+        <div>
+          <main>
+            <custom-template>
+              <header>This Is Allowed</header>
+              <main></main>
+              <footer></footer>
+            </custom-template>
+          </main>
+        </div>
+        """
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_error_from_mixed_implicit_and_explicit_fill_content(self):
+        component.registry.register("test_comp", ComponentWithDefaultSlot)
+
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% component_block 'test_comp' %}
+                  {% fill "main" %}Main content{% endfill %}
+                  <p>And add this too!</p>
+                {% endcomponent_block %}
+                """
+            )
+
+    def test_comments_permitted_inside_implicit_fill_content(self):
+        component.registry.register("test_comp", ComponentWithDefaultSlot)
+        Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test_comp' %}
+              <p>Main Content</p>
+              {% comment %}
+              This won't show up in the rendered HTML
+              {% endcomment %}
+              {# Nor will this #}
+            {% endcomponent_block %}
+            """
+        )
+        self.assertTrue(True)
+
 
 class SlottedTemplateRegressionTests(SimpleTestCase):
     def setUp(self):
@@ -552,7 +675,7 @@ class NestedSlotTests(SimpleTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_default_slots_render_correctly(self):
+    def test_default_slot_contents_render_correctly(self):
         template = Template(
             """
             {% load component_tags %}
@@ -779,27 +902,31 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_variable_outside_fill_tag_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
-                {% load component_tags %}
-                {% component_block "test" %}
-                    {{ anything }}
-                {% endcomponent_block %}
+    def test_variable_outside_fill_tag_compiles_w_out_error(self):
+        # As of v0.28 this isvalid, provided the component registered under "test"
+        #  contains a slot tag marked as 'default'. This is verified outside
+        #  template compilation time.
+        Template(
             """
-            )
+            {% load component_tags %}
+            {% component_block "test" %}
+                {{ anything }}
+            {% endcomponent_block %}
+            """
+        )
 
-    def test_text_outside_fill_tag_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
-                {% load component_tags %}
-                {% component_block "test" %}
-                    Text
-                {% endcomponent_block %}
+    def test_text_outside_fill_tag_is_not_error(self):
+        # As of v0.28 this isvalid, provided the component registered under "test"
+        #  contains a slot tag marked as 'default'. This is verified outside
+        #  template compilation time.
+        Template(
             """
-            )
+            {% load component_tags %}
+            {% component_block "test" %}
+                Text
+            {% endcomponent_block %}
+            """
+        )
 
     def test_nonfill_block_outside_fill_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
@@ -843,7 +970,7 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                     {% fill "main" %}Custom main{% endfill %}
                     {% fill "footer" %}Custom footer{% endfill %}
                 {% endcomponent_block %}
-            """
+                """
             ).render(Context({}))
 
     def test_non_unique_fill_names_is_error(self):
@@ -855,7 +982,7 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
                     {% fill "header" %}Custom header {% endfill %}
                     {% fill "header" %}Other header{% endfill %}
                 {% endcomponent_block %}
-            """
+                """
             ).render(Context({}))
 
     def test_non_unique_slot_names_is_error(self):
@@ -1069,7 +1196,7 @@ class RegressionTests(SimpleTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_extends_tag_works(self):
+    def test_block_and_extends_tag_works(self):
         component.registry.register("slotted_component", SlottedComponent)
         template = """
         {% extends "extendable_template_with_blocks.html" %}

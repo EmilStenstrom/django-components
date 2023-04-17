@@ -15,7 +15,6 @@ from django.template.base import Node, NodeList, Template
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
-# Allow "component.AlreadyRegistered" instead of having to import these everywhere
 from django_components.component_registry import (  # noqa
     AlreadyRegistered,
     ComponentRegistry,
@@ -68,7 +67,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def __init__(self, component_name):
         self._component_name: str = component_name
-        self._instance_fills: Optional[List["FillNode"]] = None
+        self._instance_fills: Optional[Dict[Optional[str], "FillNode"]] = None
         self._outer_context: Optional[dict] = None
 
     def get_context_data(self, *args, **kwargs):
@@ -142,34 +141,60 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def validate_fills_and_slots_(
         self,
         context,
-        template: Template,
-        fills: Optional[Dict[str, "FillNode"]] = None,
+        component_template: Template,
+        fills: Optional[Dict[Optional[str], "FillNode"]] = None,
     ) -> None:
+        # Implementation note: One of the constraints that isn't checked in this function
+        # is the requirement that slots marked as 'requires' are always filled.
+        # This is skipped because checking is complicated by the possibility of
+        # conditional slots. The constraint is enforced by SlotNode.render() instead.
         if fills is None:
             fills = self.instance_fills
         all_slots: List["SlotNode"] = self.get_declared_slots(
-            context, template
+            context, component_template
         )
+        # Checks that
+        # - Each declared slot has a unique name.
+        # - At most 1 slot is marked as 'default'.
         slots: Dict[str, "SlotNode"] = {}
-        # Each declared slot must have a unique name.
+        encountered_default_slot = False
         for slot in all_slots:
             slot_name = slot.name
             if slot_name in slots:
                 raise TemplateSyntaxError(
-                    f"Encountered non-unique slot '{slot_name}' in template "
-                    f"'{template.name}' of component '{self._component_name}'."
+                    f"Slot name '{slot_name}' re-used within the same template. "
+                    f"Slot names must be unique."
+                    f"To fix, check template '{component_template.name}' "
+                    f"of component'{self._component_name}'."
                 )
+            if slot.is_default:
+                if encountered_default_slot:
+                    raise TemplateSyntaxError(
+                        "Only one component slot may be marked as 'default'. "
+                        f"To fix, check template '{component_template.name}' "
+                        f"of component'{self._component_name}'."
+                    )
+                else:
+                    encountered_default_slot = True
             slots[slot_name] = slot
         # All fill nodes must correspond to a declared slot.
+        #  Exempt from constraint are implicit fills, which match a slot marked
+        #  as 'default'
         unmatchable_fills = fills.keys() - slots.keys()
-        if unmatchable_fills:
-            msg = (
+        if not unmatchable_fills:
+            return
+        if None in unmatchable_fills:
+            if not encountered_default_slot:
+                raise TemplateSyntaxError(
+                    f"Component '{self._component_name}' passed implicit fill content "
+                    f"(i.e. without explicit 'fill' tag), "
+                    f"even though none of its slots is marked as 'default'."
+                )
+        else:
+            raise TemplateSyntaxError(
                 f"Component '{self._component_name}' passed fill(s) "
-                f"refering to undefined slot(s). Bad fills: {list(unmatchable_fills)}."
+                f"refering to undefined slot(s). Bad fills: {list(filter(None, unmatchable_fills))}."
             )
-            raise TemplateSyntaxError(msg)
-        # Note: Requirement that 'required' slots be filled is enforced
-        #  in SlotNode.render().
 
     def render(self, context):
         template_name = self.get_template_name(context)
@@ -185,7 +210,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
 
 
 def dfs_iter_slots_in_nodelist(
-    nodelist: NodeList, template_name: str = None
+    nodelist: NodeList, template_name: Optional[str] = None
 ) -> Iterator["SlotNode"]:
     from django_components.templatetags.component_tags import SlotNode
 
