@@ -6,14 +6,14 @@ from django.http import StreamingHttpResponse
 
 RENDERED_COMPONENTS_CONTEXT_KEY = "_COMPONENT_DEPENDENCIES"
 CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
-JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER">'
+JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER"></script>'
 
 SCRIPT_TAG_REGEX = re.compile("<script")
 COMPONENT_COMMENT_REGEX = re.compile(rb"<!-- _RENDERED (?P<name>\w+?) -->")
 PLACEHOLDER_REGEX = re.compile(
     rb"<!-- _RENDERED (?P<name>\w+?) -->"
     rb'|<link name="CSS_PLACEHOLDER">'
-    rb'|<script name="JS_PLACEHOLDER">'
+    rb'|<script name="JS_PLACEHOLDER"></script>'
 )
 
 
