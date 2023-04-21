@@ -2,5 +2,6 @@
 
 {% for object in objects %}
     {% slot 'slot_inner' %}
+        {{ object }}
     {% endslot %}
 {% endfor %}
