@@ -1102,3 +1102,44 @@ class RegressionTests(SimpleTestCase):
         </html>
         """
         self.assertHTMLEqual(rendered, expected)
+
+
+class IterationFillTest(SimpleTestCase):
+    """Tests a behaviour of {% fill .. %} tag which is inside a template {% for .. %} loop."""
+    class ComponentSimpleSlotInALoop(django_components.component.Component):
+        template_name = 'template_with_slot_in_a_loop.html'
+
+        def get_context_data(self, **kwargs) -> dict:
+            return {
+                'objects': [
+                    'OBJECT1',
+                    'OBJECT2',
+                ]
+            }
+
+    def setUp(self):
+        django_components.component.registry.clear()
+
+    def test_inner_slot_iteration_basic(self):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        template = django.template.Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" %}
+                {% fill "slot_inner" %}
+                    {{ object }}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(django.template.Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            f"""
+            OBJECT1
+            OBJECT2
+            """
+        )
+
