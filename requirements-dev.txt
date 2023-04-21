@@ -59,7 +59,7 @@ pytest==7.3.1
     # via -r requirements-dev.in
 pyyaml==6.0
     # via pre-commit
-sqlparse==0.4.3
+sqlparse==0.4.4
     # via django
 tox==4.4.12
     # via -r requirements-dev.in
