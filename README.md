@@ -174,7 +174,7 @@ Now you need a Django template for your component. Feel free to define more vari
 ```htmldjango
 {# In a file called [project root]/components/calendar/calendar.html #}
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
-``  `
+```
 
 Finally, we use django-components to tie this together. Start by creating a file called `calendar.py` in your component calendar directory. It will be auto-detected and loaded by the app.
 

@@ -226,7 +226,6 @@ class SlotNode(Node):
                     f"Slot '{self.name}' is marked as 'required' (i.e. non-optional), "
                     f"yet no fill is provided. Check template '{self.template_name}'"
                 )
-        # //
         # Get nodelist and add alias variables to context.
         extra_context = {}
         if fill_node:
@@ -237,7 +236,6 @@ class SlotNode(Node):
                 extra_context[resolved_alias_name] = aliased_slot_var
         else:
             nodelist = self.nodelist  # slot nodelist
-        # //
 
         with context.update(extra_context):
             return nodelist.render(context)

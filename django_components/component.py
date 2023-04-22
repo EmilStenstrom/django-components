@@ -165,21 +165,21 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                     f"Slot name '{slot_name}' re-used within the same template. "
                     f"Slot names must be unique."
                     f"To fix, check template '{component_template.name}' "
-                    f"of component'{self._component_name}'."
+                    f"of component '{self._component_name}'."
                 )
             if slot.is_default:
                 if encountered_default_slot:
                     raise TemplateSyntaxError(
                         "Only one component slot may be marked as 'default'. "
                         f"To fix, check template '{component_template.name}' "
-                        f"of component'{self._component_name}'."
+                        f"of component '{self._component_name}'."
                     )
                 else:
                     encountered_default_slot = True
             slots[slot_name] = slot
         # All fill nodes must correspond to a declared slot.
-        #  Exempt from constraint are implicit fills, which match a slot marked
-        #  as 'default'
+        # Exempt from constraint are implicit fills, which match a slot marked
+        # as 'default'
         unmatchable_fills = fills.keys() - slots.keys()
         if not unmatchable_fills:
             return

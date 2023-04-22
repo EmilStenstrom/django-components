@@ -903,9 +903,9 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
         component.registry.clear()
 
     def test_variable_outside_fill_tag_compiles_w_out_error(self):
-        # As of v0.28 this isvalid, provided the component registered under "test"
-        #  contains a slot tag marked as 'default'. This is verified outside
-        #  template compilation time.
+        # As of v0.28 this is valid, provided the component registered under "test"
+        # contains a slot tag marked as 'default'. This is verified outside
+        # template compilation time.
         Template(
             """
             {% load component_tags %}
@@ -916,9 +916,9 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
         )
 
     def test_text_outside_fill_tag_is_not_error(self):
-        # As of v0.28 this isvalid, provided the component registered under "test"
-        #  contains a slot tag marked as 'default'. This is verified outside
-        #  template compilation time.
+        # As of v0.28 this is valid, provided the component registered under "test"
+        # contains a slot tag marked as 'default'. This is verified outside
+        # template compilation time.
         Template(
             """
             {% load component_tags %}
