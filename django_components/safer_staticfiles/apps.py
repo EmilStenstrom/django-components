@@ -15,4 +15,8 @@ class SaferStaticFilesConfig(StaticFilesConfig):
     default = (
         True  # Ensure that _this_ app is registered, as opposed to parent cls.
     )
-    ignore_patterns = StaticFilesConfig.ignore_patterns + ["*.py", "*.html"]
+    ignore_patterns = StaticFilesConfig.ignore_patterns + [
+        "*.py",
+        "*.html",
+        "*.pyc",
+    ]
