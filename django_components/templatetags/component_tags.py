@@ -162,18 +162,6 @@ class UserSlotVar:
     def default(self) -> str:
         return mark_safe(self._slot.nodelist.render(self._context))
 
-    # (lemontheme): If 'default' is accepted as option keyword for slot tags,
-    #  then I propose 'original' replaces 'default' in the 'slot.super' sense.
-    #  Otherwise, we would have both
-    #  - {% slot ... default %} ...
-    #  and
-    #  - {% fill ... as <alias> %} <alias>.default {%endfill %}.
-    #  I'm afraid this risks being a source of confusion, as users might wrongly assume
-    #  that there is a link between the two separate usages of 'default'.
-    @property
-    def original(self) -> str:
-        return self.default
-
 
 class SlotNode(Node):
     def __init__(
