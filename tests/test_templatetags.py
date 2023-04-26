@@ -1,6 +1,6 @@
 import re
 from textwrap import dedent
-from typing import Callable
+from typing import Callable, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 
@@ -471,6 +471,43 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             """
         )
         self.assertTrue(True)
+
+    def test_component_without_default_slot_refuses_implicit_fill(self):
+        component.registry.register("test_comp", SlottedComponent)
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block 'test_comp' %}
+              <p>This shouldn't work because the included component doesn't mark
+              any of its slots as 'default'</p>
+            {% endcomponent_block %}
+            """
+        )
+        with self.assertRaises(TemplateSyntaxError):
+            template.render(Context({}))
+
+    def test_component_template_cannot_have_multiple_default_slots(self):
+
+        class BadComponent(component.Component):
+
+            template_name = ...
+
+            def get_template(
+                self, context, template_name=None
+            ) -> Template:
+                # language=html
+                return Template(
+                    """
+                    {% load component_tags %}
+                    <div>
+                    {% slot "icon" %} {% endslot default %}
+                    {% slot "description" %} {% endslot default %}
+                    </div>
+                    """
+                )
+        c = BadComponent("name")
+        with self.assertRaises(TemplateSyntaxError):
+            c.render(Context({}))
 
 
 class SlottedTemplateRegressionTests(SimpleTestCase):

@@ -103,7 +103,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             dfs_iter_slots_in_nodelist(template.nodelist, template.name)
         )
 
-    def get_template(self, context, template_name: Optional[str] = None):
+    def get_template(self, context, template_name: Optional[str] = None) -> Template:
         if template_name is None:
             template_name = self.get_template_name(context)
         template = get_template(template_name).template
@@ -153,6 +153,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         all_slots: List["SlotNode"] = self.get_declared_slots(
             context, component_template
         )
+        # breakpoint()
         # Checks that
         # - Each declared slot has a unique name.
         # - At most 1 slot is marked as 'default'.
