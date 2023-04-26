@@ -489,16 +489,13 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
     def test_component_template_cannot_have_multiple_default_slots(self):
 
         class BadComponent(component.Component):
-
-            template_name = ...
-
             def get_template(
-                self, context, template_name=None
+                self, context, template_name: Optional[str] = None
             ) -> Template:
                 # language=html
                 return Template(
                     """
-                    {% load component_tags %}
+
                     <div>
                     {% slot "icon" %} {% endslot default %}
                     {% slot "description" %} {% endslot default %}
