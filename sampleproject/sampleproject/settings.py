@@ -19,18 +19,20 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-# Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
+    # Replaced by django_components.safer_staticfiles as of v0.27:
+    #   "django.contrib.staticfiles",
     "django_components",
+    "django_components.safer_staticfiles",
     "calendarapp",
 ]
+# Application definition
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -122,11 +124,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [
-    BASE_DIR / "components",
-]
+STATICFILES_DIRS = [BASE_DIR / "components"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+STATIC_ROOT = "staticfiles"

@@ -1,1 +1,13 @@
-<div class="calendar-component">Today's date is <span>{{ date }}</span></div>
+<div class="calendar-component">
+  <div>Today's date is <span>{{ date }}</span></div>
+  <div>Your to-dos:</div>
+  <ul>
+    <li>
+      {% component_block "todo" %}
+        {% fill "todo_text" %}
+          Stop forgetting the milk!
+        {% endfill %}
+      {% endcomponent_block %}
+    </li>
+  </ul>
+</div>
