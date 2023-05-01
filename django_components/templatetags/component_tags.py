@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union, Iterable
 
-from django import template
+import django.template
 from django.conf import settings
-from django.template import Context
+from django.template import Context, Template
 from django.template.base import (
     Node,
     NodeList,
@@ -25,7 +25,7 @@ from django_components.middleware import (
 if TYPE_CHECKING:
     from django_components.component import Component
 
-register = template.Library()
+register = django.template.Library()
 
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
@@ -178,7 +178,7 @@ class SlotNode(Node):
         return m
 
     def __repr__(self):
-        return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}. Flags: {self.active_flags}>"
+        return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
 
     def render(self, context):
         if FILLED_SLOTS_CONTEXT_KEY not in context:
@@ -191,8 +191,8 @@ class SlotNode(Node):
         ]
         fill_node_stack = filled_slots.get(self.name, None)
         fill_node: Optional[FillNode] = None
-        if fill_node_stack:  # if None or []
-            fill_node = fill_node_stack.pop()
+        if fill_node_stack:  # if not None or []
+            fill_node: FillNode = fill_node_stack.pop()
         elif self.is_default:
             implicit_fill_key = None
             implicit_fill_node_stack = filled_slots.get(implicit_fill_key)
@@ -225,6 +225,7 @@ SLOT_DEFAULT_OPTION_KEYWORD = "default"
 
 @register.tag("slot")
 def do_slot(parser, token):
+    breakpoint()
     bits = token.split_contents()
     args = bits[1:]
     # e.g. {% slot <name> %}
@@ -289,6 +290,9 @@ class _BaseFillNode(Node):
     def __repr__(self):
         raise NotImplementedError
 
+    def get_resolved_name(self, context: Context) -> Optional[str]:
+        raise NotImplementedError
+
     def render(self, context):
         raise TemplateSyntaxError(
             f"{{% fill ... %}} block cannot be rendered directly. "
@@ -321,6 +325,10 @@ class ImplicitFillNode(_BaseFillNode):
     excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
     as 'default'.
     """
+
+    def get_resolved_name(self, context: Context) -> None:
+        return None
+
     def __repr__(self):
         return f"<{type(self)} Contents: {repr(self.nodelist)}.>"
 
@@ -360,7 +368,9 @@ def do_fill(parser, token):
     nodelist = parser.parse(parse_until=["endfill"])
     parser.delete_first_token()
 
-    return FillNode(nodelist, name_var=NameVariable(tgt_slot_name, tag), alias_var=alias_var)
+    return FillNode(
+        nodelist, name_var=NameVariable(tgt_slot_name, tag), alias_var=alias_var
+    )
 
 
 class ComponentNode(Node):
@@ -390,7 +400,6 @@ class ComponentNode(Node):
     def render(self, context):
         resolved_component_name = self.name_var.resolve(context)
         component_cls = registry.get(resolved_component_name)
-        component: Component = component_cls(resolved_component_name)
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -403,13 +412,14 @@ class ComponentNode(Node):
             for key, kwarg in self.context_kwargs.items()
         }
 
-        resolved_fills: Dict[Optional[str], FillNode] = {
-            fill_node.get_resolved_name(context): fill_node
+        filling_content = [
+            (fill_node.get_resolved_name(context), fill_node.nodelist)
             for fill_node in self.fill_nodes
-        }
+        ]
 
+        component: Component = component_cls(resolved_component_name, filling_content)
         component.set_instance_fills(resolved_fills)
-        component.set_outer_context(context)
+        # component.set_outer_context(context)  # Does nothing
 
         component_context = component.get_context_data(
             *resolved_context_args, **resolved_context_kwargs
@@ -421,7 +431,7 @@ class ComponentNode(Node):
 
         if is_dependency_middleware_active():
             return (
-                RENDERED_COMMENT_TEMPLATE.format(name=component._component_name)
+                RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name)
                 + rendered_component
             )
         else:
@@ -777,3 +787,44 @@ class NameVariable(Variable):
                 f"<name> = '{self.var}' in '{{% {self._tag} <name> ...' can't be resolved "
                 f"against context."
             )
+
+
+from collections import ChainMap
+
+
+class ComponentContext:
+    # Map slot name (not nodee) to Template in which slot is defined.
+    slot_templates: ChainMap[str, Template]
+    # Map tuples of (fill name, Template) to the nodelist associated with the FillNode.
+    # By not directly using FillNode in the key, we can reduce coupling between
+    # component.py and component_tags.py -- which currently share strange
+    # dependencies, e.g. Component in component.py depends on Node abstractions
+    # in component_tags.py.
+    template_bound_fill_nodelists: ChainMap[Tuple[str, Template], NodeList]
+
+    def __init__(self, init=True):
+        if init:
+            self.comp_templates_by_slot = ChainMap()
+            self.template_bound_fill_nodelists = ChainMap()
+
+    def new_child(
+        self,
+        fill_nodelists: Iterable[Tuple[str, NodeList]],
+        slot_names: Iterable[str],
+        template: Template,
+    ) -> "ComponentContext":
+        new_context = ComponentContext(init=False)
+        new_context.slot_templates = (
+            self.slot_templates.new_child(
+                {slot_name: template for slot_name in slot_names}
+            )
+        )
+        new_context.template_bound_fill_nodelists = (
+            self.template_bound_fill_nodelists.new_child(
+                {
+                    (fill_name, template): nodelist
+                    for fill_name, nodelist in fill_nodelists
+                }
+            )
+        )
+        return new_context

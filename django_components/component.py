@@ -1,11 +1,5 @@
 from typing import (
-    TYPE_CHECKING,
-    ClassVar,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    TypeVar,
+    TYPE_CHECKING, ClassVar, Dict, Iterator, List, Optional, TypeVar, Type, Tuple,
 )
 
 from django.core.exceptions import ImproperlyConfigured
@@ -65,7 +59,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     # non-null return.
     template_name: ClassVar[str]
 
-    def __init__(self, component_name):
+    def __init__(self, component_name, fills: List[Tuple[Optional[str], NodeList]]):  # TODO: s/component_name/registered_name for clarity
         self._component_name: str = component_name
         self._instance_fills: Optional[Dict[Optional[str], "FillNode"]] = None
         self._outer_context: Optional[dict] = None
@@ -74,13 +68,19 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         return {}
 
     # Can be overridden for dynamic templates
-    def get_template_name(self, context):
-        if not hasattr(self, "template_name") or not self.template_name:
+    def get_template_name(self, context) -> str:
+        try:
+            name = self.template_name
+        except AttributeError:
             raise ImproperlyConfigured(
-                f"Template name is not set for Component {self.__class__.__name__}"
+                f"Template name is not set for Component {type(self).__name__}. "
+                f"Note: this attribute is not required if you are overriding any of "
+                f"the class's `get_template*()` methods."
             )
+        return name
 
-        return self.template_name
+    def get_template_string(self, context) -> str:
+        ...
 
     def render_dependencies(self):
         """Helper function to access media.render()"""
@@ -99,25 +99,20 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     ) -> List["SlotNode"]:
         if template is None:
             template = self.get_template(context)
-        return list(
-            dfs_iter_slots_in_nodelist(template.nodelist, template.name)
-        )
+        return list(dfs_iter_node_type(template.nodelist, template.name))
 
-    def get_template(self, context, template_name: Optional[str] = None) -> Template:
-        if template_name is None:
+    def get_template(self, context) -> Template:
+        template_string = self.get_template_string(context)
+        if template_string is not None:
+            return Template(template_string)
+        else:
             template_name = self.get_template_name(context)
-        template = get_template(template_name).template
-        return template
+            template: Template = get_template(template_name).template
+            return template
 
-    def set_instance_fills(self, fills: Dict[str, "FillNode"]) -> None:
-        self._instance_fills = fills
-
+    # REMOVE(lemontheme): This is only ever used in a test. For the rest it does nothing.
     def set_outer_context(self, context):
         self._outer_context = context
-
-    @property
-    def instance_fills(self):
-        return self._instance_fills or {}
 
     @property
     def outer_context(self):
@@ -197,9 +192,13 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                 f"refering to undefined slot(s). Bad fills: {list(filter(None, unmatchable_fills))}."
             )
 
+    @staticmethod
+    def find_slots(self, template: Template) -> Iterator[SlotNode]:
+        return dfs_iter_node_type(template.nodelist, SlotNode)
+
     def render(self, context):
         template_name = self.get_template_name(context)
-        template = self.get_template(context, template_name)
+        template = self.get_template(context)
         self.validate_fills_and_slots_(context, template)
         updated_fill_stacks = self.get_updated_fill_stacks(context)
         with context.update({FILLED_SLOTS_CONTEXT_KEY: updated_fill_stacks}):
@@ -210,15 +209,13 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         js = []
 
 
-def dfs_iter_slots_in_nodelist(
-    nodelist: NodeList, template_name: Optional[str] = None
-) -> Iterator["SlotNode"]:
-    from django_components.templatetags.component_tags import SlotNode
-
+def dfs_iter_node_type(
+    nodelist: NodeList, node_type: Type[T]
+) -> Iterator[T]:
     nodes: List[Node] = list(nodelist)
     while nodes:
         node = nodes.pop()
-        if isinstance(node, SlotNode):
+        if isinstance(node, node_type):
             yield node
         for nodelist_name in node.child_nodelists:
             nodes.extend(reversed(getattr(node, nodelist_name, [])))
