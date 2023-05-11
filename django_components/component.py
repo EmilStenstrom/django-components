@@ -1,40 +1,44 @@
 from collections import ChainMap
 from typing import (
-    TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
-    Iterator,
-    List,
     Optional,
     TypeVar,
-    Type,
     Iterable,
     Tuple,
     Union,
 )
 
 from django.core.exceptions import ImproperlyConfigured
-from django.forms.widgets import MediaDefiningClass
-from django.template import Context, TemplateSyntaxError
-from django.template.base import Node, NodeList, Template
+from django.forms.widgets import MediaDefiningClass, Media
+from django.template import Context
+from django.template.exceptions import TemplateSyntaxError
+from django.template.base import Template
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
-from django_components.component_registry import (  # noqa
-    AlreadyRegistered,
+from django_components.component_registry import (
+    register,
+    registry,
     ComponentRegistry,
-    NotRegistered,
-)
+    AlreadyRegistered,
+    NotRegistered
+)  # NOQA
 
-if TYPE_CHECKING:
-    from django_components.templatetags.component_tags import SlotNode, IfSlotFilledNode
+from django_components.templatetags.component_tags import (
+    FILLED_SLOTS_CONTEXT_KEY,
+    NamedFillNode,
+    IfSlotFilledConditionBranchNode,
+    SlotNode,
+    DefaultFillNode,
+    SlotName,
+    BaseFillNode,
+    FilledSlotsContext,
+)
 
 
 T = TypeVar("T")
-
-
-FILLED_SLOTS_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
-NODE_COMPONENT_MAP_CONTEXT_KEY = "_DJANGO_COMPONENTS_NODE_2_COMPONENT"
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
@@ -63,18 +67,13 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
         return super().__new__(mcs, name, bases, attrs)
 
 
-# {name: (content, alias?))
-FillName = FillAlias = str
-NamedFillDict = Dict[FillName, Tuple[NodeList, Optional[FillAlias]]]
-
-
 class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Must be set on subclass OR subclass must implement get_template_name() with
     # non-null return.
     template_name: ClassVar[str]
-
-    default_fill_content: Optional[NodeList] = None
-    named_fill_content: Optional[NamedFillDict] = None
+    media: Media
+    default_fill: Optional[DefaultFillNode] = None
+    named_fills: Dict[str, NamedFillNode]
 
     class Media:
         css = {}
@@ -84,17 +83,37 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         registered_name: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Optional[Union[NodeList, NamedFillDict]] = None,
+        fill_nodes: Optional[Union[Tuple[DefaultFillNode], Tuple[NamedFillNode, ...]]] = None,
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
+        self._init_fills(fill_nodes or (), self.outer_context)
 
-        if isinstance(fill_content, NodeList):
-            self.default_fill_content = fill_content
-        elif isinstance(fill_content, dict):
-            self.named_fill_content = fill_content
+    def _init_fills(
+        self,
+        fill_nodes: Iterable[Union[DefaultFillNode, NamedFillNode]],
+        context: Context,
+    ) -> None:
+        named_fills = {}
+        for fill_node in fill_nodes:
+            if isinstance(fill_node, DefaultFillNode):
+                if self.default_fill:
+                    raise ValueError(
+                        "Component cannot be initialized with multiple DefaultFillNodes"
+                    )
+                self.default_fill = fill_node
+            else:
+                if self.default_fill:
+                    raise ValueError(
+                        (
+                            "Component cannot be initialized with both DefaultFillNodes "
+                            "and NamedFillNodes."
+                        )
+                    )
+                named_fills[fill_node.get_resolved_name(context)] = fill_node
+        self.named_fills = named_fills
 
-    def get_context_data(self, *args, **kwargs):
+    def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
 
     # Can be overridden for dynamic templates
@@ -110,8 +129,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         return name
 
     def get_template_string(self, context) -> str:
-        """Override to use template string directly."""
-        pass
+        ...
 
     def render_dependencies(self):
         """Helper function to access media.render()"""
@@ -135,116 +153,75 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             return template
 
     def render(self, context):
-        from django_components.templatetags.component_tags import (
-            SlotNode,
-            IfSlotFilledNode,
-        )
-
         template = self.get_template(context)
-
-        nodes_to_link = list(
-            template.nodelist.get_nodes_by_type((SlotNode, IfSlotFilledNode))
+        updated_filled_slots_context: FilledSlotsContext = (
+            self._process_template_and_update_filled_slot_context(context, template)
         )
-
-        _raise_if_bad_slots_or_fills(
-            self,
-            (node for node in nodes_to_link if isinstance(node, SlotNode)),
-            template,
-        )
-
-        updated_node_component_map = _update_node_component_map(
-            self, nodes_to_link, context
-        )
-
-        with context.update(
-            {NODE_COMPONENT_MAP_CONTEXT_KEY: updated_node_component_map}
-        ):
+        with context.update({FILLED_SLOTS_CONTEXT_KEY: updated_filled_slots_context}):
             return template.render(context)
 
-
-def _update_node_component_map(
-    component: Component, nodes: Iterable[Node], context: Context
-) -> ChainMap:
-    current_node_component_map: Optional[ChainMap] = context.get(
-        NODE_COMPONENT_MAP_CONTEXT_KEY
-    )
-    node2comp = {node: component for node in nodes}
-    if current_node_component_map is None:
-        updated = ChainMap(node2comp)
-    else:
-        updated = current_node_component_map.new_child(node2comp)
-    return updated
-
-
-def _raise_if_bad_slots_or_fills(
-    component: Component, slots: Iterable["SlotNode"], template: Template
-) -> None:
-    # Implementation note: One of the constraints that isn't checked in this function
-    # is the requirement that slots marked as 'requires' are always filled.
-    # This is skipped because checking is complicated by the possibility of
-    # conditional slots. The constraint is enforced by SlotNode.render() instead.
-
-    # Slot constraints:
-    # - Slot names are unique.
-    # - At most 1 slot is marked as 'default'.
-    checked_slots: Dict[str, "SlotNode"] = {}
-    default_slot_encountered = False
-    for slot in slots:
-        slot_name = slot.name
-        if slot_name in checked_slots:
-            raise TemplateSyntaxError(
-                f"Slot name '{slot_name}' re-used within the same template. "
-                f"Slot names must be unique."
-                f"To fix, check template '{template.name}' "
-                f"of component '{component.registered_name}'."
-            )
-        if slot.is_default:
-            if default_slot_encountered:
-                raise TemplateSyntaxError(
-                    "Only one component slot may be marked as 'default'. "
-                    f"To fix, check template '{template.name}' "
-                    f"of component '{component.registered_name}'."
-                )
+    def _process_template_and_update_filled_slot_context(
+        self, context: Context, template: Template
+    ) -> FilledSlotsContext:
+        slot_name2fill: Dict[SlotName:BaseFillNode] = {}
+        default_slot_encountered: bool = False
+        for node in template.nodelist.get_nodes_by_type(
+            (SlotNode, IfSlotFilledConditionBranchNode)  # type: ignore
+        ):
+            if isinstance(node, SlotNode):
+                node.template = template
+                slot_name = node.name
+                if slot_name in slot_name2fill:
+                    raise TemplateSyntaxError(
+                        f"Slot name '{slot_name}' re-used within the same template. "
+                        f"Slot names must be unique."
+                        f"To fix, check template '{template.name}' "
+                        f"of component '{self.registered_name}'."
+                    )
+                fill: Optional[BaseFillNode] = None
+                if node.is_default:
+                    if default_slot_encountered:
+                        raise TemplateSyntaxError(
+                            "Only one component slot may be marked as 'default'. "
+                            f"To fix, check template '{template.name}' "
+                            f"of component '{self.registered_name}'."
+                        )
+                    default_slot_encountered = True
+                    fill = self.default_fill
+                if not fill:
+                    fill = self.named_fills.get(node.name)
+                if not fill and node.is_required:
+                    raise TemplateSyntaxError(
+                        f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
+                        f"yet no fill is provided. Check template.'"
+                    )
+                slot_name2fill[slot_name] = fill
+            elif isinstance(node, IfSlotFilledConditionBranchNode):
+                node.template = template
             else:
-                default_slot_encountered = True
-        checked_slots[slot_name] = slot
-
-    # Fill constraints:
-    # - Fill names correspond to a slot declared in `template`
-    # - Implicit fill node (with name = `None`) allowed iff defaul slot in `template`.
-    # NOT checked:
-    # - Fill names are unique. This happens in `component_tags.fill_nodes()`.
-    if component.default_fill_content and not default_slot_encountered:
-        raise TemplateSyntaxError(
-            f"Component '{component.registered_name}' passed implicit fill content "
-            f"(i.e. without explicit 'fill' tag), "
-            f"even though none of its slots is marked as 'default'."
-        )
-    if component.named_fill_content:
-        unmatchable_fills = component.named_fill_content.keys() - checked_slots.keys()
-        if unmatchable_fills:
+                raise RuntimeError(
+                    f"Node of {type(node).__name__} does not require linking."
+                )
+        # Check fills
+        if self.default_fill and not default_slot_encountered:
             raise TemplateSyntaxError(
-                f"Component '{component.registered_name}' passed fill(s) "
-                f"refering to undefined slot(s). Bad fills: {list(filter(None, unmatchable_fills))}."
+                f"Component '{self.registered_name}' passed default fill content "
+                f"(i.e. without explicit 'fill' tag), "
+                f"even though none of its slots is marked as 'default'."
             )
-
-
-# This variable represents the global component registry
-registry = ComponentRegistry()
-
-
-def register(name):
-    """Class decorator to register a component.
-
-    Usage:
-
-    @register("my_component")
-    class MyComponent(component.Component):
-        ...
-    """
-
-    def decorator(component):
-        registry.register(name=name, component=component)
-        return component
-
-    return decorator
+        for fill_name in self.named_fills.keys():
+            if fill_name not in slot_name2fill:
+                raise TemplateSyntaxError(
+                    f"Component '{self.registered_name}' passed fill "
+                    f"that refers to undefined slot: {fill_name}"
+                )
+        # Return updated FILLED_SLOTS_CONTEXT map
+        filled_slots_map: Dict[Tuple[SlotName, Template], BaseFillNode] = {
+            (slot_name, template): fill_node
+            for slot_name, fill_node in slot_name2fill.items()
+        }
+        try:
+            prev_context: FilledSlotsContext = context[FILLED_SLOTS_CONTEXT_KEY]
+            return prev_context.new_child(filled_slots_map)
+        except KeyError:
+            return ChainMap(filled_slots_map)
