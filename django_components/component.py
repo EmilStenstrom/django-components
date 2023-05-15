@@ -3,35 +3,42 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    Optional,
-    TypeVar,
     Iterable,
+    Optional,
     Tuple,
+    TypeVar,
     Union,
 )
 
 from django.core.exceptions import ImproperlyConfigured
-from django.forms.widgets import MediaDefiningClass, Media
-from django.template import Context, NodeList
+from django.forms.widgets import Media, MediaDefiningClass
+from django.template.base import NodeList, Template
+from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
-from django.template.base import Template
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 
-from django_components.component_registry import (
+# Global registry var and register() function moved to separate module.
+# Defining them here made little sense, since 1) component_tags.py and component.py
+# rely on them equally, and 2) it made it difficult to avoid circularity in the
+# way the two modules depend on one another.
+from django_components.component_registry import (  # NOQA
+    AlreadyRegistered,
+    ComponentRegistry,
+    NotRegistered,
     register,
     registry,
-    ComponentRegistry,
-    AlreadyRegistered,
-    NotRegistered,
-)  # NOQA
-
-from django_components.templatetags.component_tags import (
-    FILLED_SLOTS_CONTENT_CONTEXT_KEY, NamedFillNode, IfSlotFilledConditionBranchNode,
-    SlotNode, ImplicitFillNode, SlotName, BaseFillNode, FilledSlotsContext, FillContent,
-    DefaultFillContent, NamedFillContent,
 )
-
+from django_components.templatetags.component_tags import (
+    FILLED_SLOTS_CONTENT_CONTEXT_KEY,
+    DefaultFillContent,
+    FillContent,
+    FilledSlotsContext,
+    IfSlotFilledConditionBranchNode,
+    NamedFillContent,
+    SlotName,
+    SlotNode,
+)
 
 T = TypeVar("T")
 
@@ -76,7 +83,9 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         registered_name: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]] = (),
+        fill_content: Union[
+            DefaultFillContent, Iterable[NamedFillContent]
+        ] = (),
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
@@ -124,9 +133,13 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def render(self, context):
         template = self.get_template(context)
         updated_filled_slots_context: FilledSlotsContext = (
-            self._process_template_and_update_filled_slot_context(context, template)
+            self._process_template_and_update_filled_slot_context(
+                context, template
+            )
         )
-        with context.update({FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}):
+        with context.update(
+            {FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}
+        ):
             return template.render(context)
 
     def _process_template_and_update_filled_slot_context(
@@ -138,7 +151,8 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             fill_target2content = {None: (self.fill_content, None)}
         else:
             fill_target2content = {
-                name: (nodelist, alias) for name, nodelist, alias in self.fill_content
+                name: (nodelist, alias)
+                for name, nodelist, alias in self.fill_content
             }
 
         slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}
@@ -157,7 +171,9 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                         f"To fix, check template '{template.name}' "
                         f"of component '{self.registered_name}'."
                     )
-                content_data: Optional[FillContent] = None  # `None` -> unfilled
+                content_data: Optional[
+                    FillContent
+                ] = None  # `None` -> unfilled
                 if node.is_default:
                     if default_slot_already_encountered:
                         raise TemplateSyntaxError(
@@ -182,7 +198,10 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                     f"Node of {type(node).__name__} does not require linking."
                 )
         # Check fills
-        if None in fill_target2content and not default_slot_already_encountered:
+        if (
+            None in fill_target2content
+            and not default_slot_already_encountered
+        ):
             raise TemplateSyntaxError(
                 f"Component '{self.registered_name}' passed default fill content "
                 f"(i.e. without explicit 'fill' tag), "
@@ -201,7 +220,9 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             if content_data  # (is not None)
         }
         try:
-            prev_context: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
+            prev_context: FilledSlotsContext = context[
+                FILLED_SLOTS_CONTENT_CONTEXT_KEY
+            ]
             return prev_context.new_child(filled_slots_map)
         except KeyError:
             return ChainMap(filled_slots_map)
