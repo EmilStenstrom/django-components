@@ -40,8 +40,6 @@ from django_components.templatetags.component_tags import (
     SlotNode,
 )
 
-T = TypeVar("T")
-
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
     def __new__(mcs, name, bases, attrs):
