@@ -1,13 +1,5 @@
 from collections import ChainMap
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterable,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, ClassVar, Dict, Iterable, Optional, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -142,7 +134,6 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def _process_template_and_update_filled_slot_context(
         self, context: Context, template: Template
     ) -> FilledSlotsContext:
-
         fill_target2content: Dict[Optional[str], FillContent]
         if isinstance(self.fill_content, NodeList):
             fill_target2content = {None: (self.fill_content, None)}
