@@ -6,7 +6,6 @@ from typing import (
     Iterable,
     Optional,
     Tuple,
-    TypeVar,
     Union,
 )
 
