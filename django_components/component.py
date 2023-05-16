@@ -154,7 +154,6 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                 name: (nodelist, alias)
                 for name, nodelist, alias in self.fill_content
             }
-
         slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}
         default_slot_already_encountered: bool = False
         for node in template.nodelist.get_nodes_by_type(
