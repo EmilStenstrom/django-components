@@ -492,10 +492,9 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             def get_template(
                 self, context, template_name: Optional[str] = None
             ) -> Template:
-                # language=html
                 return Template(
                     """
-
+                    {% load django_components %}
                     <div>
                     {% slot "icon" %} {% endslot default %}
                     {% slot "description" %} {% endslot default %}

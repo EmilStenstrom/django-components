@@ -88,7 +88,9 @@ def component_dependencies_tag(preload=""):
         preloaded_dependencies = []
         for component in get_components_from_preload_str(preload):
             preloaded_dependencies.append(
-                RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name)
+                RENDERED_COMMENT_TEMPLATE.format(
+                    name=component.registered_name
+                )
             )
         return mark_safe(
             "\n".join(preloaded_dependencies)
@@ -111,9 +113,13 @@ def component_css_dependencies_tag(preload=""):
         preloaded_dependencies = []
         for component in get_components_from_preload_str(preload):
             preloaded_dependencies.append(
-                RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name)
+                RENDERED_COMMENT_TEMPLATE.format(
+                    name=component.registered_name
+                )
             )
-        return mark_safe("\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER)
+        return mark_safe(
+            "\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER
+        )
     else:
         rendered_dependencies = []
         for component in get_components_from_registry(component_registry):
@@ -130,9 +136,13 @@ def component_js_dependencies_tag(preload=""):
         preloaded_dependencies = []
         for component in get_components_from_preload_str(preload):
             preloaded_dependencies.append(
-                RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name)
+                RENDERED_COMMENT_TEMPLATE.format(
+                    name=component.registered_name
+                )
             )
-        return mark_safe("\n".join(preloaded_dependencies) + JS_DEPENDENCY_PLACEHOLDER)
+        return mark_safe(
+            "\n".join(preloaded_dependencies) + JS_DEPENDENCY_PLACEHOLDER
+        )
     else:
         rendered_dependencies = []
         for component in get_components_from_registry(component_registry):
@@ -262,7 +272,9 @@ def do_slot(parser, token):
     if 1 <= len(args) <= 3:
         slot_name, *options = args
         if not is_wrapped_in_quotes(slot_name):
-            raise TemplateSyntaxError(f"'{bits[0]}' name must be a string 'literal'.")
+            raise TemplateSyntaxError(
+                f"'{bits[0]}' name must be a string 'literal'."
+            )
         slot_name = strip_quotes(slot_name)
         modifiers_count = len(options)
         if SLOT_REQUIRED_OPTION_KEYWORD in options:
@@ -323,9 +335,7 @@ class NamedFillNode(BaseFillNode):
         self.alias_fexp = alias_fexp
 
     def __repr__(self):
-        return (
-            f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
-        )
+        return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
 
 
 class ImplicitFillNode(BaseFillNode):
@@ -409,7 +419,9 @@ class ComponentNode(Node):
 
     def render(self, context: Context):
         resolved_component_name = self.name_fexp.resolve(context)
-        component_cls: Type[Component] = component_registry.get(resolved_component_name)
+        component_cls: Type[Component] = component_registry.get(
+            resolved_component_name
+        )
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -434,13 +446,15 @@ class ComponentNode(Node):
                     resolved_alias: str = fill_node.alias_fexp.resolve(context)
                     if not resolved_alias.isidentifier():
                         raise TemplateSyntaxError(
-                            f"Fill tag alias '{resolved_alias}' in component "
+                            f"Fill tag alias '{fill_node.alias_fexp.var}' in component "
                             f"{resolved_component_name} does not resolve to "
-                            f"a valid Python identifier."
+                            f"a valid Python identifier. Got: '{resolved_alias}'."
                         )
                 else:
                     resolved_alias: None = None
-                fill_content.append((resolved_name, fill_node.nodelist, resolved_alias))
+                fill_content.append(
+                    (resolved_name, fill_node.nodelist, resolved_alias)
+                )
 
         component: Component = component_cls(
             registered_name=resolved_component_name,
@@ -576,7 +590,10 @@ def is_whitespace_token(token):
 
 
 def is_block_tag_token(token, name):
-    return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
+    return (
+        token.token_type == TokenType.BLOCK
+        and token.split_contents()[0] == name
+    )
 
 
 @register.tag(name="if_filled")
@@ -689,7 +706,9 @@ class _IfSlotFilledBranchNode(Node):
         raise NotImplementedError
 
 
-class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, TemplateAwareNodeMixin):
+class IfSlotFilledConditionBranchNode(
+    _IfSlotFilledBranchNode, TemplateAwareNodeMixin
+):
     def __init__(
         self,
         slot_name: str,
@@ -702,7 +721,9 @@ class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, TemplateAwareNode
 
     def evaluate(self, context) -> bool:
         try:
-            filled_slots: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
+            filled_slots: FilledSlotsContext = context[
+                FILLED_SLOTS_CONTENT_CONTEXT_KEY
+            ]
         except KeyError:
             raise TemplateSyntaxError(
                 f"Attempted to render {type(self).__name__} outside a Component rendering context."
@@ -803,7 +824,9 @@ def is_wrapped_in_quotes(s):
 
 
 def is_dependency_middleware_active():
-    return getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)
+    return getattr(settings, "COMPONENTS", {}).get(
+        "RENDER_DEPENDENCIES", False
+    )
 
 
 def norm_and_validate_name(name: str, tag: str, context: Optional[str] = None):
@@ -815,7 +838,8 @@ def norm_and_validate_name(name: str, tag: str, context: Optional[str] = None):
     if not name.isidentifier():
         context = f" in '{context}'" if context else ""
         raise TemplateSyntaxError(
-            f"{tag} name '{name}'{context} " "is not a valid Python identifier."
+            f"{tag} name '{name}'{context} "
+            "is not a valid Python identifier."
         )
     return name
 
