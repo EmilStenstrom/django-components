@@ -41,7 +41,6 @@ class ComponentDependencyMiddleware:
 
 
 def process_response_content(content):
-
     component_names_seen = {
         match.group("name")
         for match in COMPONENT_COMMENT_REGEX.finditer(content)

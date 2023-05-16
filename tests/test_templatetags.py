@@ -487,7 +487,6 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             template.render(Context({}))
 
     def test_component_template_cannot_have_multiple_default_slots(self):
-
         class BadComponent(component.Component):
             def get_template(
                 self, context, template_name: Optional[str] = None
@@ -501,6 +500,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
                     </div>
                     """
                 )
+
         c = BadComponent("name")
         with self.assertRaises(TemplateSyntaxError):
             c.render(Context({}))
