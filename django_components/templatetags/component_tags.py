@@ -670,6 +670,10 @@ def parse_if_filled_bits(
             f"{bits[0]} tag arguments '{' '.join(args)}' do not match pattern "
             f"'<slotname> (<is_positive>)'"
         )
+    if not is_wrapped_in_quotes(slot_name):
+        raise TemplateSyntaxError(
+            f"First argument of '{bits[0]}' must be a quoted string 'literal'."
+        )
     slot_name = strip_quotes(slot_name)
     return slot_name, is_positive
 
