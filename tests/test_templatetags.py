@@ -505,6 +505,39 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         with self.assertRaises(TemplateSyntaxError):
             c.render(Context({}))
 
+    def test_slot_name_fill_typo_gives_helpful_error_message(self):
+        component.registry.register(name="test1", component=SlottedComponent)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test1" %}
+                {% fill "haeder" %}
+                    Custom header
+                {% endfill %}
+                {% fill "main" %}
+                    main content
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        with self.assertRaises(TemplateSyntaxError):
+            try:
+                template.render(Context({}))
+            except TemplateSyntaxError as e:
+                self.assertEqual(
+                    (
+                        "Component 'test1' passed fill(s) referring to undefined slot(s).\n"
+                        "Bad fills: ['haeder'].\n"
+                        "\n"
+                        "Did you mean: \n"
+                        "- haeder: header?\n"
+                        "Other unfilled slots are: ['footer']."
+                    ),
+                    str(e),
+                )
+                raise e
+
 
 class SlottedTemplateRegressionTests(SimpleTestCase):
     def setUp(self):
