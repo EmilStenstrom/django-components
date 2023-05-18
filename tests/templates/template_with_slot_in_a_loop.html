@@ -1,0 +1,7 @@
+{% load component_tags %}
+
+{% for object in objects %}
+    {% slot 'slot_inner' %}
+        {{ object }} default
+    {% endslot %}
+{% endfor %}

@@ -1,6 +1,6 @@
 import re
 from textwrap import dedent
-from typing import Callable, Optional
+from typing import Callable, Iterable, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 
@@ -1262,3 +1262,258 @@ class RegressionTests(SimpleTestCase):
         </html>
         """
         self.assertHTMLEqual(rendered, expected)
+
+
+class IterationFillTest(SimpleTestCase):
+    """Tests a behaviour of {% fill .. %} tag which is inside a template {% for .. %} loop."""
+
+    class ComponentSimpleSlotInALoop(django_components.component.Component):
+        template_name = "template_with_slot_in_a_loop.html"
+
+        def get_context_data(self, objects: Iterable) -> dict:
+            return {
+                "objects": objects,
+            }
+
+    def setUp(self):
+        django_components.component.registry.clear()
+
+    def test_inner_slot_iteration_basic(self):
+        component.registry.register(
+            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
+        )
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ object }}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        objects = ["OBJECT1", "OBJECT2"]
+        rendered = template.render(Context({"objects": objects}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OBJECT1
+            OBJECT2
+            """,
+        )
+
+    def test_inner_slot_iteration_with_variable_from_outer_scope(self):
+        component.registry.register(
+            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
+        )
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable }}
+                    {{ object }}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        objects = ["OBJECT1", "OBJECT2"]
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable": "OUTER_SCOPE_VARIABLE",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE
+            OBJECT1
+            OUTER_SCOPE_VARIABLE
+            OBJECT2
+            """,
+        )
+
+    def test_inner_slot_iteration_nested(self):
+        component.registry.register(
+            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
+        )
+
+        objects = [
+            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
+            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {% component_block "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" %}
+                            {{ object }}
+                        {% endfill %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({"objects": objects}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OBJECT1_ITER1
+            OBJECT2_ITER1
+            OBJECT1_ITER2
+            OBJECT2_ITER2
+            """,
+        )
+
+    def test_inner_slot_iteration_nested_with_outer_scope_variable(self):
+        component.registry.register(
+            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
+        )
+
+        objects = [
+            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
+            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable_1 }}
+                    {% component_block "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" %}
+                            {{ outer_scope_variable_2 }}
+                            {{ object }}
+                        {% endfill %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable_1": "OUTER_SCOPE_VARIABLE1",
+                    "outer_scope_variable_2": "OUTER_SCOPE_VARIABLE2",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE2
+            OBJECT1_ITER1
+            OUTER_SCOPE_VARIABLE2
+            OBJECT2_ITER1
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE2
+            OBJECT1_ITER2
+            OUTER_SCOPE_VARIABLE2
+            OBJECT2_ITER2
+            """,
+        )
+
+    def test_inner_slot_iteration_nested_with_slot_default(self):
+        component.registry.register(
+            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
+        )
+
+        objects = [
+            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
+            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {% component_block "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" as "super_slot_inner" %}
+                            {{ super_slot_inner.default }}
+                        {% endfill %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(Context({"objects": objects}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OBJECT1_ITER1 default
+            OBJECT2_ITER1 default
+            OBJECT1_ITER2 default
+            OBJECT2_ITER2 default
+            """,
+        )
+
+    def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable(
+        self,
+    ):
+        component.registry.register(
+            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
+        )
+
+        objects = [
+            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
+            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable_1 }}
+                    {% component_block "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" as "super_slot_inner" %}
+                            {{ outer_scope_variable_2 }}
+                            {{ super_slot_inner.default }}
+                        {% endfill %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable_1": "OUTER_SCOPE_VARIABLE1",
+                    "outer_scope_variable_2": "OUTER_SCOPE_VARIABLE2",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE2
+            OBJECT1_ITER1 default
+            OUTER_SCOPE_VARIABLE2
+            OBJECT2_ITER1 default
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE2
+            OBJECT1_ITER2 default
+            OUTER_SCOPE_VARIABLE2
+            OBJECT2_ITER2 default
+            """,
+        )
