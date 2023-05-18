@@ -9,5 +9,11 @@
         {% endfill %}
       {% endcomponent_block %}
     </li>
+    <li>
+      {% component_block "todo" %}
+        {# As of v0.28, 'fill' tag optional for 1-slot filling if component template specifies a 'default' slot #}
+        Wear all-white clothes to laser tag tournament.
+      {% endcomponent_block %}
+    </li>
   </ul>
 </div>

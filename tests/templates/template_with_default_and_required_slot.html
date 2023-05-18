@@ -1,0 +1,5 @@
+{% load component_tags %}
+<div>
+    <header>{% slot "header" %}Your Header Here{% endslot %}</header>
+    <main>{% slot "main" default required %}Easy to override{% endslot %}</main>
+</div>

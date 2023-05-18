@@ -4,6 +4,8 @@ from django.conf import settings
 from django.forms import Media
 from django.http import StreamingHttpResponse
 
+from django_components.component_registry import registry
+
 RENDERED_COMPONENTS_CONTEXT_KEY = "_COMPONENT_DEPENDENCIES"
 CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
 JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER"></script>'
@@ -39,8 +41,6 @@ class ComponentDependencyMiddleware:
 
 
 def process_response_content(content):
-    from django_components.component import registry
-
     component_names_seen = {
         match.group("name")
         for match in COMPONENT_COMMENT_REGEX.finditer(content)
