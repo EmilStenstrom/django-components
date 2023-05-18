@@ -1,20 +1,28 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+import sys
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Type, Union
 
-from django import template
+if sys.version_info[:2] < (3, 9):
+    from typing import ChainMap
+else:
+    from collections import ChainMap
+
+import django.template
 from django.conf import settings
-from django.template import Context
+from django.template import Context, Template
 from django.template.base import (
+    FilterExpression,
     Node,
     NodeList,
-    TemplateSyntaxError,
+    TextNode,
     TokenType,
-    Variable,
-    VariableDoesNotExist,
 )
+from django.template.defaulttags import CommentNode
+from django.template.exceptions import TemplateSyntaxError
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
-from django_components.component import FILLED_SLOTS_CONTEXT_KEY, registry
+from django_components.component_registry import ComponentRegistry
+from django_components.component_registry import registry as component_registry
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
     JS_DEPENDENCY_PLACEHOLDER,
@@ -23,13 +31,30 @@ from django_components.middleware import (
 if TYPE_CHECKING:
     from django_components.component import Component
 
-register = template.Library()
+
+register = django.template.Library()
 
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
+SLOT_REQUIRED_OPTION_KEYWORD = "required"
+SLOT_DEFAULT_OPTION_KEYWORD = "default"
 
-def get_components_from_registry(registry):
+FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
+
+# Type aliases
+
+SlotName = str
+AliasName = str
+
+DefaultFillContent = NodeList
+NamedFillContent = Tuple[SlotName, NodeList, Optional[AliasName]]
+
+FillContent = Tuple[NodeList, Optional[AliasName]]
+FilledSlotsContext = ChainMap[Tuple[SlotName, Template], FillContent]
+
+
+def get_components_from_registry(registry: ComponentRegistry):
     """Returns a list unique components from the registry."""
 
     unique_component_classes = set(registry.all().values())
@@ -49,7 +74,7 @@ def get_components_from_preload_str(preload_str):
         component_name = component_name.strip()
         if not component_name:
             continue
-        component_class = registry.get(component_name)
+        component_class = component_registry.get(component_name)
         components.append(component_class(component_name))
 
     return components
@@ -64,7 +89,7 @@ def component_dependencies_tag(preload=""):
         for component in get_components_from_preload_str(preload):
             preloaded_dependencies.append(
                 RENDERED_COMMENT_TEMPLATE.format(
-                    name=component._component_name
+                    name=component.registered_name
                 )
             )
         return mark_safe(
@@ -74,7 +99,7 @@ def component_dependencies_tag(preload=""):
         )
     else:
         rendered_dependencies = []
-        for component in get_components_from_registry(registry):
+        for component in get_components_from_registry(component_registry):
             rendered_dependencies.append(component.render_dependencies())
 
         return mark_safe("\n".join(rendered_dependencies))
@@ -89,7 +114,7 @@ def component_css_dependencies_tag(preload=""):
         for component in get_components_from_preload_str(preload):
             preloaded_dependencies.append(
                 RENDERED_COMMENT_TEMPLATE.format(
-                    name=component._component_name
+                    name=component.registered_name
                 )
             )
         return mark_safe(
@@ -97,7 +122,7 @@ def component_css_dependencies_tag(preload=""):
         )
     else:
         rendered_dependencies = []
-        for component in get_components_from_registry(registry):
+        for component in get_components_from_registry(component_registry):
             rendered_dependencies.append(component.render_css_dependencies())
 
         return mark_safe("\n".join(rendered_dependencies))
@@ -112,7 +137,7 @@ def component_js_dependencies_tag(preload=""):
         for component in get_components_from_preload_str(preload):
             preloaded_dependencies.append(
                 RENDERED_COMMENT_TEMPLATE.format(
-                    name=component._component_name
+                    name=component.registered_name
                 )
             )
         return mark_safe(
@@ -120,7 +145,7 @@ def component_js_dependencies_tag(preload=""):
         )
     else:
         rendered_dependencies = []
-        for component in get_components_from_registry(registry):
+        for component in get_components_from_registry(component_registry):
             rendered_dependencies.append(component.render_js_dependencies())
 
         return mark_safe("\n".join(rendered_dependencies))
@@ -134,7 +159,7 @@ def do_component(parser, token):
         parser, bits, "component"
     )
     return ComponentNode(
-        NameVariable(component_name, tag="component"),
+        FilterExpression(component_name, parser),
         context_args,
         context_kwargs,
         isolated_context=isolated_context,
@@ -161,44 +186,78 @@ class UserSlotVar:
         return mark_safe(self._slot.nodelist.render(self._context))
 
 
-class SlotNode(Node):
+class TemplateAwareNodeMixin:
+    _template: Template
+
+    @property
+    def template(self) -> Template:
+        try:
+            return self._template
+        except AttributeError:
+            raise RuntimeError(
+                f"Internal error: Instance of {type(self).__name__} was not "
+                "linked to Template before use in render() context."
+            )
+
+    @template.setter
+    def template(self, value) -> None:
+        self._template = value
+
+
+class SlotNode(Node, TemplateAwareNodeMixin):
     def __init__(
-        self, name, nodelist, template_name: str = "", required=False
+        self,
+        name: str,
+        nodelist: NodeList,
+        is_required: bool = False,
+        is_default: bool = False,
     ):
         self.name = name
         self.nodelist = nodelist
-        self.template_name = template_name
-        self.is_required = required
+        self.is_required = is_required
+        self.is_default = is_default
+
+    @property
+    def active_flags(self):
+        m = []
+        if self.is_required:
+            m.append("required")
+        if self.is_default:
+            m.append("default")
+        return m
 
     def __repr__(self):
-        return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}>"
+        return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
 
     def render(self, context):
-        if FILLED_SLOTS_CONTEXT_KEY not in context:
+        try:
+            filled_slots_map: FilledSlotsContext = context[
+                FILLED_SLOTS_CONTENT_CONTEXT_KEY
+            ]
+        except KeyError:
             raise TemplateSyntaxError(
                 f"Attempted to render SlotNode '{self.name}' outside a parent component."
             )
-        filled_slots: Dict[str, List[FillNode]] = context[
-            FILLED_SLOTS_CONTEXT_KEY
-        ]
-        fill_node_stack = filled_slots.get(self.name, None)
+
         extra_context = {}
-        if not fill_node_stack:  # if None or []
-            nodelist = self.nodelist
-            # Raise if slot is 'required'
+        try:
+            slot_fill_content: Optional[FillContent] = filled_slots_map[
+                (self.name, self.template)
+            ]
+        except KeyError:
             if self.is_required:
                 raise TemplateSyntaxError(
                     f"Slot '{self.name}' is marked as 'required' (i.e. non-optional), "
-                    f"yet no fill is provided. Check template '{self.template_name}'"
+                    f"yet no fill is provided. "
                 )
+            nodelist = self.nodelist
         else:
-            fill_node = fill_node_stack.pop()
-            nodelist = fill_node.nodelist
+            nodelist, alias = slot_fill_content
+            if alias:
+                if not alias.isidentifier():
+                    raise TemplateSyntaxError()
+                extra_context[alias] = UserSlotVar(self, context)
 
-            if fill_node.alias_var is not None:
-                aliased_slot_var = UserSlotVar(self, context)
-                resolved_alias_name = fill_node.alias_var.resolve(context)
-                extra_context[resolved_alias_name] = aliased_slot_var
         with context.update(extra_context):
             return nodelist.render(context)
 
@@ -208,58 +267,86 @@ def do_slot(parser, token):
     bits = token.split_contents()
     args = bits[1:]
     # e.g. {% slot <name> %}
-    if len(args) == 1:
-        slot_name: str = args[0]
-        required = False
-    elif len(args) == 2:
-        slot_name: str = args[0]
-        required_keyword = args[1]
-        if required_keyword != "required":
+    is_required = False
+    is_default = False
+    if 1 <= len(args) <= 3:
+        slot_name, *options = args
+        if not is_wrapped_in_quotes(slot_name):
             raise TemplateSyntaxError(
-                f"'{bits[0]}' only accepts 'required' keyword as optional second argument"
+                f"'{bits[0]}' name must be a string 'literal'."
             )
-        else:
-            required = True
+        slot_name = strip_quotes(slot_name)
+        modifiers_count = len(options)
+        if SLOT_REQUIRED_OPTION_KEYWORD in options:
+            is_required = True
+            modifiers_count -= 1
+        if SLOT_DEFAULT_OPTION_KEYWORD in options:
+            is_default = True
+            modifiers_count -= 1
+        if modifiers_count != 0:
+            keywords = [
+                SLOT_REQUIRED_OPTION_KEYWORD,
+                SLOT_DEFAULT_OPTION_KEYWORD,
+            ]
+            raise TemplateSyntaxError(
+                f"Invalid options passed to 'slot' tag. Valid choices: {keywords}."
+            )
     else:
         raise TemplateSyntaxError(
-            f"{bits[0]}' tag takes only one argument (the slot name)"
+            "'slot' tag does not match pattern "
+            "{% slot <name> ['default'] ['required'] %}. "
+            "Order of options is free."
         )
-
-    if not is_wrapped_in_quotes(slot_name):
-        raise TemplateSyntaxError(
-            f"'{bits[0]}' name must be a string 'literal'."
-        )
-
-    slot_name = strip_quotes(slot_name)
-    raise_if_not_py_identifier(slot_name, bits[0])
 
     nodelist = parser.parse(parse_until=["endslot"])
     parser.delete_first_token()
+    return SlotNode(
+        slot_name,
+        nodelist,
+        is_required=is_required,
+        is_default=is_default,
+    )
 
-    template_name = parser.origin.template_name
-    return SlotNode(slot_name, nodelist, template_name, required)
 
-
-class FillNode(Node):
-    def __init__(
-        self,
-        name_var: "NameVariable",
-        nodelist: NodeList,
-        alias_var: Optional["NameVariable"] = None,
-    ):
-        self.name_var = name_var
-        self.nodelist = nodelist
-        self.alias_var: Optional[NameVariable] = alias_var
+class BaseFillNode(Node):
+    def __init__(self, nodelist: NodeList):
+        self.nodelist: NodeList = nodelist
 
     def __repr__(self):
-        return f"<Fill Node: {self.name_var}. Contents: {repr(self.nodelist)}>"
+        raise NotImplementedError
 
     def render(self, context):
         raise TemplateSyntaxError(
-            f"{{% fill {self.name_var} %}} blocks cannot be rendered directly. "
-            f"You are probably seeing this because you have used one outside "
-            f"a {{% component_block %}} context."
+            "{% fill ... %} block cannot be rendered directly. "
+            "You are probably seeing this because you have used one outside "
+            "a {% component_block %} context."
         )
+
+
+class NamedFillNode(BaseFillNode):
+    def __init__(
+        self,
+        nodelist: NodeList,
+        name_fexp: FilterExpression,
+        alias_fexp: Optional[FilterExpression] = None,
+    ):
+        super().__init__(nodelist)
+        self.name_fexp = name_fexp
+        self.alias_fexp = alias_fexp
+
+    def __repr__(self):
+        return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
+
+
+class ImplicitFillNode(BaseFillNode):
+    """
+    Instantiated when a `component_block` tag pair is passed template content that
+    excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
+    as 'default'.
+    """
+
+    def __repr__(self):
+        return f"<{type(self)} Contents: {repr(self.nodelist)}.>"
 
 
 @register.tag("fill")
@@ -275,7 +362,7 @@ def do_fill(parser, token):
     tag = bits[0]
     args = bits[1:]
     # e.g. {% fill <name> %}
-    alias_var = None
+    alias_fexp: Optional[FilterExpression] = None
     if len(args) == 1:
         tgt_slot_name: str = args[0]
     # e.g. {% fill <name> as <alias> %}
@@ -285,49 +372,56 @@ def do_fill(parser, token):
             raise TemplateSyntaxError(
                 f"{tag} tag args do not conform to pattern '<target slot> as <alias>'"
             )
-        raise_if_not_py_identifier(strip_quotes(alias), tag="alias")
-        alias_var = NameVariable(alias, tag="alias")
+        alias_fexp = FilterExpression(alias, parser)
     else:
         raise TemplateSyntaxError(
             f"'{tag}' tag takes either 1 or 3 arguments: Received {len(args)}."
         )
-
-    raise_if_not_py_identifier(strip_quotes(tgt_slot_name), tag=tag)
-
     nodelist = parser.parse(parse_until=["endfill"])
     parser.delete_first_token()
 
-    return FillNode(NameVariable(tgt_slot_name, tag), nodelist, alias_var)
+    return NamedFillNode(
+        nodelist,
+        name_fexp=FilterExpression(tgt_slot_name, tag),
+        alias_fexp=alias_fexp,
+    )
 
 
 class ComponentNode(Node):
-    child_nodelists = ("fill_nodes",)
-
     def __init__(
         self,
-        name_var: "NameVariable",
+        name_fexp: FilterExpression,
         context_args,
         context_kwargs,
         isolated_context=False,
+        fill_nodes: Union[ImplicitFillNode, Iterable[NamedFillNode]] = (),
     ):
-        self.name_var = name_var
+        self.name_fexp = name_fexp
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
-        self.fill_nodes: NodeList[FillNode] = NodeList()
         self.isolated_context = isolated_context
+        self.fill_nodes = fill_nodes
+
+    @property
+    def nodelist(self) -> Union[NodeList, Node]:
+        if isinstance(self.fill_nodes, ImplicitFillNode):
+            return NodeList([self.fill_nodes])
+        else:
+            return NodeList(self.fill_nodes)
 
     def __repr__(self):
-        return "<Component Node: %s. Contents: %r>" % (
-            self.name_var,
+        return "<ComponentNode: %s. Contents: %r>" % (
+            self.name_fexp,
             getattr(
                 self, "nodelist", None
             ),  # 'nodelist' attribute only assigned later.
         )
 
-    def render(self, context):
-        resolved_component_name = self.name_var.resolve(context)
-        component_cls = registry.get(resolved_component_name)
-        component: Component = component_cls(resolved_component_name)
+    def render(self, context: Context):
+        resolved_component_name = self.name_fexp.resolve(context)
+        component_cls: Type[Component] = component_registry.get(
+            resolved_component_name
+        )
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -340,17 +434,38 @@ class ComponentNode(Node):
             for key, kwarg in self.context_kwargs.items()
         }
 
-        resolved_fills = {
-            fill_node.name_var.resolve(context): fill_node
-            for fill_node in self.fill_nodes
-        }
+        if isinstance(self.fill_nodes, ImplicitFillNode):
+            fill_content = self.fill_nodes.nodelist
+        else:
+            fill_content = []
+            for fill_node in self.fill_nodes:
+                # Note that outer component context is used to resolve variables in
+                # fill tag.
+                resolved_name = fill_node.name_fexp.resolve(context)
+                if fill_node.alias_fexp:
+                    resolved_alias: str = fill_node.alias_fexp.resolve(context)
+                    if not resolved_alias.isidentifier():
+                        raise TemplateSyntaxError(
+                            f"Fill tag alias '{fill_node.alias_fexp.var}' in component "
+                            f"{resolved_component_name} does not resolve to "
+                            f"a valid Python identifier. Got: '{resolved_alias}'."
+                        )
+                else:
+                    resolved_alias: None = None
+                fill_content.append(
+                    (resolved_name, fill_node.nodelist, resolved_alias)
+                )
 
-        component.set_instance_fills(resolved_fills)
-        component.set_outer_context(context)
+        component: Component = component_cls(
+            registered_name=resolved_component_name,
+            outer_context=context,
+            fill_content=fill_content,
+        )
 
-        component_context = component.get_context_data(
+        component_context: dict = component.get_context_data(
             *resolved_context_args, **resolved_context_kwargs
         )
+
         if self.isolated_context:
             context = context.new()
         with context.update(component_context):
@@ -358,9 +473,7 @@ class ComponentNode(Node):
 
         if is_dependency_middleware_active():
             return (
-                RENDERED_COMMENT_TEMPLATE.format(
-                    name=component._component_name
-                )
+                RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name)
                 + rendered_component
             )
         else:
@@ -387,71 +500,100 @@ def do_component_block(parser, token):
     component_name, context_args, context_kwargs = parse_component_with_args(
         parser, bits, "component_block"
     )
+    body: NodeList = parser.parse(parse_until=["endcomponent_block"])
+    parser.delete_first_token()
+    fill_nodes = ()
+    if block_has_content(body):
+        for parse_fn in (
+            try_parse_as_default_fill,
+            try_parse_as_named_fill_tag_set,
+        ):
+            fill_nodes = parse_fn(body)
+            if fill_nodes:
+                break
+        else:
+            raise TemplateSyntaxError(
+                "Illegal content passed to 'component_block' tag pair. "
+                "Possible causes: 1) Explicit 'fill' tags cannot occur alongside other "
+                "tags except comment tags; 2) Default (default slot-targeting) content "
+                "is mixed with explict 'fill' tags."
+            )
     component_node = ComponentNode(
-        NameVariable(component_name, "component"),
+        FilterExpression(component_name, parser),
         context_args,
         context_kwargs,
         isolated_context=isolated_context,
+        fill_nodes=fill_nodes,
     )
-
-    seen_fill_name_vars = set()
-    fill_nodes = component_node.fill_nodes
-    for token in fill_tokens(parser):
-        fill_node = do_fill(parser, token)
-        fill_node.parent_component = component_node
-        if fill_node.name_var.var in seen_fill_name_vars:
-            raise TemplateSyntaxError(
-                f"Multiple fill tags cannot target the same slot name: "
-                f"Detected duplicate fill tag name '{fill_node.name_var}'."
-            )
-        seen_fill_name_vars.add(fill_node.name_var.var)
-        fill_nodes.append(fill_node)
 
     return component_node
 
 
-def fill_tokens(parser):
-    """Yield each 'fill' token appearing before the next 'endcomponent_block' token.
+def try_parse_as_named_fill_tag_set(
+    nodelist: NodeList,
+) -> Optional[Iterable[NamedFillNode]]:
+    result = []
+    seen_name_fexps = set()
+    for node in nodelist:
+        if isinstance(node, NamedFillNode):
+            if node.name_fexp in seen_name_fexps:
+                raise TemplateSyntaxError(
+                    f"Multiple fill tags cannot target the same slot name: "
+                    f"Detected duplicate fill tag name '{node.name_fexp}'."
+                )
+            result.append(node)
+        elif isinstance(node, CommentNode):
+            pass
+        elif isinstance(node, TextNode) and node.s.isspace():
+            pass
+        else:
+            return None
+    return result
 
-    Raises TemplateSyntaxError if:
-    - there are other content tokens
-    - there is no endcomponent_block token.
-    - a (deprecated) 'slot' token is encountered.
-    """
 
-    def is_whitespace(token):
-        return (
-            token.token_type == TokenType.TEXT and not token.contents.strip()
-        )
+def try_parse_as_default_fill(
+    nodelist: NodeList,
+) -> Optional[ImplicitFillNode]:
+    # nodelist.get_nodes_by_type()
+    nodes_stack: List[Node] = list(nodelist)
+    while nodes_stack:
+        node = nodes_stack.pop()
+        if isinstance(node, NamedFillNode):
+            return None
+        elif isinstance(node, ComponentNode):
+            # Stop searching here, as fill tags are permitted inside component blocks
+            # embedded within a default fill node.
+            continue
+        for nodelist_attr_name in node.child_nodelists:
+            nodes_stack.extend(getattr(node, nodelist_attr_name, []))
+    else:
+        return ImplicitFillNode(nodelist=nodelist)
 
-    def is_block_tag(token, name):
-        return (
-            token.token_type == TokenType.BLOCK
-            and token.split_contents()[0] == name
-        )
 
-    while True:
-        try:
-            token = parser.next_token()
-        except IndexError:
-            raise TemplateSyntaxError("Unclosed component_block tag")
-        if is_block_tag(token, name="endcomponent_block"):
-            return
-        elif is_block_tag(token, name="fill"):
-            yield token
-        elif is_block_tag(token, name="slot"):
-            raise TemplateSyntaxError(
-                "Use of {% slot %} to pass slot content is deprecated. "
-                "Use {% fill % } instead."
-            )
-        elif (
-            not is_whitespace(token) and token.token_type != TokenType.COMMENT
-        ):
-            raise TemplateSyntaxError(
-                "Component block EITHER contains illegal tokens tag that are not "
-                "{{% fill ... %}} tags OR the proper closing tag -- "
-                "{{% endcomponent_block %}} -- is missing."
-            )
+def block_has_content(nodelist) -> bool:
+    for node in nodelist:
+        if isinstance(node, TextNode) and node.s.isspace():
+            pass
+        elif isinstance(node, CommentNode):
+            pass
+        else:
+            return True
+    return False
+
+
+def is_whitespace_node(node: Node) -> bool:
+    return isinstance(node, TextNode) and node.s.isspace()
+
+
+def is_whitespace_token(token):
+    return token.token_type == TokenType.TEXT and not token.contents.strip()
+
+
+def is_block_tag_token(token, name):
+    return (
+        token.token_type == TokenType.BLOCK
+        and token.split_contents()[0] == name
+    )
 
 
 @register.tag(name="if_filled")
@@ -480,11 +622,12 @@ def do_if_filled_block(parser, token):
     """
     bits = token.split_contents()
     starting_tag = bits[0]
-    slot_name_var: Optional[NameVariable]
-    slot_name_var, is_positive = parse_if_filled_bits(bits)
+    slot_name, is_positive = parse_if_filled_bits(bits)
     nodelist = parser.parse(("elif_filled", "else_filled", "endif_filled"))
-    branches: List[Tuple[Optional[NameVariable], NodeList, Optional[bool]]] = [
-        (slot_name_var, nodelist, is_positive)
+    branches: List[_IfSlotFilledBranchNode] = [
+        IfSlotFilledConditionBranchNode(
+            slot_name=slot_name, nodelist=nodelist, is_positive=is_positive
+        )
     ]
 
     token = parser.next_token()
@@ -492,11 +635,16 @@ def do_if_filled_block(parser, token):
     # {% elif_filled <slot> (<is_positive>) %} (repeatable)
     while token.contents.startswith("elif_filled"):
         bits = token.split_contents()
-        slot_name_var, is_positive = parse_if_filled_bits(bits)
+        slot_name, is_positive = parse_if_filled_bits(bits)
         nodelist: NodeList = parser.parse(
             ("elif_filled", "else_filled", "endif_filled")
         )
-        branches.append((slot_name_var, nodelist, is_positive))
+        branches.append(
+            IfSlotFilledConditionBranchNode(
+                slot_name=slot_name, nodelist=nodelist, is_positive=is_positive
+            )
+        )
+
         token = parser.next_token()
 
     # {% else_filled %} (optional)
@@ -504,7 +652,7 @@ def do_if_filled_block(parser, token):
         bits = token.split_contents()
         _, _ = parse_if_filled_bits(bits)
         nodelist = parser.parse(("endif_filled",))
-        branches.append((None, nodelist, None))
+        branches.append(IfSlotFilledElseBranchNode(nodelist))
         token = parser.next_token()
 
     # {% endif_filled %}
@@ -519,13 +667,12 @@ def do_if_filled_block(parser, token):
 
 def parse_if_filled_bits(
     bits: List[str],
-) -> Tuple[Optional["NameVariable"], Optional[bool]]:
+) -> Tuple[Optional[str], Optional[bool]]:
     tag, args = bits[0], bits[1:]
     if tag in ("else_filled", "endif_filled"):
         if len(args) != 0:
             raise TemplateSyntaxError(
-                f"Tag '{tag}' takes no arguments. "
-                f"Received '{' '.join(args)}'"
+                f"Tag '{tag}' takes no arguments. Received '{' '.join(args)}'"
             )
         else:
             return None, None
@@ -540,48 +687,81 @@ def parse_if_filled_bits(
             f"{bits[0]} tag arguments '{' '.join(args)}' do not match pattern "
             f"'<slotname> (<is_positive>)'"
         )
-    raise_if_not_py_identifier(strip_quotes(slot_name), tag=tag)
-    slot_name_var = NameVariable(slot_name, tag)
-    return slot_name_var, is_positive
+    if not is_wrapped_in_quotes(slot_name):
+        raise TemplateSyntaxError(
+            f"First argument of '{bits[0]}' must be a quoted string 'literal'."
+        )
+    slot_name = strip_quotes(slot_name)
+    return slot_name, is_positive
+
+
+class _IfSlotFilledBranchNode(Node):
+    def __init__(self, nodelist: NodeList) -> None:
+        self.nodelist = nodelist
+
+    def render(self, context: Context) -> str:
+        return self.nodelist.render(context)
+
+    def evaluate(self, context) -> bool:
+        raise NotImplementedError
+
+
+class IfSlotFilledConditionBranchNode(
+    _IfSlotFilledBranchNode, TemplateAwareNodeMixin
+):
+    def __init__(
+        self,
+        slot_name: str,
+        nodelist: NodeList,
+        is_positive=True,
+    ) -> None:
+        self.slot_name = slot_name
+        self.is_positive: bool = is_positive
+        super().__init__(nodelist)
+
+    def evaluate(self, context) -> bool:
+        try:
+            filled_slots: FilledSlotsContext = context[
+                FILLED_SLOTS_CONTENT_CONTEXT_KEY
+            ]
+        except KeyError:
+            raise TemplateSyntaxError(
+                f"Attempted to render {type(self).__name__} outside a Component rendering context."
+            )
+        slot_key = (self.slot_name, self.template)
+        is_filled = filled_slots.get(slot_key, None) is not None
+        # Make polarity switchable.
+        # i.e. if slot name is NOT filled and is_positive=False,
+        # then False == False -> True
+        return is_filled == self.is_positive
+
+
+class IfSlotFilledElseBranchNode(_IfSlotFilledBranchNode):
+    def evaluate(self, context) -> bool:
+        return True
 
 
 class IfSlotFilledNode(Node):
     def __init__(
         self,
-        branches: List[
-            Tuple[Optional["NameVariable"], NodeList, Optional[bool]]
-        ],
+        branches: List[_IfSlotFilledBranchNode],
     ):
-        # [(<slot name var | None (= condition)>, nodelist, <is_positive>)]
         self.branches = branches
-
-    def __iter__(self):
-        for _, nodelist, _ in self.branches:
-            for node in nodelist:
-                yield node
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
 
     @property
     def nodelist(self):
-        return NodeList(self)
+        return NodeList(self.branches)
 
     def render(self, context):
-        current_fills = context.get(FILLED_SLOTS_CONTEXT_KEY)
-        for slot_name_var, nodelist, is_positive in self.branches:
-            # None indicates {% else_filled %} has been reached.
-            # This means all other branches have been exhausted.
-            if slot_name_var is None:
-                return nodelist.render(context)
-            # Make polarity switchable.
-            # i.e. if slot name is NOT filled and is_positive=False,
-            # then False == False -> True
-            slot_name = slot_name_var.resolve(context)
-            if (slot_name in current_fills) == is_positive:
-                return nodelist.render(context)
-            else:
-                continue
+        for node in self.branches:
+            if isinstance(node, IfSlotFilledElseBranchNode):
+                return node.render(context)
+            elif isinstance(node, IfSlotFilledConditionBranchNode):
+                if node.evaluate(context):
+                    return node.render(context)
         return ""
 
 
@@ -649,7 +829,7 @@ def is_dependency_middleware_active():
     )
 
 
-def norm_and_validate_name(name: str, tag: str, context: str = None):
+def norm_and_validate_name(name: str, tag: str, context: Optional[str] = None):
     """
     Notes:
         - Value of `tag` in {"slot", "fill", "alias"}
@@ -664,19 +844,6 @@ def norm_and_validate_name(name: str, tag: str, context: str = None):
     return name
 
 
-def raise_if_not_py_identifier(name: str, tag: str, content: str = None):
-    """
-    Notes:
-        - Value of `tag` in {"slot", "fill", "alias", "component"}
-    """
-    if not name.isidentifier():
-        content = f" in '{{% {content} ...'" if content else ""
-        raise TemplateSyntaxError(
-            f"'{tag}' name '{name}'{content} with/without quotes "
-            "is not a valid Python identifier."
-        )
-
-
 def strip_quotes(s: str) -> str:
     return s.strip("\"'")
 
@@ -689,18 +856,3 @@ def bool_from_string(s: str):
         return False
     else:
         raise TemplateSyntaxError(f"Expected a bool value. Received: '{s}'")
-
-
-class NameVariable(Variable):
-    def __init__(self, var: str, tag: str):
-        super().__init__(var)
-        self._tag = tag
-
-    def resolve(self, context):
-        try:
-            return super().resolve(context)
-        except VariableDoesNotExist:
-            raise TemplateSyntaxError(
-                f"<name> = '{self.var}' in '{{% {self._tag} <name> ...' can't be resolved "
-                f"against context."
-            )
