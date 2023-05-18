@@ -526,14 +526,16 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
                 template.render(Context({}))
             except TemplateSyntaxError as e:
                 self.assertEqual(
-                    textwrap.dedent("""
+                    textwrap.dedent(
+                        """
                         Component 'test1' passed fill(s) referring to undefined slot(s).
                         Bad fills: ['haeder'].
                         
                         Did you mean:
                         - haeder: header?
                         Other unfilled slots are: ['footer'].
-                    """),
+                    """
+                    ),
                     str(e),
                 )
                 raise e
