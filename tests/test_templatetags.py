@@ -1,5 +1,5 @@
 import re
-from textwrap import dedent
+import textwrap
 from typing import Callable, Iterable, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
@@ -152,7 +152,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
                 """Variable: <strong>variable</strong>\n"""
                 """Variable2: <strong>hej</strong>"""
             )
-            self.assertHTMLEqual(rendered, dedent(expected_outcome))
+            self.assertHTMLEqual(rendered, textwrap.dedent(expected_outcome))
 
     def test_component_called_with_singlequoted_name(self):
         component.registry.register(name="test", component=SimpleComponent)
@@ -527,14 +527,12 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
             except TemplateSyntaxError as e:
                 self.assertEqual(
                     textwrap.dedent(
-                        """
+                        """\
                         Component 'test1' passed fill(s) referring to undefined slot(s).
                         Bad fills: ['haeder'].
-                        
                         Did you mean:
                         - haeder: header?
-                        Other unfilled slots are: ['footer'].
-                    """
+                        Other unfilled slots are: ['footer']."""
                     ),
                     str(e),
                 )
