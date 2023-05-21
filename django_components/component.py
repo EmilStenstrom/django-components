@@ -233,7 +233,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         except KeyError:
             return ChainMap(filled_slots_map)
 
-    def _get_unfilled_slots(self, template: Template) -> set[SlotName]:
+    def _get_unfilled_slots(self, template: Template) -> Set[SlotName]:
         all_slots: List[SlotNode] = template.nodelist.get_nodes_by_type(
             SlotNode
         )
