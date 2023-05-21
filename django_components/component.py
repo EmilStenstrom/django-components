@@ -1,5 +1,16 @@
+import difflib
 from collections import ChainMap
-from typing import Any, ClassVar, Dict, Iterable, Optional, Tuple, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -196,10 +207,18 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             )
         for fill_name in filter(None, fill_target2content.keys()):
             if fill_name not in slot_name2fill_content:
-                raise TemplateSyntaxError(
-                    f"Component '{self.registered_name}' passed fill "
-                    f"that refers to undefined slot: {fill_name}"
+                unfilled_slots = self._get_unfilled_slots(template)
+                slot_guess = self._get_slot_name_guess(
+                    fill_name, unfilled_slots
                 )
+                msg = (
+                    f"Component '{self.registered_name}' passed fill "
+                    f"that refers to undefined slot: '{fill_name}'."
+                    f"\nUnfilled slot names are: {sorted(unfilled_slots)}."
+                )
+                if slot_guess:
+                    msg += f"\nDid you mean '{slot_guess}'?"
+                raise TemplateSyntaxError(msg)
         # Return updated FILLED_SLOTS_CONTEXT map
         filled_slots_map: Dict[Tuple[SlotName, Template], FillContent] = {
             (slot_name, template): content_data
@@ -213,3 +232,25 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             return prev_context.new_child(filled_slots_map)
         except KeyError:
             return ChainMap(filled_slots_map)
+
+    def _get_unfilled_slots(self, template: Template) -> set[SlotName]:
+        all_slots: List[SlotNode] = template.nodelist.get_nodes_by_type(
+            SlotNode
+        )
+        filled_slots: Set[SlotName] = {
+            name for name, node, _ in self.fill_content
+        }
+        return set(s.name for s in all_slots) - filled_slots
+
+    def _get_slot_name_guess(
+        self, name: SlotName, slot_names: Set[SlotName]
+    ) -> Optional[SlotName]:
+        """
+        :param name: invalid slot fill name
+        :param slot_names: names of slots in which to try to find a similar match
+        """
+        guesses: list[SlotName] = difflib.get_close_matches(
+            name, slot_names, 1
+        )
+        if guesses:
+            return guesses[0]

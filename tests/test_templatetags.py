@@ -528,11 +528,9 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
                 self.assertEqual(
                     textwrap.dedent(
                         """\
-                        Component 'test1' passed fill(s) referring to undefined slot(s).
-                        Bad fills: ['haeder'].
-                        Did you mean:
-                        - haeder: header?
-                        Other unfilled slots are: ['footer']."""
+                        Component 'test1' passed fill that refers to undefined slot: 'haeder'.
+                        Unfilled slot names are: ['footer', 'header'].
+                        Did you mean 'header'?"""
                     ),
                     str(e),
                 )
