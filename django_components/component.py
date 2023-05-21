@@ -249,7 +249,7 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         :param name: invalid slot fill name
         :param slot_names: names of slots in which to try to find a similar match
         """
-        guesses: list[SlotName] = difflib.get_close_matches(
+        guesses: List[SlotName] = difflib.get_close_matches(
             name, slot_names, 1
         )
         if guesses:
