@@ -1,5 +1,6 @@
+import difflib
 from collections import ChainMap
-from typing import Any, ClassVar, Dict, Iterable, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -134,16 +135,21 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def _process_template_and_update_filled_slot_context(
         self, context: Context, template: Template
     ) -> FilledSlotsContext:
-        fill_target2content: Dict[Optional[str], FillContent]
         if isinstance(self.fill_content, NodeList):
-            fill_target2content = {None: (self.fill_content, None)}
+            default_fill_content = (self.fill_content, None)
+            named_fills_content = {}
         else:
-            fill_target2content = {
+            default_fill_content = None
+            named_fills_content = {
                 name: (nodelist, alias)
                 for name, nodelist, alias in self.fill_content
             }
+
+        # If value is `None`, then slot is unfilled.
         slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}
-        default_slot_already_encountered: bool = False
+        default_slot_encountered: bool = False
+        required_slot_names: Set[str] = set()
+
         for node in template.nodelist.get_nodes_by_type(
             (SlotNode, IfSlotFilledConditionBranchNode)  # type: ignore
         ):
@@ -161,22 +167,19 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                 content_data: Optional[
                     FillContent
                 ] = None  # `None` -> unfilled
+                if node.is_required:
+                    required_slot_names.add(node.name)
                 if node.is_default:
-                    if default_slot_already_encountered:
+                    if default_slot_encountered:
                         raise TemplateSyntaxError(
                             "Only one component slot may be marked as 'default'. "
                             f"To fix, check template '{template.name}' "
                             f"of component '{self.registered_name}'."
                         )
-                    default_slot_already_encountered = True
-                    content_data = fill_target2content.get(None)
+                    content_data = default_fill_content
+                    default_slot_encountered = True
                 if not content_data:
-                    content_data = fill_target2content.get(node.name)
-                if not content_data and node.is_required:
-                    raise TemplateSyntaxError(
-                        f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
-                        f"yet no fill is provided. Check template.'"
-                    )
+                    content_data = named_fills_content.get(node.name)
                 slot_name2fill_content[slot_name] = content_data
             elif isinstance(node, IfSlotFilledConditionBranchNode):
                 node.template = template
@@ -184,27 +187,61 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
                 raise RuntimeError(
                     f"Node of {type(node).__name__} does not require linking."
                 )
-        # Check fills
-        if (
-            None in fill_target2content
-            and not default_slot_already_encountered
-        ):
+
+        # Check: Only component templates that include a 'default' slot
+        # can be invoked with implicit filling.
+        if default_fill_content and not default_slot_encountered:
             raise TemplateSyntaxError(
                 f"Component '{self.registered_name}' passed default fill content "
                 f"(i.e. without explicit 'fill' tag), "
                 f"even though none of its slots is marked as 'default'."
             )
-        for fill_name in filter(None, fill_target2content.keys()):
-            if fill_name not in slot_name2fill_content:
-                raise TemplateSyntaxError(
-                    f"Component '{self.registered_name}' passed fill "
-                    f"that refers to undefined slot: {fill_name}"
+
+        unfilled_slots: Set[str] = set(
+            k for k, v in slot_name2fill_content.items() if v is None
+        )
+        unmatched_fills: Set[str] = (
+            named_fills_content.keys() - slot_name2fill_content.keys()
+        )
+
+        # Check that 'required' slots are filled.
+        for slot_name in unfilled_slots:
+            if slot_name in required_slot_names:
+                msg = (
+                    f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
+                    f"yet no fill is provided. Check template.'"
                 )
+                if unmatched_fills:
+                    msg = f"{msg}\nPossible typo in unresolvable fills: {unmatched_fills}."
+                raise TemplateSyntaxError(msg)
+
+        # Check that all fills can be matched to a slot on the component template.
+        # To help with easy-to-overlook typos, we fuzzy match unresolvable fills to
+        # those slots for which no matching fill was encountered. In the event of
+        # a close match, we include the name of the matched unfilled slot as a
+        # hint in the error message.
+        #
+        # Note: Finding a good `cutoff` value may require further trial-and-error.
+        # Higher values make matching stricter. This is probably preferable, as it
+        # reduces false positives.
+        for fill_name in unmatched_fills:
+            fuzzy_slot_name_matches = difflib.get_close_matches(
+                fill_name, unfilled_slots, n=1, cutoff=0.7
+            )
+            msg = (
+                f"Component '{self.registered_name}' passed fill "
+                f"that refers to undefined slot: '{fill_name}'."
+                f"\nUnfilled slot names are: {sorted(unfilled_slots)}."
+            )
+            if fuzzy_slot_name_matches:
+                msg += f"\nDid you mean '{fuzzy_slot_name_matches[0]}'?"
+            raise TemplateSyntaxError(msg)
+
         # Return updated FILLED_SLOTS_CONTEXT map
         filled_slots_map: Dict[Tuple[SlotName, Template], FillContent] = {
             (slot_name, template): content_data
             for slot_name, content_data in slot_name2fill_content.items()
-            if content_data  # (is not None)
+            if content_data  # Slots whose content is None (i.e. unfilled) are dropped.
         }
         try:
             prev_context: FilledSlotsContext = context[

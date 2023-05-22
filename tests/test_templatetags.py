@@ -1,5 +1,5 @@
 import re
-from textwrap import dedent
+import textwrap
 from typing import Callable, Iterable, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
@@ -152,7 +152,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
                 """Variable: <strong>variable</strong>\n"""
                 """Variable2: <strong>hej</strong>"""
             )
-            self.assertHTMLEqual(rendered, dedent(expected_outcome))
+            self.assertHTMLEqual(rendered, textwrap.dedent(expected_outcome))
 
     def test_component_called_with_singlequoted_name(self):
         component.registry.register(name="test", component=SimpleComponent)
@@ -504,6 +504,37 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         c = BadComponent("name")
         with self.assertRaises(TemplateSyntaxError):
             c.render(Context({}))
+
+    def test_slot_name_fill_typo_gives_helpful_error_message(self):
+        component.registry.register(name="test1", component=SlottedComponent)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component_block "test1" %}
+                {% fill "haeder" %}
+                    Custom header
+                {% endfill %}
+                {% fill "main" %}
+                    main content
+                {% endfill %}
+            {% endcomponent_block %}
+        """
+        )
+        with self.assertRaises(TemplateSyntaxError):
+            try:
+                template.render(Context({}))
+            except TemplateSyntaxError as e:
+                self.assertEqual(
+                    textwrap.dedent(
+                        """\
+                        Component 'test1' passed fill that refers to undefined slot: 'haeder'.
+                        Unfilled slot names are: ['footer', 'header'].
+                        Did you mean 'header'?"""
+                    ),
+                    str(e),
+                )
+                raise e
 
 
 class SlottedTemplateRegressionTests(SimpleTestCase):
