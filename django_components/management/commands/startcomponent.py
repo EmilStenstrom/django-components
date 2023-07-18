@@ -1,4 +1,5 @@
 import os
+from textwrap import dedent
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -28,49 +29,55 @@ class Command(BaseCommand):
         os.makedirs(components_path)
 
         with open(components_path + "/index.js", "w") as f:
-            script_content = f"""
-window.addEventListener('load', (event) => {{
-    console.log("{name} component is fully loaded");
-}});
+            script_content = dedent(
+                f"""
+                window.addEventListener('load', (event) => {{
+                    console.log("{name} component is fully loaded");
+                }});
             """
+            )
             f.write(script_content.strip())
 
         with open(components_path + "/style.css", "w") as f:
-            style_content = f"""
-.component-{name} {{
-    background: red;
-}}
+            style_content = dedent(
+                f"""
+                .component-{name} {{
+                    background: red;
+                }}
             """
+            )
             f.write(style_content.strip())
 
         with open(components_path + "/template.html", "w") as f:
-            template_content = f"""
-<div class="component-{name}">
-    Hello from {name} component!
-</div>
+            template_content = dedent(
+                f"""
+                <div class="component-{name}">
+                    Hello from {name} component!
+                </div>
             """
+            )
             f.write(template_content.strip())
 
         with open(components_path + f"/{name}.py", "w") as f:
-            py_content = f"""
-# In a file called [project root]/components/{name}/{name}.py
-from django_components import component
+            py_content = dedent(
+                f"""
+                from django_components import component
 
-@component.register("{name}")
-class {name.capitalize()}(component.Component):
-    # you can override def get_template_name() instead of specifying the below variable.
-    template_name = "{name}/template.html"
+                @component.register("{name}")
+                class {name.capitalize()}(component.Component):
+                    template_name = "{name}/template.html"
 
-    # This component takes one parameter, a date string to show in the template
-    def get_context_data(self, date):
-        return {{
-            "date": date,
-        }}
+                    # This component takes one parameter, a date string to show in the template
+                    def get_context_data(self, date):
+                        return {{
+                            "date": date,
+                        }}
 
-    class Media:
-        css = "{name}/style.css"
-        js = "{name}/script.js"
+                    class Media:
+                        css = "{name}/style.css"
+                        js = "{name}/script.js"
             """
+            )
             f.write(py_content.strip())
 
         self.stdout.write(
