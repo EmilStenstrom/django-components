@@ -350,7 +350,7 @@ By contrast, it is permitted to use `fill` tags in nested components, e.g.:
 {% component_block "calendar" date="2020-06-06" %}
     {% component_block "beautiful-box" %}
         {% fill "content" %} Can you believe it's already <span>{{ date }}</span>?? {% endfill %}
-    {% endcomponent_block
+    {% endcomponent_block %}
 {% endcomponent_block %}
 ```
 
@@ -361,7 +361,7 @@ This is fine too:
     {% fill "header" %}
         {% component_block "calendar-header" %}
             Super Special Calendar Header
-        {% endcomponent_block
+        {% endcomponent_block %}
     {% endfill %}
 {% endcomponent_block %}
 ```
