@@ -375,7 +375,7 @@ Certain properties of a slot can be accessed from within a 'fill' context. They 
 
 ```htmldjango
 {% component_block "calendar" date="2020-06-06" %}
-    {% fill "body" as "body" %}{{ body.default }}. Have a great day!{% endslot %}
+    {% fill "body" as "body" %}{{ body.default }}. Have a great day!{% endfill %}
 {% endcomponent_block %}
 ```
 
