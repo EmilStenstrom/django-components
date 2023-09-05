@@ -10,9 +10,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "name",
-            type=str,
-            help="The name of the component to create"
+            "name", type=str, help="The name of the component to create"
         )
         parser.add_argument(
             "--path",
@@ -68,7 +66,9 @@ class Command(BaseCommand):
             verbose = kwargs["verbose"]
             dry_run = kwargs["dry_run"]
 
-            component_path = os.path.join(path or f"{base_dir}/components", name)
+            component_path = os.path.join(
+                path or f"{base_dir}/components", name
+            )
 
             if os.path.exists(component_path):
                 if force:
@@ -102,7 +102,9 @@ class Command(BaseCommand):
                     )
                     f.write(script_content.strip())
 
-                with open(os.path.join(component_path, css_filename), "w") as f:
+                with open(
+                    os.path.join(component_path, css_filename), "w"
+                ) as f:
                     style_content = dedent(
                         f"""
                         .component-{name} {{
@@ -112,7 +114,9 @@ class Command(BaseCommand):
                     )
                     f.write(style_content.strip())
 
-                with open(os.path.join(component_path, template_filename), "w") as f:
+                with open(
+                    os.path.join(component_path, template_filename), "w"
+                ) as f:
                     template_content = dedent(
                         f"""
                         <div class="component-{name}">
@@ -122,7 +126,9 @@ class Command(BaseCommand):
                     )
                     f.write(template_content.strip())
 
-                with open(os.path.join(component_path, f"{name}.py"), "w") as f:
+                with open(
+                    os.path.join(component_path, f"{name}.py"), "w"
+                ) as f:
                     py_content = dedent(
                         f"""
                         from django_components import component
