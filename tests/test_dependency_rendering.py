@@ -99,15 +99,6 @@ class ComponentMediaRenderingTests(SimpleTestCase):
             count=1,
         )
 
-    def test_preload_js_dependencies_render_when_no_components_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
-
-        template = Template(
-            "{% load component_tags %}{% component_js_dependencies preload='test' %}"
-        )
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-
     def test_preload_css_dependencies_render_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
@@ -122,6 +113,21 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
 
     def test_single_component_dependencies_render_when_used(self):
+        component.registry.register(name="test", component=SimpleComponent)
+
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component 'test' variable='foo' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertInHTML(
+            '<link href="style.css" media="all" rel="stylesheet"/>',
+            rendered,
+            count=1,
+        )
+        self.assertInHTML('<script src="script.js">', rendered, count=1)
+
+    def test_single_component_with_dash_or_slash_in_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
         template = Template(
@@ -392,3 +398,19 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         )
         request = Mock()
         self.assertEqual(response, middleware(request=request))
+
+    def test_middleware_response_with_components_with_slash_and_dash(self):
+        component.registry.register(
+            name="test-component", component=SimpleComponent
+        )
+        component.registry.register(
+            name="test/component", component=SimpleComponent
+        )
+
+        template = Template(
+            "{% load component_tags %}{% component_js_dependencies %}"
+            "{% component 'test-component' variable='variable' %}"
+            "{% component 'test/component' variable='variable' %}"
+        )
+        rendered = create_and_process_template_response(template)
+        self.assertNotIn("_RENDERED", rendered)
