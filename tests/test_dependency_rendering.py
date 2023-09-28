@@ -399,8 +399,14 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         request = Mock()
         self.assertEqual(response, middleware(request=request))
 
-    def test_middleware_response_with_components_with_slash_dash_and_underscore(self):
-        component_names = ["test-component", "test/component", "test_component"]
+    def test_middleware_response_with_components_with_slash_dash_and_underscore(
+        self,
+    ):
+        component_names = [
+            "test-component",
+            "test/component",
+            "test_component",
+        ]
         for component_name in component_names:
             component.registry.register(
                 name=component_name, component=SimpleComponent
@@ -412,8 +418,11 @@ class ComponentMediaRenderingTests(SimpleTestCase):
                 f"{{% component '{component_name}' variable='value' %}}"
             )
             rendered = create_and_process_template_response(template)
-            self.assertEqual((
-                '<script src="script.js"></script>'
-                '<link href="style.css" media="all" rel="stylesheet">'
-                "Variable: <strong>value</strong>\n"
-            ), rendered)
+            self.assertEqual(
+                (
+                    '<script src="script.js"></script>'
+                    '<link href="style.css" media="all" rel="stylesheet">'
+                    "Variable: <strong>value</strong>\n"
+                ),
+                rendered,
+            )
