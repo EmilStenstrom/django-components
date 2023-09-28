@@ -419,10 +419,10 @@ class ComponentMediaRenderingTests(SimpleTestCase):
             )
             rendered = create_and_process_template_response(template)
             self.assertHTMLEqual(
+                rendered,
                 (
                     '<script src="script.js"></script>'
                     '<link href="style.css" media="all" rel="stylesheet">'
                     "Variable: <strong>value</strong>\n"
                 ),
-                rendered,
             )
