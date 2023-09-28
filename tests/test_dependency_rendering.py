@@ -418,7 +418,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
                 f"{{% component '{component_name}' variable='value' %}}"
             )
             rendered = create_and_process_template_response(template)
-            self.assertEqual(
+            self.assertHTMLEqual(
                 (
                     '<script src="script.js"></script>'
                     '<link href="style.css" media="all" rel="stylesheet">'
