@@ -17,6 +17,8 @@ class Django30CompatibleSimpleTestCase(SimpleTestCase):
     def assertHTMLEqual(self, left, right):
         left = left.replace(' type="text/javascript"', "")
         left = left.replace(' type="text/css"', "")
+        right = right.replace(' type="text/javascript"', "")
+        right = right.replace(' type="text/css"', "")
         super(Django30CompatibleSimpleTestCase, self).assertHTMLEqual(
             left, right
         )
