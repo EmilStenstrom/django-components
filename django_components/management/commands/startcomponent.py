@@ -61,14 +61,19 @@ class Command(BaseCommand):
             js_filename = kwargs["js"]
             css_filename = kwargs["css"]
             template_filename = kwargs["template"]
-            base_dir = settings.BASE_DIR
+            base_dir = getattr(settings, "BASE_DIR", None)
             force = kwargs["force"]
             verbose = kwargs["verbose"]
             dry_run = kwargs["dry_run"]
 
-            component_path = os.path.join(
-                path or f"{base_dir}/components", name
-            )
+            if path:
+                component_path = os.path.join(path, name)
+            elif base_dir:
+                component_path = os.path.join(base_dir, "components", name)
+            else:
+                raise CommandError(
+                    "You must specify a path or set BASE_DIR in your django settings"
+                )
 
             if os.path.exists(component_path):
                 if force:
