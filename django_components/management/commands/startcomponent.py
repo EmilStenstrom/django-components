@@ -126,6 +126,8 @@ class Command(BaseCommand):
                         f"""
                         <div class="component-{name}">
                             Hello from {name} component!
+                            <br>
+                            This is {{ param }} context value.
                         </div>
                     """
                     )
@@ -142,9 +144,9 @@ class Command(BaseCommand):
                         class {name.capitalize()}(component.Component):
                             template_name = "{name}/{template_filename}"
 
-                            def get_context_data(self, date):
+                            def get_context_data(self, value):
                                 return {{
-                                    "date": date,
+                                    "param": "sample value",
                                 }}
 
                             class Media:
