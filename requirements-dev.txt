@@ -16,7 +16,7 @@ colorama==0.4.6
     # via tox
 distlib==0.3.7
     # via virtualenv
-django==4.2.5
+django==4.2.6
     # via -r requirements-dev.in
 filelock==3.12.3
     # via
