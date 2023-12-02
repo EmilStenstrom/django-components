@@ -20,9 +20,9 @@ Read on to learn about the details!
 
 ## Release notes
 
-*Version 0.28* introduces 'implicit' slot filling and the `default` option for `slot` tags.  
+*Version 0.28* introduces 'implicit' slot filling and the `default` option for `slot` tags.
 
-*Version 0.27* adds a second installable app: *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes). 
+*Version 0.27* adds a second installable app: *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes).
 
 *Version 0.26* changes the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill. We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
 
@@ -51,14 +51,14 @@ To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.
 
 ```python
 INSTALLED_APPS = [
-    # django.contrib.staticfiles   # <-- REMOVE
-    "django_components",
-    "django_components.safer_staticfiles"  # <-- ADD
+    # 'django.contrib.staticfiles',   # <-- REMOVE
+    'django_components',
+    'django_components.safer_staticfiles'  # <-- ADD
 ]
 ```
 
 If you are on an older version of django-components, your alternatives are a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command, or b) defining a subclass of StaticFilesConfig.
-Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).  
+Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).
 
 ## Installation
 
@@ -71,7 +71,7 @@ Then add the app into INSTALLED_APPS in settings.py
 ```python
 INSTALLED_APPS = [
     ...,
-    "django_components",
+    'django_components',
 ]
 ```
 
@@ -153,7 +153,7 @@ Start by creating empty files in the structure above.
 First you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
 
 ```css
-/* In a file called [project root]/components/calendar/style.css */
+/* In a file called [project root]/components/calendar/calendar.css */
 .calendar-component { width: 200px; background: pink; }
 .calendar-component span { font-weight: bold; }
 ```
@@ -161,7 +161,7 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
 ```js
-/* In a file called [project root]/components/calendar/script.js */
+/* In a file called [project root]/components/calendar/calendar.js */
 (function(){
     if (document.querySelector(".calendar-component")) {
         document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
@@ -251,7 +251,7 @@ _New in version 0.26_:
 
 ---
 
-Components support something called 'slots'. 
+Components support something called 'slots'.
 When a component is used inside another template, slots allow the parent template to override specific parts of the child component by passing in different content.
 This mechanism makes components more reusable and composable.
 
@@ -260,7 +260,7 @@ In the example below we introduce two block tags that work hand in hand to make 
 - `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
 - `{% fill <name> %}`/`{% endfill %}`: (Used inside a `component_block` tag pair.) Fills a declared slot with the specified content.
 
-Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _calendar.html_. 
+Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _calendar.html_.
 
 ```htmldjango
 <div class="calendar-component">
@@ -302,7 +302,7 @@ Here's the same example as before, except with default slots and implicit fillin
 
 The template:
 
-```htmldjango 
+```htmldjango
 <div class="calendar-component">
     <div class="header">
         {% slot "header" %}Calendar header{% endslot %}
@@ -398,7 +398,7 @@ Produces:
 _Added in version 0.26._
 
 In certain circumstances, you may want the behavior of slot filling to depend on
-whether or not a particular slot is filled. 
+whether or not a particular slot is filled.
 
 For example, suppose we have the following component template:
 
@@ -430,7 +430,7 @@ This may not be what you want. What if instead the outer 'subtitle' div should o
 be included when the inner slot is in fact filled?
 
 The answer is to use the `{% if_filled <name> %}` tag. Together with `{% endif_filled %}`,
-these define a block whose contents will be rendered only if the component slot with 
+these define a block whose contents will be rendered only if the component slot with
 the corresponding 'name' is filled.
 
 This is what our example looks like with an 'if_filled' tag.
