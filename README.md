@@ -153,7 +153,7 @@ Start by creating empty files in the structure above.
 First you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
 
 ```css
-/* In a file called [project root]/components/calendar/calendar.css */
+/* In a file called [project root]/components/calendar/style.css */
 .calendar-component { width: 200px; background: pink; }
 .calendar-component span { font-weight: bold; }
 ```
@@ -161,7 +161,7 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
 ```js
-/* In a file called [project root]/components/calendar/calendar.js */
+/* In a file called [project root]/components/calendar/script.js */
 (function(){
     if (document.querySelector(".calendar-component")) {
         document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
@@ -197,8 +197,8 @@ class Calendar(component.Component):
         }
 
     class Media:
-        css = "calendar/calendar.css"
-        js = "calendar/calendar.js"
+        css = "calendar/style.css"
+        js = "calendar/script.js"
 ```
 
 And voilá!! We've created our first component.
