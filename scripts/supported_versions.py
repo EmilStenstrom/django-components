@@ -114,7 +114,7 @@ def build_deps_envlist(python_to_django):
         )
         for django_version in all_django_versions
     ]
-    lines = [f"django{a}: Django>={b},<{c}" for a, b, c in lines]
+    lines = [f"django{a}: Django>={b},<{c}" for a, b, c in sorted(lines)]
     return "deps = \n" + textwrap.indent("\n".join(lines), prefix="  ")
 
 
@@ -124,7 +124,7 @@ def build_pypi_classifiers(python_to_django):
     all_python_versions = python_to_django.keys()
     for python_version in all_python_versions:
         classifiers.append(
-            f"Programming Language :: Python :: {env_format(python_version, divider='.')}"
+            f'"Programming Language :: Python :: {env_format(python_version, divider=".")}",'
         )
 
     all_django_versions = set()
@@ -132,15 +132,15 @@ def build_pypi_classifiers(python_to_django):
         for django_version in django_versions:
             all_django_versions.add(django_version)
 
-    classifiers.append("...")
-
-    for django_version in all_django_versions:
+    for django_version in sorted(all_django_versions):
         classifiers.append(
-            f"Programming Language :: Django :: {env_format(django_version, divider='.')}"
+            f'"Programming Language :: Django :: {env_format(django_version, divider=".")}",'
         )
 
-    return "classifiers=[\n" + textwrap.indent(
-        "\n".join(classifiers), prefix="  "
+    return (
+        " " * 4
+        + "classifiers=[\n"
+        + textwrap.indent("\n".join(classifiers), prefix=" " * 8)
     )
 
 
