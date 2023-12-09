@@ -138,9 +138,11 @@ Django-components supports all <a href="https://docs.djangoproject.com/en/dev/fa
 |----------------|--------------------------|
 | 3.6            | 3.2                      |
 | 3.7            | 3.2                      |
-| 3.8            | 3.2, 4.0                 |
-| 3.9            | 3.2, 4.0                 |
-| 3.10           | 4.0                      |
+| 3.8            | 3.2, 4.0, 4.1, 4.2       |
+| 3.9            | 3.2, 4.0, 4.1, 4.2       |
+| 3.10           | 3.2, 4.0, 4.1, 4.2, 5.0  |
+| 3.11           | 4.1, 4.2, 5.0            |
+| 3.12           | 4.2, 5.0                 |
 
 ## Create your first component
 
@@ -632,12 +634,14 @@ pytest
 The library is also tested across many versions of Python and Django. To run tests that way:
 
 ```sh
-pyenv install 3.6.9
-pyenv install 3.7.9
-pyenv install 3.8.9
-pyenv install 3.9.4
-pyenv install 3.10.5
-pyenv local 3.6.9 3.7.9 3.8.9 3.9.4 3.10.5
+pyenv install -s 3.6
+pyenv install -s 3.7
+pyenv install -s 3.8
+pyenv install -s 3.9
+pyenv install -s 3.10
+pyenv install -s 3.11
+pyenv install -s 3.12
+pyenv local 3.6 3.7 3.8 3.9 3.10 3.11 3.12
 tox -p
 ```
 
