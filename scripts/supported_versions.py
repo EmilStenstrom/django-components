@@ -144,6 +144,29 @@ def build_pypi_classifiers(python_to_django):
     )
 
 
+def build_readme(python_to_django):
+    print(
+        textwrap.dedent(
+            """\
+                | Python version | Django version           |
+                |----------------|--------------------------|
+            """.rstrip()
+        )
+    )
+    lines = [
+        (
+            env_format(python_version, divider="."),
+            ", ".join(
+                env_format(version, divider=".") for version in django_versions
+            ),
+        )
+        for python_version, django_versions in python_to_django.items()
+    ]
+    lines = [f"| {a: <14} | {b: <24} |" for a, b in lines]
+    version_lines = "\n".join([version for version in lines])
+    return version_lines
+
+
 def main():
     django_to_python = get_supported_versions(
         "https://docs.djangoproject.com/en/dev/faq/install/"
@@ -174,6 +197,13 @@ def main():
     print("Add this to setup.py:\n")
     pypi_classifiers = build_pypi_classifiers(python_to_django)
     print(pypi_classifiers)
+    print()
+    print()
+
+    print("Add this to README:\n")
+    readme = build_readme(python_to_django)
+    print(readme)
+    print()
 
 
 if __name__ == "__main__":
