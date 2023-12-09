@@ -20,9 +20,9 @@ Read on to learn about the details!
 
 ## Release notes
 
-*Version 0.28* introduces 'implicit' slot filling and the `default` option for `slot` tags.  
+*Version 0.28* introduces 'implicit' slot filling and the `default` option for `slot` tags.
 
-*Version 0.27* adds a second installable app: *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes). 
+*Version 0.27* adds a second installable app: *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes).
 
 *Version 0.26* changes the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill. We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
 
@@ -51,14 +51,14 @@ To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.
 
 ```python
 INSTALLED_APPS = [
-    # django.contrib.staticfiles   # <-- REMOVE
-    "django_components",
-    "django_components.safer_staticfiles"  # <-- ADD
+    # 'django.contrib.staticfiles',   # <-- REMOVE
+    'django_components',
+    'django_components.safer_staticfiles'  # <-- ADD
 ]
 ```
 
 If you are on an older version of django-components, your alternatives are a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command, or b) defining a subclass of StaticFilesConfig.
-Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).  
+Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).
 
 ## Installation
 
@@ -71,7 +71,7 @@ Then add the app into INSTALLED_APPS in settings.py
 ```python
 INSTALLED_APPS = [
     ...,
-    "django_components",
+    'django_components',
 ]
 ```
 
@@ -197,8 +197,8 @@ class Calendar(component.Component):
         }
 
     class Media:
-        css = "calendar/calendar.css"
-        js = "calendar/calendar.js"
+        css = "calendar/style.css"
+        js = "calendar/script.js"
 ```
 
 And voilá!! We've created our first component.
@@ -251,7 +251,7 @@ _New in version 0.26_:
 
 ---
 
-Components support something called 'slots'. 
+Components support something called 'slots'.
 When a component is used inside another template, slots allow the parent template to override specific parts of the child component by passing in different content.
 This mechanism makes components more reusable and composable.
 
@@ -260,7 +260,7 @@ In the example below we introduce two block tags that work hand in hand to make 
 - `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
 - `{% fill <name> %}`/`{% endfill %}`: (Used inside a `component_block` tag pair.) Fills a declared slot with the specified content.
 
-Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _calendar.html_. 
+Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _calendar.html_.
 
 ```htmldjango
 <div class="calendar-component">
@@ -302,7 +302,7 @@ Here's the same example as before, except with default slots and implicit fillin
 
 The template:
 
-```htmldjango 
+```htmldjango
 <div class="calendar-component">
     <div class="header">
         {% slot "header" %}Calendar header{% endslot %}
@@ -398,7 +398,7 @@ Produces:
 _Added in version 0.26._
 
 In certain circumstances, you may want the behavior of slot filling to depend on
-whether or not a particular slot is filled. 
+whether or not a particular slot is filled.
 
 For example, suppose we have the following component template:
 
@@ -430,7 +430,7 @@ This may not be what you want. What if instead the outer 'subtitle' div should o
 be included when the inner slot is in fact filled?
 
 The answer is to use the `{% if_filled <name> %}` tag. Together with `{% endif_filled %}`,
-these define a block whose contents will be rendered only if the component slot with 
+these define a block whose contents will be rendered only if the component slot with
 the corresponding 'name' is filled.
 
 This is what our example looks like with an 'if_filled' tag.
@@ -534,6 +534,80 @@ COMPONENTS = {
     "template_cache_size": 256,
 }
 ```
+
+## Management Command
+
+You can use the built-in management command `startcomponent` to create a django component. The command accepts the following arguments and options:
+
+- `name`: The name of the component to create. This is a required argument.
+
+- `--path`: The path to the components directory. This is an optional argument. If not provided, the command will use the `BASE_DIR` setting from your Django settings.
+
+- `--js`: The name of the JavaScript file. This is an optional argument. The default value is `script.js`.
+
+- `--css`: The name of the CSS file. This is an optional argument. The default value is `style.css`.
+
+- `--template`: The name of the template file. This is an optional argument. The default value is `template.html`.
+
+- `--force`: This option allows you to overwrite existing files if they exist. This is an optional argument.
+
+- `--verbose`: This option allows the command to print additional information during component creation. This is an optional argument.
+
+- `--dry-run`: This option allows you to simulate component creation without actually creating any files. This is an optional argument. The default value is `False`.
+
+### Management Command Usage
+
+To use the command, run the following command in your terminal:
+
+```bash
+python manage.py startcomponent <name> --path <path> --js <js_filename> --css <css_filename> --template <template_filename> --force --verbose --dry-run
+```
+
+Replace `<name>`, `<path>`, `<js_filename>`, `<css_filename>`, and `<template_filename>` with your desired values.
+
+### Management Command Examples
+
+Here are some examples of how you can use the command:
+
+### Creating a Component with Default Settings
+
+To create a component with the default settings, you only need to provide the name of the component:
+
+```bash
+python manage.py startcomponent my_component
+```
+
+This will create a new component named `my_component` in the `components` directory of your Django project. The JavaScript, CSS, and template files will be named `script.js`, `style.css`, and `template.html`, respectively.
+
+### Creating a Component with Custom Settings
+
+You can also create a component with custom settings by providing additional arguments:
+
+```bash
+python manage.py startcomponent new_component --path my_components --js my_script.js --css my_style.css --template my_template.html
+```
+
+This will create a new component named `new_component` in the `my_components` directory. The JavaScript, CSS, and template files will be named `my_script.js`, `my_style.css`, and `my_template.html`, respectively.
+
+### Overwriting an Existing Component
+
+If you want to overwrite an existing component, you can use the `--force` option:
+
+```bash
+python manage.py startcomponent my_component --force
+```
+
+This will overwrite the existing `my_component` if it exists.
+
+### Simulating Component Creation
+
+If you want to simulate the creation of a component without actually creating any files, you can use the `--dry-run` option:
+
+```bash
+python manage.py startcomponent my_component --dry-run
+```
+
+This will simulate the creation of `my_component` without creating any files.
 
 ## Install locally and run the tests
 
