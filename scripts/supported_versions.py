@@ -137,11 +137,9 @@ def build_pypi_classifiers(python_to_django):
             f'"Programming Language :: Django :: {env_format(django_version, divider=".")}",'
         )
 
-    return (
-        " " * 4
-        + "classifiers=[\n"
-        + textwrap.indent("\n".join(classifiers), prefix=" " * 8)
-    )
+    return textwrap.indent(
+        "classifiers=[\n", prefix=" " * 4
+    ) + textwrap.indent("\n".join(classifiers), prefix=" " * 8)
 
 
 def build_readme(python_to_django):
