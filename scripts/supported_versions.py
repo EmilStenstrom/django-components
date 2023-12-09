@@ -134,7 +134,7 @@ def build_pypi_classifiers(python_to_django):
 
     for django_version in sorted(all_django_versions):
         classifiers.append(
-            f'"Programming Language :: Django :: {env_format(django_version, divider=".")}",'
+            f'"Framework :: Django :: {env_format(django_version, divider=".")}",'
         )
 
     return textwrap.indent(
