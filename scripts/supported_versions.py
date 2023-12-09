@@ -112,7 +112,7 @@ def build_deps_envlist(python_to_django):
                 (django_version[0], django_version[1] + 1), divider="."
             ),
         )
-        for django_version in all_django_versions
+        for django_version in sorted(all_django_versions)
     ]
     lines = [f"django{a}: Django>={b},<{c}" for a, b, c in sorted(lines)]
     return "deps = \n" + textwrap.indent("\n".join(lines), prefix="  ")
@@ -182,6 +182,16 @@ def build_pyenv(python_to_django):
     return "\n".join(lines)
 
 
+def build_ci_python_versions(python_to_django):
+    # Outputs python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+    lines = [
+        f"'{env_format(python_version, divider='.')}'"
+        for python_version, django_versions in python_to_django.items()
+    ]
+    lines = " " * 8 + f"python-version: [{', '.join(lines)}]"
+    return lines
+
+
 def main():
     django_to_python = get_supported_versions(
         "https://docs.djangoproject.com/en/dev/faq/install/"
@@ -224,6 +234,13 @@ def main():
     print("And this to the end of README.md:\n")
     pyenv = build_pyenv(python_to_django)
     print(pyenv)
+    print()
+    print()
+
+    print("Add this to tests.yml:\n")
+    ci_python_versions = build_ci_python_versions(python_to_django)
+    print(ci_python_versions)
+    print()
     print()
 
 
