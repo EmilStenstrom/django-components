@@ -165,6 +165,23 @@ def build_readme(python_to_django):
     return version_lines
 
 
+def build_pyenv(python_to_django):
+    lines = []
+    all_python_versions = python_to_django.keys()
+    for python_version in all_python_versions:
+        lines.append(
+            f'pyenv install -s {env_format(python_version, divider=".")}'
+        )
+
+    lines.append(
+        f'pyenv local {" ".join(env_format(version, divider=".") for version in all_python_versions)}'
+    )
+
+    lines.append("tox -p")
+
+    return "\n".join(lines)
+
+
 def main():
     django_to_python = get_supported_versions(
         "https://docs.djangoproject.com/en/dev/faq/install/"
@@ -198,9 +215,15 @@ def main():
     print()
     print()
 
-    print("Add this to README:\n")
+    print("Add this to the middle of README.md:\n")
     readme = build_readme(python_to_django)
     print(readme)
+    print()
+    print()
+
+    print("And this to the end of README.md:\n")
+    pyenv = build_pyenv(python_to_django)
+    print(pyenv)
     print()
 
 
