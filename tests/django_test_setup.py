@@ -14,7 +14,12 @@ if not settings.configured:
         MIDDLEWARE=[
             "django_components.middleware.ComponentDependencyMiddleware"
         ],
-        DATABASES={},
+        DATABASES={
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": ":memory:",
+            }
+        },
     )
 
     django.setup()
