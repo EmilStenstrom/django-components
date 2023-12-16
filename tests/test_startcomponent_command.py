@@ -1,11 +1,11 @@
-from io import StringIO
 import os
 import tempfile
+from io import StringIO
 from shutil import rmtree
 
 from django.core.management import call_command
-from django.test import TestCase
 from django.core.management.base import CommandError
+from django.test import TestCase
 
 from .django_test_setup import *  # NOQA
 
