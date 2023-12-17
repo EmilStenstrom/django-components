@@ -80,11 +80,10 @@ class CreateComponentCommandTest(TestCase):
         component_path = os.path.join(self.temp_dir, component_name)
         os.makedirs(component_path)
 
-        with open(os.path.join(component_path, f"{component_name}.py"), "w"):
-            pass
-        created_date = os.path.getmtime(
-            os.path.join(component_path, f"{component_name}.py")
-        )
+        with open(
+            os.path.join(component_path, f"{component_name}.py"), "w"
+        ) as f:
+            f.write("hello world")
 
         call_command(
             "startcomponent",
@@ -93,14 +92,11 @@ class CreateComponentCommandTest(TestCase):
             self.temp_dir,
             "--force",
         )
-        overwritten_date = os.path.getmtime(
-            os.path.join(component_path, f"{component_name}.py")
-        )
 
-        self.assertTrue(
-            overwritten_date > created_date,
-            "File was not overwritten with --force flag",
-        )
+        with open(
+            os.path.join(component_path, f"{component_name}.py"), "r"
+        ) as f:
+            self.assertNotIn("hello world", f.read())
 
     def test_error_existing_component_no_force(self):
         component_name = "existingcomponent_2"
