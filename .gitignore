@@ -71,3 +71,4 @@ pyproject.toml
 
 # Python environment
 .venv/
+.DS_Store
