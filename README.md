@@ -1,4 +1,5 @@
 # django-components
+
 <a href="https://github.com/EmilStenstrom/django-components/actions?query=workflow%3A%22Run+tests%22"><img align="right" src="https://github.com/EmilStenstrom/django-components/workflows/Run%20tests/badge.svg" alt="Show test status"></a>
 <a href="https://pepy.tech/project/django-components"><img align="right" src="https://pepy.tech/badge/django-components" alt="Show download stats"></a>
 
@@ -20,19 +21,19 @@ Read on to learn about the details!
 
 ## Release notes
 
-*Version 0.28* introduces 'implicit' slot filling and the `default` option for `slot` tags.
+_Version 0.28_ introduces 'implicit' slot filling and the `default` option for `slot` tags.
 
-*Version 0.27* adds a second installable app: *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes).
+_Version 0.27_ adds a second installable app: _django_components.safer_staticfiles_. It provides the same behavior as _django.contrib.staticfiles_ but with extra security guarantees (more info below in Security Notes).
 
-*Version 0.26* changes the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill. We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
+_Version 0.26_ changes the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill. We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
 
-*Version 0.22* starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscover": False in settings.COMPONENTS.
+_Version 0.22_ starts autoimporting all files inside components subdirectores, to simplify setup. An existing project might start to get AlreadyRegistered-errors because of this. To solve this, either remove your custom loading of components, or set "autodiscover": False in settings.COMPONENTS.
 
-*Version 0.17* renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
+_Version 0.17_ renames `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning. This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
 
 ## Security notes 🚨
 
-*You are advised to read this section before using django-components in production.*
+_You are advised to read this section before using django-components in production._
 
 ### Static files
 
@@ -42,12 +43,12 @@ This means that files containing backend logic, such as Python modules and HTML 
 
 If your are using _django.contrib.staticfiles_ to collect static files, no distinction is made between the different kinds of files.
 As a result, your Python code and templates may inadvertently become available on your static file server.
-You probably don't want this, as parts of your backend logic will be exposed, posing a __potential security vulnerability__.
+You probably don't want this, as parts of your backend logic will be exposed, posing a **potential security vulnerability**.
 
-As of *v0.27*, django-components ships with an additional installable app *django_components.__safer_staticfiles__*.
-It is a drop-in replacement for *django.contrib.staticfiles*.
+As of _v0.27_, django-components ships with an additional installable app _django_components.**safer_staticfiles**_.
+It is a drop-in replacement for _django.contrib.staticfiles_.
 Its behavior is 100% identical except it ignores .py and .html files, meaning these will not end up on your static files server.
-To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.
+To use it, add it to INSTALLED*APPS and remove \_django.contrib.staticfiles*.
 
 ```python
 INSTALLED_APPS = [
@@ -64,7 +65,7 @@ Both routes are described in the official [docs of the _staticfiles_ app](https:
 
 Install the app into your environment:
 
-> ```pip install django_components```
+> `pip install django_components`
 
 Then add the app into INSTALLED_APPS in settings.py
 
@@ -76,7 +77,8 @@ INSTALLED_APPS = [
 ```
 
 Modify `TEMPLATES` section of settings.py as follows:
-- *Remove `'APP_DIRS': True,`*
+
+- _Remove `'APP_DIRS': True,`_
 - add `loaders` to `OPTIONS` list and set it to following value:
 
 ```python
@@ -110,7 +112,7 @@ STATICFILES_DIRS = [
 
 ### Optional
 
-To avoid loading the app in each template using ``` {% load django_components %} ```, you can add the tag as a 'builtin' in settings.py
+To avoid loading the app in each template using `{% load django_components %}`, you can add the tag as a 'builtin' in settings.py
 
 ```python
 TEMPLATES = [
@@ -134,15 +136,15 @@ Read on to find out how to build your first component!
 
 Django-components supports all <a href="https://docs.djangoproject.com/en/dev/faq/install/#what-python-version-can-i-use-with-django">officially supported versions</a> of Django and Python.
 
-| Python version | Django version           |
-|----------------|--------------------------|
-| 3.6            | 3.2                      |
-| 3.7            | 3.2                      |
-| 3.8            | 3.2, 4.0, 4.1, 4.2       |
-| 3.9            | 3.2, 4.0, 4.1, 4.2       |
-| 3.10           | 3.2, 4.0, 4.1, 4.2, 5.0  |
-| 3.11           | 4.1, 4.2, 5.0            |
-| 3.12           | 4.2, 5.0                 |
+| Python version | Django version          |
+| -------------- | ----------------------- |
+| 3.6            | 3.2                     |
+| 3.7            | 3.2                     |
+| 3.8            | 3.2, 4.0, 4.1, 4.2      |
+| 3.9            | 3.2, 4.0, 4.1, 4.2      |
+| 3.10           | 3.2, 4.0, 4.1, 4.2, 5.0 |
+| 3.11           | 4.1, 4.2, 5.0           |
+| 3.12           | 4.2, 5.0                |
 
 ## Create your first component
 
@@ -156,19 +158,26 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 
 ```css
 /* In a file called [project root]/components/calendar/style.css */
-.calendar-component { width: 200px; background: pink; }
-.calendar-component span { font-weight: bold; }
+.calendar-component {
+  width: 200px;
+  background: pink;
+}
+.calendar-component span {
+  font-weight: bold;
+}
 ```
 
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
 ```js
 /* In a file called [project root]/components/calendar/script.js */
-(function(){
-    if (document.querySelector(".calendar-component")) {
-        document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
-    }
-})()
+(function () {
+  if (document.querySelector(".calendar-component")) {
+    document.querySelector(".calendar-component").onclick = function () {
+      alert("Clicked calendar!");
+    };
+  }
+})();
 ```
 
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
@@ -229,15 +238,18 @@ The output from the above template will be:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>My example calendar</title>
-    <link href="style.css" type="text/css" media="all" rel="stylesheet">
-</head>
-<body>
-    <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
+    <link href="style.css" type="text/css" media="all" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="calendar-component">
+      Today's date is <span>2015-06-19</span>
+    </div>
     <script src="script.js"></script>
-</body>
-<html>
+  </body>
+  <html></html>
+</html>
 ```
 
 This makes it possible to organize your front-end around reusable components. Instead of relying on template tags and keeping your CSS and Javascript in the static directory.
@@ -362,12 +374,8 @@ The rendered result (exactly the same as before):
 
 ```html
 <div class="calendar-component">
-    <div class="header">
-        Calendar header
-    </div>
-    <div class="body">
-        Can you believe it's already <span>2020-06-06</span>??
-    </div>
+  <div class="header">Calendar header</div>
+  <div class="body">Can you believe it's already <span>2020-06-06</span>??</div>
 </div>
 ```
 
@@ -403,7 +411,6 @@ This is fine too:
 {% endcomponent_block %}
 ```
 
-
 ### Advanced
 
 #### Re-using content defined in the original slot
@@ -428,7 +435,6 @@ Produces:
     </div>
 </div>
 ```
-
 
 #### Conditional slots
 
@@ -455,11 +461,8 @@ explicit fills, the div containing the slot is still rendered, as shown below:
 
 ```html
 <div class="frontmatter-component">
-    <div class="title">
-        Title
-    </div>
-    <div class="subtitle">
-    </div>
+  <div class="title">Title</div>
+  <div class="subtitle"></div>
 </div>
 ```
 
