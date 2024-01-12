@@ -21,6 +21,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
+from django_components.app_settings import app_settings
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
 from django_components.middleware import (
@@ -155,6 +156,7 @@ def component_js_dependencies_tag(preload=""):
 def do_component(parser, token):
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
+
     component_name, context_args, context_kwargs = parse_component_with_args(
         parser, bits, "component"
     )
@@ -770,6 +772,10 @@ def check_for_isolated_context_keyword(bits):
 
     if bits[-1] == "only":
         return bits[:-1], True
+
+    if app_settings.ISOLATE_COMPONENT_CONTEXT:
+        return bits, True
+
     return bits, False
 
 
