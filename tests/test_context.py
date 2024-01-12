@@ -1,3 +1,5 @@
+from unittest.mock import PropertyMock, patch
+
 from django.template import Context, Template
 
 from django_components import component
@@ -430,6 +432,61 @@ class IsolatedContextTests(SimpleTestCase):
         rendered = template.render(
             Context({"variable": "outer_value"})
         ).strip()
+        self.assertNotIn("outer_value", rendered, rendered)
+
+
+class IsolatedContextSettingTests(SimpleTestCase):
+    def setUp(self):
+        self.patcher = patch(
+            "django_components.app_settings.AppSettings.ISOLATE_COMPONENT_CONTEXT",
+            new_callable=PropertyMock,
+        )
+        self.mock_isolate_context = self.patcher.start()
+        self.mock_isolate_context.return_value = True
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def test_component_tag_includes_variable_with_isolated_context_from_settings(
+        self,
+    ):
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component 'simple_component' variable %}"
+        )
+        rendered = template.render(Context({"variable": "outer_value"}))
+        self.assertIn("outer_value", rendered, rendered)
+
+    def test_component_tag_excludes_variable_with_isolated_context_from_settings(
+        self,
+    ):
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component 'simple_component' %}"
+        )
+        rendered = template.render(Context({"variable": "outer_value"}))
+        self.assertNotIn("outer_value", rendered, rendered)
+
+    def test_component_block_includes_variable_with_isolated_context_from_settings(
+        self,
+    ):
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component_block 'simple_component' variable %}"
+            "{% endcomponent_block %}"
+        )
+        rendered = template.render(Context({"variable": "outer_value"}))
+        self.assertIn("outer_value", rendered, rendered)
+
+    def test_component_block_excludes_variable_with_isolated_context_from_settings(
+        self,
+    ):
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component_block 'simple_component' %}"
+            "{% endcomponent_block %}"
+        )
+        rendered = template.render(Context({"variable": "outer_value"}))
         self.assertNotIn("outer_value", rendered, rendered)
 
 
