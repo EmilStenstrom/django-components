@@ -521,6 +521,29 @@ only if the slot 'subtitle' is _not_ filled.
 {% endif_filled %}
 ```
 
+### Setting Up `ComponentDependencyMiddleware`
+
+`ComponentDependencyMiddleware` is a Django middleware designed to manage and inject CSS/JS dependencies for rendered components dynamically. It ensures that the necessary stylesheets and scripts are loaded in your HTML responses, based on the components used in your Django templates.
+
+To set it up, add the middleware to your `MIDDLEWARE` in settings.py:
+
+```python
+MIDDLEWARE = [
+    # ... other middleware classes ...
+    'django_components.middleware.ComponentDependencyMiddleware'
+    # ... other middleware classes ...
+]
+```
+
+Then, enable `RENDER_DEPENDENCIES` in setting.py:
+
+```python
+COMPONENTS = {
+    "RENDER_DEPENDENCIES": True,
+    # ... other component settings ...
+}
+```
+
 ## Component context and scope
 
 By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component_block %}` tag):
