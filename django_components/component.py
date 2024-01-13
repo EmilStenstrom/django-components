@@ -60,9 +60,12 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
 
 
 class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
-    # Must be set on subclass OR subclass must implement get_template_name() with
+    # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
-    template_name: ClassVar[str]
+    template_name: ClassVar[Optional[str]] = None
+    template: ClassVar[Optional[str]] = None
+    js: ClassVar[Optional[str]] = None
+    css: ClassVar[Optional[str]] = None
     media: Media
 
     class Media:
@@ -84,41 +87,51 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
     def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
 
-    # Can be overridden for dynamic templates
-    def get_template_name(self, context) -> str:
-        try:
-            name = self.template_name
-        except AttributeError:
-            raise ImproperlyConfigured(
-                f"Template name is not set for Component {type(self).__name__}. "
-                f"Note: this attribute is not required if you are overriding any of "
-                f"the class's `get_template*()` methods."
-            )
-        return name
+    def get_template_name(self, context) -> Optional[str]:
+        return self.template_name
 
-    def get_template_string(self, context) -> str:
-        ...
+    def get_template_string(self, context) -> Optional[str]:
+        return self.template
 
     def render_dependencies(self):
-        """Helper function to access media.render()"""
-        return self.media.render()
+        """Helper function to render all dependencies for a component."""
+        dependencies = []
+
+        css_deps = self.render_css_dependencies()
+        if css_deps:
+            dependencies.append(css_deps)
+
+        js_deps = self.render_js_dependencies()
+        if js_deps:
+            dependencies.append(js_deps)
+
+        return mark_safe("\n".join(dependencies))
 
     def render_css_dependencies(self):
-        """Render only CSS dependencies available in the media class."""
+        """Render only CSS dependencies available in the media class or provided as a string."""
+        if self.css is not None:
+            return mark_safe(f"<style>{self.css}</style>")
         return mark_safe("\n".join(self.media.render_css()))
 
     def render_js_dependencies(self):
-        """Render only JS dependencies available in the media class."""
+        """Render only JS dependencies available in the media class or provided as a string."""
+        if self.js is not None:
+            return mark_safe(f"<script>{self.js}</script>")
         return mark_safe("\n".join(self.media.render_js()))
 
     def get_template(self, context) -> Template:
         template_string = self.get_template_string(context)
         if template_string is not None:
             return Template(template_string)
-        else:
-            template_name = self.get_template_name(context)
-            template: Template = get_template(template_name).template
-            return template
+
+        template_name = self.get_template_name(context)
+        if template_name is not None:
+            return get_template(template_name).template
+
+        raise ImproperlyConfigured(
+            f"Either 'template_name' or 'template' must be set for Component {type(self).__name__}."
+            f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
+        )
 
     def render(self, context):
         template = self.get_template(context)

@@ -242,6 +242,51 @@ The output from the above template will be:
 
 This makes it possible to organize your front-end around reusable components. Instead of relying on template tags and keeping your CSS and Javascript in the static directory.
 
+## Using single-file components
+
+Components can also be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:
+
+```python
+# In a file called [project root]/components/calendar.py
+from django_components import component
+
+@component.register("calendar")
+class Calendar(component.Component):
+    def get_context_data(self, date):
+        return {
+            "date": date,
+        }
+    
+    template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>My example calendar</title>
+            {% component_css_dependencies %}
+        </head>
+        <body>
+            {% component "calendar" date="2015-06-19" %}
+            {% component_js_dependencies %}
+        </body>
+        <html>
+    """
+    
+    css = """
+        .calendar-component { width: 200px; background: pink; }
+        .calendar-component span { font-weight: bold; }
+    """
+    
+    js = """
+        (function(){
+            if (document.querySelector(".calendar-component")) {
+                document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
+            }
+        })()
+    """
+```
+
+This makes it easy to create small components without having to create a separate template, CSS, and JS file.
+
 ## Using slots in templates
 
 _New in version 0.26_:
