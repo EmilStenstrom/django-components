@@ -18,7 +18,7 @@ class ComponentTest(SimpleTestCase):
             pass
 
         with self.assertRaises(ImproperlyConfigured):
-            EmptyComponent("empty_component").get_template_name(Context({}))
+            EmptyComponent("empty_component").get_template(Context({}))
 
     def test_simple_component(self):
         class SimpleComponent(component.Component):
@@ -182,6 +182,136 @@ class ComponentTest(SimpleTestCase):
                 <svg>Dynamic2</svg>
             """
             ),
+        )
+
+
+class InlineComponentTest(SimpleTestCase):
+    def test_inline_html_component(self):
+        class InlineHTMLComponent(component.Component):
+            template = "<div class='inline'>Hello Inline</div>"
+
+        comp = InlineHTMLComponent("inline_html_component")
+        self.assertHTMLEqual(
+            comp.render(Context({})),
+            "<div class='inline'>Hello Inline</div>",
+        )
+
+    def test_html_and_css_only(self):
+        class HTMLCSSComponent(component.Component):
+            template = "<div class='html-css-only'>Content</div>"
+            css = ".html-css-only { color: blue; }"
+
+        comp = HTMLCSSComponent("html_css_component")
+        self.assertHTMLEqual(
+            comp.render(Context({})),
+            "<div class='html-css-only'>Content</div>",
+        )
+        self.assertHTMLEqual(
+            comp.render_css_dependencies(),
+            "<style>.html-css-only { color: blue; }</style>",
+        )
+
+    def test_html_and_js_only(self):
+        class HTMLJSComponent(component.Component):
+            template = "<div class='html-js-only'>Content</div>"
+            js = "console.log('HTML and JS only');"
+
+        comp = HTMLJSComponent("html_js_component")
+        self.assertHTMLEqual(
+            comp.render(Context({})),
+            "<div class='html-js-only'>Content</div>",
+        )
+        self.assertHTMLEqual(
+            comp.render_js_dependencies(),
+            "<script>console.log('HTML and JS only');</script>",
+        )
+
+    def test_html_string_with_css_js_files(self):
+        class HTMLStringFileCSSJSComponent(component.Component):
+            template = "<div class='html-string-file'>Content</div>"
+
+            class Media:
+                css = "path/to/style.css"
+                js = "path/to/script.js"
+
+        comp = HTMLStringFileCSSJSComponent(
+            "html_string_file_css_js_component"
+        )
+        self.assertHTMLEqual(
+            comp.render(Context({})),
+            "<div class='html-string-file'>Content</div>",
+        )
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """\
+                <link href="path/to/style.css" media="all" rel="stylesheet">
+                <script src="path/to/script.js"></script>
+            """
+            ),
+        )
+
+    def test_html_js_string_with_css_file(self):
+        class HTMLStringFileCSSJSComponent(component.Component):
+            template = "<div class='html-string-file'>Content</div>"
+            js = "console.log('HTML and JS only');"
+
+            class Media:
+                css = "path/to/style.css"
+
+        comp = HTMLStringFileCSSJSComponent(
+            "html_string_file_css_js_component"
+        )
+        self.assertHTMLEqual(
+            comp.render(Context({})),
+            "<div class='html-string-file'>Content</div>",
+        )
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """\
+                <link href="path/to/style.css" media="all" rel="stylesheet">
+                <script>console.log('HTML and JS only');</script>
+                """
+            ),
+        )
+
+    def test_html_css_string_with_js_file(self):
+        class HTMLStringFileCSSJSComponent(component.Component):
+            template = "<div class='html-string-file'>Content</div>"
+            css = ".html-string-file { color: blue; }"
+
+            class Media:
+                js = "path/to/script.js"
+
+        comp = HTMLStringFileCSSJSComponent(
+            "html_string_file_css_js_component"
+        )
+        self.assertHTMLEqual(
+            comp.render(Context({})),
+            "<div class='html-string-file'>Content</div>",
+        )
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """\
+                <style>.html-string-file { color: blue; }</style><script src="path/to/script.js"></script>
+                """
+            ),
+        )
+
+    def test_component_with_variable_in_html(self):
+        class VariableHTMLComponent(component.Component):
+            def get_template(self, context):
+                return Template(
+                    "<div class='variable-html'>{{ variable }}</div>"
+                )
+
+        comp = VariableHTMLComponent("variable_html_component")
+        context = Context({"variable": "Dynamic Content"})
+        self.assertHTMLEqual(
+            comp.render(context),
+            "<div class='variable-html'>Dynamic Content</div>",
         )
 
 
