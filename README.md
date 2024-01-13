@@ -258,17 +258,7 @@ class Calendar(component.Component):
         }
     
     template = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>My example calendar</title>
-            {% component_css_dependencies %}
-        </head>
-        <body>
-            {% component "calendar" date="2015-06-19" %}
-            {% component_js_dependencies %}
-        </body>
-        <html>
+        <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
     """
     
     css = """
