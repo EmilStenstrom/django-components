@@ -768,12 +768,12 @@ class IfSlotFilledNode(Node):
 
 
 def check_for_isolated_context_keyword(bits):
-    """Return True and strip the last word if token ends with 'only' keyword."""
+    """Return True and strip the last word if token ends with 'only' keyword or if CONTEXT_BEHAVIOR is 'isolated'."""
 
     if bits[-1] == "only":
         return bits[:-1], True
 
-    if app_settings.ISOLATE_COMPONENT_CONTEXT:
+    if app_settings.CONTEXT_BEHAVIOR == "isolated":
         return bits, True
 
     return bits, False

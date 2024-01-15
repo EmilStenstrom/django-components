@@ -556,7 +556,7 @@ NOTE: `{% csrf_token %}` tags need access to the top-level context, and they wil
 
 Components can also access the outer context in their context methods by accessing the property `outer_context`.
 
-You can also use the `isolate_component_context` setting to make all components isolated by default. This is useful if you want to make sure that components don't accidentally access the outer context.
+You can also set `context_behavior` to `isolated` to make all components isolated by default. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 ## Available settings
 
@@ -598,11 +598,11 @@ COMPONENTS = {
 
 ### Isolate components' context by default
 
-If you'd like to prevent components from accessing the outer context by default, you can set the `isolate_component_context` setting to `True`. This is useful if you want to make sure that components don't accidentally access the outer context.
+If you'd like to prevent components from accessing the outer context by default, you can set the `context_behavior` setting to `isolated`. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 ```python
 COMPONENTS = {
-    "isolate_component_context": True,
+    "context_behavior": "isolated",
 }
 ```
 
