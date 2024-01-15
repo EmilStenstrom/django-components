@@ -1,7 +1,7 @@
+from django.conf import settings
+
 from .django_test_setup import *  # NOQA
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
-
-from django.conf import settings
 
 
 class ValidateWrongContextBehaviorValueTestCase(SimpleTestCase):
