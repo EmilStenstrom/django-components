@@ -9,6 +9,7 @@ from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.utils.safestring import mark_safe
+from django.views import View
 
 # Global registry var and register() function moved to separate module.
 # Defining them here made little sense, since 1) component_tags.py and component.py
@@ -59,7 +60,7 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
+class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     template_name: ClassVar[Optional[str]] = None
@@ -84,7 +85,9 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
 
-    def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
+    def get_context_data(
+        self, request=None, *args, **kwargs
+    ) -> Dict[str, Any]:
         return {}
 
     def get_template_name(self, context) -> Optional[str]:
@@ -133,7 +136,8 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
-    def render(self, context):
+    def render(self, context_data: Dict[str, Any]) -> str:
+        context = Context(context_data)
         template = self.get_template(context)
         updated_filled_slots_context: FilledSlotsContext = (
             self._process_template_and_update_filled_slot_context(
