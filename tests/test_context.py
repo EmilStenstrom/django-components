@@ -438,11 +438,11 @@ class IsolatedContextTests(SimpleTestCase):
 class IsolatedContextSettingTests(SimpleTestCase):
     def setUp(self):
         self.patcher = patch(
-            "django_components.app_settings.AppSettings.ISOLATE_COMPONENT_CONTEXT",
+            "django_components.app_settings.AppSettings.CONTEXT_BEHAVIOR",
             new_callable=PropertyMock,
         )
         self.mock_isolate_context = self.patcher.start()
-        self.mock_isolate_context.return_value = True
+        self.mock_isolate_context.return_value = "isolated"
 
     def tearDown(self):
         self.patcher.stop()
