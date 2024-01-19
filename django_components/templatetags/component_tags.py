@@ -403,13 +403,13 @@ class ComponentNode(Node):
         self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
         self.fill_nodes = fill_nodes
+        self.nodelist = self._create_nodelist(fill_nodes)
 
-    @property
-    def nodelist(self) -> Union[NodeList, Node]:
-        if isinstance(self.fill_nodes, ImplicitFillNode):
-            return NodeList([self.fill_nodes])
+    def _create_nodelist(self, fill_nodes) -> NodeList:
+        if isinstance(fill_nodes, ImplicitFillNode):
+            return NodeList([fill_nodes])
         else:
-            return NodeList(self.fill_nodes)
+            return NodeList(fill_nodes)
 
     def __repr__(self):
         return "<ComponentNode: %s. Contents: %r>" % (
@@ -749,13 +749,13 @@ class IfSlotFilledNode(Node):
         branches: List[_IfSlotFilledBranchNode],
     ):
         self.branches = branches
+        self.nodelist = self._create_nodelist(branches)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
 
-    @property
-    def nodelist(self):
-        return NodeList(self.branches)
+    def _create_nodelist(self, branches) -> NodeList:
+        return NodeList(branches)
 
     def render(self, context):
         for node in self.branches:
