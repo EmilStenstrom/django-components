@@ -5,8 +5,17 @@ from django_components import component
 from .django_test_setup import *  # NOQA
 
 
-class MockComponent(object):
+class MockComponent(component.Component):
     pass
+
+
+class MockComponent2(component.Component):
+    pass
+
+
+class MockComponentView(component.Component):
+    def get(self, request, *args, **kwargs):
+        pass
 
 
 class ComponentRegistryTest(unittest.TestCase):
@@ -37,12 +46,20 @@ class ComponentRegistryTest(unittest.TestCase):
             },
         )
 
-    # def test_prevent_registering_twice(self):
-    #     self.registry.register(name="testcomponent", component=MockComponent)
-    #     with self.assertRaises(component.AlreadyRegistered):
-    #         self.registry.register(
-    #             name="testcomponent", component=MockComponent
-    #         )
+    def test_prevent_registering_different_components_with_the_same_name(self):
+        self.registry.register(name="testcomponent", component=MockComponent)
+        with self.assertRaises(component.AlreadyRegistered):
+            self.registry.register(
+                name="testcomponent", component=MockComponent2
+            )
+
+    def test_allow_duplicated_registration_of_the_same_component(self):
+        self.registry.register(
+            name="testcomponent", component=MockComponentView
+        )
+        self.registry.register(
+            name="testcomponent", component=MockComponentView
+        )
 
     def test_simple_unregister(self):
         self.registry.register(name="testcomponent", component=MockComponent)

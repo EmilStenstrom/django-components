@@ -60,7 +60,19 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
+class ComponentView(View):
+    http_method_names = [
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+    ]
+
+
+class Component(
+    ComponentView, metaclass=SimplifiedInterfaceMediaDefiningClass
+):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     template_name: ClassVar[Optional[str]] = None

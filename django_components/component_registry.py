@@ -1,3 +1,6 @@
+import inspect
+
+
 class AlreadyRegistered(Exception):
     pass
 
@@ -8,11 +11,20 @@ class NotRegistered(Exception):
 
 class ComponentRegistry(object):
     def __init__(self):
-        self._registry = {}  # component name -> component_class mapping
+        self._registry = {}
 
     def register(self, name=None, component=None):
-        if name not in self._registry:
-            self._registry[name] = component
+        if (
+            name in self._registry
+            and name
+            and component
+            and inspect.getsource(component)
+            != inspect.getsource(self._registry[name])
+        ):
+            raise AlreadyRegistered(
+                'The component "%s" has already been registered' % name
+            )
+        self._registry[name] = component
 
     def unregister(self, name):
         self.get(name)
