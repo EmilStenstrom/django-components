@@ -9,6 +9,8 @@ from django_components import component
 class Greeting(component.Component):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(request, *args, **kwargs)
+        slots = [("message", "Hello, world!", None)]
+        self.fill_slots(slots)
         rendered_component = self.render(context)
         return HttpResponse(rendered_component)
 
@@ -21,6 +23,7 @@ class Greeting(component.Component):
 
     template = """
         <div id="greeting">Hello, {{ name }}!</div>
+        {% slot "message" %}{% endslot %}
     """
 
     css = """

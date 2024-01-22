@@ -4,7 +4,8 @@ from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
-from django.template.base import NodeList, Template
+from django.http import HttpRequest, HttpResponse
+from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
@@ -24,6 +25,7 @@ from django_components.component_registry import (  # NOQA
 )
 from django_components.templatetags.component_tags import (
     FILLED_SLOTS_CONTENT_CONTEXT_KEY,
+    AliasName,
     DefaultFillContent,
     FillContent,
     FilledSlotsContext,
@@ -98,7 +100,7 @@ class Component(
         self.fill_content = fill_content
 
     def get_context_data(
-        self, request=None, *args, **kwargs
+        self, request: Optional[HttpRequest] = None, *args, **kwargs
     ) -> Dict[str, Any]:
         return {}
 
@@ -160,6 +162,25 @@ class Component(
             {FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}
         ):
             return template.render(context)
+
+    def fill_slots(
+        self,
+        slots: Iterable[Tuple[SlotName, str, Optional[AliasName]]],
+    ):
+        """Fill component slots outside of template rendering."""
+        if not isinstance(slots, Iterable):
+            raise TypeError(
+                f"Argument 'slots' must be an iterable of (slot_name, content, alias) tuples. "
+                f"Instead, received: {slots}"
+            )
+        self.fill_content = [
+            (slot_name, TextNode(content), alias)
+            for (slot_name, content, alias) in slots
+        ]
+
+    def render_to_response(self, context_data: Dict[str, Any]) -> HttpResponse:
+        """Render component to HttpResponse."""
+        return HttpResponse(self.render(context_data))
 
     def _process_template_and_update_filled_slot_context(
         self, context: Context, template: Template

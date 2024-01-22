@@ -1,6 +1,7 @@
 from textwrap import dedent
 
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpRequest, HttpResponseNotAllowed
 from django.template import Context, Template
 
 # isort: off
@@ -438,3 +439,52 @@ class ComponentIsolationTests(SimpleTestCase):
             </custom-template>
         """,
         )
+
+
+class TestComponentAsView(SimpleTestCase):
+    def test_component_view_get_request(self):
+        class MyComponent(component.Component):
+            template_name = "simple_template.html"
+
+            def get(self, request, *args, **kwargs):
+                return self.render_to_response({"variable": "test"})
+
+        comp = MyComponent()
+
+        request = HttpRequest()
+        request.method = "GET"
+        response = comp.dispatch(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "Variable: <strong>test</strong>", response.content.decode()
+        )
+
+    def test_component_view_post_request(self):
+        class MyComponent(component.Component):
+            template_name = "simple_template.html"
+
+            def post(self, request, *args, **kwargs):
+                return self.render_to_response({"variable": "test"})
+
+        comp = MyComponent()
+
+        request = HttpRequest()
+        request.method = "POST"
+        response = comp.dispatch(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "Variable: <strong>test</strong>", response.content.decode()
+        )
+
+    def test_component_invalid_http_method(self):
+        class MyComponent(component.Component):
+            template_name = "simple_template.html"
+
+            def head(self, request, *args, **kwargs):
+                return self.render_to_response({"variable": "test"})
+
+        comp = MyComponent()
+        request = HttpRequest()
+        request.method = "HEAD"
+        response = comp.dispatch(request)
+        self.assertIsInstance(response, HttpResponseNotAllowed)

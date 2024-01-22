@@ -6,7 +6,11 @@
 </head>
 <body>
     {% component "calendar" date=date %}
-    {% component "greeting" greet='Hello world' name='Joe' %}
+    {% component_block "greeting" name='Joe' %}
+        {% fill "message" %}
+            Howdy?
+        {% endfill %}
+    {% endcomponent_block %}
     {% component_js_dependencies %}
 </body>
 </html>
