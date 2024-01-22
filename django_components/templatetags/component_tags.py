@@ -21,6 +21,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.template.library import parse_bits
 from django.utils.safestring import mark_safe
 
+from django_components.app_settings import app_settings
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
 from django_components.middleware import (
@@ -155,6 +156,7 @@ def component_js_dependencies_tag(preload=""):
 def do_component(parser, token):
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
+
     component_name, context_args, context_kwargs = parse_component_with_args(
         parser, bits, "component"
     )
@@ -401,13 +403,13 @@ class ComponentNode(Node):
         self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
         self.fill_nodes = fill_nodes
+        self.nodelist = self._create_nodelist(fill_nodes)
 
-    @property
-    def nodelist(self) -> Union[NodeList, Node]:
-        if isinstance(self.fill_nodes, ImplicitFillNode):
-            return NodeList([self.fill_nodes])
+    def _create_nodelist(self, fill_nodes) -> NodeList:
+        if isinstance(fill_nodes, ImplicitFillNode):
+            return NodeList([fill_nodes])
         else:
-            return NodeList(self.fill_nodes)
+            return NodeList(fill_nodes)
 
     def __repr__(self):
         return "<ComponentNode: %s. Contents: %r>" % (
@@ -747,13 +749,13 @@ class IfSlotFilledNode(Node):
         branches: List[_IfSlotFilledBranchNode],
     ):
         self.branches = branches
+        self.nodelist = self._create_nodelist(branches)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>"
 
-    @property
-    def nodelist(self):
-        return NodeList(self.branches)
+    def _create_nodelist(self, branches) -> NodeList:
+        return NodeList(branches)
 
     def render(self, context):
         for node in self.branches:
@@ -766,10 +768,14 @@ class IfSlotFilledNode(Node):
 
 
 def check_for_isolated_context_keyword(bits):
-    """Return True and strip the last word if token ends with 'only' keyword."""
+    """Return True and strip the last word if token ends with 'only' keyword or if CONTEXT_BEHAVIOR is 'isolated'."""
 
     if bits[-1] == "only":
         return bits[:-1], True
+
+    if app_settings.CONTEXT_BEHAVIOR == "isolated":
+        return bits, True
+
     return bits, False
 
 

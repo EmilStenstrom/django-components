@@ -556,6 +556,7 @@ NOTE: `{% csrf_token %}` tags need access to the top-level context, and they wil
 
 Components can also access the outer context in their context methods by accessing the property `outer_context`.
 
+You can also set `context_behavior` to `isolated` to make all components isolated by default. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 ## Available settings
 
@@ -592,6 +593,16 @@ Each time a template is rendered it is cached to a global in-memory cache (using
 ```python
 COMPONENTS = {
     "template_cache_size": 256,
+}
+```
+
+### Isolate components' context by default
+
+If you'd like to prevent components from accessing the outer context by default, you can set the `context_behavior` setting to `isolated`. This is useful if you want to make sure that components don't accidentally access the outer context.
+
+```python
+COMPONENTS = {
+    "context_behavior": "isolated",
 }
 ```
 
@@ -702,4 +713,3 @@ pyenv install -s 3.12
 pyenv local 3.6 3.7 3.8 3.9 3.10 3.11 3.12
 tox -p
 ```
-
