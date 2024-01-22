@@ -11,7 +11,7 @@ class NotRegistered(Exception):
 
 class ComponentRegistry(object):
     def __init__(self):
-        self._registry = {}
+        self._registry = {}  # component name -> component_class mapping
 
     def register(self, name=None, component=None):
         if (

@@ -4,7 +4,7 @@ from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
@@ -177,10 +177,6 @@ class Component(
             (slot_name, TextNode(content), alias)
             for (slot_name, content, alias) in slots
         ]
-
-    def render_to_response(self, context_data: Dict[str, Any]) -> HttpResponse:
-        """Render component to HttpResponse."""
-        return HttpResponse(self.render(context_data))
 
     def _process_template_and_update_filled_slot_context(
         self, context: Context, template: Template

@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpRequest, HttpResponseNotAllowed
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
 from django.template import Context, Template
 
 # isort: off
@@ -447,7 +447,7 @@ class TestComponentAsView(SimpleTestCase):
             template_name = "simple_template.html"
 
             def get(self, request, *args, **kwargs):
-                return self.render_to_response({"variable": "test"})
+                return HttpResponse(self.render({"variable": "test"}))
 
         comp = MyComponent()
 
@@ -464,7 +464,7 @@ class TestComponentAsView(SimpleTestCase):
             template_name = "simple_template.html"
 
             def post(self, request, *args, **kwargs):
-                return self.render_to_response({"variable": "test"})
+                return HttpResponse(self.render({"variable": "test"}))
 
         comp = MyComponent()
 
@@ -481,7 +481,7 @@ class TestComponentAsView(SimpleTestCase):
             template_name = "simple_template.html"
 
             def head(self, request, *args, **kwargs):
-                return self.render_to_response({"variable": "test"})
+                return HttpResponse(self.render({"variable": "test"}))
 
         comp = MyComponent()
         request = HttpRequest()
