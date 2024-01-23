@@ -464,12 +464,14 @@ class TestComponentAsView(SimpleTestCase):
             template_name = "simple_template.html"
 
             def post(self, request, *args, **kwargs):
-                return HttpResponse(self.render({"variable": "test"}))
+                variable = request.POST.get("variable")
+                return HttpResponse(self.render({"variable": variable}))
 
         comp = MyComponent()
 
         request = HttpRequest()
         request.method = "POST"
+        request.POST["variable"] = "test"
         response = comp.dispatch(request)
         self.assertEqual(response.status_code, 200)
         self.assertIn(
