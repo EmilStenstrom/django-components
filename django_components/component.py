@@ -1,11 +1,10 @@
 import difflib
-from collections import ChainMap
 import inspect
+from collections import ChainMap
 from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
-from django.http import HttpRequest
 from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
@@ -26,7 +25,6 @@ from django_components.component_registry import (  # NOQA
 )
 from django_components.templatetags.component_tags import (
     FILLED_SLOTS_CONTENT_CONTEXT_KEY,
-    AliasName,
     DefaultFillContent,
     FillContent,
     FilledSlotsContext,
@@ -142,9 +140,17 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
-    def render(self, context_data: Dict[str, Any]) -> str:
+    def render(
+        self,
+        context_data: Dict[str, Any],
+        slots_data: Optional[Dict[SlotName, str]] = None,
+    ) -> str:
         context = Context(context_data)
         template = self.get_template(context)
+
+        if slots_data:
+            self._fill_slots(slots_data)
+
         updated_filled_slots_context: FilledSlotsContext = (
             self._process_template_and_update_filled_slot_context(
                 context, template
@@ -155,23 +161,20 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         ):
             return template.render(context)
 
-    def fill_slots(
+    def _fill_slots(
         self,
-        slots: Iterable[Tuple[SlotName, str, Optional[AliasName]]],
+        slots_data: Dict[SlotName, str],
     ):
         """Fill component slots outside of template rendering."""
-        if not isinstance(slots, Iterable):
-            raise TypeError(
-                f"Argument 'slots' must be an iterable of (slot_name, content, alias) tuples. "
-                f"Instead, received: {slots}"
-            )
         self.fill_content = [
-            (slot_name, TextNode(content), alias)
-            for (slot_name, content, alias) in slots
+            (slot_name, TextNode(content), None)
+            for (slot_name, content) in slots_data.items()
         ]
 
     def _process_template_and_update_filled_slot_context(
-        self, context: Context, template: Template
+        self,
+        context: Context,
+        template: Template,
     ) -> FilledSlotsContext:
         if isinstance(self.fill_content, NodeList):
             default_fill_content = (self.fill_content, None)
