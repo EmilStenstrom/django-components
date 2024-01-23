@@ -54,12 +54,15 @@ class ComponentRegistryTest(unittest.TestCase):
             )
 
     def test_allow_duplicated_registration_of_the_same_component(self):
-        self.registry.register(
-            name="testcomponent", component=MockComponentView
-        )
-        self.registry.register(
-            name="testcomponent", component=MockComponentView
-        )
+        try:
+            self.registry.register(
+                name="testcomponent", component=MockComponentView
+            )
+            self.registry.register(
+                name="testcomponent", component=MockComponentView
+            )
+        except component.AlreadyRegistered:
+            self.fail("Should not raise AlreadyRegistered")
 
     def test_simple_unregister(self):
         self.registry.register(name="testcomponent", component=MockComponent)

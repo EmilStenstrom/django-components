@@ -1,5 +1,6 @@
 import difflib
 from collections import ChainMap
+import inspect
 from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
@@ -62,19 +63,7 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class ComponentView(View):
-    http_method_names = [
-        "get",
-        "post",
-        "put",
-        "patch",
-        "delete",
-    ]
-
-
-class Component(
-    ComponentView, metaclass=SimplifiedInterfaceMediaDefiningClass
-):
+class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     template_name: ClassVar[Optional[str]] = None
@@ -99,9 +88,12 @@ class Component(
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
 
-    def get_context_data(
-        self, request: Optional[HttpRequest] = None, *args, **kwargs
-    ) -> Dict[str, Any]:
+    @classmethod
+    @property
+    def class_hash(cls):
+        return hash(str(inspect.getfile(cls)) + str(cls.__name__))
+
+    def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
 
     def get_template_name(self, context) -> Optional[str]:
