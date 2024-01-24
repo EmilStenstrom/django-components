@@ -20,6 +20,8 @@ Read on to learn about the details!
 
 ## Release notes
 
+*Version 0.34* adds components as views, which allows you to handle requests and render responses from within a component. See the [documentation](#components-as-views) for more details. 
+
 *Version 0.28* introduces 'implicit' slot filling and the `default` option for `slot` tags.
 
 *Version 0.27* adds a second installable app: *django_components.safer_staticfiles*. It provides the same behavior as *django.contrib.staticfiles* but with extra security guarantees (more info below in Security Notes).
@@ -403,6 +405,70 @@ This is fine too:
 {% endcomponent_block %}
 ```
 
+### Components as views
+
+_New in version 0.34_
+
+Components can now be used as views. To do this, `Component` subclasses Django's `View` class. This means that you can use all of the [methods](https://docs.djangoproject.com/en/5.0/ref/class-based-views/base/#view) of `View` in your component. For example, you can override `get` and `post` to handle GET and POST requests, respectively. 
+
+In addition, `Component` now has a `render_to_response` method that renders the component template based on the provided context and slots' data and returns an `HttpResponse` object.
+
+Here's an example of a calendar component defined as a view:
+
+```python
+# In a file called [project root]/components/calendar.py
+from django_components import component
+
+@component.register("calendar")
+class Calendar(component.Component):
+    
+    template = """
+        <div class="calendar-component">
+            <div class="header">
+                {% slot "header" %}{% endslot %}
+            </div>
+            <div class="body">
+                Today's date is <span>{{ date }}</span>
+            </div>
+        </div>
+    """
+    
+    def get(self, request, *args, **kwargs):
+        context = {
+            "date": request.GET.get("date", "2020-06-06"),
+        }
+        slots = {
+            "header": "Calendar header",
+        }
+        return self.render_to_response(context, slots)
+```
+
+Then, to use this component as a view, you should create a `urls.py` file in your components directory, and add a path to the component's view:
+
+```python
+# In a file called [project root]/components/urls.py
+from django.urls import path
+from calendar import Calendar 
+
+urlpatterns = [
+    path("calendar/", Calendar.as_view()),
+]
+```
+
+Remember to add `__init__.py` to your components directory, so that Django can find the `urls.py` file.
+
+Finally, include the component's urls in your project's `urls.py` file:
+
+```python
+# In a file called [project root]/urls.py
+from django.urls import include, path
+
+urlpatterns = [
+    path("components/", include("components.urls")),
+]
+```
+
+Note: slots content are automatically escaped by default. To disable escaping, set `escape_slots_content=False` in the `render_to_response` method. 
 
 ### Advanced
 
