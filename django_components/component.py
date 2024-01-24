@@ -1,14 +1,15 @@
 import difflib
-import inspect
 from collections import ChainMap
 from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
+from django.http import HttpResponse
 from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.views import View
 
@@ -89,7 +90,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     @classmethod
     @property
     def class_hash(cls):
-        return hash(str(inspect.getfile(cls)) + str(cls.__name__))
+        return hash(str(cls.__module__) + str(cls.__name__))
 
     def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
@@ -144,12 +145,13 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         context_data: Dict[str, Any],
         slots_data: Optional[Dict[SlotName, str]] = None,
+        escape_slots_content: Optional[bool] = True,
     ) -> str:
         context = Context(context_data)
         template = self.get_template(context)
 
         if slots_data:
-            self._fill_slots(slots_data)
+            self._fill_slots(slots_data, escape_slots_content)
 
         updated_filled_slots_context: FilledSlotsContext = (
             self._process_template_and_update_filled_slot_context(
@@ -161,13 +163,32 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         ):
             return template.render(context)
 
+    def render_to_response(
+        self,
+        context_data: Dict[str, Any],
+        slots_data: Optional[Dict[SlotName, str]] = None,
+        escape_slots_content: Optional[bool] = True,
+        *args,
+        **kwargs,
+    ):
+        return HttpResponse(
+            self.render(context_data, slots_data, escape_slots_content),
+            *args,
+            **kwargs,
+        )
+
     def _fill_slots(
         self,
         slots_data: Dict[SlotName, str],
+        escape_content: bool,
     ):
         """Fill component slots outside of template rendering."""
         self.fill_content = [
-            (slot_name, TextNode(content), None)
+            (
+                slot_name,
+                TextNode(escape(content) if escape_content else content),
+                None,
+            )
             for (slot_name, content) in slots_data.items()
         ]
 

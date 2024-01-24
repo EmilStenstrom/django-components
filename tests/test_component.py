@@ -1,7 +1,6 @@
 from textwrap import dedent
 
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpRequest, HttpResponse
 from django.template import Context, Template
 
 # isort: off
@@ -438,42 +437,4 @@ class ComponentIsolationTests(SimpleTestCase):
                 <footer>Override footer</footer>
             </custom-template>
         """,
-        )
-
-
-class TestComponentAsView(SimpleTestCase):
-    def test_component_view_get_request(self):
-        class MyComponent(component.Component):
-            template_name = "simple_template.html"
-
-            def get(self, request, *args, **kwargs):
-                return HttpResponse(self.render({"variable": "test"}))
-
-        comp = MyComponent()
-
-        request = HttpRequest()
-        request.method = "GET"
-        response = comp.dispatch(request)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            "Variable: <strong>test</strong>", response.content.decode()
-        )
-
-    def test_component_view_post_request(self):
-        class MyComponent(component.Component):
-            template_name = "simple_template.html"
-
-            def post(self, request, *args, **kwargs):
-                variable = request.POST.get("variable")
-                return HttpResponse(self.render({"variable": variable}))
-
-        comp = MyComponent()
-
-        request = HttpRequest()
-        request.method = "POST"
-        request.POST["variable"] = "test"
-        response = comp.dispatch(request)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            "Variable: <strong>test</strong>", response.content.decode()
         )

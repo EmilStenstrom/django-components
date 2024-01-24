@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-from django.http import HttpResponse
-
 from django_components import component
 
 
@@ -10,10 +8,7 @@ class Greeting(component.Component):
     def get(self, request, *args, **kwargs):
         slots = {"message": "Hello, world!"}
         context = {"name": request.GET.get("name", "")}
-        rendered_component = self.render(
-            context_data=context, slots_data=slots
-        )
-        return HttpResponse(rendered_component)
+        return self.render_to_response(context, slots)
 
     def get_context_data(self, name, *args, **kwargs) -> Dict[str, Any]:
         return {"name": name}
