@@ -468,7 +468,9 @@ urlpatterns = [
 ]
 ```
 
-Note: slots content are automatically escaped by default. To disable escaping, set `escape_slots_content=False` in the `render_to_response` method. 
+Note: slots content are automatically escaped by default to prevent XSS attacks. To disable escaping, set `escape_slots_content=False` in the `render_to_response` method. If you do so, you should make sure that any content you pass to the slots is safe, especially if it comes from user input.
+
+If you're planning on passing an HTML string, check Django's use of [`format_html`](https://docs.djangoproject.com/en/5.0/ref/utils/#django.utils.html.format_html) and [`mark_safe`](https://docs.djangoproject.com/en/5.0/ref/utils/#django.utils.safestring.mark_safe).
 
 ### Advanced
 
