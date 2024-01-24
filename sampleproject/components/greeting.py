@@ -1,13 +1,21 @@
+from typing import Any, Dict
+
 from django_components import component
 
 
 @component.register("greeting")
-class greeting(component.Component):
-    def get_context_data(self, greet, *args, **kwargs):
-        return {"greet": greet}
+class Greeting(component.Component):
+    def get(self, request, *args, **kwargs):
+        slots = {"message": "Hello, world!"}
+        context = {"name": request.GET.get("name", "")}
+        return self.render_to_response(context, slots)
+
+    def get_context_data(self, name, *args, **kwargs) -> Dict[str, Any]:
+        return {"name": name}
 
     template = """
-        <div id="greeting">{{ greet }}</div>
+        <div id="greeting">Hello, {{ name }}!</div>
+        {% slot "message" %}{% endslot %}
     """
 
     css = """

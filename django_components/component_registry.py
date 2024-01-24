@@ -11,11 +11,14 @@ class ComponentRegistry(object):
         self._registry = {}  # component name -> component_class mapping
 
     def register(self, name=None, component=None):
-        if name in self._registry:
+        existing_component = self._registry.get(name)
+        if (
+            existing_component
+            and existing_component.class_hash != component.class_hash
+        ):
             raise AlreadyRegistered(
-                'The component "%s" is already registered' % name
+                'The component "%s" has already been registered' % name
             )
-
         self._registry[name] = component
 
     def unregister(self, name):

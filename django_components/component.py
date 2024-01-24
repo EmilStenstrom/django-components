@@ -4,11 +4,14 @@ from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
-from django.template.base import NodeList, Template
+from django.http import HttpResponse
+from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from django.views import View
 
 # Global registry var and register() function moved to separate module.
 # Defining them here made little sense, since 1) component_tags.py and component.py
@@ -59,7 +62,7 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
+class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     template_name: ClassVar[Optional[str]] = None
@@ -83,6 +86,11 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
+
+    @classmethod
+    @property
+    def class_hash(cls):
+        return hash(str(cls.__module__) + str(cls.__name__))
 
     def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
@@ -133,8 +141,18 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
-    def render(self, context):
+    def render(
+        self,
+        context_data: Dict[str, Any],
+        slots_data: Optional[Dict[SlotName, str]] = None,
+        escape_slots_content: Optional[bool] = True,
+    ) -> str:
+        context = Context(context_data)
         template = self.get_template(context)
+
+        if slots_data:
+            self._fill_slots(slots_data, escape_slots_content)
+
         updated_filled_slots_context: FilledSlotsContext = (
             self._process_template_and_update_filled_slot_context(
                 context, template
@@ -145,8 +163,39 @@ class Component(metaclass=SimplifiedInterfaceMediaDefiningClass):
         ):
             return template.render(context)
 
+    def render_to_response(
+        self,
+        context_data: Dict[str, Any],
+        slots_data: Optional[Dict[SlotName, str]] = None,
+        escape_slots_content: Optional[bool] = True,
+        *args,
+        **kwargs,
+    ):
+        return HttpResponse(
+            self.render(context_data, slots_data, escape_slots_content),
+            *args,
+            **kwargs,
+        )
+
+    def _fill_slots(
+        self,
+        slots_data: Dict[SlotName, str],
+        escape_content: bool,
+    ):
+        """Fill component slots outside of template rendering."""
+        self.fill_content = [
+            (
+                slot_name,
+                TextNode(escape(content) if escape_content else content),
+                None,
+            )
+            for (slot_name, content) in slots_data.items()
+        ]
+
     def _process_template_and_update_filled_slot_context(
-        self, context: Context, template: Template
+        self,
+        context: Context,
+        template: Template,
     ) -> FilledSlotsContext:
         if isinstance(self.fill_content, NodeList):
             default_fill_content = (self.fill_content, None)
