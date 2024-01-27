@@ -88,10 +88,8 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
 
-    @classmethod
-    @property
-    def class_hash(cls):
-        return hash(inspect.getfile(cls) + cls.__name__)
+    def __init_subclass__(cls, **kwargs):
+        cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
     def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
