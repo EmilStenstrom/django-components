@@ -12,17 +12,17 @@ from django.template.utils import get_app_template_dirs
 class Loader(FilesystemLoader):
     def get_dirs(self):
         component_dir = "components"
-        directories = list(get_app_template_dirs(component_dir))
+        directories = set(get_app_template_dirs(component_dir))
 
         if settings.SETTINGS_MODULE:
             settings_path = Path(*settings.SETTINGS_MODULE.split("."))
 
             path = (settings_path / ".." / component_dir).resolve()
             if path.is_dir():
-                directories.append(path)
+                directories.add(path)
 
             path = (settings_path / ".." / ".." / component_dir).resolve()
             if path.is_dir():
-                directories.append(path)
+                directories.add(path)
 
-        return directories
+        return list(directories)

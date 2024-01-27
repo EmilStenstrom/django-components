@@ -1,4 +1,5 @@
 import difflib
+import inspect
 from collections import ChainMap
 from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
 
@@ -90,7 +91,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     @classmethod
     @property
     def class_hash(cls):
-        return hash(str(cls.__module__) + str(cls.__name__))
+        return hash(inspect.getfile(cls) + cls.__name__)
 
     def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
         return {}
