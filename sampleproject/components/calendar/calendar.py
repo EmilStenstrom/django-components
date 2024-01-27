@@ -14,6 +14,12 @@ class Calendar(component.Component):
             "date": date,
         }
 
+    def get(self, request, *args, **kwargs):
+        context = {
+            "date": request.GET.get("date", ""),
+        }
+        return self.render_to_response(context)
+
     class Media:
         css = "calendar/calendar.css"
         js = "calendar/calendar.js"
