@@ -225,9 +225,9 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
                         f"To fix, check template '{template.name}' "
                         f"of component '{self.registered_name}'."
                     )
-                content_data: Optional[
-                    FillContent
-                ] = None  # `None` -> unfilled
+                content_data: Optional[FillContent] = (
+                    None  # `None` -> unfilled
+                )
                 if node.is_required:
                     required_slot_names.add(node.name)
                 if node.is_default:
