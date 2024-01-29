@@ -14,15 +14,23 @@ class Loader(FilesystemLoader):
         component_dir = "components"
         directories = set(get_app_template_dirs(component_dir))
 
+        if hasattr(settings, "BASE_DIR"):
+            path = (settings.BASE_DIR / component_dir).resolve()
+            if path.is_dir():
+                directories.add(path)
+
         if settings.SETTINGS_MODULE:
-            settings_path = Path(*settings.SETTINGS_MODULE.split("."))
+            module_parts = settings.SETTINGS_MODULE.split(".")
+            module_path = Path(*module_parts)
 
-            path = (settings_path / ".." / component_dir).resolve()
-            if path.is_dir():
-                directories.add(path)
+            if len(module_parts) > 2:
+                module_path = Path(*module_parts[:-1])
 
-            path = (settings_path / ".." / ".." / component_dir).resolve()
-            if path.is_dir():
-                directories.add(path)
+            # Use list() for < Python 3.9
+            for parent in list(module_path.parents)[:2]:
+                print(parent)
+                path = (parent / component_dir).resolve()
+                if path.is_dir():
+                    directories.add(path)
 
         return list(directories)
