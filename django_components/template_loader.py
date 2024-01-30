@@ -28,7 +28,6 @@ class Loader(FilesystemLoader):
 
             # Use list() for < Python 3.9
             for parent in list(module_path.parents)[:2]:
-                print(parent)
                 path = (parent / component_dir).resolve()
                 if path.is_dir():
                     directories.add(path)
