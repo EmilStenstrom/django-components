@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from django.template.engine import Engine
 from django.urls import include, path
 
 # isort: off
@@ -7,7 +8,6 @@ from .django_test_setup import *  # noqa
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
-from django.template.engine import Engine
 
 from django_components import autodiscover, component
 from django_components.template_loader import Loader
@@ -31,13 +31,6 @@ class TestAutodiscover(SimpleTestCase):
             self.fail(
                 "Autodiscover should not raise AlreadyRegistered exception"
             )
-
-
-def side_effect(*args, **kwargs):
-    print(args, "***")
-    print(kwargs, "***")
-    if args[0] == "tests.test_autodiscover":
-        return True
 
 
 class TestLoaderSettingsModule(SimpleTestCase):
