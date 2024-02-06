@@ -70,7 +70,6 @@ class TestLoaderSettingsModule(SimpleTestCase):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
-        print(dirs)
         self.assertEqual(
             dirs,
             [
@@ -132,5 +131,4 @@ class TestBaseDir(SimpleTestCase):
             / "test_structure_1"
             / "components"
         ]
-        print(dirs)
         self.assertEqual(dirs, expected)
