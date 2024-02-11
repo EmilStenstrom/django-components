@@ -1,5 +1,5 @@
 [tool.black]
-line-length = 79
+line-length = 119
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -18,7 +18,21 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
-line_length = 79
+line_length = 119
 multi_line_output = 3
 include_trailing_comma = "True"
 known_first_party = "django_components"
+
+[tool.flake8]
+ignore = ['E302', 'W503']
+max-line-length = 119
+exclude = [
+  'migrations',
+  '__pycache__',
+  'manage.py',
+  'settings.py',
+  'env',
+  '.env',
+  '.venv',
+  '.tox',
+]

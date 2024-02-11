@@ -52,9 +52,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     def test_no_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-        )
+        template = Template("{% load component_tags %}{% component_dependencies %}")
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML(
@@ -66,18 +64,14 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     def test_no_js_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_js_dependencies %}"
-        )
+        template = Template("{% load component_tags %}{% component_js_dependencies %}")
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
 
     def test_no_css_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_css_dependencies %}"
-        )
+        template = Template("{% load component_tags %}{% component_css_dependencies %}")
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -88,9 +82,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     def test_preload_dependencies_render_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies preload='test' %}"
-        )
+        template = Template("{% load component_tags %}{% component_dependencies preload='test' %}")
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML(
@@ -102,9 +94,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     def test_preload_css_dependencies_render_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_css_dependencies preload='test' %}"
-        )
+        template = Template("{% load component_tags %}{% component_css_dependencies preload='test' %}")
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -170,9 +160,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     def test_placeholder_removed_when_preload_rendered(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies preload='test' %}"
-        )
+        template = Template("{% load component_tags %}{% component_dependencies preload='test' %}")
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
 
@@ -226,7 +214,10 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     ):
         component.registry.register(name="test", component=MultistyleComponent)
         template = Template(
-            "{% load component_tags %}{% component_js_dependencies %}{% component_block 'test' %}{% endcomponent_block %}"
+            """
+            {% load component_tags %}{% component_js_dependencies %}
+            {% component_block 'test' %}{% endcomponent_block %}
+        """
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
@@ -247,7 +238,10 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     ):
         component.registry.register(name="test", component=MultistyleComponent)
         template = Template(
-            "{% load component_tags %}{% component_css_dependencies %}{% component_block 'test' %}{% endcomponent_block %}"
+            """
+            {% load component_tags %}{% component_css_dependencies %}
+            {% component_block 'test' %}{% endcomponent_block %}
+        """
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
@@ -265,13 +259,9 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
     def test_no_dependencies_with_multiple_unused_components(self):
         component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(
-            name="test2", component=SimpleComponentAlternate
-        )
+        component.registry.register(name="test2", component=SimpleComponentAlternate)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-        )
+        template = Template("{% load component_tags %}{% component_dependencies %}")
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
@@ -288,9 +278,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
     def test_correct_css_dependencies_with_multiple_components(self):
         component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(
-            name="test2", component=SimpleComponentAlternate
-        )
+        component.registry.register(name="test2", component=SimpleComponentAlternate)
 
         template = Template(
             "{% load component_tags %}{% component_css_dependencies %}"
@@ -310,9 +298,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
     def test_correct_js_dependencies_with_multiple_components(self):
         component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(
-            name="test2", component=SimpleComponentAlternate
-        )
+        component.registry.register(name="test2", component=SimpleComponentAlternate)
 
         template = Template(
             "{% load component_tags %}{% component_js_dependencies %}"
@@ -324,9 +310,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
     def test_correct_dependencies_with_multiple_components(self):
         component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(
-            name="test2", component=SimpleComponentAlternate
-        )
+        component.registry.register(name="test2", component=SimpleComponentAlternate)
 
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -348,19 +332,17 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
     def test_shared_dependencies_rendered_once(self):
         component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(
-            name="test2", component=SimpleComponentAlternate
-        )
-        component.registry.register(
-            name="test3", component=SimpleComponentWithSharedDependency
-        )
+        component.registry.register(name="test2", component=SimpleComponentAlternate)
+        component.registry.register(name="test3", component=SimpleComponentWithSharedDependency)
 
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
             {% component_block 'test2' variable='variable' %}{% endcomponent_block %}
             {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
-        """)
+        """
+        )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
@@ -377,27 +359,23 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
     def test_placeholder_removed_when_multiple_component_rendered(self):
         component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(
-            name="test2", component=SimpleComponentAlternate
-        )
-        component.registry.register(
-            name="test3", component=SimpleComponentWithSharedDependency
-        )
+        component.registry.register(name="test2", component=SimpleComponentAlternate)
+        component.registry.register(name="test3", component=SimpleComponentWithSharedDependency)
 
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
             {% component_block 'test2' variable='variable' %}{% endcomponent_block %}
             {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
-        """)
+        """
+        )
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
 
     def test_middleware_response_without_content_type(self):
         response = HttpResponseNotModified()
-        middleware = ComponentDependencyMiddleware(
-            get_response=lambda _: response
-        )
+        middleware = ComponentDependencyMiddleware(get_response=lambda _: response)
         request = Mock()
         self.assertEqual(response, middleware(request=request))
 
@@ -410,9 +388,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
             "test_component",
         ]
         for component_name in component_names:
-            component.registry.register(
-                name=component_name, component=SimpleComponent
-            )
+            component.registry.register(name=component_name, component=SimpleComponent)
             template = Template(
                 "{% load component_tags %}"
                 "{% component_js_dependencies %}"

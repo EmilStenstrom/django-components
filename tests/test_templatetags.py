@@ -100,41 +100,44 @@ class ComponentTemplateTagTest(SimpleTestCase):
     def test_single_component(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        simple_tag_tempate = '{% load component_tags %}{% component_block name="test" variable="variable" %}{% endcomponent_block %}'
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% component_block name="test" variable="variable" %}{% endcomponent_block %}
+        """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
             rendered = template.render(Context({}))
-            self.assertHTMLEqual(
-                rendered, "Variable: <strong>variable</strong>\n"
-            )
+            self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_call_with_invalid_name(self):
         # Note: No tag registered
 
-        simple_tag_tempate = '{% load component_tags %}{% component_block name="test" variable="variable" %}{% endcomponent_block %}'
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% component_block name="test" variable="variable" %}{% endcomponent_block %}
+        """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
-            with self.assertRaises(
-                django_components.component_registry.NotRegistered
-            ):
+            with self.assertRaises(django_components.component_registry.NotRegistered):
                 template.render(Context({}))
 
     def test_component_called_with_positional_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        simple_tag_tempate = '{% load component_tags %}{% component_block "test" variable="variable" %}{% endcomponent_block %}'
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% component_block "test" variable="variable" %}{% endcomponent_block %}
+        """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
             rendered = template.render(Context({}))
-            self.assertHTMLEqual(
-                rendered, "Variable: <strong>variable</strong>\n"
-            )
+            self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_call_component_with_two_variables(self):
         component.registry.register(name="test", component=IffedComponent)
@@ -148,24 +151,22 @@ class ComponentTemplateTagTest(SimpleTestCase):
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
             rendered = template.render(Context({}))
-            expected_outcome = (
-                """Variable: <strong>variable</strong>\n"""
-                """Variable2: <strong>hej</strong>"""
-            )
+            expected_outcome = """Variable: <strong>variable</strong>\n""" """Variable2: <strong>hej</strong>"""
             self.assertHTMLEqual(rendered, textwrap.dedent(expected_outcome))
 
     def test_component_called_with_singlequoted_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        simple_tag_tempate = """{% load component_tags %}{% component_block 'test' variable="variable" %}{% endcomponent_block %}"""
+        simple_tag_tempate = """
+            {% load component_tags %}
+            {% component_block 'test' variable="variable" %}{% endcomponent_block %}
+        """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
             rendered = template.render(Context({}))
-            self.assertHTMLEqual(
-                rendered, "Variable: <strong>variable</strong>\n"
-            )
+            self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_component_called_with_variable_as_name(self):
         component.registry.register(name="test", component=SimpleComponent)
@@ -181,9 +182,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
             rendered = template.render(Context({}))
-            self.assertHTMLEqual(
-                rendered, "Variable: <strong>variable</strong>\n"
-            )
+            self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_component_called_with_invalid_variable_as_name(self):
         component.registry.register(name="test", component=SimpleComponent)
@@ -199,9 +198,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         for tag in [simple_tag_tempate, block_tag_template]:
             template = Template(tag)
 
-        with self.assertRaises(
-            django_components.component_registry.NotRegistered
-        ):
+        with self.assertRaises(django_components.component_registry.NotRegistered):
             template.render(Context({}))
 
 
@@ -241,9 +238,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         )
 
     def test_slotted_template_with_context_var(self):
-        component.registry.register(
-            name="test1", component=SlottedComponentWithContext
-        )
+        component.registry.register(name="test1", component=SlottedComponentWithContext)
 
         template = Template(
             """
@@ -276,9 +271,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
     def test_slotted_template_no_slots_filled(self):
         component.registry.register(name="test", component=SlottedComponent)
 
-        template = Template(
-            '{% load component_tags %}{% component_block "test" %}{% endcomponent_block %}'
-        )
+        template = Template('{% load component_tags %}{% component_block "test" %}{% endcomponent_block %}')
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(
@@ -293,9 +286,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         )
 
     def test_slotted_template_without_slots(self):
-        component.registry.register(
-            name="test", component=SlottedComponentNoSlots
-        )
+        component.registry.register(name="test", component=SlottedComponentNoSlots)
         template = Template(
             """
             {% load component_tags %}
@@ -307,9 +298,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
 
     def test_slotted_template_without_slots_and_single_quotes(self):
-        component.registry.register(
-            name="test", component=SlottedComponentNoSlots
-        )
+        component.registry.register(name="test", component=SlottedComponentNoSlots)
         template = Template(
             """
             {% load component_tags %}
@@ -397,9 +386,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     def test_error_raised_when_default_and_required_slot_not_filled(self):
-        component.registry.register(
-            "test_comp", ComponentWithDefaultAndRequiredSlot
-        )
+        component.registry.register("test_comp", ComponentWithDefaultAndRequiredSlot)
         template = Template(
             """
             {% load component_tags %}
@@ -488,9 +475,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
 
     def test_component_template_cannot_have_multiple_default_slots(self):
         class BadComponent(component.Component):
-            def get_template(
-                self, context, template_name: Optional[str] = None
-            ) -> Template:
+            def get_template(self, context, template_name: Optional[str] = None) -> Template:
                 return Template(
                     """
                     {% load django_components %}
@@ -543,9 +528,7 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         component.registry.clear()
 
     def test_slotted_template_that_uses_missing_variable(self):
-        component.registry.register(
-            name="test", component=SlottedComponentWithMissingVariable
-        )
+        component.registry.register(name="test", component=SlottedComponentWithMissingVariable)
         template = Template(
             """
             {% load component_tags %}
@@ -566,9 +549,7 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         )
 
     def test_component_block_accepts_provided_and_default_parameters(self):
-        component.registry.register(
-            name="test", component=ComponentWithProvidedAndDefaultParameters
-        )
+        component.registry.register(name="test", component=ComponentWithProvidedAndDefaultParameters)
 
         template = Template(
             """
@@ -590,32 +571,22 @@ class MultiComponentTests(SimpleTestCase):
 
     def register_components(self):
         component.registry.register("first_component", SlottedComponent)
-        component.registry.register(
-            "second_component", SlottedComponentWithContext
-        )
+        component.registry.register("second_component", SlottedComponentWithContext)
 
     def make_template(self, first_component_slot="", second_component_slot=""):
         return Template(
             "{% load component_tags %}"
-            "{% component_block 'first_component' %}"
-            + first_component_slot
-            + "{% endcomponent_block %}"
+            "{% component_block 'first_component' %}" + first_component_slot + "{% endcomponent_block %}"
             "{% component_block 'second_component' variable='xyz' %}"
             + second_component_slot
             + "{% endcomponent_block %}"
         )
 
-    def expected_result(
-        self, first_component_slot="", second_component_slot=""
-    ):
+    def expected_result(self, first_component_slot="", second_component_slot=""):
         return (
-            "<custom-template><header>{}</header>".format(
-                first_component_slot or "Default header"
-            )
+            "<custom-template><header>{}</header>".format(first_component_slot or "Default header")
             + "<main>Default main</main><footer>Default footer</footer></custom-template>"
-            + "<custom-template><header>{}</header>".format(
-                second_component_slot or "Default header"
-            )
+            + "<custom-template><header>{}</header>".format(second_component_slot or "Default header")
             + "<main>Default main</main><footer>Default footer</footer></custom-template>"
         )
 
@@ -633,9 +604,7 @@ class MultiComponentTests(SimpleTestCase):
         second_slot_content = "<div>Slot #2</div>"
         first_slot = self.wrap_with_slot_tags(first_slot_content)
         second_slot = self.wrap_with_slot_tags(second_slot_content)
-        rendered = self.make_template(first_slot, second_slot).render(
-            Context({})
-        )
+        rendered = self.make_template(first_slot, second_slot).render(Context({}))
         self.assertHTMLEqual(
             rendered,
             self.expected_result(first_slot_content, second_slot_content),
@@ -646,18 +615,14 @@ class MultiComponentTests(SimpleTestCase):
         first_slot_content = "<p>Slot #1</p>"
         first_slot = self.wrap_with_slot_tags(first_slot_content)
         rendered = self.make_template(first_slot).render(Context({}))
-        self.assertHTMLEqual(
-            rendered, self.expected_result(first_slot_content)
-        )
+        self.assertHTMLEqual(rendered, self.expected_result(first_slot_content))
 
     def test_both_components_render_correctly_when_only_second_has_slots(self):
         self.register_components()
         second_slot_content = "<div>Slot #2</div>"
         second_slot = self.wrap_with_slot_tags(second_slot_content)
         rendered = self.make_template("", second_slot).render(Context({}))
-        self.assertHTMLEqual(
-            rendered, self.expected_result("", second_slot_content)
-        )
+        self.assertHTMLEqual(rendered, self.expected_result("", second_slot_content))
 
 
 class TemplateInstrumentationTest(SimpleTestCase):
@@ -689,9 +654,7 @@ class TemplateInstrumentationTest(SimpleTestCase):
         def receive_template_signal(sender, template, context, **_kwargs):
             templates_used.append(template.name)
 
-        template_rendered.connect(
-            receive_template_signal, dispatch_uid="test_method"
-        )
+        template_rendered.connect(receive_template_signal, dispatch_uid="test_method")
         subject_template.render(render_context or Context({}))
         template_rendered.disconnect(dispatch_uid="test_method")
         return templates_used
@@ -823,9 +786,7 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(
-            rendered, '<p id="a">Default A</p><p id="b">Default B</p>'
-        )
+        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Default B</p>')
 
     def test_one_slot_overridden(self):
         template = Template(
@@ -840,9 +801,7 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(
-            rendered, '<p id="a">Default A</p><p id="b">Override B</p>'
-        )
+        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Override B</p>')
 
     def test_both_slots_overridden(self):
         template = Template(
@@ -859,9 +818,7 @@ class ConditionalSlotTests(SimpleTestCase):
         """
         )
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(
-            rendered, '<p id="a">Override A</p><p id="b">Override B</p>'
-        )
+        self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
 
 
 class SlotSuperTests(SimpleTestCase):
@@ -957,9 +914,7 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
         super().setUpClass()
         component.registry.register("test", SlottedComponent)
         component.registry.register("broken_component", BrokenComponent)
-        component.registry.register(
-            "nonunique_slot_component", NonUniqueSlotsComponent
-        )
+        component.registry.register("nonunique_slot_component", NonUniqueSlotsComponent)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -1141,16 +1096,12 @@ class ConditionalIfFilledSlotsTests(SimpleTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        component.registry.register(
-            "conditional_slots", cls.ComponentWithConditionalSlots
-        )
+        component.registry.register("conditional_slots", cls.ComponentWithConditionalSlots)
         component.registry.register(
             "complex_conditional_slots",
             cls.ComponentWithComplexConditionalSlots,
         )
-        component.registry.register(
-            "negated_conditional_slot", cls.ComponentWithNegatedConditionalSlot
-        )
+        component.registry.register("negated_conditional_slot", cls.ComponentWithNegatedConditionalSlot)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -1310,9 +1261,7 @@ class IterationFillTest(SimpleTestCase):
         django_components.component.registry.clear()
 
     def test_inner_slot_iteration_basic(self):
-        component.registry.register(
-            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
-        )
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         template = Template(
             """
@@ -1336,9 +1285,7 @@ class IterationFillTest(SimpleTestCase):
         )
 
     def test_inner_slot_iteration_with_variable_from_outer_scope(self):
-        component.registry.register(
-            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
-        )
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         template = Template(
             """
@@ -1372,9 +1319,7 @@ class IterationFillTest(SimpleTestCase):
         )
 
     def test_inner_slot_iteration_nested(self):
-        component.registry.register(
-            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
-        )
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
@@ -1408,9 +1353,7 @@ class IterationFillTest(SimpleTestCase):
         )
 
     def test_inner_slot_iteration_nested_with_outer_scope_variable(self):
-        component.registry.register(
-            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
-        )
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
@@ -1460,9 +1403,7 @@ class IterationFillTest(SimpleTestCase):
         )
 
     def test_inner_slot_iteration_nested_with_slot_default(self):
-        component.registry.register(
-            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
-        )
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
@@ -1498,9 +1439,7 @@ class IterationFillTest(SimpleTestCase):
     def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable(
         self,
     ):
-        component.registry.register(
-            "slot_in_a_loop", self.ComponentSimpleSlotInALoop
-        )
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},

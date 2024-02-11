@@ -4,7 +4,7 @@ from django.template.engine import Engine
 from django.urls import include, path
 
 # isort: off
-from .django_test_setup import *  # noqa
+from .django_test_setup import settings
 from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
@@ -28,9 +28,7 @@ class TestAutodiscover(SimpleTestCase):
         try:
             autodiscover()
         except component.AlreadyRegistered:
-            self.fail(
-                "Autodiscover should not raise AlreadyRegistered exception"
-            )
+            self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
 
 class TestLoaderSettingsModule(SimpleTestCase):
@@ -42,26 +40,17 @@ class TestLoaderSettingsModule(SimpleTestCase):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
-        self.assertEqual(
-            dirs, [Path(__file__).parent.resolve() / "components"]
-        )
+        self.assertEqual(dirs, [Path(__file__).parent.resolve() / "components"])
 
     def test_complex_settings_module(self):
-        settings.SETTINGS_MODULE = (  # noqa
-            "tests.test_structures.test_structure_1.config.settings"
-        )
+        settings.SETTINGS_MODULE = "tests.test_structures.test_structure_1.config.settings"  # noqa
 
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
         self.assertEqual(
             dirs,
-            [
-                Path(__file__).parent.resolve()
-                / "test_structures"
-                / "test_structure_1"
-                / "components"
-            ],
+            [Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components"],
         )
 
     def test_complex_settings_module_2(self):
@@ -72,13 +61,7 @@ class TestLoaderSettingsModule(SimpleTestCase):
         dirs = loader.get_dirs()
         self.assertEqual(
             dirs,
-            [
-                Path(__file__).parent.resolve()
-                / "test_structures"
-                / "test_structure_2"
-                / "project"
-                / "components"
-            ],
+            [Path(__file__).parent.resolve() / "test_structures" / "test_structure_2" / "project" / "components"],
         )
 
     def test_complex_settings_module_3(self):
@@ -88,19 +71,8 @@ class TestLoaderSettingsModule(SimpleTestCase):
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
         expected = [
-            (
-                Path(__file__).parent.resolve()
-                / "test_structures"
-                / "test_structure_3"
-                / "components"
-            ),
-            (
-                Path(__file__).parent.resolve()
-                / "test_structures"
-                / "test_structure_3"
-                / "project"
-                / "components"
-            ),
+            (Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "components"),
+            (Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "project" / "components"),
         ]
         self.assertEqual(
             sorted(dirs),
@@ -110,11 +82,7 @@ class TestLoaderSettingsModule(SimpleTestCase):
 
 class TestBaseDir(SimpleTestCase):
     def setUp(self):
-        settings.BASE_DIR = (  # noqa
-            Path(__file__).parent.resolve()
-            / "test_structures"
-            / "test_structure_1"
-        )
+        settings.BASE_DIR = Path(__file__).parent.resolve() / "test_structures" / "test_structure_1"  # noqa
         settings.SETTINGS_MODULE = "tests_fake.test_autodiscover_fake"  # noqa
 
     def tearDown(self) -> None:
@@ -125,10 +93,5 @@ class TestBaseDir(SimpleTestCase):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
-        expected = [
-            Path(__file__).parent.resolve()
-            / "test_structures"
-            / "test_structure_1"
-            / "components"
-        ]
+        expected = [Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components"]
         self.assertEqual(dirs, expected)

@@ -4,10 +4,7 @@ from django.template import Context, Template
 from django.test import override_settings
 
 from django_components import component
-from django_components.middleware import (
-    CSS_DEPENDENCY_PLACEHOLDER,
-    JS_DEPENDENCY_PLACEHOLDER,
-)
+from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from tests.django_test_setup import *  # NOQA
 from tests.testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 from tests.testutils import create_and_process_template_response
@@ -75,9 +72,7 @@ class RenderBenchmarks(SimpleTestCase):
         component.registry.clear()
         component.registry.register("test_component", SlottedComponent)
         component.registry.register("inner_component", SimpleComponent)
-        component.registry.register(
-            "breadcrumb_component", BreadcrumbComponent
-        )
+        component.registry.register("breadcrumb_component", BreadcrumbComponent)
 
     @staticmethod
     def timed_loop(func, iterations=1000):
@@ -91,22 +86,28 @@ class RenderBenchmarks(SimpleTestCase):
 
     def test_render_time_for_small_component(self):
         template = Template(
-            "{% load component_tags %}{% component_block 'test_component' %}"
-            "{% slot \"header\" %}{% component_block 'inner_component' variable='foo' %}{% endslot %}{% endcomponent_block %}"
-            "{% endcomponent_block %}",
-            name="root",
+            """
+            {% load component_tags %}
+            {% component_block 'test_component' %}
+                {% slot "header" %}
+                    {% component_block 'inner_component' variable='foo' %}{% endcomponent_block %}
+                {% endslot %}
+            {% endcomponent_block %}
+        """
         )
 
-        print(
-            f"{self.timed_loop(lambda: template.render(Context({})))} ms per iteration"
-        )
+        print(f"{self.timed_loop(lambda: template.render(Context({})))} ms per iteration")
 
     def test_middleware_time_with_dependency_for_small_page(self):
         template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'test_component' %}{% slot \"header\" %}"
-            "{% component_block 'inner_component' variable='foo' %}{% endslot %}{% endcomponent_block %}{% endcomponent_block %}",
-            name="root",
+            """
+            {% load component_tags %}{% component_dependencies %}
+            {% component_block 'test_component' %}
+                {% slot "header" %}
+                    {% component_block 'inner_component' variable='foo' %}{% endcomponent_block %}
+                {% endslot %}
+            {% endcomponent_block %}
+        """
         )
         # Sanity tests
         response_content = create_and_process_template_response(template)
@@ -116,15 +117,9 @@ class RenderBenchmarks(SimpleTestCase):
         self.assertIn("script.js", response_content)
 
         without_middleware = self.timed_loop(
-            lambda: create_and_process_template_response(
-                template, use_middleware=False
-            )
+            lambda: create_and_process_template_response(template, use_middleware=False)
         )
-        with_middleware = self.timed_loop(
-            lambda: create_and_process_template_response(
-                template, use_middleware=True
-            )
-        )
+        with_middleware = self.timed_loop(lambda: create_and_process_template_response(template, use_middleware=True))
 
         print("Small page middleware test")
         self.report_results(with_middleware, without_middleware)
@@ -140,14 +135,10 @@ class RenderBenchmarks(SimpleTestCase):
         self.assertIn("test.js", response_content)
 
         without_middleware = self.timed_loop(
-            lambda: create_and_process_template_response(
-                template, {}, use_middleware=False
-            )
+            lambda: create_and_process_template_response(template, {}, use_middleware=False)
         )
         with_middleware = self.timed_loop(
-            lambda: create_and_process_template_response(
-                template, {}, use_middleware=True
-            )
+            lambda: create_and_process_template_response(template, {}, use_middleware=True)
         )
 
         print("Large page middleware test")
@@ -156,15 +147,9 @@ class RenderBenchmarks(SimpleTestCase):
     @staticmethod
     def report_results(with_middleware, without_middleware):
         print(f"Middleware active\t\t{with_middleware:.3f} ms per iteration")
-        print(
-            f"Middleware inactive\t{without_middleware:.3f} ms per iteration"
-        )
+        print(f"Middleware inactive\t{without_middleware:.3f} ms per iteration")
         time_difference = with_middleware - without_middleware
         if without_middleware > with_middleware:
-            print(
-                f"Decrease of {-100 * time_difference / with_middleware:.2f}%"
-            )
+            print(f"Decrease of {-100 * time_difference / with_middleware:.2f}%")
         else:
-            print(
-                f"Increase of {100 * time_difference / without_middleware:.2f}%"
-            )
+            print(f"Increase of {100 * time_difference / without_middleware:.2f}%")

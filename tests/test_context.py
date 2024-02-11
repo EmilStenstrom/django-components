@@ -65,15 +65,11 @@ class OuterContextComponent(component.Component):
 
 
 component.registry.register(name="parent_component", component=ParentComponent)
-component.registry.register(
-    name="parent_with_args", component=ParentComponentWithArgs
-)
+component.registry.register(name="parent_with_args", component=ParentComponentWithArgs)
 component.registry.register(name="variable_display", component=VariableDisplay)
 component.registry.register(name="incrementer", component=IncrementerComponent)
 component.registry.register(name="simple_component", component=SimpleComponent)
-component.registry.register(
-    name="outer_context_component", component=OuterContextComponent
-)
+component.registry.register(name="outer_context_component", component=OuterContextComponent)
 
 
 class ContextTests(SimpleTestCase):
@@ -86,17 +82,13 @@ class ContextTests(SimpleTestCase):
         )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Shadowing variable = override</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = override</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Shadowing variable = slot_default_override</h1>",
             rendered,
             rendered,
         )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_nested_component_instances_have_unique_context_with_unfilled_slots_and_component_tag(
         self,
@@ -107,9 +99,7 @@ class ContextTests(SimpleTestCase):
         )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Uniquely named variable = unique_val</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Uniquely named variable = unique_val</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Uniquely named variable = slot_default_unique</h1>",
             rendered,
@@ -125,17 +115,13 @@ class ContextTests(SimpleTestCase):
         )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Shadowing variable = override</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = override</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Shadowing variable = slot_default_override</h1>",
             rendered,
             rendered,
         )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_nested_component_instances_have_unique_context_with_unfilled_slots_and_component_block_tag(
         self,
@@ -146,9 +132,7 @@ class ContextTests(SimpleTestCase):
         )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Uniquely named variable = unique_val</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Uniquely named variable = unique_val</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Uniquely named variable = slot_default_unique</h1>",
             rendered,
@@ -156,7 +140,8 @@ class ContextTests(SimpleTestCase):
         )
 
     def test_nested_component_context_shadows_parent_with_filled_slots(self):
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component_block 'parent_component' %}
                 {% fill 'content' %}
@@ -164,25 +149,23 @@ class ContextTests(SimpleTestCase):
                     {% endcomponent_block %}
                 {% endfill %}
             {% endcomponent_block %}
-        """)  # NOQA
+        """  # NOQA
+        )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Shadowing variable = override</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = override</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Shadowing variable = shadow_from_slot</h1>",
             rendered,
             rendered,
         )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_nested_component_instances_have_unique_context_with_filled_slots(
         self,
     ):
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component_block 'parent_component' %}
                 {% fill 'content' %}
@@ -190,12 +173,11 @@ class ContextTests(SimpleTestCase):
                     {% endcomponent_block %}
                 {% endfill %}
             {% endcomponent_block %}
-        """)  # NOQA
+        """  # NOQA
+        )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Uniquely named variable = unique_val</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Uniquely named variable = unique_val</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Uniquely named variable = unique_from_slot</h1>",
             rendered,
@@ -209,21 +191,15 @@ class ContextTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block name='parent_component' %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"shadowing_variable": "NOT SHADOWED"})
-        )
+        rendered = template.render(Context({"shadowing_variable": "NOT SHADOWED"}))
 
-        self.assertIn(
-            "<h1>Shadowing variable = override</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = override</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Shadowing variable = slot_default_override</h1>",
             rendered,
             rendered,
         )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_nested_component_context_shadows_outer_context_with_unfilled_slots_and_component_block_tag(
         self,
@@ -232,26 +208,21 @@ class ContextTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'parent_component' %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"shadowing_variable": "NOT SHADOWED"})
-        )
+        rendered = template.render(Context({"shadowing_variable": "NOT SHADOWED"}))
 
-        self.assertIn(
-            "<h1>Shadowing variable = override</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = override</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Shadowing variable = slot_default_override</h1>",
             rendered,
             rendered,
         )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_nested_component_context_shadows_outer_context_with_filled_slots(
         self,
     ):
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component_block 'parent_component' %}
                 {% fill 'content' %}
@@ -259,22 +230,17 @@ class ContextTests(SimpleTestCase):
                     {% endcomponent_block %}
                 {% endfill %}
             {% endcomponent_block %}
-        """)  # NOQA
-        rendered = template.render(
-            Context({"shadowing_variable": "NOT SHADOWED"})
+        """  # NOQA
         )
+        rendered = template.render(Context({"shadowing_variable": "NOT SHADOWED"}))
 
-        self.assertIn(
-            "<h1>Shadowing variable = override</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = override</h1>", rendered, rendered)
         self.assertIn(
             "<h1>Shadowing variable = shadow_from_slot</h1>",
             rendered,
             rendered,
         )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
 
 class ParentArgsTests(SimpleTestCase):
@@ -286,15 +252,9 @@ class ParentArgsTests(SimpleTestCase):
         )
         rendered = template.render(Context({"parent_value": "passed_in"}))
 
-        self.assertIn(
-            "<h1>Shadowing variable = passed_in</h1>", rendered, rendered
-        )
-        self.assertIn(
-            "<h1>Uniquely named variable = passed_in</h1>", rendered, rendered
-        )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = passed_in</h1>", rendered, rendered)
+        self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_parent_args_available_outside_slots(self):
         template = Template(
@@ -303,18 +263,13 @@ class ParentArgsTests(SimpleTestCase):
         )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Shadowing variable = passed_in</h1>", rendered, rendered
-        )
-        self.assertIn(
-            "<h1>Uniquely named variable = passed_in</h1>", rendered, rendered
-        )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = passed_in</h1>", rendered, rendered)
+        self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     def test_parent_args_available_in_slots(self):
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component_block 'parent_with_args' parent_value='passed_in' %}
                 {% fill 'content' %}
@@ -322,18 +277,13 @@ class ParentArgsTests(SimpleTestCase):
                     {% endcomponent_block %}
                 {% endfill %}
             {% endcomponent_block %}
-        """)  # NOQA
+        """  # NOQA
+        )
         rendered = template.render(Context())
 
-        self.assertIn(
-            "<h1>Shadowing variable = value_from_slot</h1>", rendered, rendered
-        )
-        self.assertIn(
-            "<h1>Uniquely named variable = passed_in</h1>", rendered, rendered
-        )
-        self.assertNotIn(
-            "<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered
-        )
+        self.assertIn("<h1>Shadowing variable = value_from_slot</h1>", rendered, rendered)
+        self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
+        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
 
 class ContextCalledOnceTests(SimpleTestCase):
@@ -344,9 +294,7 @@ class ContextCalledOnceTests(SimpleTestCase):
         )
         rendered = template.render(Context()).strip()
 
-        self.assertEqual(
-            rendered, '<p class="incrementer">value=1;calls=1</p>', rendered
-        )
+        self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
 
     def test_one_context_call_with_simple_component_and_arg(self):
         template = Template(
@@ -354,31 +302,21 @@ class ContextCalledOnceTests(SimpleTestCase):
         )
         rendered = template.render(Context()).strip()
 
-        self.assertEqual(
-            rendered, '<p class="incrementer">value=3;calls=1</p>', rendered
-        )
+        self.assertEqual(rendered, '<p class="incrementer">value=3;calls=1</p>', rendered)
 
     def test_one_context_call_with_component_block(self):
-        template = Template(
-            "{% load component_tags %}"
-            "{% component_block 'incrementer' %}{% endcomponent_block %}"
-        )
+        template = Template("{% load component_tags %}" "{% component_block 'incrementer' %}{% endcomponent_block %}")
         rendered = template.render(Context()).strip()
 
-        self.assertEqual(
-            rendered, '<p class="incrementer">value=1;calls=1</p>', rendered
-        )
+        self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
 
     def test_one_context_call_with_component_block_and_arg(self):
         template = Template(
-            "{% load component_tags %}"
-            "{% component_block 'incrementer' value='3' %}{% endcomponent_block %}"
+            "{% load component_tags %}" "{% component_block 'incrementer' value='3' %}{% endcomponent_block %}"
         )
         rendered = template.render(Context()).strip()
 
-        self.assertEqual(
-            rendered, '<p class="incrementer">value=4;calls=1</p>', rendered
-        )
+        self.assertEqual(rendered, '<p class="incrementer">value=4;calls=1</p>', rendered)
 
     def test_one_context_call_with_slot(self):
         template = Template(
@@ -415,9 +353,7 @@ class ComponentsCanAccessOuterContext(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'simple_component' %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"variable": "outer_value"})
-        ).strip()
+        rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertIn("outer_value", rendered, rendered)
 
 
@@ -427,9 +363,7 @@ class IsolatedContextTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'simple_component' variable only %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"variable": "outer_value"})
-        ).strip()
+        rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertIn("outer_value", rendered, rendered)
 
     def test_simple_component_cannot_use_outer_context(self):
@@ -437,9 +371,7 @@ class IsolatedContextTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'simple_component' only %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"variable": "outer_value"})
-        ).strip()
+        rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertNotIn("outer_value", rendered, rendered)
 
 
@@ -504,9 +436,7 @@ class OuterContextPropertyTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'outer_context_component' only %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"variable": "outer_value"})
-        ).strip()
+        rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertIn("outer_value", rendered, rendered)
 
     def test_outer_context_property_with_component_block(self):
@@ -514,7 +444,5 @@ class OuterContextPropertyTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'outer_context_component' only %}{% endcomponent_block %}"
         )
-        rendered = template.render(
-            Context({"variable": "outer_value"})
-        ).strip()
+        rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertIn("outer_value", rendered, rendered)

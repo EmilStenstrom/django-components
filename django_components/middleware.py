@@ -11,9 +11,7 @@ CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
 JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER"></script>'
 
 SCRIPT_TAG_REGEX = re.compile("<script")
-COMPONENT_COMMENT_REGEX = re.compile(
-    rb"<!-- _RENDERED (?P<name>[\w\-/]+?) -->"
-)
+COMPONENT_COMMENT_REGEX = re.compile(rb"<!-- _RENDERED (?P<name>[\w\-/]+?) -->")
 PLACEHOLDER_REGEX = re.compile(
     rb"<!-- _RENDERED (?P<name>[\w\-/]+?) -->"
     rb'|<link name="CSS_PLACEHOLDER">'
@@ -32,9 +30,7 @@ class ComponentDependencyMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         if (
-            getattr(settings, "COMPONENTS", {}).get(
-                "RENDER_DEPENDENCIES", False
-            )
+            getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)
             and not isinstance(response, StreamingHttpResponse)
             and response.get("Content-Type", "").startswith("text/html")
         ):
@@ -43,23 +39,12 @@ class ComponentDependencyMiddleware:
 
 
 def process_response_content(content):
-    component_names_seen = {
-        match.group("name")
-        for match in COMPONENT_COMMENT_REGEX.finditer(content)
-    }
-    all_components = [
-        registry.get(name.decode("utf-8"))("") for name in component_names_seen
-    ]
+    component_names_seen = {match.group("name") for match in COMPONENT_COMMENT_REGEX.finditer(content)}
+    all_components = [registry.get(name.decode("utf-8"))("") for name in component_names_seen]
     all_media = join_media(all_components)
-    js_dependencies = b"".join(
-        media.encode("utf-8") for media in all_media.render_js()
-    )
-    css_dependencies = b"".join(
-        media.encode("utf-8") for media in all_media.render_css()
-    )
-    return PLACEHOLDER_REGEX.sub(
-        DependencyReplacer(css_dependencies, js_dependencies), content
-    )
+    js_dependencies = b"".join(media.encode("utf-8") for media in all_media.render_js())
+    css_dependencies = b"".join(media.encode("utf-8") for media in all_media.render_css())
+    return PLACEHOLDER_REGEX.sub(DependencyReplacer(css_dependencies, js_dependencies), content)
 
 
 def add_module_attribute_to_scripts(scripts):
