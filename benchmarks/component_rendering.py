@@ -92,7 +92,7 @@ class RenderBenchmarks(SimpleTestCase):
     def test_render_time_for_small_component(self):
         template = Template(
             "{% load component_tags %}{% component_block 'test_component' %}"
-            "{% slot \"header\" %}{% component 'inner_component' variable='foo' %}{% endslot %}"
+            "{% slot \"header\" %}{% component_block 'inner_component' variable='foo' %}{% endslot %}{% endcomponent_block %}"
             "{% endcomponent_block %}",
             name="root",
         )
@@ -105,7 +105,7 @@ class RenderBenchmarks(SimpleTestCase):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component_block 'test_component' %}{% slot \"header\" %}"
-            "{% component 'inner_component' variable='foo' %}{% endslot %}{% endcomponent_block %}",
+            "{% component_block 'inner_component' variable='foo' %}{% endslot %}{% endcomponent_block %}{% endcomponent_block %}",
             name="root",
         )
         # Sanity tests

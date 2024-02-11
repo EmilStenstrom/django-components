@@ -200,7 +200,7 @@ Page lightly modified and partially extracted as a component #}
             </div>
         </header>
         <div class="titlebar-container"><h1 class="title">Document and website structure</h1></div>
-        {% component 'breadcrumb_component' items=5 %}
+        {% component_block 'breadcrumb_component' items=5 %}{% endcomponent_block %}
             <div class="locale-container">
                 <form class="language-menu"><label for="select_language" class="visually-hidden">Select your preferred
                     language</label> <select id="select_language" name="language">

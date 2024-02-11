@@ -253,7 +253,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # can be invoked with implicit filling.
         if default_fill_content and not default_slot_encountered:
             raise TemplateSyntaxError(
-                f"Component '{self.registered_name}' passed default fill content "
+                f"Component '{self.registered_name}' passed default fill content '{default_fill_content}'"
                 f"(i.e. without explicit 'fill' tag), "
                 f"even though none of its slots is marked as 'default'."
             )

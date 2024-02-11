@@ -151,23 +151,6 @@ def component_js_dependencies_tag(preload=""):
 
         return mark_safe("\n".join(rendered_dependencies))
 
-
-@register.tag(name="component")
-def do_component(parser, token):
-    bits = token.split_contents()
-    bits, isolated_context = check_for_isolated_context_keyword(bits)
-
-    component_name, context_args, context_kwargs = parse_component_with_args(
-        parser, bits, "component"
-    )
-    return ComponentNode(
-        FilterExpression(component_name, parser),
-        context_args,
-        context_kwargs,
-        isolated_context=isolated_context,
-    )
-
-
 class UserSlotVar:
     """
     Extensible mechanism for offering 'fill' blocks in template access to properties

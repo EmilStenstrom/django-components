@@ -82,7 +82,7 @@ class ContextTests(SimpleTestCase):
     ):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'parent_component' %}"
+            "{% component_block 'parent_component' %}{% endcomponent_block %}"
         )
         rendered = template.render(Context())
 
@@ -103,7 +103,7 @@ class ContextTests(SimpleTestCase):
     ):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component name='parent_component' %}"
+            "{% component_block name='parent_component' %}{% endcomponent_block %}"
         )
         rendered = template.render(Context())
 
@@ -156,13 +156,15 @@ class ContextTests(SimpleTestCase):
         )
 
     def test_nested_component_context_shadows_parent_with_filled_slots(self):
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'parent_component' %}"
-            "{% fill 'content' %}{% component name='variable_display' "
-            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endfill %}"
-            "{% endcomponent_block %}"
-        )
+        template = Template("""
+            {% load component_tags %}{% component_dependencies %}
+            {% component_block 'parent_component' %}
+                {% fill 'content' %}
+                    {% component_block name='variable_display' shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """)  # NOQA
         rendered = template.render(Context())
 
         self.assertIn(
@@ -180,13 +182,15 @@ class ContextTests(SimpleTestCase):
     def test_nested_component_instances_have_unique_context_with_filled_slots(
         self,
     ):
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'parent_component' %}"
-            "{% fill 'content' %}{% component name='variable_display' "
-            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endfill %}"
-            "{% endcomponent_block %}"
-        )
+        template = Template("""
+            {% load component_tags %}{% component_dependencies %}
+            {% component_block 'parent_component' %}
+                {% fill 'content' %}
+                    {% component_block name='variable_display' shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """)  # NOQA
         rendered = template.render(Context())
 
         self.assertIn(
@@ -203,7 +207,7 @@ class ContextTests(SimpleTestCase):
     ):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component name='parent_component' %}"
+            "{% component_block name='parent_component' %}{% endcomponent_block %}"
         )
         rendered = template.render(
             Context({"shadowing_variable": "NOT SHADOWED"})
@@ -247,13 +251,15 @@ class ContextTests(SimpleTestCase):
     def test_nested_component_context_shadows_outer_context_with_filled_slots(
         self,
     ):
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'parent_component' %}"
-            "{% fill 'content' %}{% component name='variable_display' "
-            "shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}{% endfill %}"
-            "{% endcomponent_block %}"
-        )
+        template = Template("""
+            {% load component_tags %}{% component_dependencies %}
+            {% component_block 'parent_component' %}
+                {% fill 'content' %}
+                    {% component_block name='variable_display' shadowing_variable='shadow_from_slot' new_variable='unique_from_slot' %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """)  # NOQA
         rendered = template.render(
             Context({"shadowing_variable": "NOT SHADOWED"})
         )
@@ -308,13 +314,15 @@ class ParentArgsTests(SimpleTestCase):
         )
 
     def test_parent_args_available_in_slots(self):
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'parent_with_args' parent_value='passed_in' %}"
-            "{% fill 'content' %}{% component name='variable_display' "
-            "shadowing_variable='value_from_slot' new_variable=inner_parent_value %}{% endfill %}"
-            "{%endcomponent_block %}"
-        )
+        template = Template("""
+            {% load component_tags %}{% component_dependencies %}
+            {% component_block 'parent_with_args' parent_value='passed_in' %}
+                {% fill 'content' %}
+                    {% component_block name='variable_display' shadowing_variable='value_from_slot' new_variable=inner_parent_value %}
+                    {% endcomponent_block %}
+                {% endfill %}
+            {% endcomponent_block %}
+        """)  # NOQA
         rendered = template.render(Context())
 
         self.assertIn(
@@ -332,7 +340,7 @@ class ContextCalledOnceTests(SimpleTestCase):
     def test_one_context_call_with_simple_component(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component name='incrementer' %}"
+            "{% component_block name='incrementer' %}{% endcomponent_block %}"
         )
         rendered = template.render(Context()).strip()
 
@@ -342,7 +350,7 @@ class ContextCalledOnceTests(SimpleTestCase):
 
     def test_one_context_call_with_simple_component_and_arg(self):
         template = Template(
-            "{% load component_tags %}{% component name='incrementer' value='2' %}"
+            "{% load component_tags %}{% component_block name='incrementer' value='2' %}{% endcomponent_block %}"
         )
         rendered = template.render(Context()).strip()
 
@@ -405,7 +413,7 @@ class ComponentsCanAccessOuterContext(SimpleTestCase):
     def test_simple_component_can_use_outer_context(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'simple_component' %}"
+            "{% component_block 'simple_component' %}{% endcomponent_block %}"
         )
         rendered = template.render(
             Context({"variable": "outer_value"})
@@ -417,7 +425,7 @@ class IsolatedContextTests(SimpleTestCase):
     def test_simple_component_can_pass_outer_context_in_args(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'simple_component' variable only %}"
+            "{% component_block 'simple_component' variable only %}{% endcomponent_block %}"
         )
         rendered = template.render(
             Context({"variable": "outer_value"})
@@ -427,7 +435,7 @@ class IsolatedContextTests(SimpleTestCase):
     def test_simple_component_cannot_use_outer_context(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'simple_component' only %}"
+            "{% component_block 'simple_component' only %}{% endcomponent_block %}"
         )
         rendered = template.render(
             Context({"variable": "outer_value"})
@@ -452,7 +460,7 @@ class IsolatedContextSettingTests(SimpleTestCase):
     ):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'simple_component' variable %}"
+            "{% component_block 'simple_component' variable %}{% endcomponent_block %}"
         )
         rendered = template.render(Context({"variable": "outer_value"}))
         self.assertIn("outer_value", rendered, rendered)
@@ -462,7 +470,7 @@ class IsolatedContextSettingTests(SimpleTestCase):
     ):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'simple_component' %}"
+            "{% component_block 'simple_component' %}{% endcomponent_block %}"
         )
         rendered = template.render(Context({"variable": "outer_value"}))
         self.assertNotIn("outer_value", rendered, rendered)
@@ -494,7 +502,7 @@ class OuterContextPropertyTests(SimpleTestCase):
     def test_outer_context_property_with_component(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'outer_context_component' only %}"
+            "{% component_block 'outer_context_component' only %}{% endcomponent_block %}"
         )
         rendered = template.render(
             Context({"variable": "outer_value"})

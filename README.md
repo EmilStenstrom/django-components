@@ -7,7 +7,7 @@ A way to create simple reusable template components in Django.
 It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
 
 ```htmldjango
-{% component "calendar" date="2015-06-19" %}
+{% component_block "calendar" date="2015-06-19" %}{% endcomponent_block %}
 ```
 
 And this is what gets rendered (plus the CSS and Javascript you've specified):
@@ -220,7 +220,7 @@ First load the `component_tags` tag library, then use the `component_[js/css]_de
     {% component_css_dependencies %}
 </head>
 <body>
-    {% component "calendar" date="2015-06-19" %}
+    {% component_block "calendar" date="2015-06-19" %}{% endcomponent_block %}
     {% component_js_dependencies %}
 </body>
 <html>
@@ -614,10 +614,10 @@ COMPONENTS = {
 
 ## Component context and scope
 
-By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component_block %}` tag):
+By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component_block %}` (or `{% component_block %}{% endcomponent_block %}` tag):
 
 ```htmldjango
-   {% component "calendar" date="2015-06-19" only %}
+   {% component_block "calendar" date="2015-06-19" only %}{% endcomponent_block %}
 ```
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.

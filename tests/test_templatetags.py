@@ -92,7 +92,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
 
     def inline_to_block(self, tag):
         return re.sub(
-            r"({% component (.*) %})",
+            r"({% component_block (.*) %}{% endcomponent_block %})",
             r"{% component_block \2 %}{% endcomponent_block %}",
             tag,
         )
@@ -100,7 +100,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
     def test_single_component(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        simple_tag_tempate = '{% load component_tags %}{% component name="test" variable="variable" %}'
+        simple_tag_tempate = '{% load component_tags %}{% component_block name="test" variable="variable" %}{% endcomponent_block %}'
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
@@ -113,7 +113,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
     def test_call_with_invalid_name(self):
         # Note: No tag registered
 
-        simple_tag_tempate = '{% load component_tags %}{% component name="test" variable="variable" %}'
+        simple_tag_tempate = '{% load component_tags %}{% component_block name="test" variable="variable" %}{% endcomponent_block %}'
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
@@ -126,7 +126,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
     def test_component_called_with_positional_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        simple_tag_tempate = '{% load component_tags %}{% component "test" variable="variable" %}'
+        simple_tag_tempate = '{% load component_tags %}{% component_block "test" variable="variable" %}{% endcomponent_block %}'
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
@@ -141,7 +141,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
 
         simple_tag_tempate = """
             {% load component_tags %}
-            {% component name="test" variable="variable" variable2="hej" %}
+            {% component_block name="test" variable="variable" variable2="hej" %}{% endcomponent_block %}
         """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
@@ -157,7 +157,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
     def test_component_called_with_singlequoted_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        simple_tag_tempate = """{% load component_tags %}{% component 'test' variable="variable" %}"""
+        simple_tag_tempate = """{% load component_tags %}{% component_block 'test' variable="variable" %}{% endcomponent_block %}"""
         block_tag_template = self.inline_to_block(simple_tag_tempate)
 
         for tag in [simple_tag_tempate, block_tag_template]:
@@ -173,7 +173,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         simple_tag_tempate = """
             {% load component_tags %}
             {% with component_name="test" %}
-                {% component component_name variable="variable" %}
+                {% component_block component_name variable="variable" %}{% endcomponent_block %}
             {% endwith %}
         """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
@@ -191,7 +191,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
         simple_tag_tempate = """
             {% load component_tags %}
             {% with component_name="BLAHONGA" %}
-                {% component component_name variable="variable" %}
+                {% component_block component_name variable="variable" %}{% endcomponent_block %}
             {% endwith %}
         """
         block_tag_template = self.inline_to_block(simple_tag_tempate)
@@ -222,7 +222,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
                     Custom header
                 {% endfill %}
                 {% fill "main" %}
-                    {% component "test2" variable="variable" %}
+                    {% component_block "test2" variable="variable" %}{% endcomponent_block %}
                 {% endfill %}
             {% endcomponent_block %}
         """
@@ -700,7 +700,7 @@ class TemplateInstrumentationTest(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component 'test_component' %}
+            {% component_block 'test_component' %}{% endcomponent_block %}
             """,
             name="root",
         )
@@ -713,7 +713,7 @@ class TemplateInstrumentationTest(SimpleTestCase):
             {% load component_tags %}
             {% component_block 'test_component' %}
               {% fill "header" %}
-                {% component 'inner_component' variable='foo' %}
+                {% component_block 'inner_component' variable='foo' %}{% endcomponent_block %}
               {% endfill %}
             {% endcomponent_block %}
             """,
@@ -818,8 +818,8 @@ class ConditionalSlotTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component 'test' branch='a' %}
-            {% component 'test' branch='b' %}
+            {% component_block 'test' branch='a' %}{% endcomponent_block %}
+            {% component_block 'test' branch='b' %}{% endcomponent_block %}
         """
         )
         rendered = template.render(Context({}))
@@ -1076,7 +1076,7 @@ class ComponentNestingTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component "dashboard" %}
+            {% component_block "dashboard" %}{% endcomponent_block %}
             """
         )
         rendered = template.render(Context({"items": [1, 2, 3]}))
@@ -1160,7 +1160,7 @@ class ConditionalIfFilledSlotsTests(SimpleTestCase):
     def test_simple_component_with_conditional_slot(self):
         template = """
         {% load component_tags %}
-        {% component "conditional_slots" %}
+        {% component_block "conditional_slots" %}{% endcomponent_block %}
         """
         expected = """
         <div class="frontmatter-component">

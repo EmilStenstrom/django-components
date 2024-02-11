@@ -2,11 +2,11 @@
 
 <div>
     <h1>Parent content</h1>
-    {% component name="variable_display" shadowing_variable='override' new_variable='unique_val' %}
+    {% component_block name="variable_display" shadowing_variable='override' new_variable='unique_val' %}{% endcomponent_block %}
 </div>
 <div>
     {% slot 'content' %}
         <h2>Slot content</h2>
-        {% component name="variable_display" shadowing_variable='slot_default_override' new_variable='slot_default_unique' %}
+        {% component_block name="variable_display" shadowing_variable='slot_default_override' new_variable='slot_default_unique' %}{% endcomponent_block %}
     {% endslot %}
 </div>
