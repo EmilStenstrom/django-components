@@ -7,7 +7,7 @@ A way to create simple reusable template components in Django.
 It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
 
 ```htmldjango
-{% component_block "calendar" date="2015-06-19" %}{% endcomponent_block %}
+{% component "calendar" date="2015-06-19" %}{% endcomponent %}
 ```
 
 And this is what gets rendered (plus the CSS and Javascript you've specified):
@@ -220,7 +220,7 @@ First load the `component_tags` tag library, then use the `component_[js/css]_de
     {% component_css_dependencies %}
 </head>
 <body>
-    {% component_block "calendar" date="2015-06-19" %}{% endcomponent_block %}
+    {% component "calendar" date="2015-06-19" %}{% endcomponent %}
     {% component_js_dependencies %}
 </body>
 <html>
@@ -297,7 +297,7 @@ This mechanism makes components more reusable and composable.
 In the example below we introduce two block tags that work hand in hand to make this work. These are...
 
 - `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
-- `{% fill <name> %}`/`{% endfill %}`: (Used inside a `component_block` tag pair.) Fills a declared slot with the specified content.
+- `{% fill <name> %}`/`{% endfill %}`: (Used inside a `component` tag pair.) Fills a declared slot with the specified content.
 
 Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _calendar.html_.
 
@@ -315,9 +315,9 @@ Let's update our calendar component to support more customization. We'll add `sl
 When using the component, you specify which slots you want to fill and where you want to use the defaults from the template. It looks like this:
 
 ```htmldjango
-{% component_block "calendar" date="2020-06-06" %}
+{% component "calendar" date="2020-06-06" %}
     {% fill "body" %}Can you believe it's already <span>{{ date }}</span>??{% endfill %}
-{% endcomponent_block %}
+{% endcomponent %}
 ```
 
 Since the header block is unspecified, it's taken from the base template. If you put this in a template, and pass in `date=2020-06-06`, this is what gets rendered:
@@ -335,7 +335,7 @@ Since the header block is unspecified, it's taken from the base template. If you
 
 As you can see, component slots lets you write reusable containers that you fill in when you use a component. This makes for highly reusable components that can be used in different circumstances.
 
-It can become tedious to use `fill` tags everywhere, especially when you're using a component that declares only one slot. To make things easier, `slot` tags can be marked with an optional keyword: `default`. When added to the end of the tag (as shown below), this option lets you pass filling content directly in the body of a `component_block` tag pair – without using a `fill` tag. Choose carefully, though: a component template may contain at most one slot that is marked as `default`. The `default` option can be combined with other slot options, e.g. `required`.
+It can become tedious to use `fill` tags everywhere, especially when you're using a component that declares only one slot. To make things easier, `slot` tags can be marked with an optional keyword: `default`. When added to the end of the tag (as shown below), this option lets you pass filling content directly in the body of a `component` tag pair – without using a `fill` tag. Choose carefully, though: a component template may contain at most one slot that is marked as `default`. The `default` option can be combined with other slot options, e.g. `required`.
 
 Here's the same example as before, except with default slots and implicit filling.
 
@@ -355,9 +355,9 @@ The template:
 Including the component (notice how the `fill` tag is omitted):
 
 ```htmldjango
-{% component_block "calendar" date="2020-06-06" %}
+{% component "calendar" date="2020-06-06" %}
     Can you believe it's already <span>{{ date }}</span>??
-{% endcomponent_block %}
+{% endcomponent %}
 ```
 
 The rendered result (exactly the same as before):
@@ -377,32 +377,32 @@ You may be tempted to combine implicit fills with explicit `fill` tags. This wil
 
 ```htmldjango
 {# DON'T DO THIS #}
-{% component_block "calendar" date="2020-06-06" %}
+{% component "calendar" date="2020-06-06" %}
     {% fill "header" %}Totally new header!{% endfill %}
     Can you believe it's already <span>{{ date }}</span>??
-{% endcomponent_block %}
+{% endcomponent %}
 ```
 
 By contrast, it is permitted to use `fill` tags in nested components, e.g.:
 
 ```htmldjango
-{% component_block "calendar" date="2020-06-06" %}
-    {% component_block "beautiful-box" %}
+{% component "calendar" date="2020-06-06" %}
+    {% component "beautiful-box" %}
         {% fill "content" %} Can you believe it's already <span>{{ date }}</span>?? {% endfill %}
-    {% endcomponent_block %}
-{% endcomponent_block %}
+    {% endcomponent %}
+{% endcomponent %}
 ```
 
 This is fine too:
 
 ```htmldjango
-{% component_block "calendar" date="2020-06-06" %}
+{% component "calendar" date="2020-06-06" %}
     {% fill "header" %}
-        {% component_block "calendar-header" %}
+        {% component "calendar-header" %}
             Super Special Calendar Header
-        {% endcomponent_block %}
+        {% endcomponent %}
     {% endfill %}
-{% endcomponent_block %}
+{% endcomponent %}
 ```
 
 ### Components as views
@@ -479,9 +479,9 @@ If you're planning on passing an HTML string, check Django's use of [`format_htm
 Certain properties of a slot can be accessed from within a 'fill' context. They are provided as attributes on a user-defined alias of the targeted slot. For instance, let's say you're filling a slot called 'body'. To access properties of this slot, alias it using the 'as' keyword to a new name -- or keep the original name. With the new slot alias, you can call `<alias>.default` to insert the default content.
 
 ```htmldjango
-{% component_block "calendar" date="2020-06-06" %}
+{% component "calendar" date="2020-06-06" %}
     {% fill "body" as "body" %}{{ body.default }}. Have a great day!{% endfill %}
-{% endcomponent_block %}
+{% endcomponent %}
 ```
 
 Produces:
@@ -614,10 +614,10 @@ COMPONENTS = {
 
 ## Component context and scope
 
-By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component_block %}` (or `{% component_block %}{% endcomponent_block %}` tag):
+By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` (or `{% component %}{% endcomponent %}` tag):
 
 ```htmldjango
-   {% component_block "calendar" date="2015-06-19" only %}{% endcomponent_block %}
+   {% component "calendar" date="2015-06-19" only %}{% endcomponent %}
 ```
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.

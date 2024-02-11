@@ -107,7 +107,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'test' variable='foo' %}{% endcomponent_block %}"
+            "{% component 'test' variable='foo' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
@@ -122,7 +122,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'test' variable='foo' %}{% endcomponent_block %}"
+            "{% component 'test' variable='foo' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
@@ -137,7 +137,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_dependencies preload='test' %}"
-            "{% component_block 'test' variable='foo' %}{% endcomponent_block %}"
+            "{% component 'test' variable='foo' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
@@ -152,7 +152,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'test' variable='foo' %}{% endcomponent_block %}"
+            "{% component 'test' variable='foo' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
@@ -169,7 +169,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_css_dependencies %}"
-            "{% component_block 'test' variable='foo' %}{% endcomponent_block %}"
+            "{% component 'test' variable='foo' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
@@ -183,7 +183,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_js_dependencies %}"
-            "{% component_block 'test' variable='foo' %}{% endcomponent_block %}"
+            "{% component 'test' variable='foo' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
@@ -193,7 +193,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
     ):
         component.registry.register(name="test", component=MultistyleComponent)
         template = Template(
-            "{% load component_tags %}{% component_dependencies %}{% component_block 'test' %}{% endcomponent_block %}"
+            "{% load component_tags %}{% component_dependencies %}{% component 'test' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
@@ -216,7 +216,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}{% component_js_dependencies %}
-            {% component_block 'test' %}{% endcomponent_block %}
+            {% component 'test' %}{% endcomponent %}
         """
         )
         rendered = create_and_process_template_response(template)
@@ -240,7 +240,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}{% component_css_dependencies %}
-            {% component_block 'test' %}{% endcomponent_block %}
+            {% component 'test' %}{% endcomponent %}
         """
         )
         rendered = create_and_process_template_response(template)
@@ -282,7 +282,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_css_dependencies %}"
-            "{% component_block 'test1' 'variable' %}{% endcomponent_block %}"
+            "{% component 'test1' 'variable' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
@@ -302,7 +302,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_js_dependencies %}"
-            "{% component_block 'test1' 'variable' %}{% endcomponent_block %}"
+            "{% component 'test1' 'variable' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
@@ -314,7 +314,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
 
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
-            "{% component_block 'test2' variable='variable' %}{% endcomponent_block %}"
+            "{% component 'test2' variable='variable' %}{% endcomponent %}"
         )
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
@@ -338,9 +338,9 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}{% component_dependencies %}
-            {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
-            {% component_block 'test2' variable='variable' %}{% endcomponent_block %}
-            {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
+            {% component 'test1' variable='variable' %}{% endcomponent %}
+            {% component 'test2' variable='variable' %}{% endcomponent %}
+            {% component 'test1' variable='variable' %}{% endcomponent %}
         """
         )
         rendered = create_and_process_template_response(template)
@@ -365,9 +365,9 @@ class ComponentMediaRenderingTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}{% component_dependencies %}
-            {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
-            {% component_block 'test2' variable='variable' %}{% endcomponent_block %}
-            {% component_block 'test1' variable='variable' %}{% endcomponent_block %}
+            {% component 'test1' variable='variable' %}{% endcomponent %}
+            {% component 'test2' variable='variable' %}{% endcomponent %}
+            {% component 'test1' variable='variable' %}{% endcomponent %}
         """
         )
         rendered = create_and_process_template_response(template)
@@ -393,7 +393,7 @@ class ComponentMediaRenderingTests(SimpleTestCase):
                 "{% load component_tags %}"
                 "{% component_js_dependencies %}"
                 "{% component_css_dependencies %}"
-                f"{{% component_block '{component_name}' variable='value' %}}{{% endcomponent_block %}}"
+                f"{{% component '{component_name}' variable='value' %}}{{% endcomponent %}}"
             )
             rendered = create_and_process_template_response(template)
             self.assertHTMLEqual(

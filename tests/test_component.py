@@ -395,15 +395,15 @@ class ComponentIsolationTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component_block "test" %}
+            {% component "test" %}
                 {% fill "header" %}Override header{% endfill %}
-            {% endcomponent_block %}
-            {% component_block "test" %}
+            {% endcomponent %}
+            {% component "test" %}
                 {% fill "main" %}Override main{% endfill %}
-            {% endcomponent_block %}
-            {% component_block "test" %}
+            {% endcomponent %}
+            {% component "test" %}
                 {% fill "footer" %}Override footer{% endfill %}
-            {% endcomponent_block %}
+            {% endcomponent %}
         """
         )
 

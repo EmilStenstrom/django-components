@@ -83,7 +83,7 @@ def render_template_view(request):
     template = Template(
         """
         {% load component_tags %}
-        {% component_block "testcomponent" variable="TEMPLATE" %}{% endcomponent_block %}
+        {% component "testcomponent" variable="TEMPLATE" %}{% endcomponent %}
         """
     )
     return HttpResponse(template.render(Context({})))

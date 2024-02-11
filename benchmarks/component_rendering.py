@@ -88,11 +88,11 @@ class RenderBenchmarks(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component_block 'test_component' %}
+            {% component 'test_component' %}
                 {% slot "header" %}
-                    {% component_block 'inner_component' variable='foo' %}{% endcomponent_block %}
+                    {% component 'inner_component' variable='foo' %}{% endcomponent %}
                 {% endslot %}
-            {% endcomponent_block %}
+            {% endcomponent %}
         """
         )
 
@@ -102,11 +102,11 @@ class RenderBenchmarks(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}{% component_dependencies %}
-            {% component_block 'test_component' %}
+            {% component 'test_component' %}
                 {% slot "header" %}
-                    {% component_block 'inner_component' variable='foo' %}{% endcomponent_block %}
+                    {% component 'inner_component' variable='foo' %}{% endcomponent %}
                 {% endslot %}
-            {% endcomponent_block %}
+            {% endcomponent %}
         """
         )
         # Sanity tests

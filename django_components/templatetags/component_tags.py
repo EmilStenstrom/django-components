@@ -265,7 +265,7 @@ class BaseFillNode(Node):
         raise TemplateSyntaxError(
             "{% fill ... %} block cannot be rendered directly. "
             "You are probably seeing this because you have used one outside "
-            "a {% component_block %} context."
+            "a {% component %} context."
         )
 
 
@@ -286,7 +286,7 @@ class NamedFillNode(BaseFillNode):
 
 class ImplicitFillNode(BaseFillNode):
     """
-    Instantiated when a `component_block` tag pair is passed template content that
+    Instantiated when a `component` tag pair is passed template content that
     excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
     as 'default'.
     """
@@ -298,10 +298,10 @@ class ImplicitFillNode(BaseFillNode):
 @register.tag("fill")
 def do_fill(parser, token):
     """Block tag whose contents 'fill' (are inserted into) an identically named
-    'slot'-block in the component template referred to by a parent component_block.
+    'slot'-block in the component template referred to by a parent component.
     It exists to make component nesting easier.
 
-    This tag is available only within a {% component_block %}..{% endcomponent_block %} block.
+    This tag is available only within a {% component %}..{% endcomponent %} block.
     Runtime checks should prohibit other usages.
     """
     bits = token.split_contents()
@@ -406,14 +406,14 @@ class ComponentNode(Node):
             return rendered_component
 
 
-@register.tag(name="component_block")
-def do_component_block(parser, token):
+@register.tag(name="component")
+def do_component(parser, token):
     """
     To give the component access to the template context:
-        {% component_block "name" positional_arg keyword_arg=value ... %}
+        {% component "name" positional_arg keyword_arg=value ... %}
 
     To render the component in an isolated context:
-        {% component_block "name" positional_arg keyword_arg=value ... only %}
+        {% component "name" positional_arg keyword_arg=value ... only %}
 
     Positional and keyword arguments can be literals or template variables.
     The component name must be a single- or double-quotes string and must
@@ -423,8 +423,8 @@ def do_component_block(parser, token):
 
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
-    component_name, context_args, context_kwargs = parse_component_with_args(parser, bits, "component_block")
-    body: NodeList = parser.parse(parse_until=["endcomponent_block"])
+    component_name, context_args, context_kwargs = parse_component_with_args(parser, bits, "component")
+    body: NodeList = parser.parse(parse_until=["endcomponent"])
     parser.delete_first_token()
     fill_nodes = ()
     if block_has_content(body):
@@ -437,7 +437,7 @@ def do_component_block(parser, token):
                 break
         else:
             raise TemplateSyntaxError(
-                "Illegal content passed to 'component_block' tag pair. "
+                "Illegal content passed to 'component' tag pair. "
                 "Possible causes: 1) Explicit 'fill' tags cannot occur alongside other "
                 "tags except comment tags; 2) Default (default slot-targeting) content "
                 "is mixed with explict 'fill' tags."
