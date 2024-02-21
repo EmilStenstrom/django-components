@@ -106,7 +106,7 @@ Modify STATICFILES_DIRS (or add it if you don't have it) so django can find your
 ```python
 STATICFILES_DIRS = [
     ...,
-    BASE_DIR / "components",
+    os.path.join(BASE_DIR, "components"),
 ]
 ```
 

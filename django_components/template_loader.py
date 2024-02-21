@@ -15,7 +15,7 @@ class Loader(FilesystemLoader):
         directories = set(get_app_template_dirs(component_dir))
 
         if hasattr(settings, "BASE_DIR"):
-            path = (settings.BASE_DIR / component_dir).resolve()
+            path = (Path(settings.BASE_DIR) / component_dir).resolve()
             if path.is_dir():
                 directories.add(path)
 
