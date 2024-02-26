@@ -20,7 +20,7 @@ Read on to learn about the details!
 
 ## Release notes
 
-<span style="color: red; font-weight: bold">**Version 0.36** CHANGES THE SYNTAX</span> for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of components to the new syntax automatically.
+<span style="color: red; font-weight: bold">**Version 0.5** CHANGES THE SYNTAX</span> for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of components to the new syntax automatically.
 
 This change is done to simplify the API in anticipation of a 1.0 release of django_components. After 1.0 we intend to be stricter with big changes like this in point releases.
 
