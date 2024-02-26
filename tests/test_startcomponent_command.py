@@ -52,15 +52,11 @@ class CreateComponentCommandTest(TestCase):
             os.path.join(self.temp_dir, component_name, "test.js"),
             os.path.join(self.temp_dir, component_name, "test.css"),
             os.path.join(self.temp_dir, component_name, "test.html"),
-            os.path.join(
-                self.temp_dir, component_name, f"{component_name}.py"
-            ),
+            os.path.join(self.temp_dir, component_name, f"{component_name}.py"),
         ]
 
         for file_path in expected_files:
-            self.assertTrue(
-                os.path.exists(file_path), f"File {file_path} was not created"
-            )
+            self.assertTrue(os.path.exists(file_path), f"File {file_path} was not created")
 
     def test_dry_run(self):
         component_name = "dryruncomponent"
@@ -80,9 +76,7 @@ class CreateComponentCommandTest(TestCase):
         component_path = os.path.join(self.temp_dir, component_name)
         os.makedirs(component_path)
 
-        with open(
-            os.path.join(component_path, f"{component_name}.py"), "w"
-        ) as f:
+        with open(os.path.join(component_path, f"{component_name}.py"), "w") as f:
             f.write("hello world")
 
         call_command(
@@ -93,9 +87,7 @@ class CreateComponentCommandTest(TestCase):
             "--force",
         )
 
-        with open(
-            os.path.join(component_path, f"{component_name}.py"), "r"
-        ) as f:
+        with open(os.path.join(component_path, f"{component_name}.py"), "r") as f:
             self.assertNotIn("hello world", f.read())
 
     def test_error_existing_component_no_force(self):
@@ -104,9 +96,7 @@ class CreateComponentCommandTest(TestCase):
         os.makedirs(component_path)
 
         with self.assertRaises(CommandError):
-            call_command(
-                "startcomponent", component_name, "--path", self.temp_dir
-            )
+            call_command("startcomponent", component_name, "--path", self.temp_dir)
 
     def test_verbose_output(self):
         component_name = "verbosecomponent"

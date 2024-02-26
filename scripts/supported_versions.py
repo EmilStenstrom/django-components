@@ -30,9 +30,7 @@ def get_supported_versions(url):
         django_to_python = {
             version_to_tuple(python_version): [
                 version_to_tuple(version_string)
-                for version_string in re.findall(
-                    r"(?<!\.)\d+\.\d+(?!\.)", django_versions
-                )
+                for version_string in re.findall(r"(?<!\.)\d+\.\d+(?!\.)", django_versions)
             ]
             for python_version, django_versions in version_dict.items()
         }
@@ -46,9 +44,7 @@ def get_latest_version(url):
         response_content = response.read()
 
     content = response_content.decode("utf-8")
-    version_string = re.findall(
-        r"The latest official version is (\d+\.\d)", content
-    )[0]
+    version_string = re.findall(r"The latest official version is (\d+\.\d)", content)[0]
     return version_to_tuple(version_string)
 
 
@@ -108,9 +104,7 @@ def build_deps_envlist(python_to_django):
         (
             env_format(django_version),
             env_format(django_version, divider="."),
-            env_format(
-                (django_version[0], django_version[1] + 1), divider="."
-            ),
+            env_format((django_version[0], django_version[1] + 1), divider="."),
         )
         for django_version in sorted(all_django_versions)
     ]
@@ -123,9 +117,7 @@ def build_pypi_classifiers(python_to_django):
 
     all_python_versions = python_to_django.keys()
     for python_version in all_python_versions:
-        classifiers.append(
-            f'"Programming Language :: Python :: {env_format(python_version, divider=".")}",'
-        )
+        classifiers.append(f'"Programming Language :: Python :: {env_format(python_version, divider=".")}",')
 
     all_django_versions = set()
     for django_versions in python_to_django.values():
@@ -133,13 +125,9 @@ def build_pypi_classifiers(python_to_django):
             all_django_versions.add(django_version)
 
     for django_version in sorted(all_django_versions):
-        classifiers.append(
-            f'"Framework :: Django :: {env_format(django_version, divider=".")}",'
-        )
+        classifiers.append(f'"Framework :: Django :: {env_format(django_version, divider=".")}",')
 
-    return textwrap.indent(
-        "classifiers=[\n", prefix=" " * 4
-    ) + textwrap.indent("\n".join(classifiers), prefix=" " * 8)
+    return textwrap.indent("classifiers=[\n", prefix=" " * 4) + textwrap.indent("\n".join(classifiers), prefix=" " * 8)
 
 
 def build_readme(python_to_django):
@@ -154,9 +142,7 @@ def build_readme(python_to_django):
     lines = [
         (
             env_format(python_version, divider="."),
-            ", ".join(
-                env_format(version, divider=".") for version in django_versions
-            ),
+            ", ".join(env_format(version, divider=".") for version in django_versions),
         )
         for python_version, django_versions in python_to_django.items()
     ]
@@ -169,13 +155,9 @@ def build_pyenv(python_to_django):
     lines = []
     all_python_versions = python_to_django.keys()
     for python_version in all_python_versions:
-        lines.append(
-            f'pyenv install -s {env_format(python_version, divider=".")}'
-        )
+        lines.append(f'pyenv install -s {env_format(python_version, divider=".")}')
 
-    lines.append(
-        f'pyenv local {" ".join(env_format(version, divider=".") for version in all_python_versions)}'
-    )
+    lines.append(f'pyenv local {" ".join(env_format(version, divider=".") for version in all_python_versions)}')
 
     lines.append("tox -p")
 
@@ -185,20 +167,15 @@ def build_pyenv(python_to_django):
 def build_ci_python_versions(python_to_django):
     # Outputs python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
     lines = [
-        f"'{env_format(python_version, divider='.')}'"
-        for python_version, django_versions in python_to_django.items()
+        f"'{env_format(python_version, divider='.')}'" for python_version, django_versions in python_to_django.items()
     ]
     lines = " " * 8 + f"python-version: [{', '.join(lines)}]"
     return lines
 
 
 def main():
-    django_to_python = get_supported_versions(
-        "https://docs.djangoproject.com/en/dev/faq/install/"
-    )
-    latest_version = get_latest_version(
-        "https://www.djangoproject.com/download/"
-    )
+    django_to_python = get_supported_versions("https://docs.djangoproject.com/en/dev/faq/install/")
+    latest_version = get_latest_version("https://www.djangoproject.com/download/")
 
     python_to_django = build_python_to_django(django_to_python, latest_version)
 

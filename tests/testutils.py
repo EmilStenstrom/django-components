@@ -8,9 +8,7 @@ from django_components.middleware import ComponentDependencyMiddleware
 
 # Create middleware instance
 response_stash = None
-middleware = ComponentDependencyMiddleware(
-    get_response=lambda _: response_stash
-)
+middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash)
 
 
 class Django30CompatibleSimpleTestCase(SimpleTestCase):
@@ -19,9 +17,7 @@ class Django30CompatibleSimpleTestCase(SimpleTestCase):
         left = left.replace(' type="text/css"', "")
         right = right.replace(' type="text/javascript"', "")
         right = right.replace(' type="text/css"', "")
-        super(Django30CompatibleSimpleTestCase, self).assertHTMLEqual(
-            left, right
-        )
+        super(Django30CompatibleSimpleTestCase, self).assertHTMLEqual(left, right)
 
     def assertInHTML(self, needle, haystack, count=None, msg_prefix=""):
         haystack = haystack.replace(' type="text/javascript"', "")
@@ -37,9 +33,7 @@ request = Mock()
 mock_template = Mock()
 
 
-def create_and_process_template_response(
-    template, context=None, use_middleware=True
-):
+def create_and_process_template_response(template, context=None, use_middleware=True):
     context = context if context is not None else Context({})
     mock_template.render = lambda context, _: template.render(context)
     response = TemplateResponse(request, mock_template, context)

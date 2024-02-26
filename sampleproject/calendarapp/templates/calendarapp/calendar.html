@@ -5,12 +5,12 @@
     {% component_css_dependencies %}
 </head>
 <body>
-    {% component "calendar" date=date %}
-    {% component_block "greeting" name='Joe' %}
+    {% component "calendar" date=date %}{% endcomponent %}
+    {% component "greeting" name='Joe' %}
         {% fill "message" %}
             Howdy?
         {% endfill %}
-    {% endcomponent_block %}
+    {% endcomponent %}
     {% component_js_dependencies %}
 </body>
 </html>

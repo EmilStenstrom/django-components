@@ -9,9 +9,7 @@ class Command(BaseCommand):
     help = "Creates a new component"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "name", type=str, help="The name of the component to create"
-        )
+        parser.add_argument("name", type=str, help="The name of the component to create")
         parser.add_argument(
             "--path",
             type=str,
@@ -71,9 +69,7 @@ class Command(BaseCommand):
             elif base_dir:
                 component_path = os.path.join(base_dir, "components", name)
             else:
-                raise CommandError(
-                    "You must specify a path or set BASE_DIR in your django settings"
-                )
+                raise CommandError("You must specify a path or set BASE_DIR in your django settings")
 
             if os.path.exists(component_path):
                 if force:
@@ -84,11 +80,7 @@ class Command(BaseCommand):
                             )
                         )
                     else:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f'The component "{name}" already exists. Overwriting...'
-                            )
-                        )
+                        self.stdout.write(self.style.WARNING(f'The component "{name}" already exists. Overwriting...'))
                 else:
                     raise CommandError(
                         f'The component "{name}" already exists at {component_path}. Use --force to overwrite.'
@@ -107,9 +99,7 @@ class Command(BaseCommand):
                     )
                     f.write(script_content.strip())
 
-                with open(
-                    os.path.join(component_path, css_filename), "w"
-                ) as f:
+                with open(os.path.join(component_path, css_filename), "w") as f:
                     style_content = dedent(
                         f"""
                         .component-{name} {{
@@ -119,9 +109,7 @@ class Command(BaseCommand):
                     )
                     f.write(style_content.strip())
 
-                with open(
-                    os.path.join(component_path, template_filename), "w"
-                ) as f:
+                with open(os.path.join(component_path, template_filename), "w") as f:
                     template_content = dedent(
                         f"""
                         <div class="component-{name}">
@@ -133,9 +121,7 @@ class Command(BaseCommand):
                     )
                     f.write(template_content.strip())
 
-                with open(
-                    os.path.join(component_path, f"{name}.py"), "w"
-                ) as f:
+                with open(os.path.join(component_path, f"{name}.py"), "w") as f:
                     py_content = dedent(
                         f"""
                         from django_components import component
@@ -157,16 +143,8 @@ class Command(BaseCommand):
                     f.write(py_content.strip())
 
             if verbose:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Successfully created {name} component at {component_path}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"Successfully created {name} component at {component_path}"))
             else:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Successfully created {name} component"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"Successfully created {name} component"))
         else:
             raise CommandError("You must specify a component name")

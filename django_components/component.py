@@ -80,9 +80,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         registered_name: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Union[
-            DefaultFillContent, Iterable[NamedFillContent]
-        ] = (),
+        fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]] = (),
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
@@ -152,14 +150,10 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
 
-        updated_filled_slots_context: FilledSlotsContext = (
-            self._process_template_and_update_filled_slot_context(
-                context, template
-            )
+        updated_filled_slots_context: FilledSlotsContext = self._process_template_and_update_filled_slot_context(
+            context, template
         )
-        with context.update(
-            {FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}
-        ):
+        with context.update({FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}):
             return template.render(context)
 
     def render_to_response(
@@ -201,19 +195,14 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             named_fills_content = {}
         else:
             default_fill_content = None
-            named_fills_content = {
-                name: (nodelist, alias)
-                for name, nodelist, alias in self.fill_content
-            }
+            named_fills_content = {name: (nodelist, alias) for name, nodelist, alias in self.fill_content}
 
         # If value is `None`, then slot is unfilled.
         slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}
         default_slot_encountered: bool = False
         required_slot_names: Set[str] = set()
 
-        for node in template.nodelist.get_nodes_by_type(
-            (SlotNode, IfSlotFilledConditionBranchNode)  # type: ignore
-        ):
+        for node in template.nodelist.get_nodes_by_type((SlotNode, IfSlotFilledConditionBranchNode)):  # type: ignore
             if isinstance(node, SlotNode):
                 # Give slot node knowledge of its parent template.
                 node.template = template
@@ -225,9 +214,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
                         f"To fix, check template '{template.name}' "
                         f"of component '{self.registered_name}'."
                     )
-                content_data: Optional[FillContent] = (
-                    None  # `None` -> unfilled
-                )
+                content_data: Optional[FillContent] = None  # `None` -> unfilled
                 if node.is_required:
                     required_slot_names.add(node.name)
                 if node.is_default:
@@ -245,25 +232,19 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             elif isinstance(node, IfSlotFilledConditionBranchNode):
                 node.template = template
             else:
-                raise RuntimeError(
-                    f"Node of {type(node).__name__} does not require linking."
-                )
+                raise RuntimeError(f"Node of {type(node).__name__} does not require linking.")
 
         # Check: Only component templates that include a 'default' slot
         # can be invoked with implicit filling.
         if default_fill_content and not default_slot_encountered:
             raise TemplateSyntaxError(
-                f"Component '{self.registered_name}' passed default fill content "
+                f"Component '{self.registered_name}' passed default fill content '{default_fill_content}'"
                 f"(i.e. without explicit 'fill' tag), "
                 f"even though none of its slots is marked as 'default'."
             )
 
-        unfilled_slots: Set[str] = set(
-            k for k, v in slot_name2fill_content.items() if v is None
-        )
-        unmatched_fills: Set[str] = (
-            named_fills_content.keys() - slot_name2fill_content.keys()
-        )
+        unfilled_slots: Set[str] = set(k for k, v in slot_name2fill_content.items() if v is None)
+        unmatched_fills: Set[str] = named_fills_content.keys() - slot_name2fill_content.keys()
 
         # Check that 'required' slots are filled.
         for slot_name in unfilled_slots:
@@ -286,9 +267,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # Higher values make matching stricter. This is probably preferable, as it
         # reduces false positives.
         for fill_name in unmatched_fills:
-            fuzzy_slot_name_matches = difflib.get_close_matches(
-                fill_name, unfilled_slots, n=1, cutoff=0.7
-            )
+            fuzzy_slot_name_matches = difflib.get_close_matches(fill_name, unfilled_slots, n=1, cutoff=0.7)
             msg = (
                 f"Component '{self.registered_name}' passed fill "
                 f"that refers to undefined slot: '{fill_name}'."
@@ -305,9 +284,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             if content_data  # Slots whose content is None (i.e. unfilled) are dropped.
         }
         try:
-            prev_context: FilledSlotsContext = context[
-                FILLED_SLOTS_CONTENT_CONTEXT_KEY
-            ]
+            prev_context: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
             return prev_context.new_child(filled_slots_map)
         except KeyError:
             return ChainMap(filled_slots_map)

@@ -27,9 +27,7 @@ class ComponentRegistryTest(unittest.TestCase):
         class TestComponent(component.Component):
             pass
 
-        self.assertEqual(
-            component.registry.get("decorated_component"), TestComponent
-        )
+        self.assertEqual(component.registry.get("decorated_component"), TestComponent)
 
     def test_simple_register(self):
         self.registry.register(name="testcomponent", component=MockComponent)
@@ -49,18 +47,12 @@ class ComponentRegistryTest(unittest.TestCase):
     def test_prevent_registering_different_components_with_the_same_name(self):
         self.registry.register(name="testcomponent", component=MockComponent)
         with self.assertRaises(component.AlreadyRegistered):
-            self.registry.register(
-                name="testcomponent", component=MockComponent2
-            )
+            self.registry.register(name="testcomponent", component=MockComponent2)
 
     def test_allow_duplicated_registration_of_the_same_component(self):
         try:
-            self.registry.register(
-                name="testcomponent", component=MockComponentView
-            )
-            self.registry.register(
-                name="testcomponent", component=MockComponentView
-            )
+            self.registry.register(name="testcomponent", component=MockComponentView)
+            self.registry.register(name="testcomponent", component=MockComponentView)
         except component.AlreadyRegistered:
             self.fail("Should not raise AlreadyRegistered")
 
