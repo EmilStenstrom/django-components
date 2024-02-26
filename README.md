@@ -110,7 +110,7 @@ Modify STATICFILES_DIRS (or add it if you don't have it) so django can find your
 ```python
 STATICFILES_DIRS = [
     ...,
-    BASE_DIR / "components",
+    os.path.join(BASE_DIR, "components"),
 ]
 ```
 
@@ -751,6 +751,12 @@ python manage.py startcomponent my_component --dry-run
 ```
 
 This will simulate the creation of `my_component` without creating any files.
+
+## Community examples
+
+One of our goals with `django-components` is to make it easy to share components between projects. If you have a set of components that you think would be useful to others, please open a pull request to add them to the list below.
+
+- [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
 ## Install locally and run the tests
 
