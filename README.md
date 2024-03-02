@@ -251,6 +251,7 @@ Components can also be defined in a single file, which is useful for small compo
 ```python
 # In a file called [project root]/components/calendar.py
 from django_components import component
+from django_components import types as t 
 
 @component.register("calendar")
 class Calendar(component.Component):
@@ -259,16 +260,16 @@ class Calendar(component.Component):
             "date": date,
         }
     
-    template = """
+    template: t.django_html = """
         <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
     """
     
-    css = """
+    css: t.css = """
         .calendar-component { width: 200px; background: pink; }
         .calendar-component span { font-weight: bold; }
     """
     
-    js = """
+    js: t.js = """
         (function(){
             if (document.querySelector(".calendar-component")) {
                 document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
@@ -278,6 +279,8 @@ class Calendar(component.Component):
 ```
 
 This makes it easy to create small components without having to create a separate template, CSS, and JS file.
+
+Note that the `t.django_html`, `t.css`, and `t.js` types are used to specify the type of the template, CSS, and JS files, respectively. This is not necessary, but if you're using VSCode with the [Python Inline Source Syntax Highlighting](https://marketplace.visualstudio.com/items?itemName=samwillis.python-inline-source) extension, it will give you syntax highlighting for the template, CSS, and JS. 
 
 ## Using slots in templates
 
