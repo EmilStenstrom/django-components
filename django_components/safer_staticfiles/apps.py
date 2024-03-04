@@ -12,9 +12,7 @@ class SaferStaticFilesConfig(StaticFilesConfig):
     by the static file server.
     """
 
-    default = (
-        True  # Ensure that _this_ app is registered, as opposed to parent cls.
-    )
+    default = True  # Ensure that _this_ app is registered, as opposed to parent cls.
     ignore_patterns = StaticFilesConfig.ignore_patterns + [
         "*.py",
         "*.html",

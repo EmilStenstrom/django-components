@@ -1,11 +1,11 @@
 {% load component_tags %}
 <div class="dashboard-component">
-  {% component_block "calendar" date="2020-06-06" %}
+  {% component "calendar" date="2020-06-06" %}
     {% fill "header" %}  {# fills and slots with same name relate to diff. things. #}
       {% slot "header" %}Welcome to your dashboard!{% endslot %}
     {% endfill %}
     {% fill "body" %}Here are your to-do items for today:{% endfill %}
-  {% endcomponent_block %}
+  {% endcomponent %}
   <ol>
     {% for item in items %}
       <li>{{ item }}</li>

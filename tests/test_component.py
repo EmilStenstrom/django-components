@@ -234,9 +234,7 @@ class InlineComponentTest(SimpleTestCase):
                 css = "path/to/style.css"
                 js = "path/to/script.js"
 
-        comp = HTMLStringFileCSSJSComponent(
-            "html_string_file_css_js_component"
-        )
+        comp = HTMLStringFileCSSJSComponent("html_string_file_css_js_component")
         self.assertHTMLEqual(
             comp.render(Context({})),
             "<div class='html-string-file'>Content</div>",
@@ -259,9 +257,7 @@ class InlineComponentTest(SimpleTestCase):
             class Media:
                 css = "path/to/style.css"
 
-        comp = HTMLStringFileCSSJSComponent(
-            "html_string_file_css_js_component"
-        )
+        comp = HTMLStringFileCSSJSComponent("html_string_file_css_js_component")
         self.assertHTMLEqual(
             comp.render(Context({})),
             "<div class='html-string-file'>Content</div>",
@@ -284,9 +280,7 @@ class InlineComponentTest(SimpleTestCase):
             class Media:
                 js = "path/to/script.js"
 
-        comp = HTMLStringFileCSSJSComponent(
-            "html_string_file_css_js_component"
-        )
+        comp = HTMLStringFileCSSJSComponent("html_string_file_css_js_component")
         self.assertHTMLEqual(
             comp.render(Context({})),
             "<div class='html-string-file'>Content</div>",
@@ -303,9 +297,7 @@ class InlineComponentTest(SimpleTestCase):
     def test_component_with_variable_in_html(self):
         class VariableHTMLComponent(component.Component):
             def get_template(self, context):
-                return Template(
-                    "<div class='variable-html'>{{ variable }}</div>"
-                )
+                return Template("<div class='variable-html'>{{ variable }}</div>")
 
         comp = VariableHTMLComponent("variable_html_component")
         context = Context({"variable": "Dynamic Content"})
@@ -403,15 +395,15 @@ class ComponentIsolationTests(SimpleTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component_block "test" %}
+            {% component "test" %}
                 {% fill "header" %}Override header{% endfill %}
-            {% endcomponent_block %}
-            {% component_block "test" %}
+            {% endcomponent %}
+            {% component "test" %}
                 {% fill "main" %}Override main{% endfill %}
-            {% endcomponent_block %}
-            {% component_block "test" %}
+            {% endcomponent %}
+            {% component "test" %}
                 {% fill "footer" %}Override footer{% endfill %}
-            {% endcomponent_block %}
+            {% endcomponent %}
         """
         )
 

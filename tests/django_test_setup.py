@@ -11,9 +11,7 @@ if not settings.configured:
             }
         ],
         COMPONENTS={"template_cache_size": 128},
-        MIDDLEWARE=[
-            "django_components.middleware.ComponentDependencyMiddleware"
-        ],
+        MIDDLEWARE=["django_components.middleware.ComponentDependencyMiddleware"],
         DATABASES={
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",

@@ -2,5 +2,7 @@ django
 tox
 pytest
 flake8
+flake8-pyproject
 isort
 pre-commit
+black

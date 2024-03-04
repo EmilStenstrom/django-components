@@ -49,9 +49,7 @@ class MockComponentSlot(component.Component):
         """
 
     def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response(
-            {"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"}
-        )
+        return self.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
 
 
 @component.register("testcomponent_context_insecure")
@@ -64,9 +62,7 @@ class MockInsecureComponentContext(component.Component):
         """
 
     def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response(
-            {"variable": "<script>alert(1);</script>"}
-        )
+        return self.render_to_response({"variable": "<script>alert(1);</script>"})
 
 
 @component.register("testcomponent_slot_insecure")
@@ -80,16 +76,14 @@ class MockInsecureComponentSlot(component.Component):
         """
 
     def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response(
-            {}, {"test_slot": "<script>alert(1);</script>"}
-        )
+        return self.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
 
 
 def render_template_view(request):
     template = Template(
         """
         {% load component_tags %}
-        {% component "testcomponent" variable="TEMPLATE" %}
+        {% component "testcomponent" variable="TEMPLATE" %}{% endcomponent %}
         """
     )
     return HttpResponse(template.render(Context({})))
