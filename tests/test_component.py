@@ -2,6 +2,7 @@ from textwrap import dedent
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
+from django.test import override_settings
 
 # isort: off
 from .django_test_setup import *  # NOQA
@@ -381,6 +382,36 @@ class ComponentMediaTests(SimpleTestCase):
                 <script src="path/to/script.js"></script>
             """
             ),
+        )
+
+    @override_settings(TEMPLATES=[{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': ['tests/templates/', 'tests/components/']
+    }])
+    def test_component_media_with_dict_with_list_and_list2(self):
+        from .components.relative_file.relative_file import RelativeFileComponent
+
+        comp = RelativeFileComponent("")
+
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            dedent(
+                """\
+                <link href="relative_file/relative_file.css" media="all" rel="stylesheet">
+                <script src="relative_file/relative_file.js"></script>
+            """
+            ),
+        )
+
+        rendered = comp.render(Context(comp.get_context_data(variable="test")))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <form method="post">
+            <input type="text" name="variable" value="test">
+            <input type="submit">
+            </form>
+            """,
         )
 
 
