@@ -1,8 +1,10 @@
 import difflib
 import inspect
+import os
 from collections import ChainMap
 from typing import Any, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Union
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
 from django.http import HttpResponse
@@ -60,7 +62,91 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
             if hasattr(media, "js") and isinstance(media.js, str):
                 media.js = [media.js]
 
+        _resolve_component_relative_files(attrs)
+
         return super().__new__(mcs, name, bases, attrs)
+
+
+def _resolve_component_relative_files(attrs: dict):
+    """
+    Check if component's HTML, JS and CSS files refer to files in the same directory
+    as the component class. If so, modify the attributes so the class Django's rendering
+    will pick up these files correctly.
+    """
+
+    # Prepare all possible directories we need to check when searching for
+    # component's template and media files
+    candidate_dirs = settings.STATICFILES_DIRS or []
+    candidate_dirs.extend(
+        str(dir_path) for template_backend in settings.TEMPLATES or [] for dir_path in template_backend.get("DIRS", [])
+    )
+
+    # Get the directory where the component class is defined
+    try:
+        abs_comp_dir, comp_dir = _get_dir_path_from_component_module_path(attrs["__module__"], candidate_dirs)
+    except RuntimeError:
+        # If no dir was found, we assume that the path is NOT relative to the component dir
+        return
+
+    # Check if filepath refers to a file that's in the same directory as the component class.
+    def resolve_file(filepath: str):
+        maybe_resolved_filepath = os.path.join(abs_comp_dir, filepath)
+        component_import_filepath = os.path.join(comp_dir, filepath)
+
+        if os.path.isfile(maybe_resolved_filepath):
+            return component_import_filepath
+        return filepath
+
+    # Check if template name is a local file or not
+    if "template_name" in attrs and attrs["template_name"]:
+        attrs["template_name"] = resolve_file(attrs["template_name"])
+
+    if "Media" in attrs:
+        media = attrs["Media"]
+
+        # Now check the same for CSS files
+        if hasattr(media, "css") and isinstance(media.css, dict):
+            for media_type, path_list in media.css.items():
+                media.css[media_type] = [resolve_file(filepath) for filepath in path_list]
+
+        # And JS
+        if hasattr(media, "js") and isinstance(media.js, list):
+            media.js = [resolve_file(filepath) for filepath in media.js]
+
+
+def _get_dir_path_from_component_module_path(component_module_path: str, candidate_dirs: list[str]):
+    # Transform python module notation "pkg.module.name" to file path "pkg/module/name"
+    comp_path = os.sep.join(component_module_path.split("."))
+    comp_dir_rel_path = os.path.dirname(comp_path)
+
+    # Django resolves the template's relative to the values in TEMPLATE.DIRS
+    # so we have to adjust the component dir path to match one of the template dirs.
+    cwd = os.getcwd()
+    comp_dir_abs_path = os.path.join(cwd, comp_dir_rel_path)
+
+    # From all dirs defined in TEMPLATES.DIRS and STATICFILES_DIRS, find one that
+    # holds the component file.
+    root_dir_abs = None
+    for candidate_dir in candidate_dirs:
+        candidate_dir_abs = os.path.abspath(candidate_dir)
+        if comp_dir_abs_path.startswith(candidate_dir_abs):
+            # Get the common part of the path
+            root_dir_abs = comp_dir_abs_path[: len(candidate_dir_abs)]
+            break
+
+    if root_dir_abs is None:
+        raise RuntimeError(
+            f"Failed to resolve template directory for component '{component_module_path}',"
+            " make sure that the component's directory is accessible from one of the paths"
+            " specified in the Django's settings in 'TEMPLATES.DIRS'"
+        )
+
+    # Get path to component dir that's relative to the matched templates/static files dir
+    comp_dir_relative_to_root_dir = comp_dir_abs_path.replace(root_dir_abs, "")
+    if comp_dir_relative_to_root_dir.startswith("/"):
+        comp_dir_relative_to_root_dir = comp_dir_relative_to_root_dir[1:]
+
+    return comp_dir_abs_path, comp_dir_relative_to_root_dir
 
 
 class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
