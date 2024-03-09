@@ -384,10 +384,14 @@ class ComponentMediaTests(SimpleTestCase):
             ),
         )
 
-    @override_settings(TEMPLATES=[{
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['tests/templates/', 'tests/components/']
-    }])
+    @override_settings(
+        TEMPLATES=[
+            {
+                "BACKEND": "django.template.backends.django.DjangoTemplates",
+                "DIRS": ["tests/templates/", "tests/components/"],
+            }
+        ]
+    )
     def test_component_media_with_dict_with_list_and_list2(self):
         from .components.relative_file.relative_file import RelativeFileComponent
 
