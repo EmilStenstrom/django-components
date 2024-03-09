@@ -114,7 +114,7 @@ def _resolve_component_relative_files(attrs: dict):
             media.js = [resolve_file(filepath) for filepath in media.js]
 
 
-def _get_dir_path_from_component_module_path(component_module_path: str, candidate_dirs: list[str]):
+def _get_dir_path_from_component_module_path(component_module_path: str, candidate_dirs: List[str]):
     # Transform python module notation "pkg.module.name" to file path "pkg/module/name"
     comp_path = os.sep.join(component_module_path.split("."))
     comp_dir_rel_path = os.path.dirname(comp_path)
