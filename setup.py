@@ -8,8 +8,8 @@ VERSION = "0.51"
 setup(
     name="django_components",
     packages=find_packages(exclude=["tests"]),
-    package_data = {
-        'django_components': ['py.typed'],
+    package_data={
+        "django_components": ["py.typed"],
     },
     version=VERSION,
     description="A way to create simple reusable template components in Django.",
