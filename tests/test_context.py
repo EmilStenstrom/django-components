@@ -249,7 +249,9 @@ class ContextCalledOnceTests(SimpleTestCase):
         rendered = template.render(Context()).strip().replace("\n", "")
         self.assertEqual(
             rendered,
-            '<link href="relative_file/relative_file.css" media="all" rel="stylesheet"><script src="relative_file/relative_file.js"></script><p class="incrementer">value=1;calls=1</p>',
+            '<link href="relative_file/relative_file.css" media="all" rel="stylesheet">'
+            '<script src="relative_file/relative_file.js"></script>'
+            '<p class="incrementer">value=1;calls=1</p>',
             rendered,
         )
 
