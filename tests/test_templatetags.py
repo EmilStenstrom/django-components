@@ -1250,7 +1250,9 @@ class IterationFillTest(SimpleTestCase):
     class ComponentSimpleSlotInALoop(django_components.component.Component):
         template_name = "template_with_slot_in_a_loop.html"
 
-        def get_context_data(self, objects: Iterable) -> dict:
+        def get_context_data(self, *args, **kwargs) -> dict:
+            # NOTE: Because of MyPy in Python v3.6, arg `name` cannot be declared as separate variable
+            objects: Iterable = args[0]
             return {
                 "objects": objects,
             }

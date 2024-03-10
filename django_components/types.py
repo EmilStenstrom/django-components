@@ -1,5 +1,5 @@
 try:
-    from typing import Annotated
+    from typing import Annotated  # type: ignore
 except ImportError:
 
     class Annotated:  # type: ignore

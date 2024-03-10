@@ -31,7 +31,9 @@ class MockComponentRequest(component.Component):
     def get(self, request, *args, **kwargs) -> HttpResponse:
         return self.render_to_response({"variable": "GET"})
 
-    def get_context_data(self, variable, *args, **kwargs) -> Dict[str, Any]:
+    def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
+        # NOTE: Because of MyPy in Python v3.6, arg `name` cannot be declared as separate variable
+        variable = args[0]
         return {"variable": variable}
 
 
