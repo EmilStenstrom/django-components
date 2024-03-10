@@ -1,7 +1,7 @@
 import difflib
 import inspect
 from collections import ChainMap
-from typing import Any, ClassVar, Dict, Iterable, Optional, Set, Tuple, Union
+from typing import Any, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -40,7 +40,7 @@ from django_components.templatetags.component_tags import (
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
     def __new__(mcs, name, bases, attrs):
         if "Media" in attrs:
-            media = attrs["Media"]
+            media: Component.Media = attrs["Media"]
 
             # Allow: class Media: css = "style.css"
             if hasattr(media, "css") and isinstance(media.css, str):
@@ -54,7 +54,7 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
             if hasattr(media, "css") and isinstance(media.css, dict):
                 for media_type, path_list in media.css.items():
                     if isinstance(path_list, str):
-                        media.css[media_type] = [path_list]
+                        media.css[media_type] = [path_list]  # type: ignore
 
             # Allow: class Media: js = "script.js"
             if hasattr(media, "js") and isinstance(media.js, str):
@@ -67,20 +67,20 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     template_name: ClassVar[Optional[str]] = None
-    template: ClassVar[Optional[str]] = None
-    js: ClassVar[Optional[str]] = None
-    css: ClassVar[Optional[str]] = None
+    template: Optional[str] = None
+    js: Optional[str] = None
+    css: Optional[str] = None
     media: Media
 
     class Media:
-        css = {}
-        js = []
+        css: Optional[Union[str, List[str], Dict[str, str], Dict[str, List[str]]]] = None
+        js: Optional[Union[str, List[str]]] = None
 
     def __init__(
         self,
         registered_name: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]] = (),
+        fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]] = (),  # type: ignore
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
@@ -173,7 +173,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def _fill_slots(
         self,
         slots_data: Dict[SlotName, str],
-        escape_content: bool,
+        escape_content: Union[bool, None],
     ):
         """Fill component slots outside of template rendering."""
         self.fill_content = [
@@ -195,7 +195,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             named_fills_content = {}
         else:
             default_fill_content = None
-            named_fills_content = {name: (nodelist, alias) for name, nodelist, alias in self.fill_content}
+            named_fills_content = {name: (nodelist, alias) for name, nodelist, alias in list(self.fill_content)}
 
         # If value is `None`, then slot is unfilled.
         slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}

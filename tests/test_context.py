@@ -47,6 +47,10 @@ class VariableDisplay(component.Component):
 
 class IncrementerComponent(component.Component):
     template_name = "incrementer.html"
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.call_count = 0
 
     def get_context_data(self, value=0):
         value = int(value)
