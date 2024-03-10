@@ -4,7 +4,6 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 from urllib import request
 
-
 Version = Tuple[int, ...]
 VersionMapping = Dict[Version, List[Version]]
 

@@ -550,7 +550,7 @@ def do_if_filled_block(parser, token):
     nodelist: NodeList = parser.parse(("elif_filled", "else_filled", "endif_filled"))
     branches: List[_IfSlotFilledBranchNode] = [
         IfSlotFilledConditionBranchNode(
-            slot_name=slot_name, # type: ignore
+            slot_name=slot_name,  # type: ignore
             nodelist=nodelist,
             is_positive=is_positive,
         )
@@ -565,7 +565,7 @@ def do_if_filled_block(parser, token):
         nodelist = parser.parse(("elif_filled", "else_filled", "endif_filled"))
         branches.append(
             IfSlotFilledConditionBranchNode(
-                slot_name=slot_name, # type: ignore
+                slot_name=slot_name,  # type: ignore
                 nodelist=nodelist,
                 is_positive=is_positive,
             )
