@@ -1,10 +1,14 @@
 import re
 import textwrap
 from collections import defaultdict
+from typing import Dict, List, Tuple
 from urllib import request
 
+Version = Tuple[int, ...]
+VersionMapping = Dict[Version, List[Version]]
 
-def get_supported_versions(url):
+
+def get_supported_versions(url: str):
     with request.urlopen(url) as response:
         response_content = response.read()
 
@@ -39,7 +43,7 @@ def get_supported_versions(url):
     return parse_supported_versions(content)
 
 
-def get_latest_version(url):
+def get_latest_version(url: str):
     with request.urlopen(url) as response:
         response_content = response.read()
 
@@ -48,12 +52,12 @@ def get_latest_version(url):
     return version_to_tuple(version_string)
 
 
-def version_to_tuple(version_string):
+def version_to_tuple(version_string: str):
     return tuple(int(num) for num in version_string.split("."))
 
 
-def build_python_to_django(django_to_python, latest_version):
-    python_to_django = defaultdict(list)
+def build_python_to_django(django_to_python: VersionMapping, latest_version: Version):
+    python_to_django: VersionMapping = defaultdict(list)
     for django_version, python_versions in django_to_python.items():
         for python_version in python_versions:
             if django_version <= latest_version:
@@ -67,21 +71,21 @@ def env_format(version_tuple, divider=""):
     return divider.join(str(num) for num in version_tuple)
 
 
-def build_tox_envlist(python_to_django):
-    lines = [
+def build_tox_envlist(python_to_django: VersionMapping):
+    lines_data = [
         (
             env_format(python_version),
             ",".join(env_format(version) for version in django_versions),
         )
         for python_version, django_versions in python_to_django.items()
     ]
-    lines = [f"py{a}-django{{{b}}}" for a, b in lines]
+    lines = [f"py{a}-django{{{b}}}" for a, b in lines_data]
     version_lines = "\n".join([version for version in lines])
     return "envlist = \n" + textwrap.indent(version_lines, prefix="  ")
 
 
-def build_gh_actions_envlist(python_to_django):
-    lines = [
+def build_gh_actions_envlist(python_to_django: VersionMapping):
+    lines_data = [
         (
             env_format(python_version, divider="."),
             env_format(python_version),
@@ -89,18 +93,18 @@ def build_gh_actions_envlist(python_to_django):
         )
         for python_version, django_versions in python_to_django.items()
     ]
-    lines = [f"{a}: py{b}-django{{{c}}}" for a, b, c in lines]
+    lines = [f"{a}: py{b}-django{{{c}}}" for a, b, c in lines_data]
     version_lines = "\n".join([version for version in lines])
     return "python = \n" + textwrap.indent(version_lines, prefix="  ")
 
 
-def build_deps_envlist(python_to_django):
+def build_deps_envlist(python_to_django: VersionMapping):
     all_django_versions = set()
     for django_versions in python_to_django.values():
         for django_version in django_versions:
             all_django_versions.add(django_version)
 
-    lines = [
+    lines_data = [
         (
             env_format(django_version),
             env_format(django_version, divider="."),
@@ -108,11 +112,11 @@ def build_deps_envlist(python_to_django):
         )
         for django_version in sorted(all_django_versions)
     ]
-    lines = [f"django{a}: Django>={b},<{c}" for a, b, c in sorted(lines)]
+    lines = [f"django{a}: Django>={b},<{c}" for a, b, c in sorted(lines_data)]
     return "deps = \n" + textwrap.indent("\n".join(lines), prefix="  ")
 
 
-def build_pypi_classifiers(python_to_django):
+def build_pypi_classifiers(python_to_django: VersionMapping):
     classifiers = []
 
     all_python_versions = python_to_django.keys()
@@ -130,7 +134,7 @@ def build_pypi_classifiers(python_to_django):
     return textwrap.indent("classifiers=[\n", prefix=" " * 4) + textwrap.indent("\n".join(classifiers), prefix=" " * 8)
 
 
-def build_readme(python_to_django):
+def build_readme(python_to_django: VersionMapping):
     print(
         textwrap.dedent(
             """\
@@ -139,19 +143,19 @@ def build_readme(python_to_django):
             """.rstrip()
         )
     )
-    lines = [
+    lines_data = [
         (
             env_format(python_version, divider="."),
             ", ".join(env_format(version, divider=".") for version in django_versions),
         )
         for python_version, django_versions in python_to_django.items()
     ]
-    lines = [f"| {a: <14} | {b: <24} |" for a, b in lines]
+    lines = [f"| {a: <14} | {b: <24} |" for a, b in lines_data]
     version_lines = "\n".join([version for version in lines])
     return version_lines
 
 
-def build_pyenv(python_to_django):
+def build_pyenv(python_to_django: VersionMapping):
     lines = []
     all_python_versions = python_to_django.keys()
     for python_version in all_python_versions:
@@ -164,13 +168,13 @@ def build_pyenv(python_to_django):
     return "\n".join(lines)
 
 
-def build_ci_python_versions(python_to_django):
+def build_ci_python_versions(python_to_django: Dict[str, str]):
     # Outputs python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
     lines = [
         f"'{env_format(python_version, divider='.')}'" for python_version, django_versions in python_to_django.items()
     ]
-    lines = " " * 8 + f"python-version: [{', '.join(lines)}]"
-    return lines
+    lines_formatted = " " * 8 + f"python-version: [{', '.join(lines)}]"
+    return lines_formatted
 
 
 def main():

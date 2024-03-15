@@ -36,3 +36,10 @@ exclude = [
   '.venv',
   '.tox',
 ]
+
+[tool.mypy]
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = [
+    'test_structures'
+]

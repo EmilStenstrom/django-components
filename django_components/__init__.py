@@ -37,6 +37,8 @@ def import_file(path):
     MODULE_PATH = path
     MODULE_NAME = Path(path).stem
     spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)
+    if spec is None:
+        raise ValueError(f"Cannot import file '{path}' - invalid path")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    spec.loader.exec_module(module)  # type: ignore

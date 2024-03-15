@@ -1,5 +1,5 @@
 import sys
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple, Type, Union
 
 if sys.version_info[:2] < (3, 9):
     from typing import ChainMap
@@ -194,7 +194,7 @@ class SlotNode(Node, TemplateAwareNodeMixin):
 
         extra_context = {}
         try:
-            slot_fill_content: Optional[FillContent] = filled_slots_map[(self.name, self.template)]
+            slot_fill_content: FillContent = filled_slots_map[(self.name, self.template)]
         except KeyError:
             if self.is_required:
                 raise TemplateSyntaxError(
@@ -375,16 +375,17 @@ class ComponentNode(Node):
                 # Note that outer component context is used to resolve variables in
                 # fill tag.
                 resolved_name = fill_node.name_fexp.resolve(context)
+                resolved_alias: Optional[str]
                 if fill_node.alias_fexp:
-                    resolved_alias: str = fill_node.alias_fexp.resolve(context)
-                    if not resolved_alias.isidentifier():
+                    resolved_alias = fill_node.alias_fexp.resolve(context)
+                    if resolved_alias and not resolved_alias.isidentifier():
                         raise TemplateSyntaxError(
                             f"Fill tag alias '{fill_node.alias_fexp.var}' in component "
                             f"{resolved_component_name} does not resolve to "
                             f"a valid Python identifier. Got: '{resolved_alias}'."
                         )
                 else:
-                    resolved_alias: None = None
+                    resolved_alias = None
                 fill_content.append((resolved_name, fill_node.nodelist, resolved_alias))
 
         component: Component = component_cls(
@@ -426,14 +427,15 @@ def do_component(parser, token):
     component_name, context_args, context_kwargs = parse_component_with_args(parser, bits, "component")
     body: NodeList = parser.parse(parse_until=["endcomponent"])
     parser.delete_first_token()
-    fill_nodes = ()
+    fill_nodes: Union[Iterable[NamedFillNode], ImplicitFillNode] = []
     if block_has_content(body):
         for parse_fn in (
             try_parse_as_default_fill,
             try_parse_as_named_fill_tag_set,
         ):
-            fill_nodes = parse_fn(body)
-            if fill_nodes:
+            curr_fill_nodes = parse_fn(body)
+            if curr_fill_nodes:
+                fill_nodes = curr_fill_nodes
                 break
         else:
             raise TemplateSyntaxError(
@@ -457,7 +459,7 @@ def try_parse_as_named_fill_tag_set(
     nodelist: NodeList,
 ) -> Optional[Iterable[NamedFillNode]]:
     result = []
-    seen_name_fexps = set()
+    seen_name_fexps: Set[FilterExpression] = set()
     for node in nodelist:
         if isinstance(node, NamedFillNode):
             if node.name_fexp in seen_name_fexps:
@@ -465,6 +467,7 @@ def try_parse_as_named_fill_tag_set(
                     f"Multiple fill tags cannot target the same slot name: "
                     f"Detected duplicate fill tag name '{node.name_fexp}'."
                 )
+            seen_name_fexps.add(node.name_fexp)
             result.append(node)
         elif isinstance(node, CommentNode):
             pass
@@ -544,9 +547,13 @@ def do_if_filled_block(parser, token):
     bits = token.split_contents()
     starting_tag = bits[0]
     slot_name, is_positive = parse_if_filled_bits(bits)
-    nodelist = parser.parse(("elif_filled", "else_filled", "endif_filled"))
+    nodelist: NodeList = parser.parse(("elif_filled", "else_filled", "endif_filled"))
     branches: List[_IfSlotFilledBranchNode] = [
-        IfSlotFilledConditionBranchNode(slot_name=slot_name, nodelist=nodelist, is_positive=is_positive)
+        IfSlotFilledConditionBranchNode(
+            slot_name=slot_name,  # type: ignore
+            nodelist=nodelist,
+            is_positive=is_positive,
+        )
     ]
 
     token = parser.next_token()
@@ -555,9 +562,13 @@ def do_if_filled_block(parser, token):
     while token.contents.startswith("elif_filled"):
         bits = token.split_contents()
         slot_name, is_positive = parse_if_filled_bits(bits)
-        nodelist: NodeList = parser.parse(("elif_filled", "else_filled", "endif_filled"))
+        nodelist = parser.parse(("elif_filled", "else_filled", "endif_filled"))
         branches.append(
-            IfSlotFilledConditionBranchNode(slot_name=slot_name, nodelist=nodelist, is_positive=is_positive)
+            IfSlotFilledConditionBranchNode(
+                slot_name=slot_name,  # type: ignore
+                nodelist=nodelist,
+                is_positive=is_positive,
+            )
         )
 
         token = parser.next_token()

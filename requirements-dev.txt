@@ -40,8 +40,12 @@ isort==5.13.2
     # via -r requirements-dev.in
 mccabe==0.7.0
     # via flake8
+mypy==1.9.0
+    # via -r requirements-dev.in
 mypy-extensions==1.0.0
-    # via black
+    # via
+    #   black
+    #   mypy
 nodeenv==1.8.0
     # via pre-commit
 packaging==23.2
@@ -77,6 +81,8 @@ sqlparse==0.4.4
     # via django
 tox==4.14.1
     # via -r requirements-dev.in
+typing-extensions==4.10.0
+    # via mypy
 virtualenv==20.25.0
     # via
     #   pre-commit
