@@ -6,3 +6,4 @@ flake8-pyproject
 isort
 pre-commit
 black
+mypy
