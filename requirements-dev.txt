@@ -61,7 +61,7 @@ platformdirs==4.1.0
     #   black
     #   tox
     #   virtualenv
-pluggy==1.3.0
+pluggy==1.4.0
     # via
     #   pytest
     #   tox
@@ -73,13 +73,13 @@ pyflakes==3.2.0
     # via flake8
 pyproject-api==1.6.1
     # via tox
-pytest==8.0.2
+pytest==8.1.1
     # via -r requirements-dev.in
 pyyaml==6.0.1
     # via pre-commit
 sqlparse==0.4.4
     # via django
-tox==4.13.0
+tox==4.14.1
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via mypy
