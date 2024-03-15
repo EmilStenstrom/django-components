@@ -142,7 +142,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         context_data: Dict[str, Any],
         slots_data: Optional[Dict[SlotName, str]] = None,
-        escape_slots_content: Optional[bool] = True,
+        escape_slots_content: bool = True,
     ) -> str:
         context = Context(context_data)
         template = self.get_template(context)
@@ -160,7 +160,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         context_data: Dict[str, Any],
         slots_data: Optional[Dict[SlotName, str]] = None,
-        escape_slots_content: Optional[bool] = True,
+        escape_slots_content: bool = True,
         *args,
         **kwargs,
     ):
@@ -173,7 +173,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def _fill_slots(
         self,
         slots_data: Dict[SlotName, str],
-        escape_content: Union[bool, None],
+        escape_content: bool = True,
     ):
         """Fill component slots outside of template rendering."""
         self.fill_content = [
