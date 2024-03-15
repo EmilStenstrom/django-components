@@ -1,6 +1,6 @@
 import re
 import textwrap
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 
@@ -1250,9 +1250,7 @@ class IterationFillTest(SimpleTestCase):
     class ComponentSimpleSlotInALoop(django_components.component.Component):
         template_name = "template_with_slot_in_a_loop.html"
 
-        def get_context_data(self, *args, **kwargs) -> dict:
-            # NOTE: Because of MyPy in Python v3.6, arg `name` cannot be declared as separate variable
-            objects: Iterable = args[0]
+        def get_context_data(self, objects, *args, **kwargs) -> dict:
             return {
                 "objects": objects,
             }
