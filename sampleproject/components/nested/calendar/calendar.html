@@ -1,0 +1,19 @@
+<div class="calendar-component">
+  <div>Today's date is <span>{{ date }}</span></div>
+  <div>Your to-dos:</div>
+  <ul>
+    <li>
+      {% component "todo" %}
+        {% fill "todo_text" %}
+          Stop forgetting the milk!
+        {% endfill %}
+      {% endcomponent %}
+    </li>
+    <li>
+      {% component "todo" %}
+        {# As of v0.28, 'fill' tag optional for 1-slot filling if component template specifies a 'default' slot #}
+        Wear all-white clothes to laser tag tournament.
+      {% endcomponent %}
+    </li>
+  </ul>
+</div>
