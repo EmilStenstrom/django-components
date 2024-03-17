@@ -74,6 +74,7 @@ def _resolve_component_relative_files(attrs: dict):
     as the component class. If so, modify the attributes so the class Django's rendering
     will pick up these files correctly.
     """
+    module_name = attrs["__module__"]
 
     # Prepare all possible directories we need to check when searching for
     # component's template and media files
@@ -81,11 +82,11 @@ def _resolve_component_relative_files(attrs: dict):
 
     # Get the directory where the component class is defined
     try:
-        comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_module_path(attrs["__module__"], components_dirs)
+        comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_module_path(module_name, components_dirs)
     except RuntimeError:
         # If no dir was found, we assume that the path is NOT relative to the component dir
         logger.debug(
-            f"No component directory found for component '{attrs["__module__"]}'."
+            f"No component directory found for component '{module_name}'."
             " If this component defines HTML, JS or CSS templates relatively to the component file,"
             " then check that the component's directory is accessible from one of the paths"
             " specified in the Django's 'STATICFILES_DIRS' settings."
@@ -100,10 +101,10 @@ def _resolve_component_relative_files(attrs: dict):
         component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
         if os.path.isfile(maybe_resolved_filepath):
-            logger.debug(f"Interpreting template '{filepath}' of component '{attrs["__module__"]}' relatively to component file")
+            logger.debug(f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file")
             return component_import_filepath
 
-        logger.debug(f"Interpreting template '{filepath}' of component '{attrs["__module__"]}' relatively to components directory")
+        logger.debug(f"Interpreting template '{filepath}' of component '{module_name}' relatively to components directory")
         return filepath
 
     # Check if template name is a local file or not
