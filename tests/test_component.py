@@ -389,7 +389,6 @@ class ComponentMediaTests(SimpleTestCase):
         BASE_DIR=Path(__file__).resolve().parent,
         STATICFILES_DIRS=[
             Path(__file__).resolve().parent / "components",
-            Path(__file__).resolve().parent.parent / "django_components" / "components",
         ],
     )
     def test_component_media_with_dict_with_relative_paths(self):
