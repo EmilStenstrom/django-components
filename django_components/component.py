@@ -26,7 +26,6 @@ from django_components.component_registry import (  # NOQA
     register,
     registry,
 )
-from django_components.utils.autodiscover import search
 from django_components.templatetags.component_tags import (
     FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     DefaultFillContent,
@@ -37,6 +36,7 @@ from django_components.templatetags.component_tags import (
     SlotName,
     SlotNode,
 )
+from django_components.utils.autodiscover import search
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
@@ -138,7 +138,7 @@ def _get_dir_path_from_component_module_path(component_module_path: str, candida
             " make sure that the component's directory is accessible from one of the paths"
             " specified in the Django's settings in 'TEMPLATES.DIRS'"
         )
-    
+
     # Derive the path from matched STATICFILES_DIRS to the dir where the current component file is.
     comp_dir_path_rel = os.path.relpath(comp_dir_path_abs, candidate_dir_abs)
 

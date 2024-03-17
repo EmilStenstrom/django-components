@@ -7,7 +7,10 @@ if not settings.configured:
         TEMPLATES=[
             {
                 "BACKEND": "django.template.backends.django.DjangoTemplates",
-                "DIRS": ["tests/templates/"],
+                "DIRS": [
+                    "tests/templates/",
+                    "tests/components/",  # Required for template relative imports in tests
+                ],
             }
         ],
         COMPONENTS={"template_cache_size": 128},

@@ -40,7 +40,12 @@ class TestLoaderSettingsModule(SimpleTestCase):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
-        self.assertEqual(dirs, [Path(__file__).parent.resolve() / "components"])
+        self.assertEqual(
+            sorted(dirs),
+            sorted([
+                Path(__file__).parent.resolve() / "components",
+            ]),
+        )
 
     def test_complex_settings_module(self):
         settings.SETTINGS_MODULE = "tests.test_structures.test_structure_1.config.settings"  # noqa
@@ -49,8 +54,10 @@ class TestLoaderSettingsModule(SimpleTestCase):
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
         self.assertEqual(
-            dirs,
-            [Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components"],
+            sorted(dirs),
+            sorted([
+                Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
+            ]),
         )
 
     def test_complex_settings_module_2(self):
@@ -60,8 +67,10 @@ class TestLoaderSettingsModule(SimpleTestCase):
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
         self.assertEqual(
-            dirs,
-            [Path(__file__).parent.resolve() / "test_structures" / "test_structure_2" / "project" / "components"],
+            sorted(dirs),
+            sorted([
+                Path(__file__).parent.resolve() / "test_structures" / "test_structure_2" / "project" / "components",
+            ]),
         )
 
     def test_complex_settings_module_3(self):
@@ -71,8 +80,8 @@ class TestLoaderSettingsModule(SimpleTestCase):
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
         expected = [
-            (Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "components"),
-            (Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "project" / "components"),
+            Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "components",
+            Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "project" / "components",
         ]
         self.assertEqual(
             sorted(dirs),
@@ -93,5 +102,7 @@ class TestBaseDir(SimpleTestCase):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()
-        expected = [Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components"]
-        self.assertEqual(dirs, expected)
+        expected = [
+            Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
+        ]
+        self.assertEqual(sorted(dirs), sorted(expected))

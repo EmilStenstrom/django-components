@@ -1,4 +1,5 @@
 from textwrap import dedent
+from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
@@ -385,14 +386,13 @@ class ComponentMediaTests(SimpleTestCase):
         )
 
     @override_settings(
-        TEMPLATES=[
-            {
-                "BACKEND": "django.template.backends.django.DjangoTemplates",
-                "DIRS": ["tests/templates/", "tests/components/"],
-            }
-        ]
+        BASE_DIR=Path(__file__).resolve().parent,
+        STATICFILES_DIRS=[
+            Path(__file__).resolve().parent / "components",
+            Path(__file__).resolve().parent.parent / "django_components" / "components",
+        ],
     )
-    def test_component_media_with_dict_with_list_and_list2(self):
+    def test_component_media_with_dict_with_relative_paths(self):
         from .components.relative_file.relative_file import RelativeFileComponent
 
         comp = RelativeFileComponent("")
