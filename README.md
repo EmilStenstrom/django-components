@@ -681,6 +681,36 @@ COMPONENTS = {
 }
 ```
 
+## Logging and debugging
+
+Django components supports [logging with Django](https://docs.djangoproject.com/en/5.0/howto/logging/#logging-how-to). This can help with troubleshooting.
+
+To configure logging for Django components, set the `django_components` logger in `LOGGING` in `settings.py` (below).
+
+Also see the [`settings.py` file in sampleproject](./sampleproject/sampleproject/settings.py) for a real-life example.
+
+```py
+import logging
+import sys
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    "handlers": {
+        "console": {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+        },
+    },
+    "loggers": {
+        "django_components": {
+            "level": logging.DEBUG,
+            "handlers": ["console"],
+        },
+    },
+}
+```
+
 ## Management Command
 
 You can use the built-in management command `startcomponent` to create a django component. The command accepts the following arguments and options:

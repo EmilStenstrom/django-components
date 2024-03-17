@@ -26,6 +26,7 @@ from django_components.component_registry import (  # NOQA
     register,
     registry,
 )
+from django_components.logger import logger
 from django_components.templatetags.component_tags import (
     FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     DefaultFillContent,
@@ -83,6 +84,12 @@ def _resolve_component_relative_files(attrs: dict):
         comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_module_path(attrs["__module__"], components_dirs)
     except RuntimeError:
         # If no dir was found, we assume that the path is NOT relative to the component dir
+        logger.debug(
+            f"No component directory found for component '{attrs["__module__"]}'."
+            " If this component defines HTML, JS or CSS templates relatively to the component file,"
+            " then check that the component's directory is accessible from one of the paths"
+            " specified in the Django's 'STATICFILES_DIRS' settings."
+        )
         return
 
     # Check if filepath refers to a file that's in the same directory as the component class.
@@ -93,7 +100,10 @@ def _resolve_component_relative_files(attrs: dict):
         component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
         if os.path.isfile(maybe_resolved_filepath):
+            logger.debug(f"Interpreting template '{filepath}' of component '{attrs["__module__"]}' relatively to component file")
             return component_import_filepath
+
+        logger.debug(f"Interpreting template '{filepath}' of component '{attrs["__module__"]}' relatively to components directory")
         return filepath
 
     # Check if template name is a local file or not
@@ -134,9 +144,7 @@ def _get_dir_path_from_component_module_path(component_module_path: str, candida
 
     if root_dir_abs is None:
         raise RuntimeError(
-            f"Failed to resolve template directory for component '{component_module_path}',"
-            " make sure that the component's directory is accessible from one of the paths"
-            " specified in the Django's settings in 'TEMPLATES.DIRS'"
+            f"Failed to resolve template directory for component '{component_module_path}'",
         )
 
     # Derive the path from matched STATICFILES_DIRS to the dir where the current component file is.

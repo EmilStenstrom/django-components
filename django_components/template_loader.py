@@ -10,6 +10,8 @@ from django.apps import apps
 from django.conf import settings
 from django.template.loaders.filesystem import Loader as FilesystemLoader
 
+from django_components.logger import logger
+
 
 # Same as `Path.is_relative_to`, defined as standalone function because `Path.is_relative_to`
 # is marked for deprecation.
@@ -27,6 +29,11 @@ class Loader(FilesystemLoader):
             component_dirs = settings.STATICFILES_DIRS
         else:
             component_dirs = ["components"]
+
+        logger.debug(
+            "Template loader will search for valid template dirs from following options:\n"
+            + "\n".join([f" - {str(d)}" for d in component_dirs])
+        )
 
         directories: Set[Path] = set()
         for component_dir in component_dirs:
@@ -72,4 +79,8 @@ class Loader(FilesystemLoader):
 
             directories.update(curr_directories)
 
+        logger.debug(
+            "Template loader matched following template dirs:\n"
+            + "\n".join([f" - {str(d)}" for d in directories])
+        )
         return list(directories)
