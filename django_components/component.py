@@ -4,7 +4,6 @@ import os
 from collections import ChainMap
 from typing import Any, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Union
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
 from django.http import HttpResponse
@@ -27,6 +26,7 @@ from django_components.component_registry import (  # NOQA
     register,
     registry,
 )
+from django_components.utils.autodiscover import search
 from django_components.templatetags.component_tags import (
     FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     DefaultFillContent,
@@ -76,22 +76,21 @@ def _resolve_component_relative_files(attrs: dict):
 
     # Prepare all possible directories we need to check when searching for
     # component's template and media files
-    candidate_dirs = settings.STATICFILES_DIRS or []
-    candidate_dirs.extend(
-        str(dir_path) for template_backend in settings.TEMPLATES or [] for dir_path in template_backend.get("DIRS", [])
-    )
+    components_dirs = search()
 
     # Get the directory where the component class is defined
     try:
-        abs_comp_dir, comp_dir = _get_dir_path_from_component_module_path(attrs["__module__"], candidate_dirs)
+        comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_module_path(attrs["__module__"], components_dirs)
     except RuntimeError:
         # If no dir was found, we assume that the path is NOT relative to the component dir
         return
 
     # Check if filepath refers to a file that's in the same directory as the component class.
+    # If yes, modify the path to refer to the relative file.
+    # If not, don't modify anything.
     def resolve_file(filepath: str):
-        maybe_resolved_filepath = os.path.join(abs_comp_dir, filepath)
-        component_import_filepath = os.path.join(comp_dir, filepath)
+        maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
+        component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
         if os.path.isfile(maybe_resolved_filepath):
             return component_import_filepath
@@ -116,22 +115,21 @@ def _resolve_component_relative_files(attrs: dict):
 
 def _get_dir_path_from_component_module_path(component_module_path: str, candidate_dirs: List[str]):
     # Transform python module notation "pkg.module.name" to file path "pkg/module/name"
+    # Thus, we should get file path relative to Django project root
     comp_path = os.sep.join(component_module_path.split("."))
-    comp_dir_rel_path = os.path.dirname(comp_path)
+    comp_dir_path = os.path.dirname(comp_path)
 
-    # Django resolves the template's relative to the values in TEMPLATE.DIRS
-    # so we have to adjust the component dir path to match one of the template dirs.
+    # NOTE: We assume that Django project root == current working directory!
     cwd = os.getcwd()
-    comp_dir_abs_path = os.path.join(cwd, comp_dir_rel_path)
+    comp_dir_path_abs = os.path.join(cwd, comp_dir_path)
 
-    # From all dirs defined in TEMPLATES.DIRS and STATICFILES_DIRS, find one that
-    # holds the component file.
+    # From all dirs defined in settings.STATICFILES_DIRS, find one that's the parent
+    # to the component file.
     root_dir_abs = None
     for candidate_dir in candidate_dirs:
         candidate_dir_abs = os.path.abspath(candidate_dir)
-        if comp_dir_abs_path.startswith(candidate_dir_abs):
-            # Get the common part of the path
-            root_dir_abs = comp_dir_abs_path[: len(candidate_dir_abs)]
+        if comp_dir_path_abs.startswith(candidate_dir_abs):
+            root_dir_abs = candidate_dir_abs
             break
 
     if root_dir_abs is None:
@@ -140,13 +138,14 @@ def _get_dir_path_from_component_module_path(component_module_path: str, candida
             " make sure that the component's directory is accessible from one of the paths"
             " specified in the Django's settings in 'TEMPLATES.DIRS'"
         )
+    
+    # Derive the path from matched STATICFILES_DIRS to the dir where the current component file is.
+    comp_dir_path_rel = os.path.relpath(comp_dir_path_abs, candidate_dir_abs)
 
-    # Get path to component dir that's relative to the matched templates/static files dir
-    comp_dir_relative_to_root_dir = comp_dir_abs_path.replace(root_dir_abs, "")
-    if comp_dir_relative_to_root_dir.startswith("/"):
-        comp_dir_relative_to_root_dir = comp_dir_relative_to_root_dir[1:]
-
-    return comp_dir_abs_path, comp_dir_relative_to_root_dir
+    # Return both absolute and relative paths:
+    # - Absolute path is used to check if the file exists
+    # - Relative path is used for defining the import on the component class
+    return comp_dir_path_abs, comp_dir_path_rel
 
 
 class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):

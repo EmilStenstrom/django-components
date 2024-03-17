@@ -1,14 +1,12 @@
-import glob
 import importlib
 import importlib.util
 import sys
 from pathlib import Path
 
 import django
-from django.template.engine import Engine
 from django.utils.module_loading import autodiscover_modules
 
-from django_components.template_loader import Loader
+from django_components.utils.autodiscover import search
 
 if django.VERSION < (3, 2):
     default_app_config = "django_components.apps.ComponentsConfig"
@@ -22,12 +20,9 @@ def autodiscover():
         autodiscover_modules("components")
 
         # Autodetect a <component>.py file in a components dir
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = loader.get_dirs()
-        for directory in dirs:
-            for path in glob.iglob(str(directory / "**/*.py"), recursive=True):
-                import_file(path)
+        component_filepaths = search(search_glob="**/*.py")
+        for path in component_filepaths:
+            import_file(path)
 
     for path in app_settings.LIBRARIES:
         importlib.import_module(path)
