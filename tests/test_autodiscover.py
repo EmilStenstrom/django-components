@@ -78,7 +78,7 @@ class TestLoaderSettingsModule(SimpleTestCase):
                     / "test_structures"
                     / "test_structure_2"
                     / "project"
-                    / "components",  # noqa
+                    / "components",
                 ]
             ),
         )
