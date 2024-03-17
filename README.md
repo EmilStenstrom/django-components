@@ -761,7 +761,10 @@ One of our goals with `django-components` is to make it easy to share components
 
 - [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
-## Install locally and run the tests
+
+## Running django-components project locally
+
+### Install locally and run the tests
 
 Start by forking the project by clicking the **Fork button** up in the right corner in the GitHub . This makes a copy of the repository in your own name. Now you can clone this repository locally and start adding features:
 
@@ -794,3 +797,34 @@ pyenv install -s 3.12
 pyenv local 3.6 3.7 3.8 3.9 3.10 3.11 3.12
 tox -p
 ```
+
+### Developing against live Django app
+
+How do you check that your changes to django-components project will work in an actual Django project?
+
+Use the [sampleproject](./sampleproject/) demo project to validate the changes:
+
+1. Navigate to [sampleproject](./sampleproject/) directory:
+    ```sh
+    cd sampleproject
+    ```
+
+2. Install dependencies from the [requirements.txt](./sampleproject/requirements.txt) file:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+3. Link to your local version of django-components:
+    ```sh
+    pip install -e ..
+    ```
+    NOTE: The path (in this case `..`) must point to the directory that has the `setup.py` file.
+
+4. Start Django server
+    ```sh
+    python manage.py runserver
+    ```
+
+Once the server is up, it should be available at <http://127.0.0.1:8000>.
+
+To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>
