@@ -42,9 +42,11 @@ class TestLoaderSettingsModule(SimpleTestCase):
         dirs = loader.get_dirs()
         self.assertEqual(
             sorted(dirs),
-            sorted([
-                Path(__file__).parent.resolve() / "components",
-            ]),
+            sorted(
+                [
+                    Path(__file__).parent.resolve() / "components",
+                ]
+            ),
         )
 
     def test_complex_settings_module(self):
@@ -55,9 +57,11 @@ class TestLoaderSettingsModule(SimpleTestCase):
         dirs = loader.get_dirs()
         self.assertEqual(
             sorted(dirs),
-            sorted([
-                Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
-            ]),
+            sorted(
+                [
+                    Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
+                ]
+            ),
         )
 
     def test_complex_settings_module_2(self):
@@ -68,9 +72,15 @@ class TestLoaderSettingsModule(SimpleTestCase):
         dirs = loader.get_dirs()
         self.assertEqual(
             sorted(dirs),
-            sorted([
-                Path(__file__).parent.resolve() / "test_structures" / "test_structure_2" / "project" / "components",
-            ]),
+            sorted(
+                [
+                    Path(__file__).parent.resolve()
+                    / "test_structures"
+                    / "test_structure_2"
+                    / "project"
+                    / "components",
+                ]
+            ),
         )
 
     def test_complex_settings_module_3(self):

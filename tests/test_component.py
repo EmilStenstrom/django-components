@@ -1,5 +1,5 @@
-from textwrap import dedent
 from pathlib import Path
+from textwrap import dedent
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template

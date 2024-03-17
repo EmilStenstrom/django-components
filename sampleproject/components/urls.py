@@ -1,8 +1,7 @@
-from django.urls import path
-
 from components.calendar.calendar import Calendar, CalendarRelative
 from components.greeting import Greeting
 from components.nested.calendar.calendar import CalendarNested
+from django.urls import path
 
 urlpatterns = [
     path("greeting/", Greeting.as_view(), name="greeting"),
