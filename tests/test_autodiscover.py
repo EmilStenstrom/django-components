@@ -74,11 +74,7 @@ class TestLoaderSettingsModule(SimpleTestCase):
             sorted(dirs),
             sorted(
                 [
-                    Path(__file__).parent.resolve()
-                    / "test_structures"
-                    / "test_structure_2"
-                    / "project"
-                    / "components",
+                    Path(__file__).parent.resolve() / "test_structures" / "test_structure_2" / "project" / "components",  # noqa
                 ]
             ),
         )
