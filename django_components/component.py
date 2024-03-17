@@ -101,10 +101,14 @@ def _resolve_component_relative_files(attrs: dict):
         component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
         if os.path.isfile(maybe_resolved_filepath):
-            logger.debug(f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file")
+            logger.debug(
+                f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file"
+            )
             return component_import_filepath
 
-        logger.debug(f"Interpreting template '{filepath}' of component '{module_name}' relatively to components directory")
+        logger.debug(
+            f"Interpreting template '{filepath}' of component '{module_name}' relatively to components directory"
+        )
         return filepath
 
     # Check if template name is a local file or not
