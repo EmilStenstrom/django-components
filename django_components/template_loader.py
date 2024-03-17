@@ -80,7 +80,6 @@ class Loader(FilesystemLoader):
             directories.update(curr_directories)
 
         logger.debug(
-            "Template loader matched following template dirs:\n"
-            + "\n".join([f" - {str(d)}" for d in directories])
+            "Template loader matched following template dirs:\n" + "\n".join([f" - {str(d)}" for d in directories])
         )
         return list(directories)
