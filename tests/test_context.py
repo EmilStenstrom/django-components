@@ -246,9 +246,13 @@ class ContextCalledOnceTests(SimpleTestCase):
             "{% load component_tags %}{% component_dependencies %}"
             "{% component name='incrementer' %}{% endcomponent %}"
         )
-        rendered = template.render(Context()).strip()
-
-        self.assertEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
+        rendered = template.render(Context()).strip().replace("\n", "")
+        self.assertHTMLEqual(
+            rendered,
+            '<link href="relative_file/relative_file.css" media="all" rel="stylesheet">'
+            '<script src="relative_file/relative_file.js"></script>'
+            '<p class="incrementer">value=1;calls=1</p>',
+        )
 
     def test_one_context_call_with_simple_component_and_arg(self):
         template = Template("{% load component_tags %}{% component name='incrementer' value='2' %}{% endcomponent %}")

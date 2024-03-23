@@ -196,7 +196,7 @@ from django_components import component
 class Calendar(component.Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir will be automatically found. To customize which template to use based on context
     # you can override def get_template_name() instead of specifying the below variable.
-    template_name = "calendar/calendar.html"
+    template_name = "calendar.html"
 
     # This component takes one parameter, a date string to show in the template
     def get_context_data(self, date):
@@ -205,8 +205,8 @@ class Calendar(component.Component):
         }
 
     class Media:
-        css = "calendar/style.css"
-        js = "calendar/script.js"
+        css = "style.css"
+        js = "script.js"
 ```
 
 And voilá!! We've created our first component.
@@ -681,6 +681,36 @@ COMPONENTS = {
 }
 ```
 
+## Logging and debugging
+
+Django components supports [logging with Django](https://docs.djangoproject.com/en/5.0/howto/logging/#logging-how-to). This can help with troubleshooting.
+
+To configure logging for Django components, set the `django_components` logger in `LOGGING` in `settings.py` (below).
+
+Also see the [`settings.py` file in sampleproject](./sampleproject/sampleproject/settings.py) for a real-life example.
+
+```py
+import logging
+import sys
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    "handlers": {
+        "console": {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+        },
+    },
+    "loggers": {
+        "django_components": {
+            "level": logging.DEBUG,
+            "handlers": ["console"],
+        },
+    },
+}
+```
+
 ## Management Command
 
 You can use the built-in management command `startcomponent` to create a django component. The command accepts the following arguments and options:
@@ -761,7 +791,10 @@ One of our goals with `django-components` is to make it easy to share components
 
 - [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
-## Install locally and run the tests
+
+## Running django-components project locally
+
+### Install locally and run the tests
 
 Start by forking the project by clicking the **Fork button** up in the right corner in the GitHub . This makes a copy of the repository in your own name. Now you can clone this repository locally and start adding features:
 
@@ -794,3 +827,34 @@ pyenv install -s 3.12
 pyenv local 3.6 3.7 3.8 3.9 3.10 3.11 3.12
 tox -p
 ```
+
+### Developing against live Django app
+
+How do you check that your changes to django-components project will work in an actual Django project?
+
+Use the [sampleproject](./sampleproject/) demo project to validate the changes:
+
+1. Navigate to [sampleproject](./sampleproject/) directory:
+    ```sh
+    cd sampleproject
+    ```
+
+2. Install dependencies from the [requirements.txt](./sampleproject/requirements.txt) file:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+3. Link to your local version of django-components:
+    ```sh
+    pip install -e ..
+    ```
+    NOTE: The path (in this case `..`) must point to the directory that has the `setup.py` file.
+
+4. Start Django server
+    ```sh
+    python manage.py runserver
+    ```
+
+Once the server is up, it should be available at <http://127.0.0.1:8000>.
+
+To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>

@@ -1,5 +1,7 @@
+import logging
 import os
 import secrets
+import sys
 from pathlib import Path
 from typing import List
 
@@ -133,3 +135,20 @@ STATICFILES_DIRS = [BASE_DIR / "components"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATIC_ROOT = "staticfiles"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+        },
+    },
+    "loggers": {
+        "django_components": {
+            "level": logging.DEBUG,
+            "handlers": ["console"],
+        },
+    },
+}
