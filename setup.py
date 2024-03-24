@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 VERSION = "0.61"
 
 setup(
     name="django_components",
-    package_dir={
-        "django_components": "src/django_components"
-    },
+    packages=find_packages(where="src", exclude=["tests", "tests.*"]),
+    package_dir={"": "src"},
     package_data={
-        "django_components": ["py.typed"],
+        "django_components":  ["py.typed"],
     },
     version=VERSION,
     description="A way to create simple reusable template components in Django.",
