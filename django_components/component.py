@@ -164,6 +164,7 @@ def _get_dir_path_from_component_module_path(component_module_path: str, candida
 class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
+    class_hash: ClassVar[int]
     template_name: ClassVar[Optional[str]] = None
     template: Optional[str] = None
     js: Optional[str] = None
