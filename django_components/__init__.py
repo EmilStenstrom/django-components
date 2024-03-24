@@ -6,7 +6,7 @@ from pathlib import Path
 import django
 from django.utils.module_loading import autodiscover_modules
 
-from django_components.utils.autodiscover import search
+from django_components.utils import search
 
 if django.VERSION < (3, 2):
     default_app_config = "django_components.apps.ComponentsConfig"
