@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Callable, Type, TypeVar
+from typing import TYPE_CHECKING, Callable, Dict, Type, TypeVar
 
 if TYPE_CHECKING:
     from django_components import component
@@ -18,9 +16,9 @@ class NotRegistered(Exception) :
 
 class ComponentRegistry:
     def __init__(self) -> None:
-        self._registry: dict[str, type[component.Component]] = {}  # component name -> component_class mapping
+        self._registry: Dict[str, Type["component.Component"]] = {}  # component name -> component_class mapping
 
-    def register(self, name: str, component: type[component.Component]) -> None:
+    def register(self, name: str, component: Type["component.Component"]) -> None:
         existing_component = self._registry.get(name)
         if existing_component and existing_component.class_hash != component.class_hash:
             raise AlreadyRegistered('The component "%s" has already been registered' % name)
@@ -31,13 +29,13 @@ class ComponentRegistry:
 
         del self._registry[name]
 
-    def get(self, name: str) -> type[component.Component]:
+    def get(self, name: str) -> Type["component.Component"]:
         if name not in self._registry:
             raise NotRegistered('The component "%s" is not registered' % name)
 
         return self._registry[name]
 
-    def all(self) -> dict[str, type[component.Component]]:
+    def all(self) -> Dict[str, Type["component.Component"]]:
         return self._registry
 
     def clear(self) -> None:
