@@ -2,6 +2,7 @@ import importlib
 import importlib.util
 import sys
 from pathlib import Path
+from typing import Union
 
 import django
 from django.utils.module_loading import autodiscover_modules
@@ -12,7 +13,7 @@ if django.VERSION < (3, 2):
     default_app_config = "django_components.apps.ComponentsConfig"
 
 
-def autodiscover():
+def autodiscover() -> None:
     from django_components.app_settings import app_settings
 
     if app_settings.AUTODISCOVER:
@@ -24,11 +25,11 @@ def autodiscover():
         for path in component_filepaths:
             import_file(path)
 
-    for path in app_settings.LIBRARIES:
-        importlib.import_module(path)
+    for path_lib in app_settings.LIBRARIES:
+        importlib.import_module(path_lib)
 
 
-def import_file(path):
+def import_file(path: Union[str, Path]) -> None:
     MODULE_PATH = path
     MODULE_NAME = Path(path).stem
     spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)

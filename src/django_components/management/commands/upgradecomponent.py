@@ -1,9 +1,10 @@
 import os
 import re
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 from django.template.engine import Engine
 
 from django_components.template_loader import Loader
@@ -12,10 +13,10 @@ from django_components.template_loader import Loader
 class Command(BaseCommand):
     help = "Updates component and component_block tags to the new syntax"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--path", type=str, help="Path to search for components")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         dirs = loader.get_dirs()

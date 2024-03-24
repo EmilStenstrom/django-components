@@ -1,10 +1,16 @@
 import re
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Iterable
 
 from django.conf import settings
 from django.forms import Media
-from django.http import StreamingHttpResponse
+from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
+from django.http.response import HttpResponseBase
 
 from django_components.component_registry import registry
+
+if TYPE_CHECKING:
+    from django_components.component import Component
 
 RENDERED_COMPONENTS_CONTEXT_KEY = "_COMPONENT_DEPENDENCIES"
 CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
@@ -24,10 +30,10 @@ class ComponentDependencyMiddleware:
 
     dependency_regex = COMPONENT_COMMENT_REGEX
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: "Callable[[HttpRequest], HttpResponse]") -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponseBase:
         response = self.get_response(request)
         if (
             getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)
@@ -38,7 +44,7 @@ class ComponentDependencyMiddleware:
         return response
 
 
-def process_response_content(content):
+def process_response_content(content: bytes) -> bytes:
     component_names_seen = {match.group("name") for match in COMPONENT_COMMENT_REGEX.finditer(content)}
     all_components = [registry.get(name.decode("utf-8"))("") for name in component_names_seen]
     all_media = join_media(all_components)
@@ -47,7 +53,7 @@ def process_response_content(content):
     return PLACEHOLDER_REGEX.sub(DependencyReplacer(css_dependencies, js_dependencies), content)
 
 
-def add_module_attribute_to_scripts(scripts):
+def add_module_attribute_to_scripts(scripts: str) -> str:
     return re.sub(SCRIPT_TAG_REGEX, '<script type="module"', scripts)
 
 
@@ -58,11 +64,11 @@ class DependencyReplacer:
     CSS_PLACEHOLDER = bytes(CSS_DEPENDENCY_PLACEHOLDER, encoding="utf-8")
     JS_PLACEHOLDER = bytes(JS_DEPENDENCY_PLACEHOLDER, encoding="utf-8")
 
-    def __init__(self, css_string, js_string):
+    def __init__(self, css_string: bytes, js_string: bytes) -> None:
         self.js_string = js_string
         self.css_string = css_string
 
-    def __call__(self, match):
+    def __call__(self, match: "re.Match[bytes]") -> bytes:
         if match[0] == self.CSS_PLACEHOLDER:
             replacement, self.css_string = self.css_string, b""
         elif match[0] == self.JS_PLACEHOLDER:
@@ -72,7 +78,7 @@ class DependencyReplacer:
         return replacement
 
 
-def join_media(components):
+def join_media(components: Iterable["Component"]) -> Media:
     """Return combined media object for iterable of components."""
 
     return sum([component.media for component in components], Media())

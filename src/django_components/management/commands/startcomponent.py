@@ -1,14 +1,15 @@
 import os
 from textwrap import dedent
+from typing import Any
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 
 class Command(BaseCommand):
     help = "Creates a new component"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("name", type=str, help="The name of the component to create")
         parser.add_argument(
             "--path",
@@ -51,7 +52,7 @@ class Command(BaseCommand):
             default=False,
         )
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         name = kwargs["name"]
 
         if name:
