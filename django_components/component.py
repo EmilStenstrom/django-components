@@ -37,7 +37,7 @@ from django_components.templatetags.component_tags import (
     SlotName,
     SlotNode,
 )
-from django_components.utils.autodiscover import search
+from django_components.utils import search
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
