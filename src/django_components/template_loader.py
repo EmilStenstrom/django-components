@@ -4,7 +4,7 @@ Template loader that loads templates from each Django app's "components" directo
 
 import os
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
 from django.apps import apps
 from django.conf import settings
@@ -15,7 +15,7 @@ from django_components.logger import logger
 
 # Same as `Path.is_relative_to`, defined as standalone function because `Path.is_relative_to`
 # is marked for deprecation.
-def path_is_relative_to(child_path: str, parent_path: str):
+def path_is_relative_to(child_path: str, parent_path: str) -> bool:
     # If the relative path doesn't start with `..`, then child is descendant of parent
     # See https://stackoverflow.com/a/7288073/9788634
     rel_path = os.path.relpath(child_path, parent_path)
@@ -23,7 +23,7 @@ def path_is_relative_to(child_path: str, parent_path: str):
 
 
 class Loader(FilesystemLoader):
-    def get_dirs(self):
+    def get_dirs(self) -> List[Path]:
         # Allow to configure from settings which dirs should be checked for components
         if hasattr(settings, "STATICFILES_DIRS") and len(settings.STATICFILES_DIRS):
             component_dirs = settings.STATICFILES_DIRS
