@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
 VERSION = "0.61"
 
 setup(
     name="django_components",
-    packages=find_packages(exclude=["tests"]),
+    package_dir={
+        "django_components": "src/django_components"
+    },
     package_data={
         "django_components": ["py.typed"],
     },
