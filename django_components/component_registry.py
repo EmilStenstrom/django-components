@@ -10,7 +10,7 @@ class AlreadyRegistered(Exception):
     pass
 
 
-class NotRegistered(Exception) :
+class NotRegistered(Exception):
     pass
 
 
