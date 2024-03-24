@@ -35,11 +35,18 @@ exclude = [
   '.env',
   '.venv',
   '.tox',
+  'build',
 ]
 
 [tool.mypy]
 check_untyped_defs = true
 ignore_missing_imports = true
 exclude = [
-    'test_structures'
+    'test_structures',
+    'build',
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
 ]
