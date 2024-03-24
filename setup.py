@@ -10,7 +10,7 @@ setup(
     packages=find_packages(where="src", exclude=["tests", "tests.*"]),
     package_dir={"": "src"},
     package_data={
-        "django_components":  ["py.typed"],
+        "django_components": ["py.typed"],
     },
     version=VERSION,
     description="A way to create simple reusable template components in Django.",
