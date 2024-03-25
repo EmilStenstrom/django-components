@@ -79,7 +79,7 @@ pyyaml==6.0.1
     # via pre-commit
 sqlparse==0.4.4
     # via django
-tox==4.14.1
+tox==4.14.2
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via mypy
