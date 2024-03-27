@@ -35,11 +35,23 @@ exclude = [
   '.env',
   '.venv',
   '.tox',
+  'build',
 ]
 
 [tool.mypy]
 check_untyped_defs = true
 ignore_missing_imports = true
 exclude = [
-    'test_structures'
+    'test_structures',
+    'build',
+]
+
+[[tool.mypy.overrides]]
+module = "django_components.*"
+disallow_untyped_defs = true
+
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
 ]

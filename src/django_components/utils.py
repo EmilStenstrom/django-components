@@ -1,13 +1,13 @@
 import glob
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from django.template.engine import Engine
 
 from django_components.template_loader import Loader
 
 
-def search(search_glob: Optional[str] = None, engine: Optional[Engine] = None):
+def search(search_glob: Optional[str] = None, engine: Optional[Engine] = None) -> Union[List[str], List[Path]]:
     """
     Search for directories that may contain components.
 
