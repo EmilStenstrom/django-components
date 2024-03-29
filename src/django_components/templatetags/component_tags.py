@@ -1,5 +1,5 @@
 import sys
-from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Mapping, Optional, Set, Tuple, Type, Union
 
 if sys.version_info[:2] < (3, 9):
     from typing import ChainMap
@@ -9,11 +9,11 @@ else:
 import django.template
 from django.conf import settings
 from django.template import Context, Template
-from django.template.base import FilterExpression, Node, NodeList, TextNode, TokenType
+from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode, Token, TokenType
 from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.template.library import parse_bits
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import app_settings
 from django_components.component_registry import ComponentRegistry
@@ -46,7 +46,7 @@ FillContent = Tuple[NodeList, Optional[AliasName]]
 FilledSlotsContext = ChainMap[Tuple[SlotName, Template], FillContent]
 
 
-def get_components_from_registry(registry: ComponentRegistry):
+def get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
     """Returns a list unique components from the registry."""
 
     unique_component_classes = set(registry.all().values())
@@ -58,7 +58,7 @@ def get_components_from_registry(registry: ComponentRegistry):
     return components
 
 
-def get_components_from_preload_str(preload_str):
+def get_components_from_preload_str(preload_str: str) -> List["Component"]:
     """Returns a list of unique components from a comma-separated str"""
 
     components = []
@@ -73,7 +73,7 @@ def get_components_from_preload_str(preload_str):
 
 
 @register.simple_tag(name="component_dependencies")
-def component_dependencies_tag(preload=""):
+def component_dependencies_tag(preload: str = "") -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
 
     if is_dependency_middleware_active():
@@ -90,7 +90,7 @@ def component_dependencies_tag(preload=""):
 
 
 @register.simple_tag(name="component_css_dependencies")
-def component_css_dependencies_tag(preload=""):
+def component_css_dependencies_tag(preload: str = "") -> SafeString:
     """Marks location where CSS link tags should be rendered."""
 
     if is_dependency_middleware_active():
@@ -107,7 +107,7 @@ def component_css_dependencies_tag(preload=""):
 
 
 @register.simple_tag(name="component_js_dependencies")
-def component_js_dependencies_tag(preload=""):
+def component_js_dependencies_tag(preload: str = "") -> SafeString:
     """Marks location where JS script tags should be rendered."""
 
     if is_dependency_middleware_active():
@@ -157,7 +157,7 @@ class TemplateAwareNodeMixin:
             )
 
     @template.setter
-    def template(self, value) -> None:
+    def template(self, value: Template) -> None:
         self._template = value
 
 
@@ -175,7 +175,7 @@ class SlotNode(Node, TemplateAwareNodeMixin):
         self.is_default = is_default
 
     @property
-    def active_flags(self):
+    def active_flags(self) -> List[str]:
         m = []
         if self.is_required:
             m.append("required")
@@ -183,10 +183,10 @@ class SlotNode(Node, TemplateAwareNodeMixin):
             m.append("default")
         return m
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
 
-    def render(self, context):
+    def render(self, context: Context) -> SafeString:
         try:
             filled_slots_map: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
         except KeyError:
@@ -213,7 +213,7 @@ class SlotNode(Node, TemplateAwareNodeMixin):
 
 
 @register.tag("slot")
-def do_slot(parser, token):
+def do_slot(parser: Parser, token: Token) -> SlotNode:
     bits = token.split_contents()
     args = bits[1:]
     # e.g. {% slot <name> %}
@@ -258,10 +258,10 @@ class BaseFillNode(Node):
     def __init__(self, nodelist: NodeList):
         self.nodelist: NodeList = nodelist
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError
 
-    def render(self, context):
+    def render(self, context: Context) -> str:
         raise TemplateSyntaxError(
             "{% fill ... %} block cannot be rendered directly. "
             "You are probably seeing this because you have used one outside "
@@ -280,7 +280,7 @@ class NamedFillNode(BaseFillNode):
         self.name_fexp = name_fexp
         self.alias_fexp = alias_fexp
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
 
 
@@ -291,12 +291,12 @@ class ImplicitFillNode(BaseFillNode):
     as 'default'.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self)} Contents: {repr(self.nodelist)}.>"
 
 
 @register.tag("fill")
-def do_fill(parser, token):
+def do_fill(parser: Parser, token: Token) -> NamedFillNode:
     """Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
     It exists to make component nesting easier.
@@ -333,11 +333,11 @@ class ComponentNode(Node):
     def __init__(
         self,
         name_fexp: FilterExpression,
-        context_args,
-        context_kwargs,
-        isolated_context=False,
+        context_args: List[FilterExpression],
+        context_kwargs: Mapping[str, FilterExpression],
+        isolated_context: bool = False,
         fill_nodes: Union[ImplicitFillNode, Iterable[NamedFillNode]] = (),
-    ):
+    ) -> None:
         self.name_fexp = name_fexp
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
@@ -345,19 +345,19 @@ class ComponentNode(Node):
         self.fill_nodes = fill_nodes
         self.nodelist = self._create_nodelist(fill_nodes)
 
-    def _create_nodelist(self, fill_nodes) -> NodeList:
+    def _create_nodelist(self, fill_nodes: Union[Iterable[Node], ImplicitFillNode]) -> NodeList:
         if isinstance(fill_nodes, ImplicitFillNode):
             return NodeList([fill_nodes])
         else:
             return NodeList(fill_nodes)
 
-    def __repr__(self):
-        return "<ComponentNode: %s. Contents: %r>" % (
+    def __repr__(self) -> str:
+        return "<ComponentNode: {}. Contents: {!r}>".format(
             self.name_fexp,
             getattr(self, "nodelist", None),  # 'nodelist' attribute only assigned later.
         )
 
-    def render(self, context: Context):
+    def render(self, context: Context) -> str:
         resolved_component_name = self.name_fexp.resolve(context)
         component_cls: Type[Component] = component_registry.get(resolved_component_name)
 
@@ -408,7 +408,7 @@ class ComponentNode(Node):
 
 
 @register.tag(name="component")
-def do_component(parser, token):
+def do_component(parser: Parser, token: Token) -> ComponentNode:
     """
     To give the component access to the template context:
         {% component "name" positional_arg keyword_arg=value ... %}
@@ -497,7 +497,7 @@ def try_parse_as_default_fill(
         return ImplicitFillNode(nodelist=nodelist)
 
 
-def block_has_content(nodelist) -> bool:
+def block_has_content(nodelist: NodeList) -> bool:
     for node in nodelist:
         if isinstance(node, TextNode) and node.s.isspace():
             pass
@@ -512,16 +512,16 @@ def is_whitespace_node(node: Node) -> bool:
     return isinstance(node, TextNode) and node.s.isspace()
 
 
-def is_whitespace_token(token):
+def is_whitespace_token(token: Token) -> bool:
     return token.token_type == TokenType.TEXT and not token.contents.strip()
 
 
-def is_block_tag_token(token, name):
+def is_block_tag_token(token: Token, name: str) -> bool:
     return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
 
 
 @register.tag(name="if_filled")
-def do_if_filled_block(parser, token):
+def do_if_filled_block(parser: Parser, token: Token) -> "IfSlotFilledNode":
     """
     ### Usage
 
@@ -623,7 +623,7 @@ class _IfSlotFilledBranchNode(Node):
     def render(self, context: Context) -> str:
         return self.nodelist.render(context)
 
-    def evaluate(self, context) -> bool:
+    def evaluate(self, context: Context) -> bool:
         raise NotImplementedError
 
 
@@ -632,13 +632,13 @@ class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, TemplateAwareNode
         self,
         slot_name: str,
         nodelist: NodeList,
-        is_positive=True,
+        is_positive: Union[bool, None] = True,
     ) -> None:
         self.slot_name = slot_name
-        self.is_positive: bool = is_positive
+        self.is_positive: Optional[bool] = is_positive
         super().__init__(nodelist)
 
-    def evaluate(self, context) -> bool:
+    def evaluate(self, context: Context) -> bool:
         try:
             filled_slots: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
         except KeyError:
@@ -654,7 +654,7 @@ class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, TemplateAwareNode
 
 
 class IfSlotFilledElseBranchNode(_IfSlotFilledBranchNode):
-    def evaluate(self, context) -> bool:
+    def evaluate(self, context: Context) -> bool:
         return True
 
 
@@ -666,13 +666,13 @@ class IfSlotFilledNode(Node):
         self.branches = branches
         self.nodelist = self._create_nodelist(branches)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__}>"
 
-    def _create_nodelist(self, branches) -> NodeList:
+    def _create_nodelist(self, branches: List[_IfSlotFilledBranchNode]) -> NodeList:
         return NodeList(branches)
 
-    def render(self, context):
+    def render(self, context: Context) -> str:
         for node in self.branches:
             if isinstance(node, IfSlotFilledElseBranchNode):
                 return node.render(context)
@@ -682,7 +682,7 @@ class IfSlotFilledNode(Node):
         return ""
 
 
-def check_for_isolated_context_keyword(bits):
+def check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool]:
     """Return True and strip the last word if token ends with 'only' keyword or if CONTEXT_BEHAVIOR is 'isolated'."""
 
     if bits[-1] == "only":
@@ -694,7 +694,9 @@ def check_for_isolated_context_keyword(bits):
     return bits, False
 
 
-def parse_component_with_args(parser, bits, tag_name):
+def parse_component_with_args(
+    parser: Parser, bits: List[str], tag_name: str
+) -> Tuple[str, List[FilterExpression], Mapping[str, FilterExpression]]:
     tag_args, tag_kwargs = parse_bits(
         parser=parser,
         bits=bits,
@@ -726,21 +728,21 @@ def parse_component_with_args(parser, bits, tag_name):
     return component_name, context_args, context_kwargs
 
 
-def safe_resolve(context_item, context):
+def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
     """Resolve FilterExpressions and Variables in context if possible.  Return other items unchanged."""
 
     return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
 
 
-def is_wrapped_in_quotes(s):
+def is_wrapped_in_quotes(s: str) -> bool:
     return s.startswith(('"', "'")) and s[0] == s[-1]
 
 
-def is_dependency_middleware_active():
+def is_dependency_middleware_active() -> bool:
     return getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)
 
 
-def norm_and_validate_name(name: str, tag: str, context: Optional[str] = None):
+def norm_and_validate_name(name: str, tag: str, context: Optional[str] = None) -> str:
     """
     Notes:
         - Value of `tag` in {"slot", "fill", "alias"}
@@ -756,7 +758,7 @@ def strip_quotes(s: str) -> str:
     return s.strip("\"'")
 
 
-def bool_from_string(s: str):
+def bool_from_string(s: str) -> bool:
     s = strip_quotes(s.lower())
     if s == "true":
         return True

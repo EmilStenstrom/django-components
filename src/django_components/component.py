@@ -2,7 +2,22 @@ import difflib
 import inspect
 import os
 from collections import ChainMap
-from typing import Any, ClassVar, Dict, Iterable, List, Optional, Set, Tuple, Union
+from pathlib import Path
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -12,7 +27,7 @@ from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.utils.html import escape
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
 # Global registry var and register() function moved to separate module.
@@ -39,9 +54,11 @@ from django_components.templatetags.component_tags import (
 )
 from django_components.utils import search
 
+_T = TypeVar("_T")
+
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
-    def __new__(mcs, name, bases, attrs):
+    def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
         if "Media" in attrs:
             media: Component.Media = attrs["Media"]
 
@@ -68,7 +85,7 @@ class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
         return super().__new__(mcs, name, bases, attrs)
 
 
-def _resolve_component_relative_files(attrs: dict):
+def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     """
     Check if component's HTML, JS and CSS files refer to files in the same directory
     as the component class. If so, modify the attributes so the class Django's rendering
@@ -96,7 +113,7 @@ def _resolve_component_relative_files(attrs: dict):
     # Check if filepath refers to a file that's in the same directory as the component class.
     # If yes, modify the path to refer to the relative file.
     # If not, don't modify anything.
-    def resolve_file(filepath: str):
+    def resolve_file(filepath: str) -> str:
         maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
         component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
@@ -128,7 +145,9 @@ def _resolve_component_relative_files(attrs: dict):
             media.js = [resolve_file(filepath) for filepath in media.js]
 
 
-def _get_dir_path_from_component_module_path(component_module_path: str, candidate_dirs: List[str]):
+def _get_dir_path_from_component_module_path(
+    component_module_path: str, candidate_dirs: Union[List[str], List[Path]]
+) -> Tuple[str, str]:
     # Transform python module notation "pkg.module.name" to file path "pkg/module/name"
     # Thus, we should get file path relative to Django project root
     comp_path = os.sep.join(component_module_path.split("."))
@@ -185,19 +204,19 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
-    def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
+    def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         return {}
 
-    def get_template_name(self, context) -> Optional[str]:
+    def get_template_name(self, context: Mapping) -> Optional[str]:
         return self.template_name
 
-    def get_template_string(self, context) -> Optional[str]:
+    def get_template_string(self, context: Mapping) -> Optional[str]:
         return self.template
 
-    def render_dependencies(self):
+    def render_dependencies(self) -> SafeString:
         """Helper function to render all dependencies for a component."""
         dependencies = []
 
@@ -211,19 +230,19 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
         return mark_safe("\n".join(dependencies))
 
-    def render_css_dependencies(self):
+    def render_css_dependencies(self) -> SafeString:
         """Render only CSS dependencies available in the media class or provided as a string."""
         if self.css is not None:
             return mark_safe(f"<style>{self.css}</style>")
         return mark_safe("\n".join(self.media.render_css()))
 
-    def render_js_dependencies(self):
+    def render_js_dependencies(self) -> SafeString:
         """Render only JS dependencies available in the media class or provided as a string."""
         if self.js is not None:
             return mark_safe(f"<script>{self.js}</script>")
         return mark_safe("\n".join(self.media.render_js()))
 
-    def get_template(self, context) -> Template:
+    def get_template(self, context: Mapping) -> Template:
         template_string = self.get_template_string(context)
         if template_string is not None:
             return Template(template_string)
@@ -260,9 +279,9 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         context_data: Dict[str, Any],
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> HttpResponse:
         return HttpResponse(
             self.render(context_data, slots_data, escape_slots_content),
             *args,
@@ -273,7 +292,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         slots_data: Dict[SlotName, str],
         escape_content: bool = True,
-    ):
+    ) -> None:
         """Fill component slots outside of template rendering."""
         self.fill_content = [
             (
@@ -342,7 +361,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
                 f"even though none of its slots is marked as 'default'."
             )
 
-        unfilled_slots: Set[str] = set(k for k, v in slot_name2fill_content.items() if v is None)
+        unfilled_slots: Set[str] = {k for k, v in slot_name2fill_content.items() if v is None}
         unmatched_fills: Set[str] = named_fills_content.keys() - slot_name2fill_content.keys()
 
         # Check that 'required' slots are filled.

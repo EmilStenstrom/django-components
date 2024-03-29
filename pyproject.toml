@@ -46,6 +46,11 @@ exclude = [
     'build',
 ]
 
+[[tool.mypy.overrides]]
+module = "django_components.*"
+disallow_untyped_defs = true
+
+
 [tool.pytest.ini_options]
 testpaths = [
     "tests"
