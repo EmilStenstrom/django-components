@@ -7,7 +7,8 @@ VERSION = "0.61"
 
 setup(
     name="django_components",
-    packages=find_packages(exclude=["tests"]),
+    packages=find_packages(where="src", exclude=["tests", "tests.*"]),
+    package_dir={"": "src"},
     package_data={
         "django_components": ["py.typed"],
     },
