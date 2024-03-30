@@ -17,13 +17,8 @@ from django.views import View
 # Defining them here made little sense, since 1) component_tags.py and component.py
 # rely on them equally, and 2) it made it difficult to avoid circularity in the
 # way the two modules depend on one another.
-from django_components.component_registry import (  # NOQA
-    AlreadyRegistered,
-    ComponentRegistry,
-    NotRegistered,
-    register,
-    registry,
-)
+from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
+from django_components.component_registry import registry
 from django_components.component_registry import registry as component_registry
 from django_components.logger import logger
 from django_components.middleware import is_dependency_middleware_active
