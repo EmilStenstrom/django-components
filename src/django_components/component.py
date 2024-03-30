@@ -270,11 +270,10 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
 
-        prev_filled_slots_context: Optional[FilledSlotsContext] = context.get(
-            FILLED_SLOTS_CONTENT_CONTEXT_KEY
-        )
+        prev_filled_slots_context: Optional[FilledSlotsContext] = context.get(FILLED_SLOTS_CONTENT_CONTEXT_KEY)
         updated_filled_slots_context = self._process_template_and_update_filled_slot_context(
-            template, prev_filled_slots_context, 
+            template,
+            prev_filled_slots_context,
         )
         with context.update({FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}):
             return template.render(context)
