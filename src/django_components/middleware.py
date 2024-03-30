@@ -82,3 +82,7 @@ def join_media(components: Iterable["Component"]) -> Media:
     """Return combined media object for iterable of components."""
 
     return sum([component.media for component in components], Media())
+
+
+def is_dependency_middleware_active() -> bool:
+    return getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)

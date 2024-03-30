@@ -1,30 +1,13 @@
-import difflib
 import inspect
 import os
-from collections import ChainMap
 from pathlib import Path
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
 from django.http import HttpResponse
-from django.template.base import NodeList, Template, TextNode
+from django.template.base import FilterExpression, Node, NodeList, Template, TextNode
 from django.template.context import Context
-from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
@@ -34,31 +17,30 @@ from django.views import View
 # Defining them here made little sense, since 1) component_tags.py and component.py
 # rely on them equally, and 2) it made it difficult to avoid circularity in the
 # way the two modules depend on one another.
-from django_components.component_registry import (  # NOQA
-    AlreadyRegistered,
-    ComponentRegistry,
-    NotRegistered,
-    register,
-    registry,
-)
+from django_components.component_registry import registry  # NOQA
+from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
 from django_components.logger import logger
-from django_components.templatetags.component_tags import (
-    FILLED_SLOTS_CONTENT_CONTEXT_KEY,
+from django_components.middleware import is_dependency_middleware_active
+from django_components.slots import (
     DefaultFillContent,
-    FillContent,
-    FilledSlotsContext,
-    IfSlotFilledConditionBranchNode,
+    ImplicitFillNode,
     NamedFillContent,
+    NamedFillNode,
     SlotName,
-    SlotNode,
+    render_component_template_with_slots,
 )
 from django_components.utils import search
 
-_T = TypeVar("_T")
+RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
 
 class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
+        # NOTE: Skip template/media file resolution when then Component class ITSELF
+        # is being created.
+        if "__module__" in attrs and attrs["__module__"] == "django_components.component":
+            return super().__new__(mcs, name, bases, attrs)
+
         if "Media" in attrs:
             media: Component.Media = attrs["Media"]
 
@@ -270,13 +252,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
 
-        prev_filled_slots_context: Optional[FilledSlotsContext] = context.get(FILLED_SLOTS_CONTENT_CONTEXT_KEY)
-        updated_filled_slots_context = self._process_template_and_update_filled_slot_context(
-            template,
-            prev_filled_slots_context,
-        )
-        with context.update({FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}):
-            return template.render(context)
+        return render_component_template_with_slots(template, context, self.fill_content, self.registered_name)
 
     def render_to_response(
         self,
@@ -307,105 +283,78 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             for (slot_name, content) in slots_data.items()
         ]
 
-    def _process_template_and_update_filled_slot_context(
+
+class ComponentNode(Node):
+    """Django.template.Node subclass that renders a django-components component"""
+
+    def __init__(
         self,
-        template: Template,
-        slots_context: Optional[FilledSlotsContext],
-    ) -> FilledSlotsContext:
-        if isinstance(self.fill_content, NodeList):
-            default_fill_content = (self.fill_content, None)
-            named_fills_content = {}
+        name_fexp: FilterExpression,
+        context_args: List[FilterExpression],
+        context_kwargs: Mapping[str, FilterExpression],
+        isolated_context: bool = False,
+        fill_nodes: Union[ImplicitFillNode, Iterable[NamedFillNode]] = (),
+    ) -> None:
+        self.name_fexp = name_fexp
+        self.context_args = context_args or []
+        self.context_kwargs = context_kwargs or {}
+        self.isolated_context = isolated_context
+        self.fill_nodes = fill_nodes
+        self.nodelist = self._create_nodelist(fill_nodes)
+
+    def _create_nodelist(self, fill_nodes: Union[Iterable[Node], ImplicitFillNode]) -> NodeList:
+        if isinstance(fill_nodes, ImplicitFillNode):
+            return NodeList([fill_nodes])
         else:
-            default_fill_content = None
-            named_fills_content = {name: (nodelist, alias) for name, nodelist, alias in list(self.fill_content)}
+            return NodeList(fill_nodes)
 
-        # If value is `None`, then slot is unfilled.
-        slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}
-        default_slot_encountered: bool = False
-        required_slot_names: Set[str] = set()
+    def __repr__(self) -> str:
+        return "<ComponentNode: {}. Contents: {!r}>".format(
+            self.name_fexp,
+            getattr(self, "nodelist", None),  # 'nodelist' attribute only assigned later.
+        )
 
-        for node in template.nodelist.get_nodes_by_type((SlotNode, IfSlotFilledConditionBranchNode)):  # type: ignore
-            if isinstance(node, SlotNode):
-                # Give slot node knowledge of its parent template.
-                node.template = template
-                slot_name = node.name
-                if slot_name in slot_name2fill_content:
-                    raise TemplateSyntaxError(
-                        f"Slot name '{slot_name}' re-used within the same template. "
-                        f"Slot names must be unique."
-                        f"To fix, check template '{template.name}' "
-                        f"of component '{self.registered_name}'."
-                    )
-                content_data: Optional[FillContent] = None  # `None` -> unfilled
-                if node.is_required:
-                    required_slot_names.add(node.name)
-                if node.is_default:
-                    if default_slot_encountered:
-                        raise TemplateSyntaxError(
-                            "Only one component slot may be marked as 'default'. "
-                            f"To fix, check template '{template.name}' "
-                            f"of component '{self.registered_name}'."
-                        )
-                    content_data = default_fill_content
-                    default_slot_encountered = True
-                if not content_data:
-                    content_data = named_fills_content.get(node.name)
-                slot_name2fill_content[slot_name] = content_data
-            elif isinstance(node, IfSlotFilledConditionBranchNode):
-                node.template = template
-            else:
-                raise RuntimeError(f"Node of {type(node).__name__} does not require linking.")
+    def render(self, context: Context) -> str:
+        resolved_component_name = self.name_fexp.resolve(context)
+        component_cls: Type[Component] = registry.get(resolved_component_name)
 
-        # Check: Only component templates that include a 'default' slot
-        # can be invoked with implicit filling.
-        if default_fill_content and not default_slot_encountered:
-            raise TemplateSyntaxError(
-                f"Component '{self.registered_name}' passed default fill content '{default_fill_content}'"
-                f"(i.e. without explicit 'fill' tag), "
-                f"even though none of its slots is marked as 'default'."
-            )
+        # Resolve FilterExpressions and Variables that were passed as args to the
+        # component, then call component's context method
+        # to get values to insert into the context
+        resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
+        resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
 
-        unfilled_slots: Set[str] = {k for k, v in slot_name2fill_content.items() if v is None}
-        unmatched_fills: Set[str] = named_fills_content.keys() - slot_name2fill_content.keys()
-
-        # Check that 'required' slots are filled.
-        for slot_name in unfilled_slots:
-            if slot_name in required_slot_names:
-                msg = (
-                    f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
-                    f"yet no fill is provided. Check template.'"
-                )
-                if unmatched_fills:
-                    msg = f"{msg}\nPossible typo in unresolvable fills: {unmatched_fills}."
-                raise TemplateSyntaxError(msg)
-
-        # Check that all fills can be matched to a slot on the component template.
-        # To help with easy-to-overlook typos, we fuzzy match unresolvable fills to
-        # those slots for which no matching fill was encountered. In the event of
-        # a close match, we include the name of the matched unfilled slot as a
-        # hint in the error message.
-        #
-        # Note: Finding a good `cutoff` value may require further trial-and-error.
-        # Higher values make matching stricter. This is probably preferable, as it
-        # reduces false positives.
-        for fill_name in unmatched_fills:
-            fuzzy_slot_name_matches = difflib.get_close_matches(fill_name, unfilled_slots, n=1, cutoff=0.7)
-            msg = (
-                f"Component '{self.registered_name}' passed fill "
-                f"that refers to undefined slot: '{fill_name}'."
-                f"\nUnfilled slot names are: {sorted(unfilled_slots)}."
-            )
-            if fuzzy_slot_name_matches:
-                msg += f"\nDid you mean '{fuzzy_slot_name_matches[0]}'?"
-            raise TemplateSyntaxError(msg)
-
-        # Return updated FILLED_SLOTS_CONTEXT map
-        filled_slots_map: Dict[Tuple[SlotName, Template], FillContent] = {
-            (slot_name, template): content_data
-            for slot_name, content_data in slot_name2fill_content.items()
-            if content_data  # Slots whose content is None (i.e. unfilled) are dropped.
-        }
-        if slots_context is not None:
-            return slots_context.new_child(filled_slots_map)
+        if isinstance(self.fill_nodes, ImplicitFillNode):
+            fill_content = self.fill_nodes.nodelist
         else:
-            return ChainMap(filled_slots_map)
+            fill_content = []
+            for fill_node in self.fill_nodes:
+                # Note that outer component context is used to resolve variables in
+                # fill tag.
+                resolved_name = fill_node.name_fexp.resolve(context)
+                resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
+                fill_content.append((resolved_name, fill_node.nodelist, resolved_fill_alias))
+
+        component: Component = component_cls(
+            registered_name=resolved_component_name,
+            outer_context=context,
+            fill_content=fill_content,
+        )
+
+        component_context: dict = component.get_context_data(*resolved_context_args, **resolved_context_kwargs)
+
+        if self.isolated_context:
+            context = context.new()
+        with context.update(component_context):
+            rendered_component = component.render(context)
+
+        if is_dependency_middleware_active():
+            return RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name) + rendered_component
+        else:
+            return rendered_component
+
+
+def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
+    """Resolve FilterExpressions and Variables in context if possible.  Return other items unchanged."""
+
+    return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
