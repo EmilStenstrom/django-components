@@ -262,7 +262,9 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
     ) -> str:
-        context = Context(context_data)
+        # NOTE: This if/else is important to avoid nested Contexts,
+        # See https://github.com/EmilStenstrom/django-components/issues/414
+        context = context_data if isinstance(context_data, Context) else Context(context_data)
         template = self.get_template(context)
 
         if slots_data:
