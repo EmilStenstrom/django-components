@@ -262,14 +262,18 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
     ) -> str:
-        context = Context(context_data)
+        # NOTE: This if/else is important to avoid nested Contexts,
+        # See https://github.com/EmilStenstrom/django-components/issues/414
+        context = context_data if isinstance(context_data, Context) else Context(context_data)
         template = self.get_template(context)
 
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
 
-        updated_filled_slots_context: FilledSlotsContext = self._process_template_and_update_filled_slot_context(
-            context, template
+        prev_filled_slots_context: Optional[FilledSlotsContext] = context.get(FILLED_SLOTS_CONTENT_CONTEXT_KEY)
+        updated_filled_slots_context = self._process_template_and_update_filled_slot_context(
+            template,
+            prev_filled_slots_context,
         )
         with context.update({FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}):
             return template.render(context)
@@ -305,8 +309,8 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def _process_template_and_update_filled_slot_context(
         self,
-        context: Context,
         template: Template,
+        slots_context: Optional[FilledSlotsContext],
     ) -> FilledSlotsContext:
         if isinstance(self.fill_content, NodeList):
             default_fill_content = (self.fill_content, None)
@@ -401,8 +405,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             for slot_name, content_data in slot_name2fill_content.items()
             if content_data  # Slots whose content is None (i.e. unfilled) are dropped.
         }
-        try:
-            prev_context: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
-            return prev_context.new_child(filled_slots_map)
-        except KeyError:
+        if slots_context is not None:
+            return slots_context.new_child(filled_slots_map)
+        else:
             return ChainMap(filled_slots_map)
