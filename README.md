@@ -858,3 +858,18 @@ Use the [sampleproject](./sampleproject/) demo project to validate the changes:
 Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
 To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>
+
+## Development guides
+
+### Slot rendering flow
+
+1. Flow starts when a template string is being parsed into Django Template instance.
+
+2. When a `{% component %}` template tag is encountered, its body is searched for all `{% fill %}` nodes (explicit or implicit). and this is attached to the created `ComponentNode`.
+
+    See the implementation of `component` template tag for details.
+
+3. Template rendering is a separate action from template parsing. When the template is being rendered, the `ComponentNode` creates an instance of the `Component` class and passes it the slot fills.
+
+    It's at this point when `Component.render` is called, and the slots are
+    rendered.
