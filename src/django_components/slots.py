@@ -1,11 +1,16 @@
 import difflib
 import sys
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union
 
 if sys.version_info[:2] < (3, 9):
     from typing import ChainMap
 else:
     from collections import ChainMap
+
+if sys.version_info[:2] < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, TextNode
@@ -20,7 +25,7 @@ FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 SlotName = str
 AliasName = str
 
-DefaultFillContent = NodeList
+DefaultFillContent: TypeAlias = NodeList
 NamedFillContent = Tuple[SlotName, NodeList, Optional[AliasName]]
 
 FillContent = Tuple[NodeList, Optional[AliasName]]
@@ -238,7 +243,7 @@ class IfSlotFilledNode(Node):
 
 def parse_slot_fill_nodes_from_component_nodelist(
     component_nodelist: NodeList,
-    ComponentNodeCls: type[Node],
+    ComponentNodeCls: Type[Node],
 ) -> Union[Iterable[NamedFillNode], ImplicitFillNode]:
     """
     Given a component body (`django.template.NodeList`), find all slot fills,
@@ -280,7 +285,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
 
 def _try_parse_as_named_fill_tag_set(
     nodelist: NodeList,
-    ComponentNodeCls: type[Node],
+    ComponentNodeCls: Type[Node],
 ) -> Optional[Iterable[NamedFillNode]]:
     result = []
     seen_name_fexps: Set[FilterExpression] = set()
@@ -304,7 +309,7 @@ def _try_parse_as_named_fill_tag_set(
 
 def _try_parse_as_default_fill(
     nodelist: NodeList,
-    ComponentNodeCls: type[Node],
+    ComponentNodeCls: Type[Node],
 ) -> Optional[ImplicitFillNode]:
     nodes_stack: List[Node] = list(nodelist)
     while nodes_stack:
