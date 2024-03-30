@@ -8,6 +8,35 @@ Version = Tuple[int, ...]
 VersionMapping = Dict[Version, List[Version]]
 
 
+def cut_by_content(content: str, cut_from: str, cut_to: str):
+    return content.split(cut_from)[1].split(cut_to)[0]
+
+
+def keys_from_content(content: str):
+    return re.findall(r"<td>(.*?)</td>", content)
+
+
+def get_python_supported_version(url: str) -> list[Version]:
+    with request.urlopen(url) as response:
+        response_content = response.read()
+
+    content = response_content.decode("utf-8")
+
+    def parse_supported_versions(content: str) -> list[Version]:
+        content = cut_by_content(
+            content,
+            '<section id="supported-versions">',
+            "</table>",
+        )
+        content = cut_by_content(content, "<tbody>", "</tbody>")
+        lines = content.split("<tr ")
+        versions = [match[0] for line in lines[1:] if (match := re.findall(r"<p>([\d.]+)</p>", line))]
+        versions_tuples = [version_to_tuple(version) for version in versions]
+        return versions_tuples
+
+    return parse_supported_versions(content)
+
+
 def get_supported_versions(url: str):
     with request.urlopen(url) as response:
         response_content = response.read()
@@ -15,12 +44,6 @@ def get_supported_versions(url: str):
     content = response_content.decode("utf-8")
 
     def parse_supported_versions(content):
-        def cut_by_content(content, cut_from, cut_to):
-            return content.split(cut_from)[1].split(cut_to)[0]
-
-        def keys_from_content(content):
-            return re.findall(r"<td>(.*?)</td>", content)
-
         content = cut_by_content(
             content,
             '<span id="what-python-version-can-i-use-with-django">',
@@ -178,13 +201,13 @@ def build_ci_python_versions(python_to_django: Dict[str, str]):
 
 
 def main():
+    active_python = get_python_supported_version("https://devguide.python.org/versions/")
     django_to_python = get_supported_versions("https://docs.djangoproject.com/en/dev/faq/install/")
     latest_version = get_latest_version("https://www.djangoproject.com/download/")
 
     python_to_django = build_python_to_django(django_to_python, latest_version)
 
-    # Force drop support for 3.6
-    python_to_django.pop((3, 6), None)
+    python_to_django = dict(filter(lambda item: item[0] in active_python, python_to_django.items()))
 
     tox_envlist = build_tox_envlist(python_to_django)
     print("Add this to tox.ini:\n")

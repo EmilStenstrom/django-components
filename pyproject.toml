@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "django_components"
 version = "0.63"
-requires-python = ">=3.7, <4.0"
+requires-python = ">=3.8, <4.0"
 description = "A way to create simple reusable template components in Django."
 keywords = ["django", "components", "css", "js", "html"]
 readme = "README.md"
@@ -25,7 +25,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
 ]
