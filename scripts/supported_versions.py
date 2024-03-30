@@ -200,7 +200,7 @@ def main():
     print()
     print()
 
-    print("Add this to setup.py:\n")
+    print("Add this to pyproject.toml:\n")
     pypi_classifiers = build_pypi_classifiers(python_to_django)
     print(pypi_classifiers)
     print()
