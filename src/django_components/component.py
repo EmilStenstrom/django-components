@@ -1,19 +1,7 @@
 import inspect
 import os
 from pathlib import Path
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -41,14 +29,13 @@ from django_components.logger import logger
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
     DefaultFillContent,
-    NamedFillContent,
-    SlotName,
-    NamedFillNode,
     ImplicitFillNode,
+    NamedFillContent,
+    NamedFillNode,
+    SlotName,
     render_component_template_with_slots,
 )
 from django_components.utils import search
-
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 

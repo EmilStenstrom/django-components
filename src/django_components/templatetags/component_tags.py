@@ -5,23 +5,24 @@ from django.template.base import FilterExpression, Node, NodeList, Parser, TextN
 from django.template.exceptions import TemplateSyntaxError
 from django.template.library import parse_bits
 from django.utils.safestring import SafeString, mark_safe
+
 from django_components.app_settings import app_settings
+from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
-from django_components.component import ComponentNode, RENDERED_COMMENT_TEMPLATE
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
 from django_components.slots import (
-    parse_slot_fill_nodes_from_component_nodelist,
-    SlotNode,
-    NamedFillNode,
-    IfSlotFilledNode,
     IfSlotFilledConditionBranchNode,
-    _IfSlotFilledBranchNode,
     IfSlotFilledElseBranchNode,
+    IfSlotFilledNode,
+    NamedFillNode,
+    SlotNode,
+    _IfSlotFilledBranchNode,
+    parse_slot_fill_nodes_from_component_nodelist,
 )
 
 if TYPE_CHECKING:

@@ -13,7 +13,6 @@ from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-
 FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 
 # Type aliases
