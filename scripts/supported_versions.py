@@ -169,7 +169,7 @@ def build_pyenv(python_to_django: VersionMapping):
 
 
 def build_ci_python_versions(python_to_django: Dict[str, str]):
-    # Outputs python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+    # Outputs python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     lines = [
         f"'{env_format(python_version, divider='.')}'" for python_version, django_versions in python_to_django.items()
     ]
@@ -182,6 +182,9 @@ def main():
     latest_version = get_latest_version("https://www.djangoproject.com/download/")
 
     python_to_django = build_python_to_django(django_to_python, latest_version)
+
+    # Force drop support for 3.6
+    python_to_django.pop((3, 6), None)
 
     tox_envlist = build_tox_envlist(python_to_django)
     print("Add this to tox.ini:\n")
