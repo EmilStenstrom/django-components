@@ -192,7 +192,7 @@ def build_pyenv(python_to_django: VersionMapping):
 
 
 def build_ci_python_versions(python_to_django: Dict[str, str]):
-    # Outputs python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    # Outputs python-version, like: ['3.8', '3.9', '3.10', '3.11', '3.12']
     lines = [
         f"'{env_format(python_version, divider='.')}'" for python_version, django_versions in python_to_django.items()
     ]
