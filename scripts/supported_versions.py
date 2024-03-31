@@ -8,6 +8,35 @@ Version = Tuple[int, ...]
 VersionMapping = Dict[Version, List[Version]]
 
 
+def cut_by_content(content: str, cut_from: str, cut_to: str):
+    return content.split(cut_from)[1].split(cut_to)[0]
+
+
+def keys_from_content(content: str):
+    return re.findall(r"<td>(.*?)</td>", content)
+
+
+def get_python_supported_version(url: str) -> list[Version]:
+    with request.urlopen(url) as response:
+        response_content = response.read()
+
+    content = response_content.decode("utf-8")
+
+    def parse_supported_versions(content: str) -> list[Version]:
+        content = cut_by_content(
+            content,
+            '<section id="supported-versions">',
+            "</table>",
+        )
+        content = cut_by_content(content, "<tbody>", "</tbody>")
+        lines = content.split("<tr ")
+        versions = [match[0] for line in lines[1:] if (match := re.findall(r"<p>([\d.]+)</p>", line))]
+        versions_tuples = [version_to_tuple(version) for version in versions]
+        return versions_tuples
+
+    return parse_supported_versions(content)
+
+
 def get_supported_versions(url: str):
     with request.urlopen(url) as response:
         response_content = response.read()
@@ -15,12 +44,6 @@ def get_supported_versions(url: str):
     content = response_content.decode("utf-8")
 
     def parse_supported_versions(content):
-        def cut_by_content(content, cut_from, cut_to):
-            return content.split(cut_from)[1].split(cut_to)[0]
-
-        def keys_from_content(content):
-            return re.findall(r"<td>(.*?)</td>", content)
-
         content = cut_by_content(
             content,
             '<span id="what-python-version-can-i-use-with-django">',
@@ -169,7 +192,7 @@ def build_pyenv(python_to_django: VersionMapping):
 
 
 def build_ci_python_versions(python_to_django: Dict[str, str]):
-    # Outputs python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+    # Outputs python-version, like: ['3.8', '3.9', '3.10', '3.11', '3.12']
     lines = [
         f"'{env_format(python_version, divider='.')}'" for python_version, django_versions in python_to_django.items()
     ]
@@ -178,10 +201,13 @@ def build_ci_python_versions(python_to_django: Dict[str, str]):
 
 
 def main():
+    active_python = get_python_supported_version("https://devguide.python.org/versions/")
     django_to_python = get_supported_versions("https://docs.djangoproject.com/en/dev/faq/install/")
     latest_version = get_latest_version("https://www.djangoproject.com/download/")
 
     python_to_django = build_python_to_django(django_to_python, latest_version)
+
+    python_to_django = dict(filter(lambda item: item[0] in active_python, python_to_django.items()))
 
     tox_envlist = build_tox_envlist(python_to_django)
     print("Add this to tox.ini:\n")
@@ -200,7 +226,7 @@ def main():
     print()
     print()
 
-    print("Add this to setup.py:\n")
+    print("Add this to pyproject.toml:\n")
     pypi_classifiers = build_pypi_classifiers(python_to_django)
     print(pypi_classifiers)
     print()

@@ -1,3 +1,48 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django_components"
+version = "0.63"
+requires-python = ">=3.8, <4.0"
+description = "A way to create simple reusable template components in Django."
+keywords = ["django", "components", "css", "js", "html"]
+readme = "README.md"
+authors = [
+    {name = "Emil Stenström", email = "emil@emilstenstrom.se"},
+]
+classifiers = [
+    "Framework :: Django",
+    "Framework :: Django :: 3.2",
+    "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.1",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    'Django>=3.2',
+]
+license = {text = "MIT"}
+
+[project.urls]
+Homepage = "https://github.com/EmilStenstrom/django-components/"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["django_components*"]
+exclude = ["django_components.tests*"]
+namespaces = false
+
 [tool.black]
 line-length = 119
 include = '\.pyi?$'

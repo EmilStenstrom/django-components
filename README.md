@@ -138,12 +138,10 @@ Read on to find out how to build your first component!
 
 ## Compatiblity
 
-Django-components supports all <a href="https://docs.djangoproject.com/en/dev/faq/install/#what-python-version-can-i-use-with-django">officially supported versions</a> of Django and Python.
+Django-components supports all supported combinations versions of [Django](https://docs.djangoproject.com/en/dev/faq/install/#what-python-version-can-i-use-with-django) and [Python](https://devguide.python.org/versions/#versions).
 
 | Python version | Django version           |
 |----------------|--------------------------|
-| 3.6            | 3.2                      |
-| 3.7            | 3.2                      |
 | 3.8            | 3.2, 4.0, 4.1, 4.2       |
 | 3.9            | 3.2, 4.0, 4.1, 4.2       |
 | 3.10           | 3.2, 4.0, 4.1, 4.2, 5.0  |
@@ -255,7 +253,7 @@ Components can also be defined in a single file, which is useful for small compo
 ```python
 # In a file called [project root]/components/calendar.py
 from django_components import component
-from django_components import types as t 
+from django_components import types as t
 
 @component.register("calendar")
 class Calendar(component.Component):
@@ -263,16 +261,16 @@ class Calendar(component.Component):
         return {
             "date": date,
         }
-    
+
     template: t.django_html = """
         <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
     """
-    
+
     css: t.css = """
         .calendar-component { width: 200px; background: pink; }
         .calendar-component span { font-weight: bold; }
     """
-    
+
     js: t.js = """
         (function(){
             if (document.querySelector(".calendar-component")) {
@@ -284,7 +282,7 @@ class Calendar(component.Component):
 
 This makes it easy to create small components without having to create a separate template, CSS, and JS file.
 
-Note that the `t.django_html`, `t.css`, and `t.js` types are used to specify the type of the template, CSS, and JS files, respectively. This is not necessary, but if you're using VSCode with the [Python Inline Source Syntax Highlighting](https://marketplace.visualstudio.com/items?itemName=samwillis.python-inline-source) extension, it will give you syntax highlighting for the template, CSS, and JS. 
+Note that the `t.django_html`, `t.css`, and `t.js` types are used to specify the type of the template, CSS, and JS files, respectively. This is not necessary, but if you're using VSCode with the [Python Inline Source Syntax Highlighting](https://marketplace.visualstudio.com/items?itemName=samwillis.python-inline-source) extension, it will give you syntax highlighting for the template, CSS, and JS.
 
 ## Using slots in templates
 
@@ -416,7 +414,7 @@ This is fine too:
 
 _New in version 0.34_
 
-Components can now be used as views. To do this, `Component` subclasses Django's `View` class. This means that you can use all of the [methods](https://docs.djangoproject.com/en/5.0/ref/class-based-views/base/#view) of `View` in your component. For example, you can override `get` and `post` to handle GET and POST requests, respectively. 
+Components can now be used as views. To do this, `Component` subclasses Django's `View` class. This means that you can use all of the [methods](https://docs.djangoproject.com/en/5.0/ref/class-based-views/base/#view) of `View` in your component. For example, you can override `get` and `post` to handle GET and POST requests, respectively.
 
 In addition, `Component` now has a `render_to_response` method that renders the component template based on the provided context and slots' data and returns an `HttpResponse` object.
 
@@ -428,7 +426,7 @@ from django_components import component
 
 @component.register("calendar")
 class Calendar(component.Component):
-    
+
     template = """
         <div class="calendar-component">
             <div class="header">
@@ -439,7 +437,7 @@ class Calendar(component.Component):
             </div>
         </div>
     """
-    
+
     def get(self, request, *args, **kwargs):
         context = {
             "date": request.GET.get("date", "2020-06-06"),
@@ -455,7 +453,7 @@ Then, to use this component as a view, you should create a `urls.py` file in you
 ```python
 # In a file called [project root]/components/urls.py
 from django.urls import path
-from calendar import Calendar 
+from calendar import Calendar
 
 urlpatterns = [
     path("calendar/", Calendar.as_view()),
@@ -817,14 +815,12 @@ pytest
 The library is also tested across many versions of Python and Django. To run tests that way:
 
 ```sh
-pyenv install -s 3.6
-pyenv install -s 3.7
 pyenv install -s 3.8
 pyenv install -s 3.9
 pyenv install -s 3.10
 pyenv install -s 3.11
 pyenv install -s 3.12
-pyenv local 3.6 3.7 3.8 3.9 3.10 3.11 3.12
+pyenv local 3.8 3.9 3.10 3.11 3.12
 tox -p
 ```
 
