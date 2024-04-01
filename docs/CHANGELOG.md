@@ -1,10 +1,12 @@
 # Release notes
 
-🚨📢 **Version 0.5** CHANGES THE SYNTAX for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of components to the new syntax automatically.
+🚨📢 **Version 0.5** CHANGES THE SYNTAX for components.
+
+ `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of components to the new syntax automatically.
 
 This change is done to simplify the API in anticipation of a 1.0 release of django_components. After 1.0 we intend to be stricter with big changes like this in point releases.
 
-**Version 0.34** adds components as views, which allows you to handle requests and render responses from within a component. See the [documentation](#components-as-views) for more details.
+**Version 0.34** adds components as views, which allows you to handle requests and render responses from within a component. See the [documentation](user_guide/creating_using_components/using_slots.md#components-as-views) for more details.
 
 **Version 0.28** introduces 'implicit' slot filling and the `default` option for `slot` tags.
 

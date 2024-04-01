@@ -127,6 +127,8 @@ This is fine too:
 
 ## Components as views
 
+
+<!-- md:version 0.34 -->
 _New in version 0.34_
 
 Components can now be used as views. To do this, [`Component`][django_components.component.Component] subclasses Django's [`View`][] class. This means that you can use all of the [methods](https://docs.djangoproject.com/en/5.0/ref/class-based-views/base/#view) of `View` in your component. For example, you can override `get` and `post` to handle GET and POST requests, respectively.

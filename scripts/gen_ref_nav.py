@@ -20,13 +20,18 @@ src = root / "src"
 
 for path in sorted(src.rglob("*.py")):
     module_path = path.relative_to(src).with_suffix("")
-    doc_path = path.relative_to(src).with_suffix(".md")
+    if module_path.parts[-1] == "__init__":
+        module_path = module_path.parent
+    doc_path = path.relative_to(src).with_suffix("")
+    if doc_path.parts[-1] == "__init__":
+        doc_path = doc_path.parent
     full_doc_path = Path("reference", doc_path)
 
     parts = tuple(module_path.parts)
 
     doc_path = doc_path / "index.md"
     full_doc_path = full_doc_path / "index.md"
+
     nav_parts = [f"{mod_symbol} {part}" for part in parts]
     nav[tuple(nav_parts)] = doc_path.as_posix()
     if parts[-1] == "__init__":
@@ -39,4 +44,4 @@ for path in sorted(src.rglob("*.py")):
     mkdocs_gen_files.set_edit_path(full_doc_path, ".." / path.relative_to(root))
 
 with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
-    nav_file.writelines(nav.build_literate_nav())
+    nav_file.writelines([line.replace("  ", " ").removeprefix(" ") for line in nav.build_literate_nav(indentation=2)])

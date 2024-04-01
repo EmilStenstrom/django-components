@@ -19,9 +19,10 @@ watch:
   - scripts
 
 validation:
-  omitted_files: warn
+  # We get warnings as we use literate-nav
+  omitted_files: ignore
   absolute_links: warn
-  unrecognized_links: warn
+  unrecognized_links: info
 
 theme:
   name: "material"
@@ -76,39 +77,6 @@ extra:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/django-components/
 
-nav:
-  - Home:
-      - index.md
-      - Changelog: CHANGELOG.md
-      - Code of Conduct: CODE_OF_CONDUCT.md
-      - License: license.md
-  - Usage: #user_guide/
-
-      # - user_guide/index.md
-      - Installation:
-          - user_guide/installation.md
-          - user_guide/requirements_compatibility.md
-      - user_guide/getting_started.md
-      - user_guide/security.md
-      - Creating & Using Components:
-          - user_guide/creating_using_components/create_first_component.md
-          - user_guide/creating_using_components/use_component.md
-          - user_guide/creating_using_components/single_file_component.md
-          - user_guide/creating_using_components/context_scope.md
-          - user_guide/creating_using_components/using_slots.md
-          - user_guide/creating_using_components/middleware.md
-          - user_guide/creating_using_components/advanced.md
-      - user_guide/settings.md
-      - user_guide/commands.md
-      - user_guide/logging_debugging.md
-
-
-  - Development:
-      - dev_guide/index.md
-  - Reference:
-      - API: reference/
-
-
 markdown_extensions:
   abbr: {}
   admonition: {}
@@ -150,26 +118,27 @@ plugins:
   - gen-files:
       scripts:
         - scripts/gen_ref_nav.py
-  - literate-nav
+  - literate-nav:
+      nav_file: SUMMARY.md
+      tab_length: 2
   - git-revision-date-localized:
       enabled: !ENV [CI, false]
       type: timeago
       exclude:
         - reference/*
-        - CHANGELOG.md
-        - CODE_OF_CONDUCT.md
+        - changelog.md
+        - code_of_conduct.md
         - license.md
   - git-authors:
       enabled: !ENV [CI, false]
       exclude:
         - reference/*
-        - CHANGELOG.md
-        - CODE_OF_CONDUCT.md
+        - changelog.md
+        - code_of_conduct.md
         - license.md
   - markdown-exec
   # - toc-md:
   - search
-  - section-index
   - social:
       enabled: !ENV [CI, false]
   - mike:
@@ -177,8 +146,8 @@ plugins:
       version_selector: true
   - redirects:
       redirect_maps:
-  # - minify:
-  #     minify_html: true
+  - minify:
+      minify_html: true
   - mkdocstrings:
       handlers:
         python:
@@ -189,24 +158,6 @@ plugins:
               domains: [std, py]
           paths: [src]  # search packages in the src folder
           options:
-            # docstring_options:
-            #   ignore_init_summary: true
-            # docstring_section_style: list
-            # filters: ["!^_"]
-            # heading_level: 1
-            # inherited_members: true
-            # merge_init_into_class: true
-            # preload_modules: [mkdocstrings]
-            # separate_signature: true
-            # show_root_heading: true
-            # show_root_full_path: false
-            # show_signature_annotations: true
-            # show_source: false
-            # show_symbol_type_heading: true
-            # show_symbol_type_toc: true
-            # signature_crossrefs: true
-            # summary: true
-            # unwrap_annotated: true
             docstring_options:
               ignore_init_summary: true
             docstring_section_style: list

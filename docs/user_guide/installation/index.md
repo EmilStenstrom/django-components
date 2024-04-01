@@ -2,9 +2,25 @@
 
 Install the app into your environment:
 
-> ```pip install django-components```
+=== "pip"
 
-Then add the app into [`INSTALLED_APPS`][INSTALLED_APPS] in settings.py
+    ```bash
+    pip install django-components
+    ```
+
+=== "poetry"
+
+    ```bash
+    poetry add django-components
+    ```
+
+=== "pdm"
+
+    ```bash
+    pdm add django-components
+    ```
+
+Then add the app into [`INSTALLED_APPS`][INSTALLED_APPS] in your settings module (e.g. `settings.py`)
 
 ```python
 INSTALLED_APPS = [
@@ -13,7 +29,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-Modify [`TEMPLATES`][TEMPLATES] section of settings.py as follows:
+Modify [`TEMPLATES`][TEMPLATES] section of your settings module as follows:
 
 
 - *Remove `'APP_DIRS': True,`*

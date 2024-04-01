@@ -122,11 +122,11 @@ lock-filename = "requirements-dev.txt"
 [tool.hatch.envs.docs]
 type = "pip-compile"
 lock-filename = "requirements-docs.txt"
-
+detached = false
 # Dependencies are fetched automatically from the mkdocs.yml file with hatch-mkdocs
 # We only add black for formatting code in the docs
 dependencies = [
-    "black"
+    "black",
 ]
 
 [tool.hatch.env.collectors.mkdocs.docs]

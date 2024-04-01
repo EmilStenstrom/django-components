@@ -1,3 +1,5 @@
+"""Helper types for IDEs."""
+
 import typing
 from typing import Any
 
