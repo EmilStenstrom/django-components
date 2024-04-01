@@ -30,13 +30,12 @@ pytest
 The library is also tested across many versions of Python and Django. To run tests that way:
 
 ```bash
-pyenv install -s 3.7
 pyenv install -s 3.8
 pyenv install -s 3.9
 pyenv install -s 3.10
 pyenv install -s 3.11
 pyenv install -s 3.12
-pyenv local 3.6 3.7 3.8 3.9 3.10 3.11 3.12
+pyenv local 3.8 3.9 3.10 3.11 3.12
 tox -p
 ```
 

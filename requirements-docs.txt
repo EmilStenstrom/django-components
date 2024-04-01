@@ -13,17 +13,23 @@
 # - mkdocs-literate-nav
 # - mkdocs-material
 # - mkdocs-material[imaging]
+# - mkdocs-minify-plugin
 # - mkdocs-redirects
-# - mkdocs-section-index
 # - mkdocstrings
 # - mkdocstrings-python
 # - pymdown-extensions
+# - black
+# - django>=3.2
 #
 
+asgiref==3.8.1
+    # via django
 babel==2.14.0
     # via
     #   mkdocs-git-revision-date-localized-plugin
     #   mkdocs-material
+black==24.3.0
+    # via hatch.envs.docs
 bracex==2.4
     # via wcmatch
 cairocffi==1.6.1
@@ -38,16 +44,21 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
+    #   black
     #   mkdocs
     #   mkdocstrings
 colorama==0.4.6
     # via
     #   griffe
     #   mkdocs-material
+csscompressor==0.9.5
+    # via mkdocs-minify-plugin
 cssselect2==0.7.0
     # via cairosvg
 defusedxml==0.7.1
     # via cairosvg
+django==5.0.3
+    # via hatch.envs.docs
 ghp-import==2.1.0
     # via mkdocs
 gitdb==4.0.11
@@ -56,6 +67,8 @@ gitpython==3.1.43
     # via mkdocs-git-revision-date-localized-plugin
 griffe==0.42.1
     # via mkdocstrings-python
+htmlmin2==0.1.13
+    # via mkdocs-minify-plugin
 idna==3.6
     # via requests
 importlib-metadata==7.1.0
@@ -68,6 +81,8 @@ jinja2==3.1.3
     #   mkdocs
     #   mkdocs-material
     #   mkdocstrings
+jsmin==3.0.1
+    # via mkdocs-minify-plugin
 markdown==3.5.2
     # via
     #   mdx-truly-sane-lists
@@ -102,8 +117,8 @@ mkdocs==1.5.3
     #   mkdocs-include-markdown-plugin
     #   mkdocs-literate-nav
     #   mkdocs-material
+    #   mkdocs-minify-plugin
     #   mkdocs-redirects
-    #   mkdocs-section-index
     #   mkdocstrings
 mkdocs-autorefs==1.0.1
     # via
@@ -123,9 +138,9 @@ mkdocs-material==9.5.16
     # via hatch.envs.docs
 mkdocs-material-extensions==1.3.1
     # via mkdocs-material
-mkdocs-redirects==1.2.1
+mkdocs-minify-plugin==0.8.0
     # via hatch.envs.docs
-mkdocs-section-index==0.3.8
+mkdocs-redirects==1.2.1
     # via hatch.envs.docs
 mkdocstrings==0.24.1
     # via
@@ -133,18 +148,25 @@ mkdocstrings==0.24.1
     #   mkdocstrings-python
 mkdocstrings-python==1.9.0
     # via hatch.envs.docs
+mypy-extensions==1.0.0
+    # via black
 packaging==24.0
-    # via mkdocs
+    # via
+    #   black
+    #   mkdocs
 paginate==0.5.6
     # via mkdocs-material
 pathspec==0.12.1
-    # via mkdocs
-pillow==10.2.0
+    # via
+    #   black
+    #   mkdocs
+pillow==10.3.0
     # via
     #   cairosvg
     #   mkdocs-material
 platformdirs==4.2.0
     # via
+    #   black
     #   mkdocs
     #   mkdocstrings
 pycparser==2.22
@@ -171,7 +193,7 @@ pyyaml==6.0.1
     #   pyyaml-env-tag
 pyyaml-env-tag==0.1
     # via mkdocs
-regex==2023.12.25
+regex==2022.10.31
     # via mkdocs-material
 requests==2.31.0
     # via mkdocs-material
@@ -179,6 +201,8 @@ six==1.16.0
     # via python-dateutil
 smmap==5.0.1
     # via gitdb
+sqlparse==0.4.4
+    # via django
 tinycss2==1.2.1
     # via
     #   cairosvg
