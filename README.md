@@ -3,9 +3,29 @@
 <a href="https://github.com/EmilStenstrom/django-components/actions?query=workflow%3A%22Run+tests%22"><img align="right" src="https://github.com/EmilStenstrom/django-components/workflows/Run%20tests/badge.svg" alt="Show test status"></a>
 <a href="https://pepy.tech/project/django-components"><img align="right" src="https://pepy.tech/badge/django-components" alt="Show download stats"></a>
 
-A way to create simple reusable template components in Django.
+[![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://EmilStenstrom.github.io/django-components/latest/license/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
 
-It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
+[**Docs**](https://EmilStenstrom.github.io/django-components/latest/)
+
+
+Create simple reusable template components in Django
+
+
+## Features
+
+<!-- FIXME Links -->
+
+- ✨ **Reusable components**: Create components that can be reused in different parts of your project, or even in different projects.
+- 📁 **Single file components**: Keep your Python, CSS, Javascript and HTML in one place (if you wish)
+- 🎰 **Slots**: Define slots in your components to make them more flexible.
+- 💻 **CLI**: A command line interface to help you create new components.
+- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](/user_guide/compatibility).
+- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](/user_guide/middleware).
+
+
+## Summary
+
+It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Use components like this:
 
 ```htmldjango
 {% component "calendar" date="2015-06-19" %}{% endcomponent %}
@@ -49,7 +69,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
-🚨📢 **Version 0.92** 
+🚨📢 **Version 0.92**
 - BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
 
 - The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template_string` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](#accessing-data-passed-to-the-component))
@@ -121,7 +141,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 🚨📢 **Version 0.5** CHANGES THE SYNTAX for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of templates that use components to the new syntax automatically.
 
-This change is done to simplify the API in anticipation of a 1.0 release of django_components. After 1.0 we intend to be stricter with big changes like this in point releases.
+## Getting started
 
 **Version 0.34** adds components as views, which allows you to handle requests and render responses from within a component. See the [documentation](#use-components-as-views) for more details.
 
@@ -598,7 +618,7 @@ MyComponent.render_to_response(
 ### Adding type hints with Generics
 
 The `Component` class optionally accepts type parameters
-that allow you to specify the types of args, kwargs, slots, and 
+that allow you to specify the types of args, kwargs, slots, and
 data.
 
 ```py
@@ -786,7 +806,7 @@ class ComponentView(View):
 
     def post(self, request, *args, **kwargs):
         return self.component.post(request, *args, **kwargs)
-    
+
     ...
 ```
 

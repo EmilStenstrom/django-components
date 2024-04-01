@@ -97,3 +97,32 @@ disallow_untyped_defs = true
 testpaths = [
     "tests"
 ]
+
+[tool.hatch.env]
+requires = [
+    "hatch-mkdocs",
+    "hatch-pip-compile"
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "django",
+    "tox",
+    "pytest",
+    "flake8",
+    "flake8-pyproject",
+    "isort",
+    "pre-commit",
+    "black",
+    "mypy",
+    ]
+type = "pip-compile"
+lock-filename = "requirements-dev.txt"
+
+[tool.hatch.envs.docs]
+type = "pip-compile"
+lock-filename = "requirements-docs.txt"
+
+[tool.hatch.env.collectors.mkdocs.docs]
+# Dependencies are fetched automatically from the mkdocs.yml file with hatch-mkdocs
+path = "mkdocs.yml"

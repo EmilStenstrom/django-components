@@ -1,0 +1,1 @@
+::: django_components.app_settings
