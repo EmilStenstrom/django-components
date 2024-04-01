@@ -1,20 +1,67 @@
+---
+name: Test and Deploy Docs
 on:
-    workflow_dispatch:
-    push:
-        # XXX Commented-out for testing
-        # branches:
-        #     - main
+  push:
+    # XXX Commented-out for testing
+    # branches: [master]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The commit SHA, tag, or branch to publish. Uses the default branch if not specified."
+        default: ""
+        type: string
+  release:
+    types: [published]
+
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-            - uses: actions/setup-python@v5
-            - run: pip install -r requirements-docs.txt
-            - name: Publish Dev Docs
-              run: |
-                  git config user.name github-actions
-                  git config user.email github-actions@github.com
-                  mike deploy --push dev
+  docs:
+    runs-on: ubuntu-latest
+    # XXX Enable to avoid forks deploying
+    # if: github.ref == 'refs/heads/main' && github.repository_owner == 'EmilStenstrom'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Hatch
+        run: |
+            python -m pip install --upgrade pip wheel
+            python -m pip install -q hatch pre-commit
+            hatch --version
+
+      - name: Create Virtual Environment
+        run: hatch env create docs
+
+      - name: "Check for mkdocs build --strict"
+        run: |
+          hatch run docs:build --strict
+        # If pull request or not master branch and not a tag
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
+
+      - name: Configure git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Deploy docs (dev)
+        if: github.event_name == 'push' && github.ref_name == 'master' && github.ref_type == 'branch'
+        run: |
+          export SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          hatch run docs:mike deploy dev --update-aliases --title "dev (${SHORT_SHA})" --push
+
+      - name: Deploy docs (tag)
+        if: github.ref_type == 'tag' && github.event_name == 'push'
+        run: |
+          hatch run docs:mike deploy ${{ github.ref_name }} latest --push --update-aliases
+          hatch run docs:mike set-default latest --push
+
+      - name: Deploy docs (Released published)
+        if: github.event_name == 'release' && github.event.action == 'published' && github.ref_type == 'tag'
+        run: |
+          # Version from tag, keep leading v, from github.ref workflow variable
+          hatch run docs:mike deploy ${{ github.ref_name }} latest --push --update-aliases
+          hatch run docs:mike set-default latest --push
