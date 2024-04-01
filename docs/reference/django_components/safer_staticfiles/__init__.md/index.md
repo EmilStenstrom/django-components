@@ -1,1 +1,0 @@
-::: django_components.safer_staticfiles
