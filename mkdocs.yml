@@ -153,10 +153,19 @@ plugins:
   - literate-nav
   - git-revision-date-localized:
       enabled: !ENV [CI, false]
+      type: timeago
+      exclude:
+        - reference/*
+        - CHANGELOG.md
+        - CODE_OF_CONDUCT.md
+        - license.md
   - git-authors:
       enabled: !ENV [CI, false]
       exclude:
         - reference/*
+        - CHANGELOG.md
+        - CODE_OF_CONDUCT.md
+        - license.md
   - markdown-exec
   # - toc-md:
   - search
