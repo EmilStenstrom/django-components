@@ -155,6 +155,8 @@ plugins:
       enabled: !ENV [CI, false]
   - git-authors:
       enabled: !ENV [CI, false]
+      exclude:
+        - reference/*
   - markdown-exec
   # - toc-md:
   - search
