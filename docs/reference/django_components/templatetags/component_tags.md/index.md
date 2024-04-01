@@ -1,0 +1,1 @@
+::: django_components.templatetags.component_tags

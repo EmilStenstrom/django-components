@@ -1,0 +1,20 @@
+on:
+    workflow_dispatch:
+    push:
+        # XXX Commented-out for testing
+        # branches:
+        #     - main
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions/setup-python@v5
+            - run: pip install -r requirements-docs.txt
+            - name: Publish Dev Docs
+              run: |
+                  git config user.name github-actions
+                  git config user.email github-actions@github.com
+                  mike deploy --push dev

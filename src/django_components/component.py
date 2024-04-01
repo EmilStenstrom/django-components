@@ -244,6 +244,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
     ) -> str:
+        """Render the component and return the rendered HTML."""
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
         context = context_data if isinstance(context_data, Context) else Context(context_data)
@@ -262,6 +263,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         *args: Any,
         **kwargs: Any,
     ) -> HttpResponse:
+        """Render the component and return an HttpResponse."""
         return HttpResponse(
             self.render(context_data, slots_data, escape_slots_content),
             *args,
