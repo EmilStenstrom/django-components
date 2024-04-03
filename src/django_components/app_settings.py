@@ -4,7 +4,7 @@ from typing import List
 from django.conf import settings
 
 
-class ContextBehavior(Enum):
+class ContextBehavior(str, Enum):
     GLOBAL = "global"
     ISOLATED = "isolated"
 
