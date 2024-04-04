@@ -19,7 +19,7 @@
 # - mkdocstrings-python
 # - pymdown-extensions
 # - black
-# - django>=3.2
+# - django>=4.2
 #
 
 asgiref==3.8.1
