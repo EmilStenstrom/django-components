@@ -9,9 +9,9 @@ Create simple reusable template components in Django
 - ✨ **Reusable components**: [Create components](user_guide/creating_using_components/create_first_component.md) that can be reused in different parts of your project, or even in different projects.
 - 📁 **Single file components**: [Keep your Python, CSS, Javascript and HTML in one place](user_guide/creating_using_components/single_file_component.md) (if you wish)
 - 🎰 **Slots**: Define [slots](user_guide/creating_using_components/using_slots.md) in your components to make them more flexible.
-- 💻 **CLI**: A [command line interface](user_guide/commands.md) to help you create new components.
+- 💻 **CLI**: A [command line interface](user_guide/integration/commands.md) to help you create new components.
 - 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](user_guide/installation/requirements_compatibility.md).
-- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](user_guide/creating_using_components/middleware.md).
+- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](user_guide/integration/middleware.md).
 
 
 ## Summary

@@ -16,8 +16,8 @@ Create simple reusable template components in Django
 - 📁 **Single file components**: Keep your Python, CSS, Javascript and HTML in one place (if you wish)
 - 🎰 **Slots**: Define slots in your components to make them more flexible.
 - 💻 **CLI**: A command line interface to help you create new components.
-- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](/user_guide/compatibility).
-- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](/user_guide/middleware).
+- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](https://emilstenstrom.github.io/django-components/latest/user_guide/requirements_compatibility).
+- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](https://emilstenstrom.github.io/django-components/latest/user_guide/creating_using_components/middleware).
 
 
 ## Summary
@@ -41,7 +41,7 @@ Read on to learn about the details!
 ## Getting started
 
 
-Learn how to set it up in the [documentation installation guide](/user_guide/installation).
+Learn how to set it up in the [documentation installation guide](user_guide/installation.md).
 
 ### Installation
 
@@ -52,14 +52,14 @@ pip install django-components
 ```
 
 <!-- FIXME LINK -->
-Learn how to set it up in the [installation guide](/user_guide/installation).
+Learn how to set it up in the [installation guide](user_guide/installation.md).
 
 ## Compatibility
 
 `django-components` is compatible with modern and LTS versions of Django.
 
 <!-- FIXME Link -->
-Check out the [compatibility guide](/user_guide/compatibility) to see which versions are supported.
+Check out the [compatibility guide](user_guide/compatibility.md) to see which versions are supported.
 
 
 ## Release notes
@@ -90,4 +90,4 @@ One of our goals with `django-components` is to make it easy to share components
 
 ## License
 
-`django-components` is licensed under the MIT license. See the [LICENSE](LICENSE) file for more details.
+`django-components` is licensed under the MIT license. See the [LICENSE](license.md) file for more details.
