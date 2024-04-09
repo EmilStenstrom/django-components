@@ -2,22 +2,16 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://EmilStenstrom.github.io/django-components/latest/license/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
 
-[**Docs**](https://EmilStenstrom.github.io/django-components/latest/)
-
-
 Create simple reusable template components in Django
-
 
 ## Features
 
-<!-- FIXME Links -->
-
-- ✨ **Reusable components**: Create components that can be reused in different parts of your project, or even in different projects.
-- 📁 **Single file components**: Keep your Python, CSS, Javascript and HTML in one place (if you wish)
-- 🎰 **Slots**: Define slots in your components to make them more flexible.
-- 💻 **CLI**: A command line interface to help you create new components.
-- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](https://emilstenstrom.github.io/django-components/latest/user_guide/requirements_compatibility).
-- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](https://emilstenstrom.github.io/django-components/latest/user_guide/creating_using_components/middleware).
+- ✨ **Reusable components**: [Create components](user_guide/creating_using_components/create_first_component.md) that can be reused in different parts of your project, or even in different projects.
+- 📁 **Single file components**: [Keep your Python, CSS, Javascript and HTML in one place](user_guide/creating_using_components/single_file_component.md) (if you wish)
+- 🎰 **Slots**: Define [slots](user_guide/creating_using_components/using_slots.md) in your components to make them more flexible.
+- 💻 **CLI**: A [command line interface](user_guide/integration/commands.md) to help you create new components.
+- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](user_guide/installation/requirements_compatibility.md).
+- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](user_guide/integration/middleware.md).
 
 
 ## Summary
@@ -34,53 +28,13 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
 ```
 
-Read on to learn about the details!
-
-
-
-## Getting started
-
-
-Learn how to set it up in the [documentation installation guide](user_guide/installation.md).
-
-### Installation
-
-You can install django-components via pip:
-
-```bash
-pip install django-components
-```
-
-<!-- FIXME LINK -->
-Learn how to set it up in the [installation guide](user_guide/installation.md).
+Read our [user guide](user_guide/index.md) to set it up and learn about the details!
 
 ## Compatibility
 
 `django-components` is compatible with modern and LTS versions of Django.
 
-<!-- FIXME Link -->
-Check out the [compatibility guide](user_guide/compatibility.md) to see which versions are supported.
-
-
-## Release notes
-
-<!-- FIXME -->
-See the docs
-## Security notes 🚨
-
-## Installation
-
-<!-- FIXME -->
-## Compatiblity
-
-<!-- FIXME -->
-
-### Setting Up `ComponentDependencyMiddleware`
-
-## Available settings
-
-<!-- FIXME -->
-## Logging and debugging
+Check out the [compatibility guide](user_guide/installation/requirements_compatibility.md) to see which versions are supported.
 
 ## Community examples
 

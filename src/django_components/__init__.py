@@ -1,3 +1,5 @@
+"""Main package for Django Components."""
+
 import importlib
 import importlib.util
 import sys

@@ -73,3 +73,5 @@ pyproject.toml
 .venv/
 .DS_Store
 .python-version
+site
+docs/reference

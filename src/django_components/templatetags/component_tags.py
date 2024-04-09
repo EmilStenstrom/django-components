@@ -193,10 +193,10 @@ def do_fill(parser: Parser, token: Token) -> NamedFillNode:
 def do_component(parser: Parser, token: Token) -> ComponentNode:
     """
     To give the component access to the template context:
-        {% component "name" positional_arg keyword_arg=value ... %}
+        ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... %}```
 
     To render the component in an isolated context:
-        {% component "name" positional_arg keyword_arg=value ... only %}
+        ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... only %}```
 
     Positional and keyword arguments can be literals or template variables.
     The component name must be a single- or double-quotes string and must
@@ -236,26 +236,22 @@ def is_block_tag_token(token: Token, name: str) -> bool:
 @register.tag(name="if_filled")
 def do_if_filled_block(parser: Parser, token: Token) -> "IfSlotFilledNode":
     """
-    ### Usage
-
     Example:
-
-    ```
-    {% if_filled <slot> (<bool>) %}
-        ...
-    {% elif_filled <slot> (<bool>) %}
-        ...
-    {% else_filled %}
-        ...
-    {% endif_filled %}
-    ```
+        ```htmldjango
+        {% if_filled <slot> (<bool>) %}
+            ...
+        {% elif_filled <slot> (<bool>) %}
+            ...
+        {% else_filled %}
+            ...
+        {% endif_filled %}
+        ```
 
     Notes:
-
-    Optional arg `<bool>` is True by default.
-    If a False is provided instead, the effect is a negation of the `if_filled` check:
-    The behavior is analogous to `if not is_filled <slot>`.
-    This design prevents us having to define a separate `if_unfilled` tag.
+        Optional arg `<bool>` is True by default.
+        If a False is provided instead, the effect is a negation of the `if_filled` check:
+        The behavior is analogous to `if not is_filled <slot>`.
+        This design prevents us having to define a separate `if_unfilled` tag.
     """
     bits = token.split_contents()
     starting_tag = bits[0]

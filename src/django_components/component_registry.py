@@ -42,18 +42,19 @@ class ComponentRegistry:
         self._registry = {}
 
 
-# This variable represents the global component registry
 registry: ComponentRegistry = ComponentRegistry()
+"""Global component registry."""
 
 
 def register(name: str) -> Callable[[_TC], _TC]:
     """Class decorator to register a component.
 
     Usage:
-
-    @register("my_component")
-    class MyComponent(component.Component):
-        ...
+        ```python
+            @register("my_component")
+            class MyComponent(component.Component):
+                ...
+        ```
     """
 
     def decorator(component: _TC) -> _TC:
