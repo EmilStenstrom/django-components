@@ -152,7 +152,19 @@ Django-components supports all supported combinations versions of [Django](https
 
 A component in django-components is the combination of four things: CSS, Javascript, a Django template, and some Python code to put them all together.
 
-![Directory structure for django_components](https://user-images.githubusercontent.com/224130/179460219-fb51eae1-aab2-4f69-b71f-90cd5ab51bb1.png)
+```
+    sampleproject/
+    ├── calendarapp/
+    ├── components/             🆕
+    │   └── calendar/           🆕
+    │       ├── calendar.py     🆕
+    │       ├── script.js       🆕
+    │       ├── style.css       🆕
+    │       └── template.html   🆕
+    ├── sampleproject/
+    ├── manage.py
+    └── requirements.txt
+```
 
 Start by creating empty files in the structure above.
 
@@ -178,7 +190,7 @@ Then you need a javascript file that specifies how you interact with this compon
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
 
 ```htmldjango
-{# In a file called [project root]/components/calendar/calendar.html #}
+{# In a file called [project root]/components/calendar/template.html #}
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
 
@@ -194,7 +206,7 @@ from django_components import component
 class Calendar(component.Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir will be automatically found. To customize which template to use based on context
     # you can override def get_template_name() instead of specifying the below variable.
-    template_name = "calendar.html"
+    template_name = "calendar/template.html"
 
     # This component takes one parameter, a date string to show in the template
     def get_context_data(self, date):
@@ -203,8 +215,8 @@ class Calendar(component.Component):
         }
 
     class Media:
-        css = "style.css"
-        js = "script.js"
+        css = "calendar/style.css"
+        js = "calendar/script.js"
 ```
 
 And voilá!! We've created our first component.
@@ -235,11 +247,11 @@ The output from the above template will be:
 <html>
 <head>
     <title>My example calendar</title>
-    <link href="style.css" type="text/css" media="all" rel="stylesheet">
+    <link href="/static/calendar/style.css" type="text/css" media="all" rel="stylesheet">
 </head>
 <body>
     <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
-    <script src="script.js"></script>
+    <script src="/static/calendar/script.js"></script>
 </body>
 <html>
 ```
@@ -304,7 +316,7 @@ In the example below we introduce two block tags that work hand in hand to make 
 - `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
 - `{% fill <name> %}`/`{% endfill %}`: (Used inside a `component` tag pair.) Fills a declared slot with the specified content.
 
-Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _calendar.html_.
+Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _template.html_.
 
 ```htmldjango
 <div class="calendar-component">
