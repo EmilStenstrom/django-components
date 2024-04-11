@@ -186,6 +186,24 @@ class ComponentTest(SimpleTestCase):
             ),
         )
 
+    def test_component_with_relative_paths_as_subcomponent(
+        self,
+    ):
+        template = Template(
+            """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'parent_component' %}
+                {% fill 'content' %}
+                    {% component name='relative_file_component' variable='hello' %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """  # NOQA
+        )
+        rendered = template.render(Context({}))
+
+        self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
+
 
 class InlineComponentTest(SimpleTestCase):
     def test_inline_html_component(self):
