@@ -1,5 +1,6 @@
 import inspect
 import os
+import sys
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
@@ -73,7 +74,18 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     as the component class. If so, modify the attributes so the class Django's rendering
     will pick up these files correctly.
     """
+    component_name = attrs["__qualname__"]
+    # Derive the full path of the file where the component was defined
     module_name = attrs["__module__"]
+    module_obj = sys.modules[module_name]
+    file_path = module_obj.__file__
+
+    if not file_path:
+        logger.debug(
+            f"Could not resolve the path to the file for component '{component_name}'."
+            " Paths for HTML, JS or CSS templates will NOT be resolved relative to the component file."
+        )
+        return
 
     # Prepare all possible directories we need to check when searching for
     # component's template and media files
@@ -81,11 +93,11 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
 
     # Get the directory where the component class is defined
     try:
-        comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_module_path(module_name, components_dirs)
+        comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_path(file_path, components_dirs)
     except RuntimeError:
         # If no dir was found, we assume that the path is NOT relative to the component dir
         logger.debug(
-            f"No component directory found for component '{module_name}'."
+            f"No component directory found for component '{component_name}' in {file_path}"
             " If this component defines HTML, JS or CSS templates relatively to the component file,"
             " then check that the component's directory is accessible from one of the paths"
             " specified in the Django's 'STATICFILES_DIRS' settings."
@@ -127,17 +139,11 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
             media.js = [resolve_file(filepath) for filepath in media.js]
 
 
-def _get_dir_path_from_component_module_path(
-    component_module_path: str, candidate_dirs: Union[List[str], List[Path]]
+def _get_dir_path_from_component_path(
+    abs_component_file_path: str,
+    candidate_dirs: Union[List[str], List[Path]],
 ) -> Tuple[str, str]:
-    # Transform python module notation "pkg.module.name" to file path "pkg/module/name"
-    # Thus, we should get file path relative to Django project root
-    comp_path = os.sep.join(component_module_path.split("."))
-    comp_dir_path = os.path.dirname(comp_path)
-
-    # NOTE: We assume that Django project root == current working directory!
-    cwd = os.getcwd()
-    comp_dir_path_abs = os.path.join(cwd, comp_dir_path)
+    comp_dir_path_abs = os.path.dirname(abs_component_file_path)
 
     # From all dirs defined in settings.STATICFILES_DIRS, find one that's the parent
     # to the component file.
@@ -150,7 +156,7 @@ def _get_dir_path_from_component_module_path(
 
     if root_dir_abs is None:
         raise RuntimeError(
-            f"Failed to resolve template directory for component '{component_module_path}'",
+            f"Failed to resolve template directory for component file '{abs_component_file_path}'",
         )
 
     # Derive the path from matched STATICFILES_DIRS to the dir where the current component file is.
