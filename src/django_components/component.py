@@ -1,4 +1,3 @@
-import inspect
 import os
 import sys
 from pathlib import Path
@@ -193,7 +192,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.fill_content = fill_content
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
+        cls.class_hash = hash(os.path.abspath(__file__) + cls.__name__)
 
     def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         return {}

@@ -1,6 +1,5 @@
 import importlib
 import importlib.util
-import sys
 from pathlib import Path
 from typing import Union
 
@@ -36,5 +35,4 @@ def import_file(path: Union[str, Path]) -> None:
     if spec is None:
         raise ValueError(f"Cannot import file '{path}' - invalid path")
     module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
     spec.loader.exec_module(module)  # type: ignore
