@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import List, Optional, NamedTuple
+from typing import List, NamedTuple, Optional
 
 from django.template.engine import Engine
 

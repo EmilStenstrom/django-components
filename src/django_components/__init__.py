@@ -41,7 +41,7 @@ def import_file(file_path: Path) -> None:
     rel_path = os.path.relpath(file_path, start=project_root)
     rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
     module_name = rel_path_without_suffix.replace(os.sep, ".")
-    
+
     # This imports the file and runs it's code. So if the file defines any
     # django components, they will be registered.
     importlib.import_module(module_name)
