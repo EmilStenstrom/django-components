@@ -1,13 +1,18 @@
 import glob
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, NamedTuple
 
 from django.template.engine import Engine
 
 from django_components.template_loader import Loader
 
 
-def search(search_glob: Optional[str] = None, engine: Optional[Engine] = None) -> Union[List[str], List[Path]]:
+class SearchResult(NamedTuple):
+    searched_dirs: List[Path]
+    matched_files: List[Path]
+
+
+def search(search_glob: Optional[str] = None, engine: Optional[Engine] = None) -> SearchResult:
     """
     Search for directories that may contain components.
 
@@ -22,11 +27,11 @@ def search(search_glob: Optional[str] = None, engine: Optional[Engine] = None) -
     dirs = loader.get_dirs()
 
     if search_glob is None:
-        return dirs
+        return SearchResult(searched_dirs=dirs, matched_files=[])
 
-    component_filenames: List[str] = []
+    component_filenames: List[Path] = []
     for directory in dirs:
         for path in glob.iglob(str(Path(directory) / search_glob), recursive=True):
-            component_filenames.append(path)
+            component_filenames.append(Path(path))
 
-    return component_filenames
+    return SearchResult(searched_dirs=dirs, matched_files=component_filenames)
