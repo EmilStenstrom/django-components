@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import pytest
+from unittest import mock
 from django.template.engine import Engine
 from django.urls import include, path
 
@@ -10,7 +10,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
 
-from django_components import autodiscover, component, component_registry, import_file
+from django_components import autodiscover, component, component_registry, _filepath_to_python_module
 from django_components.template_loader import Loader
 
 urlpatterns = [
@@ -26,10 +26,16 @@ class TestAutodiscover(SimpleTestCase):
         del settings.SETTINGS_MODULE  # noqa
 
     def test_autodiscover_with_components_as_views(self):
+        all_components_before = component_registry.registry.all().copy()
+
         try:
             autodiscover()
         except component.AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
+
+        all_components_after = component_registry.registry.all().copy()
+        imported_components_count = len(all_components_after) - len(all_components_before)
+        self.assertEqual(imported_components_count, 1)
 
 
 class TestLoaderSettingsModule(SimpleTestCase):
@@ -119,33 +125,37 @@ class TestBaseDir(SimpleTestCase):
         self.assertEqual(sorted(dirs), sorted(expected))
 
 
-class TestAutodiscoverFileImport(SimpleTestCase):
-    def setUp(self):
-        settings.SETTINGS_MODULE = "tests.test_structures.test_structure_1.config.settings"  # noqa
-
-    def tearDown(self) -> None:
-        del settings.SETTINGS_MODULE  # noqa
-
-    @pytest.mark.skip(
-        reason=(
-            "#TODO: Works when ran in isolation, but fails when all tests are run."
-            " First make sure that component registration runs in isolation for all tests"
-            " before re-enabling this test"
+class TestFilepathToPythonModule(SimpleTestCase):
+    def test_prepares_path(self):
+        self.assertEqual(
+            _filepath_to_python_module(Path("tests.py")),
+            "tests",
         )
-    )
-    def test_imports_valid_file(self):
-        all_components_before = component_registry.registry.all().copy()
-        self.assertNotIn("relative_file_component", all_components_before)
+        self.assertEqual(
+            _filepath_to_python_module(Path("tests/components/relative_file/relative_file.py")),
+            "tests.components.relative_file.relative_file",
+        )
 
-        import_file(Path("tests/components/relative_file/relative_file.py"))
+    def test_handles_nonlinux_paths(self):
+        with mock.patch("os.path.sep", new="//"):
+            self.assertEqual(
+                _filepath_to_python_module(Path("tests.py")),
+                "tests",
+            )
 
-        all_components_after = component_registry.registry.all().copy()
-        imported_components_count = len(all_components_after) - len(all_components_before)
-        self.assertEqual(imported_components_count, 1)
-        self.assertIn("relative_file_component", all_components_after)
+            self.assertEqual(
+                _filepath_to_python_module(Path("tests//components//relative_file//relative_file.py")),
+                "tests.components.relative_file.relative_file",
+            )
 
-    def test_raises_import_error_on_invalid_file(self):
-        with self.assertRaises(ImportError):
-            import_file(Path("tests/components/relative_file/nonexist.py"))
-        with self.assertRaises(ImportError):
-            import_file(Path("tests/components/relative_file/nonexist"))
+        with mock.patch("os.path.sep", new="\\"):
+            self.assertEqual(
+                _filepath_to_python_module(Path("tests.py")),
+                "tests",
+            )
+
+            self.assertEqual(
+                _filepath_to_python_module(Path("tests\\components\\relative_file\\relative_file.py")),
+                "tests.components.relative_file.relative_file",
+            )
+
