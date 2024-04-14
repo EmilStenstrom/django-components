@@ -221,6 +221,19 @@ class Calendar(component.Component):
 
 And voilá!! We've created our first component.
 
+## Autodiscovery
+
+By default, the Python files in the `components` app are auto-imported in order to auto-register the components (e.g. `components/button/button.py`).
+
+Autodiscovery occurs when Django is loaded, during the `ready` hook of the `apps.py` file.
+
+If you are using autodiscovery, keep a few points in mind:
+- Avoid defining any logic on the module-level inside the `components` dir, that you would not want to run anyway.
+- Components inside the auto-imported files still need to be registered with `@component.register()`
+- Auto-imported component files must be valid Python modules, they must use suffix `.py`, and module name should follow [PEP-8](https://peps.python.org/pep-0008/#package-and-module-names).
+
+Autodiscovery can be disabled via in the [settings](#disable-autodiscovery).
+
 ## Use the component in a template
 
 First load the `component_tags` tag library, then use the `component_[js/css]_dependencies` and `component` tags to render the component to the page.
