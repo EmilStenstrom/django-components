@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 import django
+from django.conf import settings
 from django.utils.module_loading import autodiscover_modules
 
 from django_components.logger import logger
@@ -45,8 +46,11 @@ def _filepath_to_python_module(file_path: Path) -> str:
     - Then the path relative to project root is `app/components/mycomp.py`
     - Which we then turn into python import path `app.components.mycomp`
     """
-    # Get the root dir, see https://stackoverflow.com/a/16413955/9788634
-    project_root = os.path.abspath(os.path.dirname(__name__))
+    if hasattr(settings, "BASE_DIR"):
+        project_root = str(settings.BASE_DIR)
+    else:
+        # Fallback for getting the root dir, see https://stackoverflow.com/a/16413955/9788634
+        project_root = os.path.abspath(os.path.dirname(__name__))
 
     rel_path = os.path.relpath(file_path, start=project_root)
     rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
