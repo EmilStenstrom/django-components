@@ -9,7 +9,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
 
-from django_components import autodiscover, component, import_file, component_registry
+from django_components import autodiscover, component, component_registry, import_file
 from django_components.template_loader import Loader
 
 urlpatterns = [
