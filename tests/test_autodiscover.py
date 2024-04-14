@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from django.template.engine import Engine
 from django.urls import include, path
 
@@ -125,6 +126,13 @@ class TestAutodiscoverFileImport(SimpleTestCase):
     def tearDown(self) -> None:
         del settings.SETTINGS_MODULE  # noqa
 
+    @pytest.mark.skip(
+        reason=(
+            "#TODO: Works when ran in isolation, but fails when all tests are run."
+            " First make sure that component registration runs in isolation for all tests"
+            " before re-enabling this test"
+        )
+    )
     def test_imports_valid_file(self):
         all_components_before = component_registry.registry.all().copy()
         self.assertNotIn("relative_file_component", all_components_before)
