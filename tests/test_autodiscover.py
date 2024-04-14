@@ -9,7 +9,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
 
-from django_components import autodiscover, component
+from django_components import autodiscover, component, import_file, component_registry
 from django_components.template_loader import Loader
 
 urlpatterns = [
@@ -116,3 +116,28 @@ class TestBaseDir(SimpleTestCase):
             Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
         ]
         self.assertEqual(sorted(dirs), sorted(expected))
+
+
+class TestAutodiscoverFileImport(SimpleTestCase):
+    def setUp(self):
+        settings.SETTINGS_MODULE = "tests.test_structures.test_structure_1.config.settings"  # noqa
+
+    def tearDown(self) -> None:
+        del settings.SETTINGS_MODULE  # noqa
+
+    def test_imports_valid_file(self):
+        all_components_before = component_registry.registry.all().copy()
+        self.assertNotIn("relative_file_component", all_components_before)
+
+        import_file("tests/components/relative_file/relative_file.py")
+
+        all_components_after = component_registry.registry.all().copy()
+        imported_components_count = len(all_components_after) - len(all_components_before)
+        self.assertEqual(imported_components_count, 1)
+        self.assertIn("relative_file_component", all_components_after)
+
+    def test_raises_import_error_on_invalid_file(self):
+        with self.assertRaises(ImportError):
+            import_file("tests/components/relative_file/nonexist.py")
+        with self.assertRaises(ImportError):
+            import_file("tests/components/relative_file/nonexist")
