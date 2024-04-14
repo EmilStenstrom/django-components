@@ -137,7 +137,7 @@ class TestAutodiscoverFileImport(SimpleTestCase):
         all_components_before = component_registry.registry.all().copy()
         self.assertNotIn("relative_file_component", all_components_before)
 
-        import_file("tests/components/relative_file/relative_file.py")
+        import_file(Path("tests/components/relative_file/relative_file.py"))
 
         all_components_after = component_registry.registry.all().copy()
         imported_components_count = len(all_components_after) - len(all_components_before)
@@ -146,6 +146,6 @@ class TestAutodiscoverFileImport(SimpleTestCase):
 
     def test_raises_import_error_on_invalid_file(self):
         with self.assertRaises(ImportError):
-            import_file("tests/components/relative_file/nonexist.py")
+            import_file(Path("tests/components/relative_file/nonexist.py"))
         with self.assertRaises(ImportError):
-            import_file("tests/components/relative_file/nonexist")
+            import_file(Path("tests/components/relative_file/nonexist"))
