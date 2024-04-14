@@ -1,6 +1,6 @@
 from pathlib import Path
-
 from unittest import mock
+
 from django.template.engine import Engine
 from django.urls import include, path
 
@@ -10,7 +10,7 @@ from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
 
 # isort: on
 
-from django_components import autodiscover, component, component_registry, _filepath_to_python_module
+from django_components import _filepath_to_python_module, autodiscover, component, component_registry
 from django_components.template_loader import Loader
 
 urlpatterns = [

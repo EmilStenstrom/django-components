@@ -22,9 +22,7 @@ def autodiscover() -> None:
 
         # Autodetect a <component>.py file in a components dir
         component_filepaths = search(search_glob="**/*.py").matched_files
-        logger.debug(
-            f"Autodiscover found {len(component_filepaths)} files in component directories."
-        )
+        logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
 
         for path in component_filepaths:
             # This imports the file and runs it's code. So if the file defines any
