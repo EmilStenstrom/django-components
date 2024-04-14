@@ -50,7 +50,6 @@ def _filepath_to_python_module(file_path: Path) -> str:
     # Get the root dir, see https://stackoverflow.com/a/16413955/9788634
     project_root = os.path.abspath(os.path.dirname(__name__))
 
-
     rel_path = os.path.relpath(file_path, start=project_root)
     rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
 

@@ -158,4 +158,3 @@ class TestFilepathToPythonModule(SimpleTestCase):
                 _filepath_to_python_module(Path("tests\\components\\relative_file\\relative_file.py")),
                 "tests.components.relative_file.relative_file",
             )
-
