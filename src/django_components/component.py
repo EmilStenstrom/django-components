@@ -89,7 +89,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
 
     # Prepare all possible directories we need to check when searching for
     # component's template and media files
-    components_dirs = search()
+    components_dirs = search().searched_dirs
 
     # Get the directory where the component class is defined
     try:

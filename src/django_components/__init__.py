@@ -1,12 +1,13 @@
 import importlib
 import importlib.util
-import sys
+import os
 from pathlib import Path
-from typing import Union
 
 import django
+from django.conf import settings
 from django.utils.module_loading import autodiscover_modules
 
+from django_components.logger import logger
 from django_components.utils import search
 
 if django.VERSION < (3, 2):
@@ -21,20 +22,42 @@ def autodiscover() -> None:
         autodiscover_modules("components")
 
         # Autodetect a <component>.py file in a components dir
-        component_filepaths = search(search_glob="**/*.py")
+        component_filepaths = search(search_glob="**/*.py").matched_files
+        logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
+
         for path in component_filepaths:
-            import_file(path)
+            # This imports the file and runs it's code. So if the file defines any
+            # django components, they will be registered.
+            module_name = _filepath_to_python_module(path)
+            logger.debug(f'Importing module "{module_name}" (derived from path "{path}")')
+            importlib.import_module(module_name)
 
     for path_lib in app_settings.LIBRARIES:
         importlib.import_module(path_lib)
 
 
-def import_file(path: Union[str, Path]) -> None:
-    MODULE_PATH = path
-    MODULE_NAME = Path(path).stem
-    spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)
-    if spec is None:
-        raise ValueError(f"Cannot import file '{path}' - invalid path")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)  # type: ignore
+def _filepath_to_python_module(file_path: Path) -> str:
+    """
+    Derive python import path from the filesystem path.
+
+    Example:
+    - If project root is `/path/to/project`
+    - And file_path is `/path/to/project/app/components/mycomp.py`
+    - Then the path relative to project root is `app/components/mycomp.py`
+    - Which we then turn into python import path `app.components.mycomp`
+    """
+    if hasattr(settings, "BASE_DIR"):
+        project_root = str(settings.BASE_DIR)
+    else:
+        # Fallback for getting the root dir, see https://stackoverflow.com/a/16413955/9788634
+        project_root = os.path.abspath(os.path.dirname(__name__))
+
+    rel_path = os.path.relpath(file_path, start=project_root)
+    rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
+
+    # NOTE: Path normalizes paths to use `/` as separator, while os.path
+    # uses `os.path.sep`.
+    sep = os.path.sep if os.path.sep in rel_path_without_suffix else "/"
+    module_name = rel_path_without_suffix.replace(sep, ".")
+
+    return module_name
