@@ -14,7 +14,7 @@ else:
     from typing import TypeAlias
 
 from django.template import Context, Template
-from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
+from django.template.base import FilterExpression, Node, NodeList, TextNode, Parser
 from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
@@ -143,8 +143,8 @@ class SlotNode(Node, TemplateAwareNodeMixin):
         elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED:
             return root_ctx
         elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.PREFER_ROOT:
-            new_context = context.__copy__()
-            new_context.push(root_ctx)
+            new_context: Context = context.__copy__()
+            new_context.update(root_ctx)
             return new_context
         else:
             raise ValueError(f"Unknown value for SLOT_CONTEXT_BEHAVIOR: '{app_settings.SLOT_CONTEXT_BEHAVIOR}'")
