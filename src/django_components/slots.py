@@ -18,6 +18,8 @@ from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
+from django_components.app_settings import app_settings, SlotContextBehavior
+
 FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
 OUTER_CONTEXT_CONTEXT_KEY = "_DJANGO_COMPONENTS_OUTER_CONTEXT"
@@ -122,8 +124,28 @@ class SlotNode(Node, TemplateAwareNodeMixin):
                     raise TemplateSyntaxError()
                 extra_context[alias] = UserSlotVar(self, context)
 
-        with context.update(extra_context):
-            return nodelist.render(context)
+        used_ctx = self.resolve_slot_context(context)
+        with used_ctx.update(extra_context):
+            return nodelist.render(used_ctx)
+        
+    def resolve_slot_context(self, context: Context) -> Context:
+        """
+        Prepare the context used in a slot fill based on the settings.
+
+        See SlotContextBehavior for the description of each option.
+        """
+        root_ctx = context.get(OUTER_CONTEXT_CONTEXT_KEY, Context())
+
+        if app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ALLOW_OVERRIDE:
+            return context
+        elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED:
+            return root_ctx
+        elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.PREFER_ROOT:
+            new_context = context.__copy__()
+            new_context.push(root_ctx)
+            return new_context
+        else:
+            raise ValueError(f"Unknown value for SLOT_CONTEXT_BEHAVIOR: '{app_settings.SLOT_CONTEXT_BEHAVIOR}'")
 
 
 class BaseFillNode(Node):
