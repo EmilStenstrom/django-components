@@ -23,13 +23,13 @@ from django_components.component_registry import AlreadyRegistered, ComponentReg
 from django_components.logger import logger
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
+    DEFAULT_SLOT_KEY,
+    OUTER_CONTEXT_CONTEXT_KEY,
+    FillContent,
     ImplicitFillNode,
     NamedFillNode,
-    FillContent,
     SlotName,
     render_component_template_with_slots,
-    OUTER_CONTEXT_CONTEXT_KEY,
-    DEFAULT_SLOT_KEY,
 )
 from django_components.utils import search
 
@@ -322,7 +322,7 @@ class ComponentNode(Node):
         # so it can be used by nested Slots.
         root_ctx_already_defined = OUTER_CONTEXT_CONTEXT_KEY in context
         if not root_ctx_already_defined:
-            context.push({ OUTER_CONTEXT_CONTEXT_KEY: context.__copy__() })
+            context.push({OUTER_CONTEXT_CONTEXT_KEY: context.__copy__()})
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -331,9 +331,7 @@ class ComponentNode(Node):
         resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
 
         if len(self.fill_nodes) == 1 and isinstance(self.fill_nodes[0], ImplicitFillNode):
-            fill_content: Dict[str, FillContent] = {
-                DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)
-            }
+            fill_content: Dict[str, FillContent] = {DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)}
         else:
             fill_content = {}
             for fill_node in self.fill_nodes:
@@ -358,8 +356,8 @@ class ComponentNode(Node):
             # the original context.
             orig_ctx = context
             context = context.new()
-            context.push({ OUTER_CONTEXT_CONTEXT_KEY: orig_ctx })
-        
+            context.push({OUTER_CONTEXT_CONTEXT_KEY: orig_ctx})
+
         with context.update(component_context):
             rendered_component = component.render(context)
 

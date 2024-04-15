@@ -18,7 +18,7 @@ from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.app_settings import app_settings, SlotContextBehavior
+from django_components.app_settings import SlotContextBehavior, app_settings
 
 FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
@@ -32,6 +32,7 @@ AliasName = str
 
 class FillContent(NamedTuple):
     """Data passed from component to slot to render that slot"""
+
     nodes: NodeList
     alias: Optional[AliasName]
 
@@ -127,7 +128,7 @@ class SlotNode(Node, TemplateAwareNodeMixin):
         used_ctx = self.resolve_slot_context(context)
         with used_ctx.update(extra_context):
             return nodelist.render(used_ctx)
-        
+
     def resolve_slot_context(self, context: Context) -> Context:
         """
         Prepare the context used in a slot fill based on the settings.
