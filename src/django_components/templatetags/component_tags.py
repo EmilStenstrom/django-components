@@ -16,10 +16,10 @@ from django_components.middleware import (
     is_dependency_middleware_active,
 )
 from django_components.slots import (
+    FillNode,
     IfSlotFilledConditionBranchNode,
     IfSlotFilledElseBranchNode,
     IfSlotFilledNode,
-    FillNode,
     SlotNode,
     _IfSlotFilledBranchNode,
     parse_slot_fill_nodes_from_component_nodelist,

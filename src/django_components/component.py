@@ -22,12 +22,7 @@ from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
 from django_components.logger import logger
 from django_components.middleware import is_dependency_middleware_active
-from django_components.slots import (
-    FillNode,
-    FillContent,
-    SlotName,
-    render_component_template_with_slots,
-)
+from django_components.slots import FillContent, FillNode, SlotName, render_component_template_with_slots
 from django_components.utils import search
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"

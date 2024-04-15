@@ -14,7 +14,7 @@ else:
     from typing import TypeAlias
 
 from django.template import Context, Template
-from django.template.base import FilterExpression, Node, NodeList, TextNode, Parser
+from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
 from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
@@ -176,7 +176,7 @@ class FillNode(Node):
             "You are probably seeing this because you have used one outside "
             "a {% component %} context."
         )
-    
+
     def __repr__(self) -> str:
         return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
 
@@ -345,7 +345,7 @@ def _try_parse_as_default_fill(
         return [
             FillNode(
                 nodelist=nodelist,
-                name_fexp=FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser('')),
+                name_fexp=FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
                 is_implicit=True,
             )
         ]
