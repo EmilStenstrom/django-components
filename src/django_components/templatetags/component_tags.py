@@ -19,7 +19,7 @@ from django_components.slots import (
     IfSlotFilledConditionBranchNode,
     IfSlotFilledElseBranchNode,
     IfSlotFilledNode,
-    NamedFillNode,
+    FillNode,
     SlotNode,
     _IfSlotFilledBranchNode,
     parse_slot_fill_nodes_from_component_nodelist,
@@ -156,7 +156,7 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
 
 
 @register.tag("fill")
-def do_fill(parser: Parser, token: Token) -> NamedFillNode:
+def do_fill(parser: Parser, token: Token) -> FillNode:
     """Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
     It exists to make component nesting easier.
@@ -182,7 +182,7 @@ def do_fill(parser: Parser, token: Token) -> NamedFillNode:
     nodelist = parser.parse(parse_until=["endfill"])
     parser.delete_first_token()
 
-    return NamedFillNode(
+    return FillNode(
         nodelist,
         name_fexp=FilterExpression(tgt_slot_name, tag),
         alias_fexp=alias_fexp,

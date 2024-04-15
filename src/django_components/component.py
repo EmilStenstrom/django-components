@@ -23,11 +23,8 @@ from django_components.component_registry import AlreadyRegistered, ComponentReg
 from django_components.logger import logger
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
-    DEFAULT_SLOT_KEY,
-    OUTER_CONTEXT_CONTEXT_KEY,
+    FillNode,
     FillContent,
-    ImplicitFillNode,
-    NamedFillNode,
     SlotName,
     render_component_template_with_slots,
 )
@@ -299,7 +296,7 @@ class ComponentNode(Node):
         context_args: List[FilterExpression],
         context_kwargs: Mapping[str, FilterExpression],
         isolated_context: bool = False,
-        fill_nodes: Sequence[Union[ImplicitFillNode, NamedFillNode]] = (),
+        fill_nodes: Sequence[FillNode] = (),
     ) -> None:
         self.name_fexp = name_fexp
         self.context_args = context_args or []
@@ -330,7 +327,7 @@ class ComponentNode(Node):
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
         resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
 
-        if len(self.fill_nodes) == 1 and isinstance(self.fill_nodes[0], ImplicitFillNode):
+        if len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit:
             fill_content: Dict[str, FillContent] = {DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)}
         else:
             fill_content = {}

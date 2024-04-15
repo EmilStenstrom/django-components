@@ -1,4 +1,5 @@
 import difflib
+import json
 import sys
 from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple, Type, Union
 
@@ -13,7 +14,7 @@ else:
     from typing import TypeAlias
 
 from django.template import Context, Template
-from django.template.base import FilterExpression, Node, NodeList, TextNode
+from django.template.base import FilterExpression, Node, NodeList, TextNode, Parser
 from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
@@ -149,12 +150,25 @@ class SlotNode(Node, TemplateAwareNodeMixin):
             raise ValueError(f"Unknown value for SLOT_CONTEXT_BEHAVIOR: '{app_settings.SLOT_CONTEXT_BEHAVIOR}'")
 
 
-class BaseFillNode(Node):
-    def __init__(self, nodelist: NodeList):
-        self.nodelist: NodeList = nodelist
+class FillNode(Node):
+    is_implicit: bool
+    """
+    Set when a `component` tag pair is passed template content that
+    excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
+    as 'default'.
+    """
 
-    def __repr__(self) -> str:
-        raise NotImplementedError
+    def __init__(
+        self,
+        nodelist: NodeList,
+        name_fexp: FilterExpression,
+        alias_fexp: Optional[FilterExpression] = None,
+        is_implicit: bool = False,
+    ):
+        self.nodelist: NodeList = nodelist
+        self.name_fexp = name_fexp
+        self.alias_fexp = alias_fexp
+        self.is_implicit = is_implicit
 
     def render(self, context: Context) -> str:
         raise TemplateSyntaxError(
@@ -162,19 +176,7 @@ class BaseFillNode(Node):
             "You are probably seeing this because you have used one outside "
             "a {% component %} context."
         )
-
-
-class NamedFillNode(BaseFillNode):
-    def __init__(
-        self,
-        nodelist: NodeList,
-        name_fexp: FilterExpression,
-        alias_fexp: Optional[FilterExpression] = None,
-    ):
-        super().__init__(nodelist)
-        self.name_fexp = name_fexp
-        self.alias_fexp = alias_fexp
-
+    
     def __repr__(self) -> str:
         return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
 
@@ -190,17 +192,6 @@ class NamedFillNode(BaseFillNode):
                 f"a valid Python identifier. Got: '{resolved_alias}'."
             )
         return resolved_alias
-
-
-class ImplicitFillNode(BaseFillNode):
-    """
-    Instantiated when a `component` tag pair is passed template content that
-    excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
-    as 'default'.
-    """
-
-    def __repr__(self) -> str:
-        return f"<{type(self)} Contents: {repr(self.nodelist)}.>"
 
 
 class _IfSlotFilledBranchNode(Node):
@@ -272,7 +263,7 @@ class IfSlotFilledNode(Node):
 def parse_slot_fill_nodes_from_component_nodelist(
     component_nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Sequence[Union[NamedFillNode, ImplicitFillNode]]:
+) -> Sequence[FillNode]:
     """
     Given a component body (`django.template.NodeList`), find all slot fills,
     whether defined explicitly with `{% fill %}` or implicitly.
@@ -291,7 +282,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
     Then this function returns the nodes (`django.template.Node`) for `fill "first_fill"`
     and `fill "second_fill"`.
     """
-    fill_nodes: Sequence[Union[NamedFillNode, ImplicitFillNode]] = []
+    fill_nodes: Sequence[FillNode] = []
     if _block_has_content(component_nodelist):
         for parse_fn in (
             _try_parse_as_default_fill,
@@ -314,11 +305,11 @@ def parse_slot_fill_nodes_from_component_nodelist(
 def _try_parse_as_named_fill_tag_set(
     nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Sequence[NamedFillNode]:
+) -> Sequence[FillNode]:
     result = []
     seen_name_fexps: Set[FilterExpression] = set()
     for node in nodelist:
-        if isinstance(node, NamedFillNode):
+        if isinstance(node, FillNode):
             if node.name_fexp in seen_name_fexps:
                 raise TemplateSyntaxError(
                     f"Multiple fill tags cannot target the same slot name: "
@@ -338,11 +329,11 @@ def _try_parse_as_named_fill_tag_set(
 def _try_parse_as_default_fill(
     nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Sequence[ImplicitFillNode]:
+) -> Sequence[FillNode]:
     nodes_stack: List[Node] = list(nodelist)
     while nodes_stack:
         node = nodes_stack.pop()
-        if isinstance(node, NamedFillNode):
+        if isinstance(node, FillNode):
             return []
         elif isinstance(node, ComponentNodeCls):
             # Stop searching here, as fill tags are permitted inside component blocks
@@ -351,7 +342,13 @@ def _try_parse_as_default_fill(
         for nodelist_attr_name in node.child_nodelists:
             nodes_stack.extend(getattr(node, nodelist_attr_name, []))
     else:
-        return [ImplicitFillNode(nodelist=nodelist)]
+        return [
+            FillNode(
+                nodelist=nodelist,
+                name_fexp=FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser('')),
+                is_implicit=True,
+            )
+        ]
 
 
 def _block_has_content(nodelist: NodeList) -> bool:
