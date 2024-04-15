@@ -286,7 +286,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
 def _try_parse_as_named_fill_tag_set(
     nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Optional[Iterable[NamedFillNode]]:
+) -> Sequence[NamedFillNode]:
     result = []
     seen_name_fexps: Set[FilterExpression] = set()
     for node in nodelist:
@@ -303,19 +303,19 @@ def _try_parse_as_named_fill_tag_set(
         elif isinstance(node, TextNode) and node.s.isspace():
             pass
         else:
-            return None
+            return []
     return result
 
 
 def _try_parse_as_default_fill(
     nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Optional[ImplicitFillNode]:
+) -> Sequence[ImplicitFillNode]:
     nodes_stack: List[Node] = list(nodelist)
     while nodes_stack:
         node = nodes_stack.pop()
         if isinstance(node, NamedFillNode):
-            return None
+            return []
         elif isinstance(node, ComponentNodeCls):
             # Stop searching here, as fill tags are permitted inside component blocks
             # embedded within a default fill node.
@@ -323,7 +323,7 @@ def _try_parse_as_default_fill(
         for nodelist_attr_name in node.child_nodelists:
             nodes_stack.extend(getattr(node, nodelist_attr_name, []))
     else:
-        return ImplicitFillNode(nodelist=nodelist)
+        return [ImplicitFillNode(nodelist=nodelist)]
 
 
 def _block_has_content(nodelist: NodeList) -> bool:
