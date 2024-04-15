@@ -28,6 +28,7 @@ from django_components.slots import (
     FillContent,
     SlotName,
     render_component_template_with_slots,
+    OUTER_CONTEXT_CONTEXT_KEY,
     DEFAULT_SLOT_KEY,
 )
 from django_components.utils import search
@@ -317,6 +318,12 @@ class ComponentNode(Node):
         resolved_component_name = self.name_fexp.resolve(context)
         component_cls: Type[Component] = registry.get(resolved_component_name)
 
+        # If this is the outer-/top-most component node, then save the outer context,
+        # so it can be used by nested Slots.
+        root_ctx_already_defined = OUTER_CONTEXT_CONTEXT_KEY in context
+        if not root_ctx_already_defined:
+            context.push({ OUTER_CONTEXT_CONTEXT_KEY: context.__copy__() })
+
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
         # to get values to insert into the context
@@ -344,8 +351,15 @@ class ComponentNode(Node):
 
         component_context: dict = component.get_context_data(*resolved_context_args, **resolved_context_kwargs)
 
+        # Prevent outer context from leaking into the template of the component
         if self.isolated_context:
+            # Even if contexts are isolated, we still need to pass down the
+            # original context so variables in slots can be rendered using
+            # the original context.
+            orig_ctx = context
             context = context.new()
+            context.push({ OUTER_CONTEXT_CONTEXT_KEY: orig_ctx })
+        
         with context.update(component_context):
             rendered_component = component.render(context)
 
