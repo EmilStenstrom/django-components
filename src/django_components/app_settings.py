@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import Dict, List
 
 from django.conf import settings
 
@@ -102,24 +102,25 @@ class SlotContextBehavior(str, Enum):
 
 
 class AppSettings:
-    def __init__(self) -> None:
-        self.settings = getattr(settings, "COMPONENTS", {})
+    @property
+    def settings(self) -> Dict:
+        return getattr(settings, "COMPONENTS", {})
 
     @property
     def AUTODISCOVER(self) -> bool:
-        return self.settings.setdefault("autodiscover", True)
+        return self.settings.get("autodiscover", True)
 
     @property
     def LIBRARIES(self) -> List:
-        return self.settings.setdefault("libraries", [])
+        return self.settings.get("libraries", [])
 
     @property
     def TEMPLATE_CACHE_SIZE(self) -> int:
-        return self.settings.setdefault("template_cache_size", 128)
+        return self.settings.get("template_cache_size", 128)
 
     @property
     def CONTEXT_BEHAVIOR(self) -> ContextBehavior:
-        raw_value = self.settings.setdefault("context_behavior", ContextBehavior.GLOBAL.value)
+        raw_value = self.settings.get("context_behavior", ContextBehavior.GLOBAL.value)
         return self._validate_context_behavior(raw_value)
 
     def _validate_context_behavior(self, raw_value: ContextBehavior) -> ContextBehavior:
@@ -131,7 +132,7 @@ class AppSettings:
 
     @property
     def SLOT_CONTEXT_BEHAVIOR(self) -> SlotContextBehavior:
-        raw_value = self.settings.setdefault("slot_context_behavior", SlotContextBehavior.PREFER_ROOT.value)
+        raw_value = self.settings.get("slot_context_behavior", SlotContextBehavior.PREFER_ROOT.value)
         return self._validate_slot_context_behavior(raw_value)
 
     def _validate_slot_context_behavior(self, raw_value: SlotContextBehavior) -> SlotContextBehavior:
