@@ -1,6 +1,6 @@
 import difflib
 import sys
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple, Type, Union
 
 if sys.version_info[:2] < (3, 9):
     from typing import ChainMap
@@ -19,16 +19,20 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
+DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
 
 # Type aliases
 
 SlotName = str
 AliasName = str
 
-DefaultFillContent: TypeAlias = NodeList
-NamedFillContent = Tuple[SlotName, NodeList, Optional[AliasName]]
 
-FillContent = Tuple[NodeList, Optional[AliasName]]
+class FillContent(NamedTuple):
+    """Data passed from component to slot to render that slot"""
+    nodes: NodeList
+    alias: Optional[AliasName]
+
+
 FilledSlotsContext = ChainMap[Tuple[SlotName, Template], FillContent]
 
 
@@ -103,7 +107,7 @@ class SlotNode(Node, TemplateAwareNodeMixin):
 
         extra_context = {}
         try:
-            slot_fill_content: FillContent = filled_slots_map[(self.name, self.template)]
+            slot_fill_content = filled_slots_map[(self.name, self.template)]
         except KeyError:
             if self.is_required:
                 raise TemplateSyntaxError(
@@ -244,7 +248,7 @@ class IfSlotFilledNode(Node):
 def parse_slot_fill_nodes_from_component_nodelist(
     component_nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Union[Iterable[NamedFillNode], ImplicitFillNode]:
+) -> Sequence[Union[NamedFillNode, ImplicitFillNode]]:
     """
     Given a component body (`django.template.NodeList`), find all slot fills,
     whether defined explicitly with `{% fill %}` or implicitly.
@@ -263,7 +267,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
     Then this function returns the nodes (`django.template.Node`) for `fill "first_fill"`
     and `fill "second_fill"`.
     """
-    fill_nodes: Union[Iterable[NamedFillNode], ImplicitFillNode] = []
+    fill_nodes: Sequence[Union[NamedFillNode, ImplicitFillNode]] = []
     if _block_has_content(component_nodelist):
         for parse_fn in (
             _try_parse_as_default_fill,
@@ -340,7 +344,7 @@ def _block_has_content(nodelist: NodeList) -> bool:
 def render_component_template_with_slots(
     template: Template,
     context: Context,
-    fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]],
+    fill_content: Dict[str, FillContent],
     registered_name: Optional[str],
 ) -> str:
     """
@@ -363,16 +367,16 @@ def render_component_template_with_slots(
 
 def _prepare_component_template_filled_slot_context(
     template: Template,
-    fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]],
+    fill_content: Dict[str, FillContent],
     slots_context: Optional[FilledSlotsContext],
     registered_name: Optional[str],
 ) -> FilledSlotsContext:
-    if isinstance(fill_content, NodeList):
-        default_fill_content = (fill_content, None)
-        named_fills_content = {}
+    if DEFAULT_SLOT_KEY in fill_content:
+        named_fills_content = fill_content.copy()
+        default_fill_content = named_fills_content.pop(DEFAULT_SLOT_KEY)
     else:
+        named_fills_content = fill_content
         default_fill_content = None
-        named_fills_content = {name: (nodelist, alias) for name, nodelist, alias in list(fill_content)}
 
     # If value is `None`, then slot is unfilled.
     slot_name2fill_content: Dict[SlotName, Optional[FillContent]] = {}

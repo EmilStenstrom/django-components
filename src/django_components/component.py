@@ -2,7 +2,7 @@ import inspect
 import os
 import sys
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Sequence, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -23,12 +23,12 @@ from django_components.component_registry import AlreadyRegistered, ComponentReg
 from django_components.logger import logger
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
-    DefaultFillContent,
     ImplicitFillNode,
-    NamedFillContent,
     NamedFillNode,
+    FillContent,
     SlotName,
     render_component_template_with_slots,
+    DEFAULT_SLOT_KEY,
 )
 from django_components.utils import search
 
@@ -186,7 +186,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self,
         registered_name: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]] = (),  # type: ignore
+        fill_content: dict[str, FillContent] = {},  # type: ignore
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
@@ -280,14 +280,13 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         escape_content: bool = True,
     ) -> None:
         """Fill component slots outside of template rendering."""
-        self.fill_content = [
-            (
-                slot_name,
+        self.fill_content = {
+            slot_name: FillContent(
                 TextNode(escape(content) if escape_content else content),
                 None,
             )
             for (slot_name, content) in slots_data.items()
-        ]
+        }
 
 
 class ComponentNode(Node):
@@ -299,20 +298,14 @@ class ComponentNode(Node):
         context_args: List[FilterExpression],
         context_kwargs: Mapping[str, FilterExpression],
         isolated_context: bool = False,
-        fill_nodes: Union[ImplicitFillNode, Iterable[NamedFillNode]] = (),
+        fill_nodes: Sequence[Union[ImplicitFillNode, NamedFillNode]] = (),
     ) -> None:
         self.name_fexp = name_fexp
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
         self.fill_nodes = fill_nodes
-        self.nodelist = self._create_nodelist(fill_nodes)
-
-    def _create_nodelist(self, fill_nodes: Union[Iterable[Node], ImplicitFillNode]) -> NodeList:
-        if isinstance(fill_nodes, ImplicitFillNode):
-            return NodeList([fill_nodes])
-        else:
-            return NodeList(fill_nodes)
+        self.nodelist = NodeList(fill_nodes)
 
     def __repr__(self) -> str:
         return "<ComponentNode: {}. Contents: {!r}>".format(
@@ -330,16 +323,18 @@ class ComponentNode(Node):
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
         resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
 
-        if isinstance(self.fill_nodes, ImplicitFillNode):
-            fill_content = self.fill_nodes.nodelist
+        if len(self.fill_nodes) == 1 and isinstance(self.fill_nodes[0], ImplicitFillNode):
+            fill_content: Dict[str, FillContent] = {
+                DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)
+            }
         else:
-            fill_content = []
+            fill_content = {}
             for fill_node in self.fill_nodes:
                 # Note that outer component context is used to resolve variables in
                 # fill tag.
                 resolved_name = fill_node.name_fexp.resolve(context)
                 resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
-                fill_content.append((resolved_name, fill_node.nodelist, resolved_fill_alias))
+                fill_content[resolved_name] = FillContent(fill_node.nodelist, resolved_fill_alias)
 
         component: Component = component_cls(
             registered_name=resolved_component_name,
