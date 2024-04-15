@@ -1,6 +1,7 @@
 from unittest.mock import PropertyMock, patch
 
 from django.template import Context, Template
+from django.test import override_settings
 
 from django_components import component
 
@@ -65,7 +66,7 @@ class OuterContextComponent(component.Component):
     template_name = "simple_template.html"
 
     def get_context_data(self):
-        return self.outer_context
+        return self.outer_context.flatten()
 
 
 component.registry.register(name="parent_component", component=ParentComponent)
@@ -385,7 +386,21 @@ class IsolatedContextSettingTests(SimpleTestCase):
 
 
 class OuterContextPropertyTests(SimpleTestCase):
-    def test_outer_context_property_with_component(self):
+    @override_settings(
+        COMPONENTS={"context_behavior": "global"},
+    )
+    def test_outer_context_property_with_component_global(self):
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component 'outer_context_component' only %}{% endcomponent %}"
+        )
+        rendered = template.render(Context({"variable": "outer_value"})).strip()
+        self.assertIn("outer_value", rendered, rendered)
+
+    @override_settings(
+        COMPONENTS={"context_behavior": "isolated"},
+    )
+    def test_outer_context_property_with_component_isolated(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component 'outer_context_component' only %}{% endcomponent %}"

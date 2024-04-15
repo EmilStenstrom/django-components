@@ -24,6 +24,7 @@ from django_components.slots import (
     _IfSlotFilledBranchNode,
     parse_slot_fill_nodes_from_component_nodelist,
 )
+from django_components.utils import gen_id
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -210,12 +211,22 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     body: NodeList = parser.parse(parse_until=["endcomponent"])
     parser.delete_first_token()
     fill_nodes = parse_slot_fill_nodes_from_component_nodelist(body, ComponentNode)
+
+    # Use a unique ID to be able to tie the fill nodes with this specific component
+    # and its slots
+    component_id = gen_id()
+
+    # Tag all fill nodes as children of this particular component instance
+    for node in fill_nodes:
+        node.component_id = component_id
+
     component_node = ComponentNode(
         FilterExpression(component_name, parser),
         context_args,
         context_kwargs,
         isolated_context=isolated_context,
         fill_nodes=fill_nodes,
+        component_id=component_id,
     )
 
     return component_node

@@ -204,6 +204,60 @@ class ComponentTest(SimpleTestCase):
 
         self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
 
+    def test_component_inside_slot(self):
+        class SlottedComponent(component.Component):
+            template_name = "slotted_template.html"
+
+            def get_context_data(self, name: str | None = None) -> component.Dict[str, component.Any]:
+                return {
+                    "name": name,
+                }
+
+        component.registry.register("test", SlottedComponent)
+
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "test" name='Igor' %}
+                {% fill "header" %}
+                    Name: {{ name }}
+                {% endfill %}
+                {% fill "main" %}
+                    Day: {{ day }}
+                {% endfill %}
+                {% fill "footer" %}
+                    {% component "test" name='Joe2' %}
+                        {% fill "header" %}
+                            Name2: {{ name }}
+                        {% endfill %}
+                        {% fill "main" %}
+                            Day2: {{ day }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+
+        # {{ name }} should be "Jannete" everywhere
+        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Name: Jannete</header>
+                <main>Day: Monday</main>
+                <footer>
+                    <custom-template>
+                        <header>Name2: Jannete</header>
+                        <main>Day2: Monday</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </footer>
+            </custom-template>
+        """,
+        )
+
 
 class InlineComponentTest(SimpleTestCase):
     def test_inline_html_component(self):
@@ -479,6 +533,155 @@ class ComponentIsolationTests(SimpleTestCase):
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Override footer</footer>
+            </custom-template>
+        """,
+        )
+
+class SlotBehaviorTests(SimpleTestCase):
+    def setUp(self):
+        class SlottedComponent(component.Component):
+            template_name = "slotted_template.html"
+
+            def get_context_data(self, name: str | None = None) -> component.Dict[str, component.Any]:
+                return {
+                    "name": name,
+                }
+
+        component.registry.register("test", SlottedComponent)
+
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "test" name='Igor' %}
+                {% fill "header" %}
+                    Name: {{ name }}
+                {% endfill %}
+                {% fill "main" %}
+                    Day: {{ day }}
+                {% endfill %}
+                {% fill "footer" %}
+                    {% component "test" name='Joe2' %}
+                        {% fill "header" %}
+                            Name2: {{ name }}
+                        {% endfill %}
+                        {% fill "main" %}
+                            Day2: {{ day }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+
+    @override_settings(
+        COMPONENTS={"slot_context_behavior": "allow_override"},
+    )
+    def test_slot_context_allow_override(self):
+        # {{ name }} should be neither Jannete not empty, because overriden everywhere
+        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Name: Igor</header>
+                <main>Day: Monday</main>
+                <footer>
+                    <custom-template>
+                        <header>Name2: Joe2</header>
+                        <main>Day2: Monday</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </footer>
+            </custom-template>
+        """,
+        )
+
+        # {{ name }} should be effectively the same as before, because overriden everywhere
+        rendered2 = self.template.render(Context({ "day": "Monday" }))
+        self.assertHTMLEqual(rendered2, rendered)
+
+    @override_settings(
+        COMPONENTS={"slot_context_behavior": "isolated"},
+    )
+    def test_slot_context_isolated(self):
+        # {{ name }} should be "Jannete" everywhere
+        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Name: Jannete</header>
+                <main>Day: Monday</main>
+                <footer>
+                    <custom-template>
+                        <header>Name2: Jannete</header>
+                        <main>Day2: Monday</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </footer>
+            </custom-template>
+        """,
+        )
+
+        # {{ name }} should be empty everywhere
+        rendered2 = self.template.render(Context({ "day": "Monday" }))
+        self.assertHTMLEqual(
+            rendered2,
+            """
+            <custom-template>
+                <header>Name: </header>
+                <main>Day: Monday</main>
+                <footer>
+                    <custom-template>
+                        <header>Name2: </header>
+                        <main>Day2: Monday</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </footer>
+            </custom-template>
+        """,
+        )
+
+    @override_settings(
+        COMPONENTS={
+           "slot_context_behavior": "prefer_root",
+        },
+    )
+    def test_slot_context_prefer_root(self):
+        # {{ name }} should be "Jannete" everywhere
+        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Name: Jannete</header>
+                <main>Day: Monday</main>
+                <footer>
+                    <custom-template>
+                        <header>Name2: Jannete</header>
+                        <main>Day2: Monday</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </footer>
+            </custom-template>
+        """,
+        )
+
+        # {{ name }} should be neither "Jannete" nor empty anywhere
+        rendered = self.template.render(Context({ "day": "Monday" }))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Name: Igor</header>
+                <main>Day: Monday</main>
+                <footer>
+                    <custom-template>
+                        <header>Name2: Joe2</header>
+                        <main>Day2: Monday</main>
+                        <footer>Default footer</footer>
+                    </custom-template>
+                </footer>
             </custom-template>
         """,
         )

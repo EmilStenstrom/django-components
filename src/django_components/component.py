@@ -26,11 +26,12 @@ from django_components.slots import (
     FillContent,
     FillNode,
     SlotName,
+    SlotNode,
     render_component_template_with_slots,
     OUTER_CONTEXT_CONTEXT_KEY,
     DEFAULT_SLOT_KEY,
 )
-from django_components.utils import search
+from django_components.utils import search, walk_nodelist, gen_id
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
@@ -185,12 +186,14 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def __init__(
         self,
         registered_name: Optional[str] = None,
+        component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: dict[str, FillContent] = {},  # type: ignore
+        fill_content: Dict[str, FillContent] = {},  # type: ignore
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
+        self.component_id = component_id or gen_id()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
@@ -255,10 +258,19 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         context = context_data if isinstance(context_data, Context) else Context(context_data)
         template = self.get_template(context)
 
+        # Associate the slots with this component
+        def on_node(node: Node) -> None:
+            if isinstance(node, SlotNode):
+                node.component_id = self.component_id
+
+        walk_nodelist(template.nodelist, on_node)
+
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
 
-        return render_component_template_with_slots(template, context, self.fill_content, self.registered_name)
+        return render_component_template_with_slots(
+            self.component_id, template, context, self.fill_content, self.registered_name
+        )
 
     def render_to_response(
         self,
@@ -299,7 +311,9 @@ class ComponentNode(Node):
         context_kwargs: Mapping[str, FilterExpression],
         isolated_context: bool = False,
         fill_nodes: Sequence[FillNode] = (),
+        component_id: Optional[str] = None,
     ) -> None:
+        self.component_id = component_id or gen_id()
         self.name_fexp = name_fexp
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
@@ -329,7 +343,8 @@ class ComponentNode(Node):
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
         resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
 
-        if len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit:
+        is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
+        if is_default_slot:
             fill_content: Dict[str, FillContent] = {DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)}
         else:
             fill_content = {}
@@ -344,6 +359,7 @@ class ComponentNode(Node):
             registered_name=resolved_component_name,
             outer_context=context,
             fill_content=fill_content,
+            component_id=self.component_id,
         )
 
         component_context: dict = component.get_context_data(*resolved_context_args, **resolved_context_kwargs)
