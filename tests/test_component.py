@@ -1,5 +1,6 @@
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, Dict, Optional
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
@@ -208,7 +209,7 @@ class ComponentTest(SimpleTestCase):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
 
-            def get_context_data(self, name: component.Optional[str] = None) -> component.Dict[str, component.Any]:
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
                 return {
                     "name": name,
                 }
@@ -543,7 +544,7 @@ class SlotBehaviorTests(SimpleTestCase):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
 
-            def get_context_data(self, name: component.Optional[str] = None) -> component.Dict[str, component.Any]:
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
                 return {
                     "name": name,
                 }
