@@ -261,7 +261,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def render(
         self,
-        context_data: Dict[str, Any],
+        context_data: Union[Dict[str, Any], Context],
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
     ) -> str:
@@ -288,7 +288,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def render_to_response(
         self,
-        context_data: Dict[str, Any],
+        context_data: Union[Dict[str, Any], Context],
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
         *args: Any,
