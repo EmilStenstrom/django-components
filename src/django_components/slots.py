@@ -1,6 +1,6 @@
 import difflib
 import json
-from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Type, Union
+from typing import Dict, List, NamedTuple, Optional, Set, Type, Union
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -263,7 +263,7 @@ class IfSlotFilledNode(Node):
 def parse_slot_fill_nodes_from_component_nodelist(
     component_nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Sequence[FillNode]:
+) -> List[FillNode]:
     """
     Given a component body (`django.template.NodeList`), find all slot fills,
     whether defined explicitly with `{% fill %}` or implicitly.
@@ -282,7 +282,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
     Then this function returns the nodes (`django.template.Node`) for `fill "first_fill"`
     and `fill "second_fill"`.
     """
-    fill_nodes: Sequence[FillNode] = []
+    fill_nodes: List[FillNode] = []
     if nodelist_has_content(component_nodelist):
         for parse_fn in (
             _try_parse_as_default_fill,
@@ -305,7 +305,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
 def _try_parse_as_named_fill_tag_set(
     nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Sequence[FillNode]:
+) -> List[FillNode]:
     result = []
     seen_name_fexps: Set[FilterExpression] = set()
     for node in nodelist:
@@ -329,7 +329,7 @@ def _try_parse_as_named_fill_tag_set(
 def _try_parse_as_default_fill(
     nodelist: NodeList,
     ComponentNodeCls: Type[Node],
-) -> Sequence[FillNode]:
+) -> List[FillNode]:
     nodes_stack: List[Node] = list(nodelist)
     while nodes_stack:
         node = nodes_stack.pop()

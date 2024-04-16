@@ -2,7 +2,7 @@ import inspect
 import os
 import sys
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -324,7 +324,7 @@ class ComponentNode(Node):
         context_args: List[FilterExpression],
         context_kwargs: Mapping[str, FilterExpression],
         isolated_context: bool = False,
-        fill_nodes: Sequence[FillNode] = (),
+        fill_nodes: Optional[List[FillNode]] = None,
         component_id: Optional[str] = None,
     ) -> None:
         self.component_id = component_id or gen_id()
@@ -332,7 +332,7 @@ class ComponentNode(Node):
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
-        self.fill_nodes = fill_nodes
+        self.fill_nodes = fill_nodes or []
         self.nodelist = NodeList(fill_nodes)
 
     def __repr__(self) -> str:
