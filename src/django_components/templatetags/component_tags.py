@@ -10,6 +10,7 @@ from django_components.app_settings import app_settings
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
+from django_components.logger import trace_msg
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
     JS_DEPENDENCY_PLACEHOLDER,
@@ -149,6 +150,7 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
     slot_id = gen_id()
+    trace_msg("PARSE", "SLOT", slot_name, slot_id)
 
     nodelist = parser.parse(parse_until=["endslot"])
     parser.delete_first_token()
@@ -160,6 +162,7 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
         node_id=slot_id,
     )
 
+    trace_msg("PARSE", "SLOT", slot_name, slot_id, "...Done!")
     return slot_node
 
 
@@ -191,6 +194,7 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
     fill_id = gen_id()
+    trace_msg("PARSE", "FILL", tgt_slot_name, fill_id)
 
     nodelist = parser.parse(parse_until=["endfill"])
     parser.delete_first_token()
@@ -202,6 +206,7 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
         node_id=fill_id,
     )
 
+    trace_msg("PARSE", "FILL", tgt_slot_name, fill_id, "...Done!")
     return fill_node
 
 
@@ -227,6 +232,7 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
     component_id = gen_id()
+    trace_msg("PARSE", "COMP", component_name, component_id)
 
     body: NodeList = parser.parse(parse_until=["endcomponent"])
     parser.delete_first_token()
@@ -234,6 +240,7 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
 
     # Tag all fill nodes as children of this particular component instance
     for node in fill_nodes:
+        trace_msg("ASSOC", "FILL", node.name_fexp, node.node_id, component_id=component_id)
         node.component_id = component_id
 
     component_node = ComponentNode(
@@ -245,6 +252,7 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
         component_id=component_id,
     )
 
+    trace_msg("PARSE", "COMP", component_name, component_id, "...Done!")
     return component_node
 
 

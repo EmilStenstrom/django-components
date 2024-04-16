@@ -116,6 +116,7 @@ class SlotNode(Node):
 
     def render(self, context: Context) -> SafeString:
         slot_fill_content = get_slot_fill(context, self.component_id, self.name, callee_node_name=f"SlotNode '{self.name}'")
+        trace_msg("RENDR", "SLOT", self.name, self.node_id, component_id=component_id)
 
         extra_context = {}
         if slot_fill_content is None:
@@ -133,7 +134,10 @@ class SlotNode(Node):
 
         used_ctx = self.resolve_slot_context(context)
         with used_ctx.update(extra_context):
-            return nodelist.render(used_ctx)
+            output = nodelist.render(used_ctx)
+
+        trace_msg("RENDR", "SLOT", self.name, self.node_id, component_id=component_id, msg="...Done!")
+        return output
 
     def resolve_slot_context(self, context: Context) -> Context:
         """
@@ -417,8 +421,7 @@ def _prepare_component_template_filled_slot_context(
     slot_name2fill_content = _collect_slot_fills_from_component_template(template, fill_content, registered_name)
 
     # Give slot nodes knowledge of their parent component.
-    for node in template.nodelist.get_nodes_by_type((SlotNode, IfSlotFilledConditionBranchNode)):
-        if isinstance(node, (SlotNode, IfSlotFilledConditionBranchNode)):
+            trace_msg("ASSOC", "IFSB", node.slot_name, node.node_id, component_id=component_id)
             node.component_id = component_id
 
     # Return updated FILLED_SLOTS_CONTEXT map

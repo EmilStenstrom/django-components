@@ -20,7 +20,7 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
-from django_components.logger import logger
+from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
     FillContent,
@@ -258,9 +258,11 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         context = context_data if isinstance(context_data, Context) else Context(context_data)
         template = self.get_template(context)
 
-        # Associate the slots with this component
+        # Associate the slots with this component for this context
+        # This allows us to look up component-specific slot fills.
         def on_node(node: Node) -> None:
             if isinstance(node, SlotNode):
+                trace_msg("ASSOC", "SLOT", node.name, node.node_id, component_id=self.component_id)
                 node.component_id = self.component_id
 
         walk_nodelist(template.nodelist, on_node)
@@ -328,6 +330,8 @@ class ComponentNode(Node):
         )
 
     def render(self, context: Context) -> str:
+        trace_msg("RENDR", "COMP", self.name_fexp, self.component_id)
+
         resolved_component_name = self.name_fexp.resolve(context)
         component_cls: Type[Component] = registry.get(resolved_component_name)
 
@@ -377,9 +381,12 @@ class ComponentNode(Node):
             rendered_component = component.render(context)
 
         if is_dependency_middleware_active():
-            return RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name) + rendered_component
+            output = RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name) + rendered_component
         else:
-            return rendered_component
+            output = rendered_component
+
+        trace_msg("RENDR", "COMP", self.name_fexp, self.component_id, "...Done!")
+        return output
 
 
 def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
