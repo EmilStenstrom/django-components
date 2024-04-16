@@ -9,15 +9,15 @@ else:
     from typing import TypeAlias
 
 from django.template import Context, Template
-from django.template.base import FilterExpression, Node, NodeList, TextNode, Parser
+from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
 from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import SlotContextBehavior, app_settings
-from django_components.context import get_root_context, get_slot_fill, set_slot_fill, get_slot_component_association
-from django_components.node import nodelist_has_content
+from django_components.context import get_root_context, get_slot_component_association, get_slot_fill, set_slot_fill
 from django_components.logger import trace_msg
+from django_components.node import nodelist_has_content
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
@@ -58,10 +58,11 @@ class UserSlotVar:
 class ComponentIdMixin:
     """
     Mixin for classes use or pass through component ID.
-    
+
     We use component IDs to identify which slots should be
     rendered with which fills for which components.
     """
+
     _component_id: str
 
     @property
@@ -369,7 +370,7 @@ def render_component_template_with_slots(
 
     NOTE: The nodes in the template are mutated in the process!
     """
-    # ---- Prepare slot fills ---- 
+    # ---- Prepare slot fills ----
     slot_name2fill_content = _collect_slot_fills_from_component_template(template, fill_content, registered_name)
 
     # Give slot nodes knowledge of their parent component.
@@ -411,7 +412,7 @@ def _collect_slot_fills_from_component_template(
         # Type check so the rest of the logic has type of `node` is inferred
         if not isinstance(node, SlotNode):
             continue
-    
+
         slot_name = node.name
         if slot_name in slot_name2fill_content:
             raise TemplateSyntaxError(
@@ -440,7 +441,7 @@ def _collect_slot_fills_from_component_template(
             content_data = named_fills_content.get(node.name)
 
         slot_name2fill_content[slot_name] = content_data
-        
+
     # Check: Only component templates that include a 'default' slot
     # can be invoked with implicit filling.
     if default_fill_content and not default_slot_encountered:

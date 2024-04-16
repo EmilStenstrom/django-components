@@ -5,7 +5,7 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from django.template import Context
 

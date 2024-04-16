@@ -240,7 +240,7 @@ class ComponentTest(SimpleTestCase):
         )
 
         # {{ name }} should be "Jannete" everywhere
-        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
         self.assertHTMLEqual(
             rendered,
             """
@@ -537,6 +537,7 @@ class ComponentIsolationTests(SimpleTestCase):
         """,
         )
 
+
 class SlotBehaviorTests(SimpleTestCase):
     def setUp(self):
         class SlottedComponent(component.Component):
@@ -578,7 +579,7 @@ class SlotBehaviorTests(SimpleTestCase):
     )
     def test_slot_context_allow_override(self):
         # {{ name }} should be neither Jannete not empty, because overriden everywhere
-        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
         self.assertHTMLEqual(
             rendered,
             """
@@ -597,7 +598,7 @@ class SlotBehaviorTests(SimpleTestCase):
         )
 
         # {{ name }} should be effectively the same as before, because overriden everywhere
-        rendered2 = self.template.render(Context({ "day": "Monday" }))
+        rendered2 = self.template.render(Context({"day": "Monday"}))
         self.assertHTMLEqual(rendered2, rendered)
 
     @override_settings(
@@ -605,7 +606,7 @@ class SlotBehaviorTests(SimpleTestCase):
     )
     def test_slot_context_isolated(self):
         # {{ name }} should be "Jannete" everywhere
-        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
         self.assertHTMLEqual(
             rendered,
             """
@@ -624,7 +625,7 @@ class SlotBehaviorTests(SimpleTestCase):
         )
 
         # {{ name }} should be empty everywhere
-        rendered2 = self.template.render(Context({ "day": "Monday" }))
+        rendered2 = self.template.render(Context({"day": "Monday"}))
         self.assertHTMLEqual(
             rendered2,
             """
@@ -644,12 +645,12 @@ class SlotBehaviorTests(SimpleTestCase):
 
     @override_settings(
         COMPONENTS={
-           "slot_context_behavior": "prefer_root",
+            "slot_context_behavior": "prefer_root",
         },
     )
     def test_slot_context_prefer_root(self):
         # {{ name }} should be "Jannete" everywhere
-        rendered = self.template.render(Context({ "day": "Monday", "name": "Jannete" }))
+        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
         self.assertHTMLEqual(
             rendered,
             """
@@ -668,7 +669,7 @@ class SlotBehaviorTests(SimpleTestCase):
         )
 
         # {{ name }} should be neither "Jannete" nor empty anywhere
-        rendered = self.template.render(Context({ "day": "Monday" }))
+        rendered = self.template.render(Context({"day": "Monday"}))
         self.assertHTMLEqual(
             rendered,
             """

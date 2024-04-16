@@ -20,19 +20,24 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
-from django_components.context import capture_root_context, set_root_context, get_root_context, set_slot_component_association
+from django_components.context import (
+    capture_root_context,
+    get_root_context,
+    set_root_context,
+    set_slot_component_association,
+)
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.node import walk_nodelist
 from django_components.slots import (
+    DEFAULT_SLOT_KEY,
     FillContent,
     FillNode,
     SlotName,
     SlotNode,
     render_component_template_with_slots,
-    DEFAULT_SLOT_KEY,
 )
-from django_components.utils import search, gen_id
+from django_components.utils import gen_id, search
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
