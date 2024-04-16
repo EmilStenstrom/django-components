@@ -14,7 +14,7 @@ class SlotContextBehavior(str, Enum):
     """
     Components CAN override the slot context variables passed from the outer scopes.
     Contexts of deeper components take precedence over shallower ones.
-    
+
     Example:
 
     Given this template
@@ -45,7 +45,7 @@ class SlotContextBehavior(str, Enum):
 
     So if a variable is found in the root context, then root context is used.
     Otherwise, the context of the component where the slot fill is located is used.
-    
+
     Example:
 
     Given this template
@@ -76,7 +76,7 @@ class SlotContextBehavior(str, Enum):
     This setting makes the slots behave similar to Vue or React, where
     the slot uses EXCLUSIVELY the root context, and nested components CANNOT
     override context variables inside the slots.
-    
+
     Example:
 
     Given this template
