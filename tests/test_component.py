@@ -208,7 +208,7 @@ class ComponentTest(SimpleTestCase):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
 
-            def get_context_data(self, name: str | None = None) -> component.Dict[str, component.Any]:
+            def get_context_data(self, name: component.Optional[str] = None) -> component.Dict[str, component.Any]:
                 return {
                     "name": name,
                 }
@@ -542,7 +542,7 @@ class SlotBehaviorTests(SimpleTestCase):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
 
-            def get_context_data(self, name: str | None = None) -> component.Dict[str, component.Any]:
+            def get_context_data(self, name: component.Optional[str] = None) -> component.Dict[str, component.Any]:
                 return {
                     "name": name,
                 }
