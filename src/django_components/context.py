@@ -1,5 +1,5 @@
 """
-This file cetralizes various ways we use Django's Context class
+This file centralizes various ways we use Django's Context class
 pass data across components, nodes, slots, and contexts.
 
 You can think of the Context as our storage system.

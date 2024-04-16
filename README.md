@@ -716,7 +716,7 @@ except that, if variable is not found in the root, then the surrounding context 
 
 You can change this with the `slot_contet_behavior` setting. Options are:
 - `"prefer_root"` - Default - as described above
-- `"isolated"` - Same behavior as Vue - variable is taken ONLY from the root context
+- `"isolated"` - Same behavior as Vue - variables are taken ONLY from the root context
 - `"allow_override"` - slot context variables are taken from its surroundings (default before v0.67)
 
 ```python
