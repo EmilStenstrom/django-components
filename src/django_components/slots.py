@@ -1,5 +1,6 @@
 import difflib
 import json
+from copy import copy
 from typing import Dict, List, NamedTuple, Optional, Set, Type, Union
 
 from django.template import Context, Template
@@ -145,7 +146,7 @@ class SlotNode(Node):
         elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED:
             return root_ctx
         elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.PREFER_ROOT:
-            new_context: Context = context.__copy__()
+            new_context: Context = copy(context)
             new_context.update(root_ctx.flatten())
             return new_context
         else:

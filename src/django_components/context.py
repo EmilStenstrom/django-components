@@ -5,6 +5,7 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
+from copy import copy
 from typing import TYPE_CHECKING, Optional
 
 from django.template import Context
@@ -84,7 +85,7 @@ def capture_root_context(context: Context) -> None:
     """
     root_ctx_already_defined = _OUTER_CONTEXT_CONTEXT_KEY in context
     if not root_ctx_already_defined:
-        set_root_context(context, context.__copy__())
+        set_root_context(context, copy(context))
 
 
 def set_slot_component_association(context: Context, slot_id: str, component_id: str) -> None:
