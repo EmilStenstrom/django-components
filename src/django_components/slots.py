@@ -87,18 +87,20 @@ class ComponentIdMixin:
         self._component_id = value
 
 
-class SlotNode(Node, ComponentIdMixin):
+class SlotNode(Node):
     def __init__(
         self,
         name: str,
         nodelist: NodeList,
         is_required: bool = False,
         is_default: bool = False,
+        node_id: Optional[str] = None,
     ):
         self.name = name
         self.nodelist = nodelist
         self.is_required = is_required
         self.is_default = is_default
+        self.node_id = node_id or gen_id()
 
     @property
     def active_flags(self) -> List[str]:
@@ -167,7 +169,9 @@ class FillNode(Node, ComponentIdMixin):
         name_fexp: FilterExpression,
         alias_fexp: Optional[FilterExpression] = None,
         is_implicit: bool = False,
+        node_id: Optional[str] = None,
     ):
+        self.node_id = node_id or gen_id()
         self.nodelist = nodelist
         self.name_fexp = name_fexp
         self.alias_fexp = alias_fexp
@@ -214,9 +218,11 @@ class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, ComponentIdMixin)
         slot_name: str,
         nodelist: NodeList,
         is_positive: Union[bool, None] = True,
+        node_id: Optional[str] = None,
     ) -> None:
         self.slot_name = slot_name
         self.is_positive: Optional[bool] = is_positive
+        self.node_id = node_id or gen_id()
         super().__init__(nodelist)
 
     def evaluate(self, context: Context) -> bool:
