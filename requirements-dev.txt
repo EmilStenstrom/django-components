@@ -6,7 +6,7 @@
 #
 asgiref==3.7.2
     # via django
-black==24.3.0
+black==24.4.0
     # via -r requirements-dev.in
 cachetools==5.3.2
     # via tox
