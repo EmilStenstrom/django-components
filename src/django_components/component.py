@@ -194,7 +194,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         registered_name: Optional[str] = None,
         component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Dict[str, FillContent] = {},  # type: ignore
+        fill_content: Dict[str, FillContent] = {},
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
