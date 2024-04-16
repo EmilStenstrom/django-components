@@ -1,12 +1,7 @@
 import difflib
 import json
 import sys
-from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple, Type, Union
-
-if sys.version_info[:2] < (3, 9):
-    from typing import ChainMap
-else:
-    from collections import ChainMap
+from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Type, Union
 
 if sys.version_info[:2] < (3, 10):
     from typing_extensions import TypeAlias
@@ -20,10 +15,12 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import SlotContextBehavior, app_settings
+from django_components.context import get_root_context, get_slot_fill, set_slot_fill, get_slot_component_association
+from django_components.node import nodelist_has_content
+from django_components.logger import trace_msg
+from django_components.utils import gen_id
 
-FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
-OUTER_CONTEXT_CONTEXT_KEY = "_DJANGO_COMPONENTS_OUTER_CONTEXT"
 
 # Type aliases
 
@@ -36,10 +33,6 @@ class FillContent(NamedTuple):
 
     nodes: NodeList
     alias: Optional[AliasName]
-
-
-FilledSlotsKey = Tuple[SlotName, Template]
-FilledSlotsContext = ChainMap[FilledSlotsKey, FillContent]
 
 
 class UserSlotVar:
@@ -115,16 +108,21 @@ class SlotNode(Node):
         return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
 
     def render(self, context: Context) -> SafeString:
-        slot_fill_content = get_slot_fill(context, self.component_id, self.name, callee_node_name=f"SlotNode '{self.name}'")
+        component_id = get_slot_component_association(context, self.node_id)
         trace_msg("RENDR", "SLOT", self.name, self.node_id, component_id=component_id)
 
+        slot_fill_content = get_slot_fill(context, component_id, self.name)
         extra_context = {}
+
+        # Slot fill was NOT found. Will render the default fill
         if slot_fill_content is None:
             if self.is_required:
                 raise TemplateSyntaxError(
                     f"Slot '{self.name}' is marked as 'required' (i.e. non-optional), " f"yet no fill is provided. "
                 )
             nodelist = self.nodelist
+
+        # Slot fill WAS found
         else:
             nodelist, alias = slot_fill_content
             if alias:
@@ -145,7 +143,7 @@ class SlotNode(Node):
 
         See SlotContextBehavior for the description of each option.
         """
-        root_ctx: Context = context.get(OUTER_CONTEXT_CONTEXT_KEY, Context())
+        root_ctx = get_root_context(context) or Context()
 
         if app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ALLOW_OVERRIDE:
             return context
@@ -230,7 +228,7 @@ class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, ComponentIdMixin)
         super().__init__(nodelist)
 
     def evaluate(self, context: Context) -> bool:
-        slot_fill = get_slot_fill(context, self.component_id, self.slot_name, callee_node_name=type(self).__name__)
+        slot_fill = get_slot_fill(context, self.component_id, self.slot_name)
         is_filled = slot_fill is not None
         # Make polarity switchable.
         # i.e. if slot name is NOT filled and is_positive=False,
@@ -267,21 +265,6 @@ class IfSlotFilledNode(Node):
         return ""
 
 
-def get_slot_fill(
-    context: Context,
-    component_id: str,
-    slot_name: str,
-    callee_node_name: str,
-) -> Optional[FillContent]:
-    try:
-        filled_slots_map: FilledSlotsContext = context[FILLED_SLOTS_CONTENT_CONTEXT_KEY]
-    except KeyError:
-        raise TemplateSyntaxError(f"Attempted to render {callee_node_name} outside a parent component.")
-
-    slot_key = (component_id, slot_name)
-    return filled_slots_map.get(slot_key, None)
-
-
 def parse_slot_fill_nodes_from_component_nodelist(
     component_nodelist: NodeList,
     ComponentNodeCls: Type[Node],
@@ -305,7 +288,7 @@ def parse_slot_fill_nodes_from_component_nodelist(
     and `fill "second_fill"`.
     """
     fill_nodes: Sequence[FillNode] = []
-    if _block_has_content(component_nodelist):
+    if nodelist_has_content(component_nodelist):
         for parse_fn in (
             _try_parse_as_default_fill,
             _try_parse_as_named_fill_tag_set,
@@ -373,17 +356,6 @@ def _try_parse_as_default_fill(
         ]
 
 
-def _block_has_content(nodelist: NodeList) -> bool:
-    for node in nodelist:
-        if isinstance(node, TextNode) and node.s.isspace():
-            pass
-        elif isinstance(node, CommentNode):
-            pass
-        else:
-            return True
-    return False
-
-
 def render_component_template_with_slots(
     component_id: str,
     template: Template,
@@ -392,49 +364,29 @@ def render_component_template_with_slots(
     registered_name: Optional[str],
 ) -> str:
     """
-    Given a template, context, and slot fills, this function first prepares
-    the template to be able to render the fills in the place of slots, and then
-    renders the template with given context.
+    This function first prepares the template to be able to render the fills
+    in the place of slots, and then renders the template with given context.
 
-    NOTE: The template is mutated in the process!
+    NOTE: The nodes in the template are mutated in the process!
     """
-    prev_filled_slots_context: Optional[FilledSlotsContext] = context.get(FILLED_SLOTS_CONTENT_CONTEXT_KEY)
-    updated_filled_slots_context = _prepare_component_template_filled_slot_context(
-        component_id,
-        template,
-        fill_content,
-        prev_filled_slots_context,
-        registered_name,
-    )
-
-    with context.update({FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_filled_slots_context}):
-        return template.render(context)
-
-
-def _prepare_component_template_filled_slot_context(
-    component_id: str,
-    template: Template,
-    fill_content: Dict[str, FillContent],
-    slots_context: Optional[FilledSlotsContext],
-    registered_name: Optional[str],
-) -> FilledSlotsContext:
+    # ---- Prepare slot fills ---- 
     slot_name2fill_content = _collect_slot_fills_from_component_template(template, fill_content, registered_name)
 
     # Give slot nodes knowledge of their parent component.
+    for node in template.nodelist.get_nodes_by_type(IfSlotFilledConditionBranchNode):
+        if isinstance(node, IfSlotFilledConditionBranchNode):
             trace_msg("ASSOC", "IFSB", node.slot_name, node.node_id, component_id=component_id)
             node.component_id = component_id
 
-    # Return updated FILLED_SLOTS_CONTEXT map
-    filled_slots_map: Dict[FilledSlotsKey, FillContent] = {
-        (component_id, slot_name): content_data
-        for slot_name, content_data in slot_name2fill_content.items()
-        if content_data  # Slots whose content is None (i.e. unfilled) are dropped.
-    }
+    with context.update({}):
+        for slot_name, content_data in slot_name2fill_content.items():
+            # Slots whose content is None (i.e. unfilled) are dropped.
+            if not content_data:
+                continue
+            set_slot_fill(context, component_id, slot_name, content_data)
 
-    if slots_context is not None:
-        return slots_context.new_child(filled_slots_map)
-    else:
-        return ChainMap(filled_slots_map)
+        # ---- Render ----
+        return template.render(context)
 
 
 def _collect_slot_fills_from_component_template(

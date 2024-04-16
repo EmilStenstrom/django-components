@@ -20,18 +20,19 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
+from django_components.context import capture_root_context, set_root_context, get_root_context, set_slot_component_association
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
+from django_components.node import walk_nodelist
 from django_components.slots import (
     FillContent,
     FillNode,
     SlotName,
     SlotNode,
     render_component_template_with_slots,
-    OUTER_CONTEXT_CONTEXT_KEY,
     DEFAULT_SLOT_KEY,
 )
-from django_components.utils import search, walk_nodelist, gen_id
+from django_components.utils import search, gen_id
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
@@ -233,6 +234,12 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             return mark_safe(f"<script>{self.js}</script>")
         return mark_safe("\n".join(self.media.render_js()))
 
+    # NOTE: When the template is taken from a file (AKA
+    # specified via `template_name`), then we leverage
+    # Django's template caching. This means that the same
+    # instance of Template is reused. This is important to keep
+    # in mind, because the implication is that we should
+    # treat Templates AND their nodelists as IMMUTABLE.
     def get_template(self, context: Mapping) -> Template:
         template_string = self.get_template_string(context)
         if template_string is not None:
@@ -263,7 +270,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         def on_node(node: Node) -> None:
             if isinstance(node, SlotNode):
                 trace_msg("ASSOC", "SLOT", node.name, node.node_id, component_id=self.component_id)
-                node.component_id = self.component_id
+                set_slot_component_association(context, node.node_id, self.component_id)
 
         walk_nodelist(template.nodelist, on_node)
 
@@ -337,9 +344,7 @@ class ComponentNode(Node):
 
         # If this is the outer-/top-most component node, then save the outer context,
         # so it can be used by nested Slots.
-        root_ctx_already_defined = OUTER_CONTEXT_CONTEXT_KEY in context
-        if not root_ctx_already_defined:
-            context.push({OUTER_CONTEXT_CONTEXT_KEY: context.__copy__()})
+        capture_root_context(context)
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -373,9 +378,9 @@ class ComponentNode(Node):
             # Even if contexts are isolated, we still need to pass down the
             # original context so variables in slots can be rendered using
             # the original context.
-            orig_ctx = context
+            root_ctx = get_root_context(context)
             context = context.new()
-            context.push({OUTER_CONTEXT_CONTEXT_KEY: orig_ctx})
+            set_root_context(context, root_ctx)
 
         with context.update(component_context):
             rendered_component = component.render(context)
@@ -390,6 +395,6 @@ class ComponentNode(Node):
 
 
 def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
-    """Resolve FilterExpressions and Variables in context if possible.  Return other items unchanged."""
+    """Resolve FilterExpressions and Variables in context if possible. Return other items unchanged."""
 
     return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
