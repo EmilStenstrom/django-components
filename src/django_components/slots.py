@@ -1,12 +1,6 @@
 import difflib
 import json
-import sys
 from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Type, Union
-
-if sys.version_info[:2] < (3, 10):
-    from typing_extensions import TypeAlias
-else:
-    from typing import TypeAlias  # noqa # TODO: Is this required?
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
