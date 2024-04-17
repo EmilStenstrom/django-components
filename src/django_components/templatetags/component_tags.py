@@ -10,20 +10,22 @@ from django_components.app_settings import app_settings
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
+from django_components.logger import trace_msg
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
 from django_components.slots import (
+    FillNode,
     IfSlotFilledConditionBranchNode,
     IfSlotFilledElseBranchNode,
     IfSlotFilledNode,
-    NamedFillNode,
     SlotNode,
     _IfSlotFilledBranchNode,
     parse_slot_fill_nodes_from_component_nodelist,
 )
+from django_components.utils import gen_id
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -145,18 +147,27 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
             "Order of options is free."
         )
 
+    # Use a unique ID to be able to tie the fill nodes with components and slots
+    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
+    slot_id = gen_id()
+    trace_msg("PARSE", "SLOT", slot_name, slot_id)
+
     nodelist = parser.parse(parse_until=["endslot"])
     parser.delete_first_token()
-    return SlotNode(
+    slot_node = SlotNode(
         slot_name,
         nodelist,
         is_required=is_required,
         is_default=is_default,
+        node_id=slot_id,
     )
+
+    trace_msg("PARSE", "SLOT", slot_name, slot_id, "...Done!")
+    return slot_node
 
 
 @register.tag("fill")
-def do_fill(parser: Parser, token: Token) -> NamedFillNode:
+def do_fill(parser: Parser, token: Token) -> FillNode:
     """Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
     It exists to make component nesting easier.
@@ -179,14 +190,24 @@ def do_fill(parser: Parser, token: Token) -> NamedFillNode:
         alias_fexp = FilterExpression(alias, parser)
     else:
         raise TemplateSyntaxError(f"'{tag}' tag takes either 1 or 3 arguments: Received {len(args)}.")
+
+    # Use a unique ID to be able to tie the fill nodes with components and slots
+    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
+    fill_id = gen_id()
+    trace_msg("PARSE", "FILL", tgt_slot_name, fill_id)
+
     nodelist = parser.parse(parse_until=["endfill"])
     parser.delete_first_token()
 
-    return NamedFillNode(
+    fill_node = FillNode(
         nodelist,
         name_fexp=FilterExpression(tgt_slot_name, tag),
         alias_fexp=alias_fexp,
+        node_id=fill_id,
     )
+
+    trace_msg("PARSE", "FILL", tgt_slot_name, fill_id, "...Done!")
+    return fill_node
 
 
 @register.tag(name="component")
@@ -207,17 +228,31 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     bits = token.split_contents()
     bits, isolated_context = check_for_isolated_context_keyword(bits)
     component_name, context_args, context_kwargs = parse_component_with_args(parser, bits, "component")
+
+    # Use a unique ID to be able to tie the fill nodes with components and slots
+    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
+    component_id = gen_id()
+    trace_msg("PARSE", "COMP", component_name, component_id)
+
     body: NodeList = parser.parse(parse_until=["endcomponent"])
     parser.delete_first_token()
     fill_nodes = parse_slot_fill_nodes_from_component_nodelist(body, ComponentNode)
+
+    # Tag all fill nodes as children of this particular component instance
+    for node in fill_nodes:
+        trace_msg("ASSOC", "FILL", node.name_fexp, node.node_id, component_id=component_id)
+        node.component_id = component_id
+
     component_node = ComponentNode(
         FilterExpression(component_name, parser),
         context_args,
         context_kwargs,
         isolated_context=isolated_context,
         fill_nodes=fill_nodes,
+        component_id=component_id,
     )
 
+    trace_msg("PARSE", "COMP", component_name, component_id, "...Done!")
     return component_node
 
 

@@ -1320,8 +1320,8 @@ class IterationFillTest(SimpleTestCase):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
-            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
-            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
         template = Template(
@@ -1343,10 +1343,10 @@ class IterationFillTest(SimpleTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            OBJECT1_ITER1
-            OBJECT2_ITER1
-            OBJECT1_ITER2
-            OBJECT2_ITER2
+            ITER1_OBJ1
+            ITER1_OBJ2
+            ITER2_OBJ1
+            ITER2_OBJ2
             """,
         )
 
@@ -1354,8 +1354,8 @@ class IterationFillTest(SimpleTestCase):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
-            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
-            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
         template = Template(
@@ -1389,14 +1389,14 @@ class IterationFillTest(SimpleTestCase):
             """
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
-            OBJECT1_ITER1
+            ITER1_OBJ1
             OUTER_SCOPE_VARIABLE2
-            OBJECT2_ITER1
+            ITER1_OBJ2
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
-            OBJECT1_ITER2
+            ITER2_OBJ1
             OUTER_SCOPE_VARIABLE2
-            OBJECT2_ITER2
+            ITER2_OBJ2
             """,
         )
 
@@ -1404,8 +1404,8 @@ class IterationFillTest(SimpleTestCase):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
-            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
-            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
         template = Template(
@@ -1427,10 +1427,10 @@ class IterationFillTest(SimpleTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            OBJECT1_ITER1 default
-            OBJECT2_ITER1 default
-            OBJECT1_ITER2 default
-            OBJECT2_ITER2 default
+            ITER1_OBJ1 default
+            ITER1_OBJ2 default
+            ITER2_OBJ1 default
+            ITER2_OBJ2 default
             """,
         )
 
@@ -1440,8 +1440,8 @@ class IterationFillTest(SimpleTestCase):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
-            {"inner": ["OBJECT1_ITER1", "OBJECT2_ITER1"]},
-            {"inner": ["OBJECT1_ITER2", "OBJECT2_ITER2"]},
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
         template = Template(
@@ -1475,13 +1475,13 @@ class IterationFillTest(SimpleTestCase):
             """
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
-            OBJECT1_ITER1 default
+            ITER1_OBJ1 default
             OUTER_SCOPE_VARIABLE2
-            OBJECT2_ITER1 default
+            ITER1_OBJ2 default
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
-            OBJECT1_ITER2 default
+            ITER2_OBJ1 default
             OUTER_SCOPE_VARIABLE2
-            OBJECT2_ITER2 default
+            ITER2_OBJ2 default
             """,
         )

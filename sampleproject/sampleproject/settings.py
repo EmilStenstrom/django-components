@@ -80,6 +80,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "sampleproject.wsgi.application"
 
+# COMPONENTS = {
+#    "autodiscover": True,
+#    "libraries": [],
+#    "template_cache_size": 128,
+#    "context_behavior": "isolated",  # "global" | "isolated"
+#    "slot_context_behavior": "prefer_root",  # "allow_override" | "prefer_root" | "isolated"
+# }
+
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
