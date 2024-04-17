@@ -2,7 +2,7 @@ import inspect
 import os
 import sys
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -20,17 +20,24 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
-from django_components.logger import logger
+from django_components.context import (
+    capture_root_context,
+    get_root_context,
+    set_root_context,
+    set_slot_component_association,
+)
+from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
+from django_components.node import walk_nodelist
 from django_components.slots import (
-    DefaultFillContent,
-    ImplicitFillNode,
-    NamedFillContent,
-    NamedFillNode,
+    DEFAULT_SLOT_KEY,
+    FillContent,
+    FillNode,
     SlotName,
+    SlotNode,
     render_component_template_with_slots,
 )
-from django_components.utils import search
+from django_components.utils import gen_id, search
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
@@ -185,12 +192,14 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def __init__(
         self,
         registered_name: Optional[str] = None,
+        component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Union[DefaultFillContent, Iterable[NamedFillContent]] = (),  # type: ignore
+        fill_content: Dict[str, FillContent] = {},
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content
+        self.component_id = component_id or gen_id()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
@@ -230,6 +239,12 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             return mark_safe(f"<script>{self.js}</script>")
         return mark_safe("\n".join(self.media.render_js()))
 
+    # NOTE: When the template is taken from a file (AKA
+    # specified via `template_name`), then we leverage
+    # Django's template caching. This means that the same
+    # instance of Template is reused. This is important to keep
+    # in mind, because the implication is that we should
+    # treat Templates AND their nodelists as IMMUTABLE.
     def get_template(self, context: Mapping) -> Template:
         template_string = self.get_template_string(context)
         if template_string is not None:
@@ -246,7 +261,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     def render(
         self,
-        context_data: Dict[str, Any],
+        context_data: Union[Dict[str, Any], Context],
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
     ) -> str:
@@ -255,14 +270,25 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         context = context_data if isinstance(context_data, Context) else Context(context_data)
         template = self.get_template(context)
 
+        # Associate the slots with this component for this context
+        # This allows us to look up component-specific slot fills.
+        def on_node(node: Node) -> None:
+            if isinstance(node, SlotNode):
+                trace_msg("ASSOC", "SLOT", node.name, node.node_id, component_id=self.component_id)
+                set_slot_component_association(context, node.node_id, self.component_id)
+
+        walk_nodelist(template.nodelist, on_node)
+
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
 
-        return render_component_template_with_slots(template, context, self.fill_content, self.registered_name)
+        return render_component_template_with_slots(
+            self.component_id, template, context, self.fill_content, self.registered_name
+        )
 
     def render_to_response(
         self,
-        context_data: Dict[str, Any],
+        context_data: Union[Dict[str, Any], Context],
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
         *args: Any,
@@ -280,14 +306,13 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         escape_content: bool = True,
     ) -> None:
         """Fill component slots outside of template rendering."""
-        self.fill_content = [
-            (
-                slot_name,
+        self.fill_content = {
+            slot_name: FillContent(
                 TextNode(escape(content) if escape_content else content),
                 None,
             )
             for (slot_name, content) in slots_data.items()
-        ]
+        }
 
 
 class ComponentNode(Node):
@@ -299,20 +324,16 @@ class ComponentNode(Node):
         context_args: List[FilterExpression],
         context_kwargs: Mapping[str, FilterExpression],
         isolated_context: bool = False,
-        fill_nodes: Union[ImplicitFillNode, Iterable[NamedFillNode]] = (),
+        fill_nodes: Optional[List[FillNode]] = None,
+        component_id: Optional[str] = None,
     ) -> None:
+        self.component_id = component_id or gen_id()
         self.name_fexp = name_fexp
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
-        self.fill_nodes = fill_nodes
-        self.nodelist = self._create_nodelist(fill_nodes)
-
-    def _create_nodelist(self, fill_nodes: Union[Iterable[Node], ImplicitFillNode]) -> NodeList:
-        if isinstance(fill_nodes, ImplicitFillNode):
-            return NodeList([fill_nodes])
-        else:
-            return NodeList(fill_nodes)
+        self.fill_nodes = fill_nodes or []
+        self.nodelist = NodeList(fill_nodes)
 
     def __repr__(self) -> str:
         return "<ComponentNode: {}. Contents: {!r}>".format(
@@ -321,8 +342,14 @@ class ComponentNode(Node):
         )
 
     def render(self, context: Context) -> str:
+        trace_msg("RENDR", "COMP", self.name_fexp, self.component_id)
+
         resolved_component_name = self.name_fexp.resolve(context)
         component_cls: Type[Component] = registry.get(resolved_component_name)
+
+        # If this is the outer-/top-most component node, then save the outer context,
+        # so it can be used by nested Slots.
+        capture_root_context(context)
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -330,37 +357,49 @@ class ComponentNode(Node):
         resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
         resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
 
-        if isinstance(self.fill_nodes, ImplicitFillNode):
-            fill_content = self.fill_nodes.nodelist
+        is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
+        if is_default_slot:
+            fill_content: Dict[str, FillContent] = {DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)}
         else:
-            fill_content = []
+            fill_content = {}
             for fill_node in self.fill_nodes:
                 # Note that outer component context is used to resolve variables in
                 # fill tag.
                 resolved_name = fill_node.name_fexp.resolve(context)
                 resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
-                fill_content.append((resolved_name, fill_node.nodelist, resolved_fill_alias))
+                fill_content[resolved_name] = FillContent(fill_node.nodelist, resolved_fill_alias)
 
         component: Component = component_cls(
             registered_name=resolved_component_name,
             outer_context=context,
             fill_content=fill_content,
+            component_id=self.component_id,
         )
 
         component_context: dict = component.get_context_data(*resolved_context_args, **resolved_context_kwargs)
 
+        # Prevent outer context from leaking into the template of the component
         if self.isolated_context:
+            # Even if contexts are isolated, we still need to pass down the
+            # original context so variables in slots can be rendered using
+            # the original context.
+            root_ctx = get_root_context(context)
             context = context.new()
+            set_root_context(context, root_ctx)
+
         with context.update(component_context):
             rendered_component = component.render(context)
 
         if is_dependency_middleware_active():
-            return RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name) + rendered_component
+            output = RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name) + rendered_component
         else:
-            return rendered_component
+            output = rendered_component
+
+        trace_msg("RENDR", "COMP", self.name_fexp, self.component_id, "...Done!")
+        return output
 
 
 def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
-    """Resolve FilterExpressions and Variables in context if possible.  Return other items unchanged."""
+    """Resolve FilterExpressions and Variables in context if possible. Return other items unchanged."""
 
     return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
