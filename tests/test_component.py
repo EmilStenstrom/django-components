@@ -8,14 +8,14 @@ from django.test import override_settings
 
 # isort: off
 from .django_test_setup import *  # NOQA
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 
 # isort: on
 
 from django_components import component
 
 
-class ComponentTest(SimpleTestCase):
+class ComponentTest(BaseTestCase):
     def test_empty_component(self):
         class EmptyComponent(component.Component):
             pass
@@ -260,7 +260,7 @@ class ComponentTest(SimpleTestCase):
         )
 
 
-class InlineComponentTest(SimpleTestCase):
+class InlineComponentTest(BaseTestCase):
     def test_inline_html_component(self):
         class InlineHTMLComponent(component.Component):
             template = "<div class='inline'>Hello Inline</div>"
@@ -382,7 +382,7 @@ class InlineComponentTest(SimpleTestCase):
         )
 
 
-class ComponentMediaTests(SimpleTestCase):
+class ComponentMediaTests(BaseTestCase):
     def test_component_media_with_strings(self):
         class SimpleComponent(component.Component):
             class Media:
@@ -491,7 +491,7 @@ class ComponentMediaTests(SimpleTestCase):
         )
 
 
-class ComponentIsolationTests(SimpleTestCase):
+class ComponentIsolationTests(BaseTestCase):
     def setUp(self):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
@@ -539,7 +539,7 @@ class ComponentIsolationTests(SimpleTestCase):
         )
 
 
-class SlotBehaviorTests(SimpleTestCase):
+class SlotBehaviorTests(BaseTestCase):
     def setUp(self):
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"

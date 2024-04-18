@@ -6,7 +6,7 @@ from django.template import Context, Template, TemplateSyntaxError
 
 # isort: off
 from .django_test_setup import *  # NOQA
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 
 # isort: on
 
@@ -85,7 +85,7 @@ class ComponentWithDefaultAndRequiredSlot(component.Component):
     template_name = "template_with_default_and_required_slot.html"
 
 
-class ComponentTemplateTagTest(SimpleTestCase):
+class ComponentTemplateTagTest(BaseTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
@@ -202,7 +202,7 @@ class ComponentTemplateTagTest(SimpleTestCase):
             template.render(Context({}))
 
 
-class ComponentSlottedTemplateTagTest(SimpleTestCase):
+class ComponentSlottedTemplateTagTest(BaseTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
@@ -522,7 +522,7 @@ class ComponentSlottedTemplateTagTest(SimpleTestCase):
                 raise e
 
 
-class SlottedTemplateRegressionTests(SimpleTestCase):
+class SlottedTemplateRegressionTests(BaseTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
@@ -565,7 +565,7 @@ class SlottedTemplateRegressionTests(SimpleTestCase):
         )
 
 
-class MultiComponentTests(SimpleTestCase):
+class MultiComponentTests(BaseTestCase):
     def setUp(self):
         component.registry.clear()
 
@@ -623,7 +623,7 @@ class MultiComponentTests(SimpleTestCase):
         self.assertHTMLEqual(rendered, self.expected_result("", second_slot_content))
 
 
-class TemplateInstrumentationTest(SimpleTestCase):
+class TemplateInstrumentationTest(BaseTestCase):
     saved_render_method: Callable  # Assigned during setup.
 
     @classmethod
@@ -685,7 +685,7 @@ class TemplateInstrumentationTest(SimpleTestCase):
         self.assertIn("simple_template.html", templates_used)
 
 
-class NestedSlotTests(SimpleTestCase):
+class NestedSlotTests(BaseTestCase):
     class NestedComponent(component.Component):
         template_name = "nested_slot_template.html"
 
@@ -744,7 +744,7 @@ class NestedSlotTests(SimpleTestCase):
         self.assertHTMLEqual(rendered, "<p>Override</p>")
 
 
-class ConditionalSlotTests(SimpleTestCase):
+class ConditionalSlotTests(BaseTestCase):
     class ConditionalComponent(component.Component):
         template_name = "conditional_template.html"
 
@@ -819,7 +819,7 @@ class ConditionalSlotTests(SimpleTestCase):
         self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
 
 
-class SlotSuperTests(SimpleTestCase):
+class SlotSuperTests(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -906,7 +906,7 @@ class SlotSuperTests(SimpleTestCase):
         )
 
 
-class TemplateSyntaxErrorTests(SimpleTestCase):
+class TemplateSyntaxErrorTests(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -1013,7 +1013,7 @@ class TemplateSyntaxErrorTests(SimpleTestCase):
             ).render(Context({}))
 
 
-class ComponentNestingTests(SimpleTestCase):
+class ComponentNestingTests(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
@@ -1081,7 +1081,7 @@ class ComponentNestingTests(SimpleTestCase):
         self.assertHTMLEqual(rendered, expected)
 
 
-class ConditionalIfFilledSlotsTests(SimpleTestCase):
+class ConditionalIfFilledSlotsTests(BaseTestCase):
     class ComponentWithConditionalSlots(component.Component):
         template_name = "template_with_conditional_slots.html"
 
@@ -1197,7 +1197,7 @@ class ConditionalIfFilledSlotsTests(SimpleTestCase):
         self.assertHTMLEqual(rendered, expected)
 
 
-class RegressionTests(SimpleTestCase):
+class RegressionTests(BaseTestCase):
     """Ensure we don't break the same thing AGAIN."""
 
     def setUp(self):
@@ -1244,7 +1244,7 @@ class RegressionTests(SimpleTestCase):
         self.assertHTMLEqual(rendered, expected)
 
 
-class IterationFillTest(SimpleTestCase):
+class IterationFillTest(BaseTestCase):
     """Tests a behaviour of {% fill .. %} tag which is inside a template {% for .. %} loop."""
 
     class ComponentSimpleSlotInALoop(django_components.component.Component):

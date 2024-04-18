@@ -7,7 +7,7 @@ from django.urls import include, path
 
 # isort: off
 from .django_test_setup import *  # noqa
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 
 # isort: on
 
@@ -110,7 +110,7 @@ class CustomClient(Client):
         super().__init__(*args, **kwargs)
 
 
-class TestComponentAsView(SimpleTestCase):
+class TestComponentAsView(BaseTestCase):
     def setUp(self):
         self.client = CustomClient()
 

@@ -9,7 +9,7 @@ from django_components.middleware import ComponentDependencyMiddleware
 
 from .django_test_setup import *  # NOQA
 from .test_templatetags import SimpleComponent
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 from .testutils import create_and_process_template_response
 
 
@@ -44,7 +44,7 @@ class MultistyleComponent(component.Component):
 
 
 @override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
-class ComponentMediaRenderingTests(SimpleTestCase):
+class ComponentMediaRenderingTests(BaseTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()

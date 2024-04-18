@@ -6,7 +6,7 @@ from django.test import override_settings
 from django_components import component
 
 from .django_test_setup import *  # NOQA
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 
 
 class SimpleComponent(component.Component):
@@ -77,7 +77,7 @@ component.registry.register(name="simple_component", component=SimpleComponent)
 component.registry.register(name="outer_context_component", component=OuterContextComponent)
 
 
-class ContextTests(SimpleTestCase):
+class ContextTests(BaseTestCase):
     def test_nested_component_context_shadows_parent_with_unfilled_slots_and_component_tag(
         self,
     ):
@@ -198,7 +198,7 @@ class ContextTests(SimpleTestCase):
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
 
-class ParentArgsTests(SimpleTestCase):
+class ParentArgsTests(BaseTestCase):
     def test_parent_args_can_be_drawn_from_context(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -241,7 +241,7 @@ class ParentArgsTests(SimpleTestCase):
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
 
-class ContextCalledOnceTests(SimpleTestCase):
+class ContextCalledOnceTests(BaseTestCase):
     def test_one_context_call_with_simple_component(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -302,7 +302,7 @@ class ContextCalledOnceTests(SimpleTestCase):
         )
 
 
-class ComponentsCanAccessOuterContext(SimpleTestCase):
+class ComponentsCanAccessOuterContext(BaseTestCase):
     def test_simple_component_can_use_outer_context(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -312,7 +312,7 @@ class ComponentsCanAccessOuterContext(SimpleTestCase):
         self.assertIn("outer_value", rendered, rendered)
 
 
-class IsolatedContextTests(SimpleTestCase):
+class IsolatedContextTests(BaseTestCase):
     def test_simple_component_can_pass_outer_context_in_args(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -330,7 +330,7 @@ class IsolatedContextTests(SimpleTestCase):
         self.assertNotIn("outer_value", rendered, rendered)
 
 
-class IsolatedContextSettingTests(SimpleTestCase):
+class IsolatedContextSettingTests(BaseTestCase):
     def setUp(self):
         self.patcher = patch(
             "django_components.app_settings.AppSettings.CONTEXT_BEHAVIOR",
@@ -385,7 +385,7 @@ class IsolatedContextSettingTests(SimpleTestCase):
         self.assertNotIn("outer_value", rendered, rendered)
 
 
-class OuterContextPropertyTests(SimpleTestCase):
+class OuterContextPropertyTests(BaseTestCase):
     @override_settings(
         COMPONENTS={"context_behavior": "global"},
     )
