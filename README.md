@@ -144,10 +144,10 @@ Django-components supports all supported combinations versions of [Django](https
 
 | Python version | Django version           |
 |----------------|--------------------------|
-| 3.8            | 3.2, 4.0, 4.1, 4.2       |
-| 3.9            | 3.2, 4.0, 4.1, 4.2       |
-| 3.10           | 3.2, 4.0, 4.1, 4.2, 5.0  |
-| 3.11           | 4.1, 4.2, 5.0            |
+| 3.8            | 4.2                      |
+| 3.9            | 4.2                      |
+| 3.10           | 4.2, 5.0                 |
+| 3.11           | 4.2, 5.0                 |
 | 3.12           | 4.2, 5.0                 |
 
 ## Create your first component
