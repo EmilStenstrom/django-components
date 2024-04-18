@@ -9,8 +9,7 @@ from django_components.middleware import ComponentDependencyMiddleware
 
 from .django_test_setup import *  # NOQA
 from .test_templatetags import SimpleComponent
-from .testutils import BaseTestCase
-from .testutils import create_and_process_template_response
+from .testutils import BaseTestCase, create_and_process_template_response
 
 
 class SimpleComponentAlternate(component.Component):

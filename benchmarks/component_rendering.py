@@ -6,8 +6,7 @@ from django.test import override_settings
 from django_components import component
 from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from tests.django_test_setup import *  # NOQA
-from tests.testutils import BaseTestCase
-from tests.testutils import create_and_process_template_response
+from tests.testutils import BaseTestCase, create_and_process_template_response
 
 
 class SlottedComponent(component.Component):
