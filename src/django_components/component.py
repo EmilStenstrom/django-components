@@ -21,9 +21,8 @@ from django.views import View
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
 from django_components.context import (
-    capture_root_context,
-    get_root_context,
-    set_root_context,
+    prepare_context,
+    make_isolated_context_copy,
     set_slot_component_association,
 )
 from django_components.logger import logger, trace_msg
@@ -268,6 +267,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
         context = context_data if isinstance(context_data, Context) else Context(context_data)
+        prepare_context(context, outer_context=self.outer_context or Context())
         template = self.get_template(context)
 
         # Associate the slots with this component for this context
@@ -347,10 +347,6 @@ class ComponentNode(Node):
         resolved_component_name = self.name_fexp.resolve(context)
         component_cls: Type[Component] = registry.get(resolved_component_name)
 
-        # If this is the outer-/top-most component node, then save the outer context,
-        # so it can be used by nested Slots.
-        capture_root_context(context)
-
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
         # to get values to insert into the context
@@ -380,12 +376,7 @@ class ComponentNode(Node):
 
         # Prevent outer context from leaking into the template of the component
         if self.isolated_context:
-            # Even if contexts are isolated, we still need to pass down the
-            # original context so variables in slots can be rendered using
-            # the original context.
-            root_ctx = get_root_context(context)
-            context = context.new()
-            set_root_context(context, root_ctx)
+            context = make_isolated_context_copy(context)
 
         with context.update(component_context):
             rendered_component = component.render(context)

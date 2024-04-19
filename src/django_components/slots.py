@@ -10,7 +10,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import SlotContextBehavior, app_settings
-from django_components.context import get_root_context, get_slot_component_association, get_slot_fill, set_slot_fill
+from django_components.context import get_outer_context, get_slot_component_association, get_slot_fill, set_slot_fill
 from django_components.logger import trace_msg
 from django_components.node import nodelist_has_content
 from django_components.utils import gen_id
@@ -139,7 +139,7 @@ class SlotNode(Node):
 
         See SlotContextBehavior for the description of each option.
         """
-        root_ctx = get_root_context(context) or Context()
+        root_ctx = get_outer_context(context) or Context()
 
         if app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ALLOW_OVERRIDE:
             return context
