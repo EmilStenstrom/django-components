@@ -6,7 +6,7 @@ from django.urls import include, path
 
 # isort: off
 from .django_test_setup import settings
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 
 # isort: on
 
@@ -18,7 +18,7 @@ urlpatterns = [
 ]
 
 
-class TestAutodiscover(SimpleTestCase):
+class TestAutodiscover(BaseTestCase):
     def setUp(self):
         settings.SETTINGS_MODULE = "tests.test_autodiscover"  # noqa
 
@@ -38,7 +38,7 @@ class TestAutodiscover(SimpleTestCase):
         self.assertEqual(imported_components_count, 1)
 
 
-class TestLoaderSettingsModule(SimpleTestCase):
+class TestLoaderSettingsModule(BaseTestCase):
     def tearDown(self) -> None:
         del settings.SETTINGS_MODULE  # noqa
 
@@ -106,7 +106,7 @@ class TestLoaderSettingsModule(SimpleTestCase):
         )
 
 
-class TestBaseDir(SimpleTestCase):
+class TestBaseDir(BaseTestCase):
     def setUp(self):
         settings.BASE_DIR = Path(__file__).parent.resolve() / "test_structures" / "test_structure_1"  # noqa
         settings.SETTINGS_MODULE = "tests_fake.test_autodiscover_fake"  # noqa
@@ -125,7 +125,7 @@ class TestBaseDir(SimpleTestCase):
         self.assertEqual(sorted(dirs), sorted(expected))
 
 
-class TestFilepathToPythonModule(SimpleTestCase):
+class TestFilepathToPythonModule(BaseTestCase):
     def test_prepares_path(self):
         self.assertEqual(
             _filepath_to_python_module(Path("tests.py")),

@@ -1,7 +1,7 @@
 import re
 import textwrap
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 from urllib import request
 
 Version = Tuple[int, ...]
@@ -37,7 +37,7 @@ def get_python_supported_version(url: str) -> list[Version]:
     return parse_supported_versions(content)
 
 
-def get_supported_versions(url: str):
+def get_django_to_pythoon_versions(url: str):
     with request.urlopen(url) as response:
         response_content = response.read()
 
@@ -64,6 +64,32 @@ def get_supported_versions(url: str):
         return django_to_python
 
     return parse_supported_versions(content)
+
+
+def get_django_supported_versions(url: str) -> List[Tuple[int, ...]]:
+    """Extract Django versions from the HTML content, e.g. `5.0` or `4.2`"""
+    with request.urlopen(url) as response:
+        response_content = response.read()
+
+    content = response_content.decode("utf-8")
+    content = cut_by_content(
+        content,
+        "<table class='django-supported-versions'>",
+        "</table>",
+    )
+
+    rows = re.findall(r"<tr>(.*?)</tr>", content.replace("\n", " "))
+    versions: List[Tuple[int, ...]] = []
+    # NOTE: Skip first row as that's headers
+    for row in rows[1:]:
+        data: List[str] = re.findall(r"<td>(.*?)</td>", row)
+        # NOTE: First column is version like `5.0` or `4.2 LTS`
+        version_with_test = data[0]
+        version = version_with_test.split(" ")[0]
+        version_tuple = tuple(map(int, version.split(".")))
+        versions.append(version_tuple)
+
+    return versions
 
 
 def get_latest_version(url: str):
@@ -200,14 +226,20 @@ def build_ci_python_versions(python_to_django: Dict[str, str]):
     return lines_formatted
 
 
+def filter_dict(d: Dict, filter_fn: Callable[[Any], bool]):
+    return dict(filter(filter_fn, d.items()))
+
+
 def main():
     active_python = get_python_supported_version("https://devguide.python.org/versions/")
-    django_to_python = get_supported_versions("https://docs.djangoproject.com/en/dev/faq/install/")
+    django_to_python = get_django_to_pythoon_versions("https://docs.djangoproject.com/en/dev/faq/install/")
+    django_supported_versions = get_django_supported_versions("https://www.djangoproject.com/download/")
     latest_version = get_latest_version("https://www.djangoproject.com/download/")
 
-    python_to_django = build_python_to_django(django_to_python, latest_version)
+    supported_django_to_python = filter_dict(django_to_python, lambda item: item[0] in django_supported_versions)
+    python_to_django = build_python_to_django(supported_django_to_python, latest_version)
 
-    python_to_django = dict(filter(lambda item: item[0] in active_python, python_to_django.items()))
+    python_to_django = filter_dict(python_to_django, lambda item: item[0] in active_python)
 
     tox_envlist = build_tox_envlist(python_to_django)
     print("Add this to tox.ini:\n")

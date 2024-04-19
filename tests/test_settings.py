@@ -1,10 +1,10 @@
 from django.conf import settings
 
 from .django_test_setup import *  # NOQA
-from .testutils import Django30CompatibleSimpleTestCase as SimpleTestCase
+from .testutils import BaseTestCase
 
 
-class ValidateWrongContextBehaviorValueTestCase(SimpleTestCase):
+class ValidateWrongContextBehaviorValueTestCase(BaseTestCase):
     def setUp(self) -> None:
         settings.COMPONENTS["context_behavior"] = "invalid_value"
         return super().setUp()
@@ -20,7 +20,7 @@ class ValidateWrongContextBehaviorValueTestCase(SimpleTestCase):
             app_settings.CONTEXT_BEHAVIOR
 
 
-class ValidateCorrectContextBehaviorValueTestCase(SimpleTestCase):
+class ValidateCorrectContextBehaviorValueTestCase(BaseTestCase):
     def setUp(self) -> None:
         settings.COMPONENTS["context_behavior"] = "isolated"
         return super().setUp()

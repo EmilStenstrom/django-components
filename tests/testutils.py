@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from django.template import Context
 from django.template.response import TemplateResponse
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase
 
 from django_components.middleware import ComponentDependencyMiddleware
 
@@ -11,21 +11,8 @@ response_stash = None
 middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash)
 
 
-class Django30CompatibleSimpleTestCase(SimpleTestCase):
-    def assertHTMLEqual(self, left, right):
-        left = left.replace(' type="text/javascript"', "")
-        left = left.replace(' type="text/css"', "")
-        right = right.replace(' type="text/javascript"', "")
-        right = right.replace(' type="text/css"', "")
-        super(Django30CompatibleSimpleTestCase, self).assertHTMLEqual(left, right)
-
-    def assertInHTML(self, needle, haystack, count=None, msg_prefix=""):
-        haystack = haystack.replace(' type="text/javascript"', "")
-        haystack = haystack.replace(' type="text/css"', "")
-        super().assertInHTML(needle, haystack, count, msg_prefix)
-
-
-class Django30CompatibleTestCase(Django30CompatibleSimpleTestCase, TestCase):
+# TODO: Use this class to manage component registry cleanup before/after tests.
+class BaseTestCase(SimpleTestCase):
     pass
 
 
