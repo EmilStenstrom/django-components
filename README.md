@@ -118,7 +118,7 @@ STATICFILES_DIRS = [
 
 ### Optional
 
-To avoid loading the app in each template using ``` {% load django_components %} ```, you can add the tag as a 'builtin' in settings.py
+To avoid loading the app in each template using ``` {% load component_tags %} ```, you can add the tag as a 'builtin' in settings.py
 
 ```python
 TEMPLATES = [
