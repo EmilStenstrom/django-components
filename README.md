@@ -480,7 +480,7 @@ Then, to use this component as a view, you should create a `urls.py` file in you
 ```python
 # In a file called [project root]/components/urls.py
 from django.urls import path
-from calendar import Calendar
+from components.calendar.calendar import Calendar
 
 urlpatterns = [
     path("calendar/", Calendar.as_view()),
