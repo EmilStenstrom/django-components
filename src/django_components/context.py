@@ -5,7 +5,6 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
-from copy import copy
 from typing import TYPE_CHECKING, Optional
 
 from django.template import Context
@@ -22,7 +21,7 @@ _SLOT_COMPONENT_ASSOC_KEY = "_DJANGO_COMPONENTS_SLOT_COMP_ASSOC"
 
 
 def prepare_context(context: Context, outer_context: Context) -> None:
-    """Initialize the internal context state. """
+    """Initialize the internal context state."""
     # This is supposed to run ALWAYS at Component.render
     set_outer_context(context, outer_context)
 
@@ -31,6 +30,19 @@ def prepare_context(context: Context, outer_context: Context) -> None:
     # This is shared across the whole render chain, thus we set it only once.
     if _SLOT_COMPONENT_ASSOC_KEY not in context:
         context[_SLOT_COMPONENT_ASSOC_KEY] = {}
+
+    # If we're inside a forloop, we need to make a disposable copy of slot -> comp
+    # mapping, which can be modified in the loop. We do so by copying it onto the latest
+    # context layer.
+    #
+    # This is necessary, because otherwise if we have a nested loop with a same
+    # component used recursively, the inner slot -> comp mapping would leak into the outer.
+    #
+    # NOTE: If you ever need to debug this, insert a print/debug statement into
+    # `django.template.defaulttags.ForNode.render` to inspect the context object
+    # inside the for loop.
+    if "forloop" in context:
+        context.dicts[-1][_SLOT_COMPONENT_ASSOC_KEY] = context[_SLOT_COMPONENT_ASSOC_KEY].copy()
 
 
 def make_isolated_context_copy(context: Context) -> Context:
@@ -79,7 +91,7 @@ def get_outer_context(context: Context) -> Optional[Context]:
     return context.get(_OUTER_CONTEXT_CONTEXT_KEY)
 
 
-def set_outer_context(context: Context, outer_ctx: Context | None) -> None:
+def set_outer_context(context: Context, outer_ctx: Optional[Context]) -> None:
     """
     Use this function to set the outer context.
 

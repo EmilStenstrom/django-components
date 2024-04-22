@@ -20,11 +20,7 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
-from django_components.context import (
-    prepare_context,
-    make_isolated_context_copy,
-    set_slot_component_association,
-)
+from django_components.context import make_isolated_context_copy, prepare_context, set_slot_component_association
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.node import walk_nodelist
