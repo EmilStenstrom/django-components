@@ -1,5 +1,5 @@
-from unittest.mock import Mock
 from typing import List
+from unittest.mock import Mock
 
 from django.template import Context, Node
 from django.template.response import TemplateResponse
