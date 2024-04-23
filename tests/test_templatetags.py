@@ -3,6 +3,7 @@ import textwrap
 from typing import Callable, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
+from django.test import override_settings
 
 # isort: off
 from .django_test_setup import *  # NOQA
@@ -1047,6 +1048,36 @@ class ComponentNestingTests(BaseTestCase):
             <li>1</li>
             <li>2</li>
             <li>3</li>
+          </ol>
+        </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @override_settings(
+        COMPONENTS = {
+            "context_behavior": "isolated",
+            "slot_context_behavior": "isolated",
+        }
+    )
+    def test_component_nesting_slot_inside_component_fill_isolated(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "dashboard" %}{% endcomponent %}
+            """
+        )
+        rendered = template.render(Context({"items": [1, 2, 3]}))
+        expected = """
+        <div class="dashboard-component">
+          <div class="calendar-component">
+            <h1>
+              Welcome to your dashboard!
+            </h1>
+            <main>
+              Here are your to-do items for today:
+            </main>
+          </div>
+          <ol>
           </ol>
         </div>
         """
