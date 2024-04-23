@@ -118,7 +118,7 @@ STATICFILES_DIRS = [
 
 ### Optional
 
-To avoid loading the app in each template using ``` {% load django_components %} ```, you can add the tag as a 'builtin' in settings.py
+To avoid loading the app in each template using ``` {% load component_tags %} ```, you can add the tag as a 'builtin' in settings.py
 
 ```python
 TEMPLATES = [
@@ -480,7 +480,7 @@ Then, to use this component as a view, you should create a `urls.py` file in you
 ```python
 # In a file called [project root]/components/urls.py
 from django.urls import path
-from calendar import Calendar
+from components.calendar.calendar import Calendar
 
 urlpatterns = [
     path("calendar/", Calendar.as_view()),
