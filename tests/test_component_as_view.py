@@ -13,10 +13,10 @@ from .testutils import BaseTestCase
 
 from django_components import component
 
-
 #########################
 # COMPONENTS
 #########################
+
 
 class MockComponentRequest(component.Component):
     template = """
@@ -113,6 +113,7 @@ class CustomClient(Client):
 #########################
 # TESTS
 #########################
+
 
 class TestComponentAsView(BaseTestCase):
     @classmethod

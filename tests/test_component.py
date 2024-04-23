@@ -14,7 +14,6 @@ from .testutils import BaseTestCase, autodiscover_with_cleanup
 
 from django_components import component
 
-
 #########################
 # COMPONENTS
 #########################
@@ -42,6 +41,7 @@ class VariableDisplay(component.Component):
 #########################
 # TESTS
 #########################
+
 
 class ComponentTest(BaseTestCase):
     @classmethod
@@ -78,14 +78,14 @@ class ComponentTest(BaseTestCase):
             """
                 <link href="style.css" media="all" rel="stylesheet">
                 <script src="script.js"></script>
-            """
+            """,
         )
 
         self.assertHTMLEqual(
             comp.render(context),
             """
             Variable: <strong>test</strong>
-            """
+            """,
         )
 
     def test_css_only_component(self):
@@ -101,7 +101,7 @@ class ComponentTest(BaseTestCase):
             comp.render_dependencies(),
             """
             <link href="style.css" media="all" rel="stylesheet">
-            """
+            """,
         )
 
     def test_js_only_component(self):
@@ -117,7 +117,7 @@ class ComponentTest(BaseTestCase):
             comp.render_dependencies(),
             """
             <script src="script.js"></script>
-            """
+            """,
         )
 
     def test_empty_media_component(self):
@@ -154,7 +154,7 @@ class ComponentTest(BaseTestCase):
             <link href="style2.css" media="all" rel="stylesheet">
             <script src="script.js"></script>
             <script src="script2.js"></script>
-            """
+            """,
         )
 
     def test_component_with_filtered_template(self):
@@ -175,7 +175,7 @@ class ComponentTest(BaseTestCase):
             """
             Var1: <strong>test1</strong>
             Var2 (uppercased): <strong>TEST2</strong>
-            """
+            """,
         )
 
     def test_component_with_dynamic_template(self):
@@ -196,13 +196,13 @@ class ComponentTest(BaseTestCase):
             comp.render(Context(comp.get_context_data(name="dynamic1"))),
             """
             <svg>Dynamic1</svg>
-            """
+            """,
         )
         self.assertHTMLEqual(
             comp.render(Context(comp.get_context_data(name="dynamic2"))),
             """
             <svg>Dynamic2</svg>
-            """
+            """,
         )
 
     # Settings required for autodiscover to work
@@ -347,7 +347,7 @@ class InlineComponentTest(BaseTestCase):
             """
             <link href="path/to/style.css" media="all" rel="stylesheet">
             <script src="path/to/script.js"></script>
-            """
+            """,
         )
 
     def test_html_js_string_with_css_file(self):
@@ -368,7 +368,7 @@ class InlineComponentTest(BaseTestCase):
             """
             <link href="path/to/style.css" media="all" rel="stylesheet">
             <script>console.log('HTML and JS only');</script>
-            """
+            """,
         )
 
     def test_html_css_string_with_js_file(self):
@@ -388,7 +388,7 @@ class InlineComponentTest(BaseTestCase):
             comp.render_dependencies(),
             """
             <style>.html-string-file { color: blue; }</style><script src="path/to/script.js"></script>
-            """
+            """,
         )
 
     def test_component_with_variable_in_html(self):
@@ -417,7 +417,7 @@ class ComponentMediaTests(BaseTestCase):
             """
             <link href="path/to/style.css" media="all" rel="stylesheet">
             <script src="path/to/script.js"></script>
-            """
+            """,
         )
 
     def test_component_media_with_lists(self):
@@ -433,7 +433,7 @@ class ComponentMediaTests(BaseTestCase):
             <link href="path/to/style.css" media="all" rel="stylesheet">
             <link href="path/to/style2.css" media="all" rel="stylesheet">
             <script src="path/to/script.js"></script>
-            """
+            """,
         )
 
     def test_component_media_with_dict_and_list(self):
@@ -454,7 +454,7 @@ class ComponentMediaTests(BaseTestCase):
             <link href="path/to/style2.css" media="print" rel="stylesheet">
             <link href="path/to/style3.css" media="screen" rel="stylesheet">
             <script src="path/to/script.js"></script>
-            """
+            """,
         )
 
     def test_component_media_with_dict_with_list_and_list(self):
@@ -469,7 +469,7 @@ class ComponentMediaTests(BaseTestCase):
             """
             <link href="path/to/style.css" media="all" rel="stylesheet">
             <script src="path/to/script.js"></script>
-            """
+            """,
         )
 
     # Settings required for autodiscover to work
@@ -499,7 +499,7 @@ class ComponentMediaTests(BaseTestCase):
                     <input type="text" name="variable" value="test">
                     <input type="submit">
                 </form>
-                """
+                """,
             )
 
 

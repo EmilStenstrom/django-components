@@ -8,8 +8,8 @@ from django.template.response import TemplateResponse
 from django.test import SimpleTestCase
 
 from django_components import autodiscover
-from django_components.middleware import ComponentDependencyMiddleware
 from django_components.component_registry import registry
+from django_components.middleware import ComponentDependencyMiddleware
 
 # Create middleware instance
 response_stash = None

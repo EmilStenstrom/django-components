@@ -8,10 +8,10 @@ from django_components import component
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase
 
-
 #########################
 # COMPONENTS
 #########################
+
 
 class SimpleComponent(component.Component):
     template_name = "simple_template.html"
@@ -76,6 +76,7 @@ class OuterContextComponent(component.Component):
 #########################
 # TESTS
 #########################
+
 
 class ContextTests(BaseTestCase):
     @classmethod
