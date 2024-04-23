@@ -1054,7 +1054,7 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(
-        COMPONENTS = {
+        COMPONENTS={
             "context_behavior": "isolated",
             "slot_context_behavior": "isolated",
         }
