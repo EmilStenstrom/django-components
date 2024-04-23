@@ -12,9 +12,11 @@ response_stash = None
 middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash)
 
 
-# TODO: Use this class to manage component registry cleanup before/after tests.
 class BaseTestCase(SimpleTestCase):
-    pass
+    @classmethod
+    def setUpClass(self) -> None:
+        registry.clear()
+        return super().setUpClass()
 
 
 request = Mock()

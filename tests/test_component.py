@@ -15,7 +15,41 @@ from .testutils import BaseTestCase
 from django_components import component
 
 
+#########################
+# COMPONENTS
+#########################
+
+
+class ParentComponent(component.Component):
+    template_name = "parent_template.html"
+
+    def get_context_data(self):
+        return {"shadowing_variable": "NOT SHADOWED"}
+
+
+class VariableDisplay(component.Component):
+    template_name = "variable_display.html"
+
+    def get_context_data(self, shadowing_variable=None, new_variable=None):
+        context = {}
+        if shadowing_variable is not None:
+            context["shadowing_variable"] = shadowing_variable
+        if new_variable is not None:
+            context["unique_variable"] = new_variable
+        return context
+
+
+#########################
+# TESTS
+#########################
+
 class ComponentTest(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="parent_component", component=ParentComponent)
+        component.registry.register(name="variable_display", component=VariableDisplay)
+
     def test_empty_component(self):
         class EmptyComponent(component.Component):
             pass

@@ -14,7 +14,10 @@ from .testutils import BaseTestCase
 from django_components import component
 
 
-@component.register("testcomponent")
+#########################
+# COMPONENTS
+#########################
+
 class MockComponentRequest(component.Component):
     template = """
         <form method="post">
@@ -35,7 +38,6 @@ class MockComponentRequest(component.Component):
         return {"variable": variable}
 
 
-@component.register("testcomponent_slot")
 class MockComponentSlot(component.Component):
     template = """
         {% load component_tags %}
@@ -52,7 +54,6 @@ class MockComponentSlot(component.Component):
         return self.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
 
 
-@component.register("testcomponent_context_insecure")
 class MockInsecureComponentContext(component.Component):
     template = """
         {% load component_tags %}
@@ -65,7 +66,6 @@ class MockInsecureComponentContext(component.Component):
         return self.render_to_response({"variable": "<script>alert(1);</script>"})
 
 
-@component.register("testcomponent_slot_insecure")
 class MockInsecureComponentSlot(component.Component):
     template = """
         {% load component_tags %}
@@ -110,7 +110,18 @@ class CustomClient(Client):
         super().__init__(*args, **kwargs)
 
 
+#########################
+# TESTS
+#########################
+
 class TestComponentAsView(BaseTestCase):
+    @classmethod
+    def setUpClass(self):
+        component.registry.register("testcomponent", MockComponentRequest)
+        component.registry.register("testcomponent_slot", MockComponentSlot)
+        component.registry.register("testcomponent_context_insecure", MockInsecureComponentContext)
+        component.registry.register("testcomponent_slot_insecure", MockInsecureComponentSlot)
+
     def setUp(self):
         self.client = CustomClient()
 
