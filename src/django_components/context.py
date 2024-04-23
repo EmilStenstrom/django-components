@@ -5,20 +5,63 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
-from copy import copy
 from typing import TYPE_CHECKING, Optional
 
 from django.template import Context
 
 from django_components.logger import trace_msg
+from django_components.utils import find_last_index
 
 if TYPE_CHECKING:
     from django_components.slots import FillContent
 
 
 _FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
-_OUTER_CONTEXT_CONTEXT_KEY = "_DJANGO_COMPONENTS_OUTER_CONTEXT"
+_OUTER_ROOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_OUTER_ROOT_CTX"
 _SLOT_COMPONENT_ASSOC_KEY = "_DJANGO_COMPONENTS_SLOT_COMP_ASSOC"
+
+
+def prepare_context(context: Context, outer_context: Optional[Context]) -> None:
+    """Initialize the internal context state."""
+    # This is supposed to run ALWAYS at Component.render
+    if outer_context is not None:
+        set_outer_root_context(context, outer_context)
+
+    # Initialize mapping dicts within this rendering run.
+    # This is shared across the whole render chain, thus we set it only once.
+    if _SLOT_COMPONENT_ASSOC_KEY not in context:
+        context[_SLOT_COMPONENT_ASSOC_KEY] = {}
+    if _FILLED_SLOTS_CONTENT_CONTEXT_KEY not in context:
+        context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = {}
+
+    # If we're inside a forloop, we need to make a disposable copy of slot -> comp
+    # mapping, which can be modified in the loop. We do so by copying it onto the latest
+    # context layer.
+    #
+    # This is necessary, because otherwise if we have a nested loop with a same
+    # component used recursively, the inner slot -> comp mapping would leak into the outer.
+    #
+    # NOTE: If you ever need to debug this, insert a print/debug statement into
+    # `django.template.defaulttags.ForNode.render` to inspect the context object
+    # inside the for loop.
+    if "forloop" in context:
+        context.dicts[-1][_SLOT_COMPONENT_ASSOC_KEY] = context[_SLOT_COMPONENT_ASSOC_KEY].copy()
+
+
+def make_isolated_context_copy(context: Context) -> Context:
+    # Even if contexts are isolated, we still need to pass down the
+    # metadata so variables in slots can be rendered using the correct context.
+    root_ctx = get_outer_root_context(context)
+    slot_assoc = context.get(_SLOT_COMPONENT_ASSOC_KEY, {})
+    slot_fills = context.get(_FILLED_SLOTS_CONTENT_CONTEXT_KEY, {})
+
+    context_copy = context.new()
+    context_copy[_SLOT_COMPONENT_ASSOC_KEY] = slot_assoc
+    context_copy[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = slot_fills
+    set_outer_root_context(context_copy, root_ctx)
+    copy_forloop_context(context, context_copy)
+
+    return context_copy
 
 
 def get_slot_fill(context: Context, component_id: str, slot_name: str) -> Optional["FillContent"]:
@@ -28,8 +71,8 @@ def get_slot_fill(context: Context, component_id: str, slot_name: str) -> Option
     See `set_slot_fill` for more details.
     """
     trace_msg("GET", "FILL", slot_name, component_id)
-    slot_key = (_FILLED_SLOTS_CONTENT_CONTEXT_KEY, component_id, slot_name)
-    return context.get(slot_key, None)
+    slot_key = f"{component_id}__{slot_name}"
+    return context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY].get(slot_key, None)
 
 
 def set_slot_fill(context: Context, component_id: str, slot_name: str, value: "FillContent") -> None:
@@ -38,77 +81,82 @@ def set_slot_fill(context: Context, component_id: str, slot_name: str, value: "F
 
     Note that we make use of the fact that Django's Context is a stack - we can push and pop
     extra contexts on top others.
-
-    For the slot fills to be pushed/popped wth stack layer, they need to have keys defined
-    directly on the Context object.
     """
     trace_msg("SET", "FILL", slot_name, component_id)
-    slot_key = (_FILLED_SLOTS_CONTENT_CONTEXT_KEY, component_id, slot_name)
-    context[slot_key] = value
+    slot_key = f"{component_id}__{slot_name}"
+    context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY][slot_key] = value
 
 
-def get_root_context(context: Context) -> Optional[Context]:
+def get_outer_root_context(context: Context) -> Optional[Context]:
     """
-    Use this function to get the root context.
+    Use this function to get the outer root context.
 
-    Root context is the top-most context, AKA the context that was passed to
-    the initial `Template.render()`.
-    We pass through the root context to allow configure how slot fills should be rendered.
-
-    See the `SLOT_CONTEXT_BEHAVIOR` setting.
+    See `set_outer_root_context` for more details.
     """
-    return context.get(_OUTER_CONTEXT_CONTEXT_KEY)
+    return context.get(_OUTER_ROOT_CTX_CONTEXT_KEY)
 
 
-def set_root_context(context: Context, root_ctx: Context) -> None:
+def set_outer_root_context(context: Context, outer_ctx: Optional[Context]) -> None:
     """
-    Use this function to set the root context.
+    Use this function to set the outer root context.
 
-    Root context is the top-most context, AKA the context that was passed to
-    the initial `Template.render()`.
-    We pass through the root context to allow configure how slot fills should be rendered.
+    When we consider a component's template, then outer context is the context
+    that was available just outside of the component's template (AKA it was in
+    the PARENT template).
 
-    See the `SLOT_CONTEXT_BEHAVIOR` setting.
+    Once we have the outer context, next we get the outer ROOT context. This is
+    the context that was available at the top level of the PARENT template.
+
+    We pass through this context to allow to configure how slot fills should be
+    rendered using the `SLOT_CONTEXT_BEHAVIOR` setting.
     """
-    context.push({_OUTER_CONTEXT_CONTEXT_KEY: root_ctx})
+    if outer_ctx and len(outer_ctx.dicts) > 1:
+        outer_root_context: Context = outer_ctx.new()
+        # NOTE_1:
+        # - Index 0 are the defaults set in BaseContext
+        # - Index 1 is the context generated by `Component.get_context_data`
+        #   of the parent's component
+        # - All later indices (2, 3, ...) are extra layers added by the rendering
+        #   logic (each Node usually adds it's own context layer)
+        outer_root_context.push(outer_ctx.dicts[1])
+    else:
+        outer_root_context = Context()
+
+    # Include the mappings.
+    if _SLOT_COMPONENT_ASSOC_KEY in context:
+        outer_root_context[_SLOT_COMPONENT_ASSOC_KEY] = context[_SLOT_COMPONENT_ASSOC_KEY]
+    if _FILLED_SLOTS_CONTENT_CONTEXT_KEY in context:
+        outer_root_context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY]
+
+    context[_OUTER_ROOT_CTX_CONTEXT_KEY] = outer_root_context
 
 
-def capture_root_context(context: Context) -> None:
-    """
-    Set the root context if it was not set before.
-
-    Root context is the top-most context, AKA the context that was passed to
-    the initial `Template.render()`.
-    We pass through the root context to allow configure how slot fills should be rendered.
-
-    See the `SLOT_CONTEXT_BEHAVIOR` setting.
-    """
-    root_ctx_already_defined = _OUTER_CONTEXT_CONTEXT_KEY in context
-    if not root_ctx_already_defined:
-        set_root_context(context, copy(context))
-
-
-def set_slot_component_association(context: Context, slot_id: str, component_id: str) -> None:
+def set_slot_component_association(
+    context: Context,
+    slot_id: str,
+    component_id: str,
+) -> None:
     """
     Set association between a Slot and a Component in the current context.
 
-    We use SlotNodes to render slot fills. SlotNodes are created only at Template parse time.
-    However, when we are using components with slots in (another) template, we can render
-    the same component multiple time. So we can have multiple FillNodes intended to be used
-    with the same SlotNode.
+    We use SlotNodes to render slot fills. SlotNodes are created only at Template
+    parse time.
+    However, when we refer to components with slots in (another) template (using
+    `{% component %}`), we can render the same component multiple time. So we can
+    have multiple FillNodes intended to be used with the same SlotNode.
 
-    So how do we tell the SlotNode which FillNode to render? We do so by tagging the ComponentNode
-    and FillNodes with a unique component_id, which ties them together. And then we tell SlotNode
-    which component_id to use to be able to find the correct Component/Fill.
+    So how do we tell the SlotNode which FillNode to render? We do so by tagging
+    the ComponentNode and FillNodes with a unique component_id, which ties them
+    together. And then we tell SlotNode which component_id to use to be able to
+    find the correct Component/Fill.
 
-    We don't want to store this info on the Nodes themselves, as we need to treat them as
-    immutable due to caching of Templates by Django.
+    We don't want to store this info on the Nodes themselves, as we need to treat
+    them as immutable due to caching of Templates by Django.
 
-    Hence, we use the Context to store the associations of SlotNode <-> Component for
-    the current context stack.
+    Hence, we use the Context to store the associations of SlotNode <-> Component
+    for the current context stack.
     """
-    key = (_SLOT_COMPONENT_ASSOC_KEY, slot_id)
-    context[key] = component_id
+    context[_SLOT_COMPONENT_ASSOC_KEY][slot_id] = component_id
 
 
 def get_slot_component_association(context: Context, slot_id: str) -> str:
@@ -118,5 +166,17 @@ def get_slot_component_association(context: Context, slot_id: str) -> str:
 
     See `set_slot_component_association` for more details.
     """
-    key = (_SLOT_COMPONENT_ASSOC_KEY, slot_id)
-    return context[key]
+    return context[_SLOT_COMPONENT_ASSOC_KEY][slot_id]
+
+
+def copy_forloop_context(from_context: Context, to_context: Context) -> None:
+    """Forward the info about the current loop"""
+    # Note that the ForNode (which implements for loop behavior) does not
+    # only add the `forloop` key, but also keys corresponding to the loop elements
+    # So if the loop syntax is `{% for my_val in my_lists %}`, then ForNode also
+    # sets a `my_val` key.
+    # For this reason, instead of copying individual keys, we copy the whole stack layer
+    # set by ForNode.
+    if "forloop" in from_context:
+        forloop_dict_index = find_last_index(from_context.dicts, lambda d: "forloop" in d)
+        to_context.update(from_context.dicts[forloop_dict_index])

@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import List, NamedTuple, Optional
+from typing import Any, Callable, List, NamedTuple, Optional
 
 from django.template.engine import Engine
 
@@ -49,3 +49,10 @@ def gen_id(length: int = 5) -> str:
 
     # Pad the ID with `0`s up to 4 digits, e.g. `0007`
     return f"{_id:04}"
+
+
+def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
+    for r_idx, elem in enumerate(reversed(lst)):
+        if predicate(elem):
+            return len(lst) - 1 - r_idx
+    return -1
