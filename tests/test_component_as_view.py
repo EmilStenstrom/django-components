@@ -161,14 +161,6 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
-    def test_replace_slot_in_view_with_insecure_content(self):
-        response = self.client.get("/test_slot_insecure/")
-        self.assertEqual(response.status_code, 200)
-        self.assertNotIn(
-            b"<script>",
-            response.content,
-        )
-
     def test_replace_context_in_view_with_insecure_content(self):
         response = self.client.get("/test_slot_insecure/")
         self.assertEqual(response.status_code, 200)
