@@ -1,6 +1,6 @@
 import re
 import textwrap
-from typing import Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 from django.test import override_settings
@@ -84,6 +84,34 @@ class ComponentWithDefaultSlot(component.Component):
 
 class ComponentWithDefaultAndRequiredSlot(component.Component):
     template_name = "template_with_default_and_required_slot.html"
+
+
+class _ComplexChildComponent(component.Component):
+    template = """
+        {% load component_tags %}
+        <div>
+        {% slot "content" default %}
+            No slot!
+        {% endslot %}
+        </div>
+    """
+
+
+class _ComplexParentComponent(component.Component):
+    template = """
+        {% load component_tags %}
+        ITEMS: {{ items }}
+        {% for item in items %}
+        <li>
+            {% component "complex_child" %}
+                {{ item.value }}
+            {% endcomponent %}
+        </li>
+        {% endfor %}
+    """
+
+    def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
+        return {"items": items}
 
 
 class ComponentTemplateTagTest(BaseTestCase):
@@ -1020,6 +1048,8 @@ class ComponentNestingTests(BaseTestCase):
         super().setUpClass()
         component.registry.register("dashboard", _DashboardComponent)
         component.registry.register("calendar", _CalendarComponent)
+        component.registry.register("complex_child", _ComplexChildComponent)
+        component.registry.register("complex_parent", _ComplexParentComponent)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -1080,6 +1110,70 @@ class ComponentNestingTests(BaseTestCase):
           <ol>
           </ol>
         </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "isolated",
+            "slot_context_behavior": "isolated",
+        }
+    )
+    def test_component_nesting_slot_inside_component_fill_isolated_2(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "dashboard" %}
+                {% fill "header" %}
+                    Whoa!
+                {% endfill %}
+            {% endcomponent %}
+            """
+        )
+        rendered = template.render(Context({"items": [1, 2, 3]}))
+        expected = """
+        <div class="dashboard-component">
+          <div class="calendar-component">
+            <h1>
+              Whoa!
+            </h1>
+            <main>
+              Here are your to-do items for today:
+            </main>
+          </div>
+          <ol>
+          </ol>
+        </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "isolated",
+            "slot_context_behavior": "isolated",
+        }
+    )
+    def test_component_nesting_deep_slot_inside_component_fill_isolated(self):
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "complex_parent" items=items %}{% endcomponent %}
+            """
+        )
+        items = [{"value": 1}, {"value": 2}, {"value": 3}]
+        rendered = template.render(Context({"items": items}))
+        expected = """
+        ITEMS: [{&#x27;value&#x27;: 1}, {&#x27;value&#x27;: 2}, {&#x27;value&#x27;: 3}]
+        <li>
+            <div> 1 </div>
+        </li>
+        <li>
+            <div> 2 </div>
+        </li>
+        <li>
+            <div> 3 </div>
+        </li>
         """
         self.assertHTMLEqual(rendered, expected)
 

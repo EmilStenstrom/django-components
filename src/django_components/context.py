@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Optional
 from django.template import Context
 
 from django_components.logger import trace_msg
+from django_components.utils import find_last_index
 
 if TYPE_CHECKING:
     from django_components.slots import FillContent
@@ -26,11 +27,12 @@ def prepare_context(context: Context, outer_context: Optional[Context]) -> None:
     if outer_context is not None:
         set_outer_root_context(context, outer_context)
 
-    # Initialize a dict that will hold all slot -> component associations
-    # within this rendering run.
+    # Initialize mapping dicts within this rendering run.
     # This is shared across the whole render chain, thus we set it only once.
     if _SLOT_COMPONENT_ASSOC_KEY not in context:
         context[_SLOT_COMPONENT_ASSOC_KEY] = {}
+    if _FILLED_SLOTS_CONTENT_CONTEXT_KEY not in context:
+        context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = {}
 
     # If we're inside a forloop, we need to make a disposable copy of slot -> comp
     # mapping, which can be modified in the loop. We do so by copying it onto the latest
@@ -48,14 +50,16 @@ def prepare_context(context: Context, outer_context: Optional[Context]) -> None:
 
 def make_isolated_context_copy(context: Context) -> Context:
     # Even if contexts are isolated, we still need to pass down the
-    # outer context so variables in slots can be rendered using
-    # the outer context.
+    # metadata so variables in slots can be rendered using the correct context.
     root_ctx = get_outer_root_context(context)
     slot_assoc = context.get(_SLOT_COMPONENT_ASSOC_KEY, {})
+    slot_fills = context.get(_FILLED_SLOTS_CONTENT_CONTEXT_KEY, {})
 
     context_copy = context.new()
     context_copy[_SLOT_COMPONENT_ASSOC_KEY] = slot_assoc
+    context_copy[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = slot_fills
     set_outer_root_context(context_copy, root_ctx)
+    copy_forloop_context(context, context_copy)
 
     return context_copy
 
@@ -67,8 +71,8 @@ def get_slot_fill(context: Context, component_id: str, slot_name: str) -> Option
     See `set_slot_fill` for more details.
     """
     trace_msg("GET", "FILL", slot_name, component_id)
-    slot_key = (_FILLED_SLOTS_CONTENT_CONTEXT_KEY, component_id, slot_name)
-    return context.get(slot_key, None)
+    slot_key = f"{component_id}__{slot_name}"
+    return context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY].get(slot_key, None)
 
 
 def set_slot_fill(context: Context, component_id: str, slot_name: str, value: "FillContent") -> None:
@@ -79,8 +83,8 @@ def set_slot_fill(context: Context, component_id: str, slot_name: str, value: "F
     extra contexts on top others.
     """
     trace_msg("SET", "FILL", slot_name, component_id)
-    slot_key = (_FILLED_SLOTS_CONTENT_CONTEXT_KEY, component_id, slot_name)
-    context[slot_key] = value
+    slot_key = f"{component_id}__{slot_name}"
+    context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY][slot_key] = value
 
 
 def get_outer_root_context(context: Context) -> Optional[Context]:
@@ -114,15 +118,17 @@ def set_outer_root_context(context: Context, outer_ctx: Optional[Context]) -> No
         #   of the parent's component
         # - All later indices (2, 3, ...) are extra layers added by the rendering
         #   logic (each Node usually adds it's own context layer)
-        #
-        # NOTE_2:
-        # We are interested in dict at index 1. But we also need to include the dict
-        # at index 0, because that one stores the slot -> comp mapping.
-        outer_root_context.dicts = outer_ctx.dicts[:2]
+        outer_root_context.push(outer_ctx.dicts[1])
     else:
         outer_root_context = Context()
 
-    context.push({_OUTER_ROOT_CTX_CONTEXT_KEY: outer_root_context})
+    # Include the mappings.
+    if _SLOT_COMPONENT_ASSOC_KEY in context:
+        outer_root_context[_SLOT_COMPONENT_ASSOC_KEY] = context[_SLOT_COMPONENT_ASSOC_KEY]
+    if _FILLED_SLOTS_CONTENT_CONTEXT_KEY in context:
+        outer_root_context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY]
+
+    context[_OUTER_ROOT_CTX_CONTEXT_KEY] = outer_root_context
 
 
 def set_slot_component_association(
@@ -161,3 +167,16 @@ def get_slot_component_association(context: Context, slot_id: str) -> str:
     See `set_slot_component_association` for more details.
     """
     return context[_SLOT_COMPONENT_ASSOC_KEY][slot_id]
+
+
+def copy_forloop_context(from_context: Context, to_context: Context) -> None:
+    """Forward the info about the current loop"""
+    # Note that the ForNode (which implements for loop behavior) does not
+    # only add the `forloop` key, but also keys corresponding to the loop elements
+    # So if the loop syntax is `{% for my_val in my_lists %}`, then ForNode also
+    # sets a `my_val` key.
+    # For this reason, instead of copying individual keys, we copy the whole stack layer
+    # set by ForNode.
+    if "forloop" in from_context:
+        forloop_dict_index = find_last_index(from_context.dicts, lambda d: "forloop" in d)
+        to_context.update(from_context.dicts[forloop_dict_index])

@@ -11,6 +11,7 @@ from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import SlotContextBehavior, app_settings
 from django_components.context import (
+    copy_forloop_context,
     get_outer_root_context,
     get_slot_component_association,
     get_slot_fill,
@@ -149,9 +150,11 @@ class SlotNode(Node):
         if app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ALLOW_OVERRIDE:
             return context
         elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED:
-            return root_ctx
+            new_context: Context = copy(root_ctx)
+            copy_forloop_context(context, new_context)
+            return new_context
         elif app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.PREFER_ROOT:
-            new_context: Context = copy(context)
+            new_context = copy(context)
             new_context.update(root_ctx.flatten())
             return new_context
         else:
@@ -488,8 +491,8 @@ def _report_slot_errors(
     for fill_name in unmatched_fills:
         fuzzy_slot_name_matches = difflib.get_close_matches(fill_name, unfilled_slots, n=1, cutoff=0.7)
         msg = (
-            f"Component '{registered_name}' passed fill "
-            f"that refers to undefined slot: '{fill_name}'."
+            f"Component '{registered_name}' passed fill that refers to undefined slot:"
+            f" '{fill_name}'."
             f"\nUnfilled slot names are: {sorted(unfilled_slots)}."
         )
         if fuzzy_slot_name_matches:
