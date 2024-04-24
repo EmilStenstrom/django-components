@@ -259,7 +259,6 @@ class ComponentTest(BaseTestCase):
         """,
         )
 
-
     @override_settings(
         COMPONENTS={
             "context_behavior": "isolated",
@@ -289,10 +288,10 @@ class ComponentTest(BaseTestCase):
         )
 
         nested_ctx = Context()
-        nested_ctx.push({"some": "var"}) # <-- Nested comp's take data only from this layer
-        nested_ctx.push({"name": "carl"}) # <-- But for top-level comp, it should access this layer too
+        nested_ctx.push({"some": "var"})  # <-- Nested comp's take data only from this layer
+        nested_ctx.push({"name": "carl"})  # <-- But for top-level comp, it should access this layer too
         rendered = self.template.render(nested_ctx)
-    
+
         self.assertHTMLEqual(
             rendered,
             """
