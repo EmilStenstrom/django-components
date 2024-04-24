@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional
 
 from django.template import Context
 
-from django_components.app_settings import app_settings, SlotContextBehavior
+from django_components.app_settings import SlotContextBehavior, app_settings
 from django_components.logger import trace_msg
 from django_components.utils import find_last_index
 
@@ -136,7 +136,12 @@ def set_outer_root_context(context: Context, outer_ctx: Optional[Context]) -> No
     # Special case for handling outer context of top-level components when
     # slots are isolated. In such case, the entire outer context is to be the
     # outer root ctx.
-    if outer_ctx and not context.get(_PARENT_COMP_KEY) and app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED:
+    if (
+        outer_ctx
+        and not context.get(_PARENT_COMP_KEY)
+        and app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED
+        and _OUTER_ROOT_CTX_CONTEXT_KEY in context
+    ):
         outer_root_context = outer_ctx.new()
         outer_root_context.push(outer_ctx.flatten())
 
