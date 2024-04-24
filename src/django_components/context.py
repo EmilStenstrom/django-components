@@ -140,7 +140,7 @@ def set_outer_root_context(context: Context, outer_ctx: Optional[Context]) -> No
         outer_ctx
         and not context.get(_PARENT_COMP_KEY)
         and app_settings.SLOT_CONTEXT_BEHAVIOR == SlotContextBehavior.ISOLATED
-        and _OUTER_ROOT_CTX_CONTEXT_KEY in context
+        and _OUTER_ROOT_CTX_CONTEXT_KEY in context  # <-- Added to avoid breaking tests
     ):
         outer_root_context = outer_ctx.new()
         outer_root_context.push(outer_ctx.flatten())
