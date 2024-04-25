@@ -263,7 +263,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
         context = context_data if isinstance(context_data, Context) else Context(context_data)
-        prepare_context(context, outer_context=self.outer_context or Context())
+        prepare_context(context, self.outer_context or Context(), component_id=self.component_id)
         template = self.get_template(context)
 
         # Associate the slots with this component for this context

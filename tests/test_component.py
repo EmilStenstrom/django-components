@@ -287,6 +287,50 @@ class ComponentTest(BaseTestCase):
         """,
         )
 
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "isolated",
+            "slot_context_behavior": "isolated",
+        },
+    )
+    def test_slots_of_top_level_comps_can_access_full_outer_ctx(self):
+        class SlottedComponent(component.Component):
+            template_name = "template_with_default_slot.html"
+
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                }
+
+        component.registry.register("test", SlottedComponent)
+
+        self.template = Template(
+            """
+            {% load component_tags %}
+            <body>
+                {% component "test" %}
+                    ABC: {{ name }}
+                {% endcomponent %}
+            </body>
+            """
+        )
+
+        nested_ctx = Context()
+        nested_ctx.push({"some": "var"})  # <-- Nested comp's take data only from this layer
+        nested_ctx.push({"name": "carl"})  # <-- But for top-level comp, it should access this layer too
+        rendered = self.template.render(nested_ctx)
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <body>
+                <div>
+                    <main> ABC: carl </main>
+                </div>
+            </body>
+            """,
+        )
+
 
 class InlineComponentTest(BaseTestCase):
     def test_inline_html_component(self):
