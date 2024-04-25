@@ -263,7 +263,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
         context = context_data if isinstance(context_data, Context) else Context(context_data)
-        prepare_context(context, self.outer_context or Context(), component_id=self.component_id)
+        prepare_context(context, component_id=self.component_id, outer_context=self.outer_context or Context())
         template = self.get_template(context)
 
         # Associate the slots with this component for this context
@@ -304,8 +304,10 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         """Fill component slots outside of template rendering."""
         self.fill_content = {
             slot_name: FillContent(
-                TextNode(escape(content) if escape_content else content),
-                None,
+                nodes=NodeList([
+                    TextNode(escape(content) if escape_content else content)
+                ]),
+                alias=None,
             )
             for (slot_name, content) in slots_data.items()
         }

@@ -212,7 +212,7 @@ class ComponentTest(BaseTestCase):
             Path(__file__).resolve().parent / "components",
         ],
     )
-    def test_component_media_with_dict_with_relative_paths(self):
+    def test_component_with_relative_paths_as_subcomponent(self):
         # Ensure that the module is executed again after import in autodiscovery
         if "tests.components.relative_file.relative_file" in sys.modules:
             del sys.modules["tests.components.relative_file.relative_file"]
@@ -285,6 +285,60 @@ class ComponentTest(BaseTestCase):
                 </footer>
             </custom-template>
         """,
+        )
+
+    def test_fill_inside_fill_with_same_name(self):
+        class SlottedComponent(component.Component):
+            template_name = "slotted_template.html"
+
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                }
+
+        component.registry.register("test", SlottedComponent)
+
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "test" name='Igor' %}
+                {% fill "header" %}
+                    {% component "test" name='Joe2' %}
+                        {% fill "header" %}
+                            Name2: {{ name }}
+                        {% endfill %}
+                        {% fill "main" %}
+                            Day2: {{ day }}
+                        {% endfill %}
+                        {% fill "footer" %}
+                            XYZ
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+                {% fill "footer" %}
+                    WWW
+                {% endfill %}
+            {% endcomponent %}
+            """
+        )
+
+        # {{ name }} should be "Jannete" everywhere
+        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>
+                    <custom-template>
+                        <header>Name2: Jannete</header>
+                        <main>Day2: Monday</main>
+                        <footer>XYZ</footer>
+                    </custom-template>
+                </header>
+                <main>Default main</main>
+                <footer>WWW</footer>
+            </custom-template>
+            """,
         )
 
     @override_settings(

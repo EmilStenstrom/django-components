@@ -195,6 +195,13 @@ def set_slot_component_association(
     Hence, we use the Context to store the associations of SlotNode <-> Component
     for the current context stack.
     """
+    # Store associations on the latest context layer so that we can nest components
+    # onto themselves (component A is rendered in slot fill of component A).
+    # Otherwise, they would overwrite each other as the ComponentNode and SlotNodes
+    # are re-used, so their IDs don't change across these two occurences.
+    latest_dict = context.dicts[-1]
+    if _SLOT_COMPONENT_ASSOC_KEY not in latest_dict:
+        latest_dict[_SLOT_COMPONENT_ASSOC_KEY] = context[_SLOT_COMPONENT_ASSOC_KEY].copy()
     context[_SLOT_COMPONENT_ASSOC_KEY][slot_id] = component_id
 
 
