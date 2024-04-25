@@ -8,6 +8,7 @@ You can think of the Context as our storage system.
 from typing import TYPE_CHECKING, Optional
 
 from django.template import Context
+from django.template.exceptions import TemplateSyntaxError
 
 from django_components.app_settings import SlotContextBehavior, app_settings
 from django_components.logger import trace_msg
@@ -107,6 +108,10 @@ def set_slot_fill(context: Context, component_id: str, slot_name: str, value: "F
     extra contexts on top others.
     """
     trace_msg("SET", "FILL", slot_name, component_id)
+
+    if not slot_name.isidentifier():
+        raise TemplateSyntaxError(f"Slot names must be valid Python identifiers, instead got '{slot_name}'")
+
     slot_key = f"{component_id}__{slot_name}"
     context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY][slot_key] = value
 
