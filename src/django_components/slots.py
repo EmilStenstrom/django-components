@@ -232,7 +232,7 @@ class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, ComponentIdMixin)
         super().__init__(nodelist)
 
     def evaluate(self, context: Context) -> bool:
-        slot_fill = get_slot_fill(context, self.component_id, self.slot_name)
+        slot_fill = get_slot_fill(context, component_id=self.component_id, slot_name=self.slot_name)
         is_filled = slot_fill is not None
         # Make polarity switchable.
         # i.e. if slot name is NOT filled and is_positive=False,
