@@ -22,6 +22,7 @@ _OUTER_ROOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_OUTER_ROOT_CTX"
 _SLOT_COMPONENT_ASSOC_KEY = "_DJANGO_COMPONENTS_SLOT_COMP_ASSOC"
 _PARENT_COMP_KEY = "_DJANGO_COMPONENTS_PARENT_COMP"
 _CURRENT_COMP_KEY = "_DJANGO_COMPONENTS_CURRENT_COMP"
+_FILLED_SLOTS_BOOL_CONTEXT_KEY = "slots"
 
 
 def prepare_context(
@@ -108,6 +109,12 @@ def set_slot_fill(context: Context, component_id: str, slot_name: str, value: "F
     trace_msg("SET", "FILL", slot_name, component_id)
     slot_key = f"{component_id}__{slot_name}"
     context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY][slot_key] = value
+
+    # Set variable that users may check to see if given slot was filled
+    # E.g. `{% if variable > 8 and slots.header %}`
+    if _FILLED_SLOTS_BOOL_CONTEXT_KEY not in context.dicts[-1]:
+        context.dicts[-1][_FILLED_SLOTS_BOOL_CONTEXT_KEY] = {}
+    context.dicts[-1][_FILLED_SLOTS_BOOL_CONTEXT_KEY][slot_name] = value is not None
 
 
 def get_outer_root_context(context: Context) -> Optional[Context]:
