@@ -304,9 +304,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         """Fill component slots outside of template rendering."""
         self.fill_content = {
             slot_name: FillContent(
-                nodes=NodeList([
-                    TextNode(escape(content) if escape_content else content)
-                ]),
+                nodes=NodeList([TextNode(escape(content) if escape_content else content)]),
                 alias=None,
             )
             for (slot_name, content) in slots_data.items()
