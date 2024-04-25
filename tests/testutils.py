@@ -1,3 +1,5 @@
+import contextlib
+import sys
 from typing import List
 from unittest.mock import Mock
 
@@ -5,6 +7,8 @@ from django.template import Context, Node
 from django.template.response import TemplateResponse
 from django.test import SimpleTestCase
 
+from django_components import autodiscover
+from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
 
 # Create middleware instance
@@ -12,9 +16,11 @@ response_stash = None
 middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash)
 
 
-# TODO: Use this class to manage component registry cleanup before/after tests.
 class BaseTestCase(SimpleTestCase):
-    pass
+    @classmethod
+    def setUpClass(self) -> None:
+        registry.clear()
+        return super().setUpClass()
 
 
 request = Mock()
@@ -52,3 +58,20 @@ def print_nodes(nodes: List[Node], indent=0) -> None:
         print(repr)
         if child_nodes:
             print_nodes(child_nodes, indent=indent + 1)
+
+
+# TODO: Make sure that this is done before/after each test automatically?
+@contextlib.contextmanager
+def autodiscover_with_cleanup(*args, **kwargs):
+    """
+    Use this in place of regular `autodiscover` in test files to ensure that
+    the autoimport does not pollute the global state.
+    """
+    imported_modules = autodiscover(*args, **kwargs)
+    try:
+        yield imported_modules
+    finally:
+        # Teardown - delete autoimported modules, so the module is executed also the
+        # next time one of the tests calls `autodiscover`.
+        for mod in imported_modules:
+            del sys.modules[mod]

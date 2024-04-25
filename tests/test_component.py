@@ -1,5 +1,5 @@
+import sys
 from pathlib import Path
-from textwrap import dedent
 from typing import Any, Dict, Optional
 
 from django.core.exceptions import ImproperlyConfigured
@@ -8,14 +8,48 @@ from django.test import override_settings
 
 # isort: off
 from .django_test_setup import *  # NOQA
-from .testutils import BaseTestCase
+from .testutils import BaseTestCase, autodiscover_with_cleanup
 
 # isort: on
 
 from django_components import component
 
+#########################
+# COMPONENTS
+#########################
+
+
+class ParentComponent(component.Component):
+    template_name = "parent_template.html"
+
+    def get_context_data(self):
+        return {"shadowing_variable": "NOT SHADOWED"}
+
+
+class VariableDisplay(component.Component):
+    template_name = "variable_display.html"
+
+    def get_context_data(self, shadowing_variable=None, new_variable=None):
+        context = {}
+        if shadowing_variable is not None:
+            context["shadowing_variable"] = shadowing_variable
+        if new_variable is not None:
+            context["unique_variable"] = new_variable
+        return context
+
+
+#########################
+# TESTS
+#########################
+
 
 class ComponentTest(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="parent_component", component=ParentComponent)
+        component.registry.register(name="variable_display", component=VariableDisplay)
+
     def test_empty_component(self):
         class EmptyComponent(component.Component):
             pass
@@ -41,21 +75,17 @@ class ComponentTest(BaseTestCase):
 
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """
-            <link href="style.css" media="all" rel="stylesheet">
-            <script src="script.js"></script>
-        """
-            ).strip(),
+            """
+                <link href="style.css" media="all" rel="stylesheet">
+                <script src="script.js"></script>
+            """,
         )
 
         self.assertHTMLEqual(
             comp.render(context),
-            dedent(
-                """
+            """
             Variable: <strong>test</strong>
-        """
-            ).lstrip(),
+            """,
         )
 
     def test_css_only_component(self):
@@ -69,11 +99,9 @@ class ComponentTest(BaseTestCase):
 
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """
+            """
             <link href="style.css" media="all" rel="stylesheet">
-        """
-            ).strip(),
+            """,
         )
 
     def test_js_only_component(self):
@@ -87,11 +115,9 @@ class ComponentTest(BaseTestCase):
 
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """
+            """
             <script src="script.js"></script>
-        """
-            ).strip(),
+            """,
         )
 
     def test_empty_media_component(self):
@@ -123,14 +149,12 @@ class ComponentTest(BaseTestCase):
 
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """
+            """
             <link href="style.css" media="all" rel="stylesheet">
             <link href="style2.css" media="all" rel="stylesheet">
             <script src="script.js"></script>
             <script src="script2.js"></script>
-        """
-            ).strip(),
+            """,
         )
 
     def test_component_with_filtered_template(self):
@@ -148,12 +172,10 @@ class ComponentTest(BaseTestCase):
 
         self.assertHTMLEqual(
             comp.render(context),
-            dedent(
-                """
+            """
             Var1: <strong>test1</strong>
             Var2 (uppercased): <strong>TEST2</strong>
-        """
-            ).lstrip(),
+            """,
         )
 
     def test_component_with_dynamic_template(self):
@@ -172,38 +194,44 @@ class ComponentTest(BaseTestCase):
         comp = SvgComponent("svg_component")
         self.assertHTMLEqual(
             comp.render(Context(comp.get_context_data(name="dynamic1"))),
-            dedent(
-                """\
-                <svg>Dynamic1</svg>
             """
-            ),
+            <svg>Dynamic1</svg>
+            """,
         )
         self.assertHTMLEqual(
             comp.render(Context(comp.get_context_data(name="dynamic2"))),
-            dedent(
-                """\
-                <svg>Dynamic2</svg>
             """
-            ),
+            <svg>Dynamic2</svg>
+            """,
         )
 
-    def test_component_with_relative_paths_as_subcomponent(
-        self,
-    ):
-        template = Template(
-            """
-            {% load component_tags %}{% component_dependencies %}
-            {% component 'parent_component' %}
-                {% fill 'content' %}
-                    {% component name='relative_file_component' variable='hello' %}
-                    {% endcomponent %}
-                {% endfill %}
-            {% endcomponent %}
-        """  # NOQA
-        )
-        rendered = template.render(Context({}))
+    # Settings required for autodiscover to work
+    @override_settings(
+        BASE_DIR=Path(__file__).resolve().parent,
+        STATICFILES_DIRS=[
+            Path(__file__).resolve().parent / "components",
+        ],
+    )
+    def test_component_media_with_dict_with_relative_paths(self):
+        # Ensure that the module is executed again after import in autodiscovery
+        if "tests.components.relative_file.relative_file" in sys.modules:
+            del sys.modules["tests.components.relative_file.relative_file"]
 
-        self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
+        # Fix the paths, since the "components" dir is nested
+        with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+            template = Template(
+                """
+                {% load component_tags %}{% component_dependencies %}
+                {% component 'parent_component' %}
+                    {% fill 'content' %}
+                        {% component name='relative_file_component' variable='hello' %}
+                        {% endcomponent %}
+                    {% endfill %}
+                {% endcomponent %}
+                """  # NOQA
+            )
+            rendered = template.render(Context({}))
+            self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
 
     def test_component_inside_slot(self):
         class SlottedComponent(component.Component):
@@ -360,12 +388,10 @@ class InlineComponentTest(BaseTestCase):
         )
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <link href="path/to/style.css" media="all" rel="stylesheet">
-                <script src="path/to/script.js"></script>
             """
-            ),
+            <link href="path/to/style.css" media="all" rel="stylesheet">
+            <script src="path/to/script.js"></script>
+            """,
         )
 
     def test_html_js_string_with_css_file(self):
@@ -383,12 +409,10 @@ class InlineComponentTest(BaseTestCase):
         )
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <link href="path/to/style.css" media="all" rel="stylesheet">
-                <script>console.log('HTML and JS only');</script>
-                """
-            ),
+            """
+            <link href="path/to/style.css" media="all" rel="stylesheet">
+            <script>console.log('HTML and JS only');</script>
+            """,
         )
 
     def test_html_css_string_with_js_file(self):
@@ -406,11 +430,9 @@ class InlineComponentTest(BaseTestCase):
         )
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <style>.html-string-file { color: blue; }</style><script src="path/to/script.js"></script>
-                """
-            ),
+            """
+            <style>.html-string-file { color: blue; }</style><script src="path/to/script.js"></script>
+            """,
         )
 
     def test_component_with_variable_in_html(self):
@@ -436,12 +458,10 @@ class ComponentMediaTests(BaseTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <link href="path/to/style.css" media="all" rel="stylesheet">
-                <script src="path/to/script.js"></script>
             """
-            ),
+            <link href="path/to/style.css" media="all" rel="stylesheet">
+            <script src="path/to/script.js"></script>
+            """,
         )
 
     def test_component_media_with_lists(self):
@@ -453,13 +473,11 @@ class ComponentMediaTests(BaseTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <link href="path/to/style.css" media="all" rel="stylesheet">
-                <link href="path/to/style2.css" media="all" rel="stylesheet">
-                <script src="path/to/script.js"></script>
             """
-            ),
+            <link href="path/to/style.css" media="all" rel="stylesheet">
+            <link href="path/to/style2.css" media="all" rel="stylesheet">
+            <script src="path/to/script.js"></script>
+            """,
         )
 
     def test_component_media_with_dict_and_list(self):
@@ -475,14 +493,12 @@ class ComponentMediaTests(BaseTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <link href="path/to/style.css" media="all" rel="stylesheet">
-                <link href="path/to/style2.css" media="print" rel="stylesheet">
-                <link href="path/to/style3.css" media="screen" rel="stylesheet">
-                <script src="path/to/script.js"></script>
             """
-            ),
+            <link href="path/to/style.css" media="all" rel="stylesheet">
+            <link href="path/to/style2.css" media="print" rel="stylesheet">
+            <link href="path/to/style3.css" media="screen" rel="stylesheet">
+            <script src="path/to/script.js"></script>
+            """,
         )
 
     def test_component_media_with_dict_with_list_and_list(self):
@@ -494,14 +510,13 @@ class ComponentMediaTests(BaseTestCase):
         comp = SimpleComponent("")
         self.assertHTMLEqual(
             comp.render_dependencies(),
-            dedent(
-                """\
-                <link href="path/to/style.css" media="all" rel="stylesheet">
-                <script src="path/to/script.js"></script>
             """
-            ),
+            <link href="path/to/style.css" media="all" rel="stylesheet">
+            <script src="path/to/script.js"></script>
+            """,
         )
 
+    # Settings required for autodiscover to work
     @override_settings(
         BASE_DIR=Path(__file__).resolve().parent,
         STATICFILES_DIRS=[
@@ -509,30 +524,27 @@ class ComponentMediaTests(BaseTestCase):
         ],
     )
     def test_component_media_with_dict_with_relative_paths(self):
-        from .components.relative_file.relative_file import RelativeFileComponent
-
-        comp = RelativeFileComponent("")
-
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            dedent(
-                """\
+        # Fix the paths, since the "components" dir is nested
+        with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+            template = Template(
+                """
+                {% load component_tags %}{% component_dependencies %}
+                {% component name='relative_file_component' variable=variable %}
+                {% endcomponent %}
+                """  # NOQA
+            )
+            rendered = template.render(Context({"variable": "test"}))
+            self.assertHTMLEqual(
+                rendered,
+                """
                 <link href="relative_file/relative_file.css" media="all" rel="stylesheet">
                 <script src="relative_file/relative_file.js"></script>
-            """
-            ),
-        )
-
-        rendered = comp.render(Context(comp.get_context_data(variable="test")))
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <form method="post">
-            <input type="text" name="variable" value="test">
-            <input type="submit">
-            </form>
-            """,
-        )
+                <form method="post">
+                    <input type="text" name="variable" value="test">
+                    <input type="submit">
+                </form>
+                """,
+            )
 
 
 class ComponentIsolationTests(BaseTestCase):

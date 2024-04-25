@@ -2,6 +2,7 @@ import importlib
 import importlib.util
 import os
 from pathlib import Path
+from typing import Callable, List, Optional
 
 import django
 from django.conf import settings
@@ -14,8 +15,14 @@ if django.VERSION < (3, 2):
     default_app_config = "django_components.apps.ComponentsConfig"
 
 
-def autodiscover() -> None:
+def autodiscover(map_import_paths: Optional[Callable[[str], str]] = None) -> List[str]:
+    """
+    Search for component files and import them. Returns a list of module
+    paths of imported files.
+    """
     from django_components.app_settings import app_settings
+
+    imported_modules: List[str] = []
 
     if app_settings.AUTODISCOVER:
         # Autodetect a components.py file in each app directory
@@ -26,14 +33,20 @@ def autodiscover() -> None:
         logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
 
         for path in component_filepaths:
+            module_name = _filepath_to_python_module(path)
+            if map_import_paths:
+                module_name = map_import_paths(module_name)
+
             # This imports the file and runs it's code. So if the file defines any
             # django components, they will be registered.
-            module_name = _filepath_to_python_module(path)
             logger.debug(f'Importing module "{module_name}" (derived from path "{path}")')
             importlib.import_module(module_name)
+            imported_modules.append(module_name)
 
     for path_lib in app_settings.LIBRARIES:
         importlib.import_module(path_lib)
+
+    return imported_modules
 
 
 def _filepath_to_python_module(file_path: Path) -> str:

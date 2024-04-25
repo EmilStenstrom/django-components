@@ -8,6 +8,10 @@ from django_components import component
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase
 
+#########################
+# COMPONENTS
+#########################
+
 
 class SimpleComponent(component.Component):
     template_name = "simple_template.html"
@@ -69,15 +73,18 @@ class OuterContextComponent(component.Component):
         return self.outer_context.flatten()
 
 
-component.registry.register(name="parent_component", component=ParentComponent)
-component.registry.register(name="parent_with_args", component=ParentComponentWithArgs)
-component.registry.register(name="variable_display", component=VariableDisplay)
-component.registry.register(name="incrementer", component=IncrementerComponent)
-component.registry.register(name="simple_component", component=SimpleComponent)
-component.registry.register(name="outer_context_component", component=OuterContextComponent)
+#########################
+# TESTS
+#########################
 
 
 class ContextTests(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="variable_display", component=VariableDisplay)
+        component.registry.register(name="parent_component", component=ParentComponent)
+
     def test_nested_component_context_shadows_parent_with_unfilled_slots_and_component_tag(
         self,
     ):
@@ -199,6 +206,13 @@ class ContextTests(BaseTestCase):
 
 
 class ParentArgsTests(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="incrementer", component=IncrementerComponent)
+        component.registry.register(name="parent_with_args", component=ParentComponentWithArgs)
+        component.registry.register(name="variable_display", component=VariableDisplay)
+
     def test_parent_args_can_be_drawn_from_context(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -242,6 +256,11 @@ class ParentArgsTests(BaseTestCase):
 
 
 class ContextCalledOnceTests(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="incrementer", component=IncrementerComponent)
+
     def test_one_context_call_with_simple_component(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -250,8 +269,6 @@ class ContextCalledOnceTests(BaseTestCase):
         rendered = template.render(Context()).strip().replace("\n", "")
         self.assertHTMLEqual(
             rendered,
-            '<link href="relative_file/relative_file.css" media="all" rel="stylesheet">'
-            '<script src="relative_file/relative_file.js"></script>'
             '<p class="incrementer">value=1;calls=1</p>',
         )
 
@@ -303,6 +320,11 @@ class ContextCalledOnceTests(BaseTestCase):
 
 
 class ComponentsCanAccessOuterContext(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="simple_component", component=SimpleComponent)
+
     def test_simple_component_can_use_outer_context(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -313,6 +335,11 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
 
 
 class IsolatedContextTests(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="simple_component", component=SimpleComponent)
+
     def test_simple_component_can_pass_outer_context_in_args(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
@@ -331,6 +358,11 @@ class IsolatedContextTests(BaseTestCase):
 
 
 class IsolatedContextSettingTests(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="simple_component", component=SimpleComponent)
+
     def setUp(self):
         self.patcher = patch(
             "django_components.app_settings.AppSettings.CONTEXT_BEHAVIOR",
@@ -386,6 +418,11 @@ class IsolatedContextSettingTests(BaseTestCase):
 
 
 class OuterContextPropertyTests(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="outer_context_component", component=OuterContextComponent)
+
     @override_settings(
         COMPONENTS={"context_behavior": "global"},
     )
