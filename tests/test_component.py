@@ -54,7 +54,8 @@ class DuplicateSlotNestedComponent(component.Component):
         return {
             "items": items,
         }
-    
+
+
 class CalendarComponent(component.Component):
     """Nested in ComponentWithNestedComponent"""
 
@@ -64,6 +65,7 @@ class CalendarComponent(component.Component):
 #########################
 # TESTS
 #########################
+
 
 class ComponentTest(BaseTestCase):
     @classmethod
@@ -450,7 +452,7 @@ class DuplicateSlotTest(BaseTestCase):
             """
         )
         rendered = self.template.render(Context({}))
-    
+
         # NOTE: Slots should have different fallbacks even though they use the same name
         self.assertHTMLEqual(
             rendered,
@@ -473,7 +475,7 @@ class DuplicateSlotTest(BaseTestCase):
             """
         )
         rendered = self.template.render(Context({"items": [1, 2, 3]}))
-    
+
         # NOTE: Slots should have different fallbacks even though they use the same name
         self.assertHTMLEqual(
             rendered,
@@ -510,7 +512,7 @@ class DuplicateSlotTest(BaseTestCase):
             """
         )
         rendered = self.template.render(Context({"items": [1, 2, 3]}))
-    
+
         # NOTE: Slots should have different fallbacks even though they use the same name
         self.assertHTMLEqual(
             rendered,
