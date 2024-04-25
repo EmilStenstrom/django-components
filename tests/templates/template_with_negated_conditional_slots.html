@@ -2,9 +2,9 @@
 {% load component_tags %}
 <div class="frontmatter-component">
     <div class="title">{% slot "title" %}Title{% endslot %}</div>
-    {% if_filled "subtitle" False %}
+    {% if not slots.subtitle %}
        <div class="warning">Subtitle not filled!</div>
-    {% else_filled %}
+    {% else %}
         <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
-    {% endif_filled %}
+    {% endif %}
 </div>
