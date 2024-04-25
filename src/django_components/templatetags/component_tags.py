@@ -16,15 +16,7 @@ from django_components.middleware import (
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
-from django_components.slots import (
-    FillNode,
-    IfSlotFilledConditionBranchNode,
-    IfSlotFilledElseBranchNode,
-    IfSlotFilledNode,
-    SlotNode,
-    _IfSlotFilledBranchNode,
-    parse_slot_fill_nodes_from_component_nodelist,
-)
+from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
 from django_components.utils import gen_id
 
 if TYPE_CHECKING:
@@ -268,102 +260,6 @@ def is_block_tag_token(token: Token, name: str) -> bool:
     return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
 
 
-@register.tag(name="if_filled")
-def do_if_filled_block(parser: Parser, token: Token) -> "IfSlotFilledNode":
-    """
-    ### Usage
-
-    Example:
-
-    ```
-    {% if_filled <slot> (<bool>) %}
-        ...
-    {% elif_filled <slot> (<bool>) %}
-        ...
-    {% else_filled %}
-        ...
-    {% endif_filled %}
-    ```
-
-    Notes:
-
-    Optional arg `<bool>` is True by default.
-    If a False is provided instead, the effect is a negation of the `if_filled` check:
-    The behavior is analogous to `if not is_filled <slot>`.
-    This design prevents us having to define a separate `if_unfilled` tag.
-    """
-    bits = token.split_contents()
-    starting_tag = bits[0]
-    slot_name, is_positive = parse_if_filled_bits(bits)
-    nodelist: NodeList = parser.parse(("elif_filled", "else_filled", "endif_filled"))
-    branches: List[_IfSlotFilledBranchNode] = [
-        IfSlotFilledConditionBranchNode(
-            slot_name=slot_name,  # type: ignore
-            nodelist=nodelist,
-            is_positive=is_positive,
-        )
-    ]
-
-    token = parser.next_token()
-
-    # {% elif_filled <slot> (<is_positive>) %} (repeatable)
-    while token.contents.startswith("elif_filled"):
-        bits = token.split_contents()
-        slot_name, is_positive = parse_if_filled_bits(bits)
-        nodelist = parser.parse(("elif_filled", "else_filled", "endif_filled"))
-        branches.append(
-            IfSlotFilledConditionBranchNode(
-                slot_name=slot_name,  # type: ignore
-                nodelist=nodelist,
-                is_positive=is_positive,
-            )
-        )
-
-        token = parser.next_token()
-
-    # {% else_filled %} (optional)
-    if token.contents.startswith("else_filled"):
-        bits = token.split_contents()
-        _, _ = parse_if_filled_bits(bits)
-        nodelist = parser.parse(("endif_filled",))
-        branches.append(IfSlotFilledElseBranchNode(nodelist))
-        token = parser.next_token()
-
-    # {% endif_filled %}
-    if token.contents != "endif_filled":
-        raise TemplateSyntaxError(
-            f"{{% {starting_tag} %}} missing closing {{% endif_filled %}} tag"
-            f" at line {token.lineno}: '{token.contents}'"
-        )
-
-    return IfSlotFilledNode(branches)
-
-
-def parse_if_filled_bits(
-    bits: List[str],
-) -> Tuple[Optional[str], Optional[bool]]:
-    tag, args = bits[0], bits[1:]
-    if tag in ("else_filled", "endif_filled"):
-        if len(args) != 0:
-            raise TemplateSyntaxError(f"Tag '{tag}' takes no arguments. Received '{' '.join(args)}'")
-        else:
-            return None, None
-    if len(args) == 1:
-        slot_name = args[0]
-        is_positive = True
-    elif len(args) == 2:
-        slot_name = args[0]
-        is_positive = bool_from_string(args[1])
-    else:
-        raise TemplateSyntaxError(
-            f"{bits[0]} tag arguments '{' '.join(args)}' do not match pattern " f"'<slotname> (<is_positive>)'"
-        )
-    if not is_wrapped_in_quotes(slot_name):
-        raise TemplateSyntaxError(f"First argument of '{bits[0]}' must be a quoted string 'literal'.")
-    slot_name = strip_quotes(slot_name)
-    return slot_name, is_positive
-
-
 def check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool]:
     """Return True and strip the last word if token ends with 'only' keyword or if CONTEXT_BEHAVIOR is 'isolated'."""
 
@@ -416,13 +312,3 @@ def is_wrapped_in_quotes(s: str) -> bool:
 
 def strip_quotes(s: str) -> str:
     return s.strip("\"'")
-
-
-def bool_from_string(s: str) -> bool:
-    s = strip_quotes(s.lower())
-    if s == "true":
-        return True
-    elif s == "false":
-        return False
-    else:
-        raise TemplateSyntaxError(f"Expected a bool value. Received: '{s}'")

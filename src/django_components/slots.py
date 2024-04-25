@@ -1,7 +1,7 @@
 import difflib
 import json
 from copy import copy
-from typing import Dict, List, NamedTuple, Optional, Set, Type, Union
+from typing import Dict, List, NamedTuple, Optional, Set, Type
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -54,32 +54,6 @@ class UserSlotVar:
     @property
     def default(self) -> str:
         return mark_safe(self._slot.nodelist.render(self._context))
-
-
-class ComponentIdMixin:
-    """
-    Mixin for classes use or pass through component ID.
-
-    We use component IDs to identify which slots should be
-    rendered with which fills for which components.
-    """
-
-    _component_id: str
-
-    @property
-    def component_id(self) -> str:
-        try:
-            return self._component_id
-        except AttributeError:
-            raise RuntimeError(
-                f"Internal error: Instance of {type(self).__name__} was not "
-                "linked to Component before use in render() context. "
-                "Make sure that the 'component_id' field is set."
-            )
-
-    @component_id.setter
-    def component_id(self, value: Template) -> None:
-        self._component_id = value
 
 
 class SlotNode(Node):
@@ -161,8 +135,7 @@ class SlotNode(Node):
             raise ValueError(f"Unknown value for SLOT_CONTEXT_BEHAVIOR: '{app_settings.SLOT_CONTEXT_BEHAVIOR}'")
 
 
-class FillNode(Node, ComponentIdMixin):
-    is_implicit: bool
+class FillNode(Node):
     """
     Set when a `component` tag pair is passed template content that
     excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
@@ -182,6 +155,7 @@ class FillNode(Node, ComponentIdMixin):
         self.name_fexp = name_fexp
         self.alias_fexp = alias_fexp
         self.is_implicit = is_implicit
+        self.component_id: Optional[str] = None
 
     def render(self, context: Context) -> str:
         raise TemplateSyntaxError(
@@ -205,68 +179,6 @@ class FillNode(Node, ComponentIdMixin):
                 f"a valid Python identifier. Got: '{resolved_alias}'."
             )
         return resolved_alias
-
-
-class _IfSlotFilledBranchNode(Node):
-    def __init__(self, nodelist: NodeList) -> None:
-        self.nodelist = nodelist
-
-    def render(self, context: Context) -> str:
-        return self.nodelist.render(context)
-
-    def evaluate(self, context: Context) -> bool:
-        raise NotImplementedError
-
-
-class IfSlotFilledConditionBranchNode(_IfSlotFilledBranchNode, ComponentIdMixin):
-    def __init__(
-        self,
-        slot_name: str,
-        nodelist: NodeList,
-        is_positive: Union[bool, None] = True,
-        node_id: Optional[str] = None,
-    ) -> None:
-        self.slot_name = slot_name
-        self.is_positive: Optional[bool] = is_positive
-        self.node_id = node_id or gen_id()
-        super().__init__(nodelist)
-
-    def evaluate(self, context: Context) -> bool:
-        slot_fill = get_slot_fill(context, component_id=self.component_id, slot_name=self.slot_name)
-        is_filled = slot_fill is not None
-        # Make polarity switchable.
-        # i.e. if slot name is NOT filled and is_positive=False,
-        # then False == False -> True
-        return is_filled == self.is_positive
-
-
-class IfSlotFilledElseBranchNode(_IfSlotFilledBranchNode):
-    def evaluate(self, context: Context) -> bool:
-        return True
-
-
-class IfSlotFilledNode(Node):
-    def __init__(
-        self,
-        branches: List[_IfSlotFilledBranchNode],
-    ):
-        self.branches = branches
-        self.nodelist = self._create_nodelist(branches)
-
-    def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}>"
-
-    def _create_nodelist(self, branches: List[_IfSlotFilledBranchNode]) -> NodeList:
-        return NodeList(branches)
-
-    def render(self, context: Context) -> str:
-        for node in self.branches:
-            if isinstance(node, IfSlotFilledElseBranchNode):
-                return node.render(context)
-            elif isinstance(node, IfSlotFilledConditionBranchNode):
-                if node.evaluate(context):
-                    return node.render(context)
-        return ""
 
 
 def parse_slot_fill_nodes_from_component_nodelist(
@@ -375,12 +287,6 @@ def render_component_template_with_slots(
     """
     # ---- Prepare slot fills ----
     slot_name2fill_content = _collect_slot_fills_from_component_template(template, fill_content, registered_name)
-
-    # Give slot nodes knowledge of their parent component.
-    for node in template.nodelist.get_nodes_by_type(IfSlotFilledConditionBranchNode):
-        if isinstance(node, IfSlotFilledConditionBranchNode):
-            trace_msg("ASSOC", "IFSB", node.slot_name, node.node_id, component_id=component_id)
-            node.component_id = component_id
 
     with context.update({}):
         for slot_name, content_data in slot_name2fill_content.items():
