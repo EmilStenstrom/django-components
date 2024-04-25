@@ -15,10 +15,11 @@ from django_components.context import (
     get_outer_root_context,
     get_slot_component_association,
     get_slot_fill,
+    set_slot_component_association,
     set_slot_fill,
 )
 from django_components.logger import trace_msg
-from django_components.node import nodelist_has_content
+from django_components.node import nodelist_has_content, walk_nodelist
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
@@ -286,6 +287,16 @@ def render_component_template_with_slots(
     NOTE: The nodes in the template are mutated in the process!
     """
     # ---- Prepare slot fills ----
+
+    # Associate the slots with this component for this context
+    # This allows us to look up component-specific slot fills.
+    def on_node(node: Node) -> None:
+        if isinstance(node, SlotNode):
+            trace_msg("ASSOC", "SLOT", node.name, node.node_id, component_id=component_id)
+            set_slot_component_association(context, node.node_id, component_id)
+
+    walk_nodelist(template.nodelist, on_node)
+
     slot_name2fill_content = _collect_slot_fills_from_component_template(template, fill_content, registered_name)
 
     with context.update({}):

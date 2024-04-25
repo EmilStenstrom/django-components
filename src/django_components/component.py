@@ -20,16 +20,14 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
-from django_components.context import make_isolated_context_copy, prepare_context, set_slot_component_association
+from django_components.context import make_isolated_context_copy, prepare_context
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
-from django_components.node import walk_nodelist
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
     FillContent,
     FillNode,
     SlotName,
-    SlotNode,
     render_component_template_with_slots,
 )
 from django_components.utils import gen_id, search
@@ -189,11 +187,11 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         registered_name: Optional[str] = None,
         component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Dict[str, FillContent] = {},
+        fill_content: Optional[Dict[str, FillContent]] = None,
     ):
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
-        self.fill_content = fill_content
+        self.fill_content = fill_content or {}
         self.component_id = component_id or gen_id()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -265,15 +263,6 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         context = context_data if isinstance(context_data, Context) else Context(context_data)
         prepare_context(context, component_id=self.component_id, outer_context=self.outer_context or Context())
         template = self.get_template(context)
-
-        # Associate the slots with this component for this context
-        # This allows us to look up component-specific slot fills.
-        def on_node(node: Node) -> None:
-            if isinstance(node, SlotNode):
-                trace_msg("ASSOC", "SLOT", node.name, node.node_id, component_id=self.component_id)
-                set_slot_component_association(context, node.node_id, self.component_id)
-
-        walk_nodelist(template.nodelist, on_node)
 
         if slots_data:
             self._fill_slots(slots_data, escape_slots_content)
