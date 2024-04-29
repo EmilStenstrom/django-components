@@ -417,13 +417,14 @@ def _collect_slot_fills_from_component_template(
             continue
 
         slot_name = node.name
+
+        # If true then the template contains multiple slot of the same name.
+        # No action needed, since even tho there's mutliple slots, we will
+        # still apply only a single fill to all of them. And each slot handles
+        # their own fallback content.
         if slot_name in slot_name2fill_content:
-            raise TemplateSyntaxError(
-                f"Slot name '{slot_name}' re-used within the same template. "
-                f"Slot names must be unique."
-                f"To fix, check template '{template.name}' "
-                f"of component '{registered_name}'."
-            )
+            continue
+
         if node.is_required:
             required_slot_names.add(node.name)
 

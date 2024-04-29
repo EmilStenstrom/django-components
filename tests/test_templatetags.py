@@ -941,7 +941,6 @@ class TemplateSyntaxErrorTests(BaseTestCase):
         super().setUpClass()
         component.registry.register("test", SlottedComponent)
         component.registry.register("broken_component", BrokenComponent)
-        component.registry.register("nonunique_slot_component", NonUniqueSlotsComponent)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -1027,16 +1026,6 @@ class TemplateSyntaxErrorTests(BaseTestCase):
                 {% component "broken_component" %}
                     {% fill "header" %}Custom header {% endfill %}
                     {% fill "header" %}Other header{% endfill %}
-                {% endcomponent %}
-                """
-            ).render(Context({}))
-
-    def test_non_unique_slot_names_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
-                {% load component_tags %}
-                {% component "nonunique_slot_component" %}
                 {% endcomponent %}
                 """
             ).render(Context({}))

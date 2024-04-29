@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
@@ -36,6 +36,30 @@ class VariableDisplay(component.Component):
         if new_variable is not None:
             context["unique_variable"] = new_variable
         return context
+
+
+class DuplicateSlotComponent(component.Component):
+    template_name = "template_with_nonunique_slots.html"
+
+    def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+        return {
+            "name": name,
+        }
+
+
+class DuplicateSlotNestedComponent(component.Component):
+    template_name = "template_with_nonunique_slots_nested.html"
+
+    def get_context_data(self, items: List) -> Dict[str, Any]:
+        return {
+            "items": items,
+        }
+
+
+class CalendarComponent(component.Component):
+    """Nested in ComponentWithNestedComponent"""
+
+    template_name = "slotted_component_nesting_template_pt1_calendar.html"
 
 
 #########################
@@ -382,6 +406,137 @@ class ComponentTest(BaseTestCase):
                     <main> ABC: carl </main>
                 </div>
             </body>
+            """,
+        )
+
+
+class DuplicateSlotTest(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        component.registry.register(name="duplicate_slot", component=DuplicateSlotComponent)
+        component.registry.register(name="duplicate_slot_nested", component=DuplicateSlotNestedComponent)
+        component.registry.register(name="calendar", component=CalendarComponent)
+
+    def test_duplicate_slots(self):
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "duplicate_slot" %}
+                {% fill "header" %}
+                    Name: {{ name }}
+                {% endfill %}
+                {% fill "footer" %}
+                    Hello
+                {% endfill %}
+            {% endcomponent %}
+            """
+        )
+
+        rendered = self.template.render(Context({"name": "Jannete"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <header>Name: Jannete</header>
+            <main>Name: Jannete</main>
+            <footer>Hello</footer>
+            """,
+        )
+
+    def test_duplicate_slots_fallback(self):
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "duplicate_slot" %}
+            {% endcomponent %}
+            """
+        )
+        rendered = self.template.render(Context({}))
+
+        # NOTE: Slots should have different fallbacks even though they use the same name
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <header>Default header</header>
+            <main>Default main header</main>
+            <footer>Default footer</footer>
+            """,
+        )
+
+    def test_duplicate_slots_nested(self):
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "duplicate_slot_nested" items=items %}
+                {% fill "header" %}
+                    OVERRIDDEN!
+                {% endfill %}
+            {% endcomponent %}
+            """
+        )
+        rendered = self.template.render(Context({"items": [1, 2, 3]}))
+
+        # NOTE: Slots should have different fallbacks even though they use the same name
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OVERRIDDEN!
+            <div class="dashboard-component">
+                <div class="calendar-component">
+                    <h1>
+                        OVERRIDDEN!
+                    </h1>
+                    <main>
+                        Here are your to-do items for today:
+                    </main>
+                </div>
+
+                <ol>
+                    <li>1</li>
+                    OVERRIDDEN!
+                    <li>2</li>
+                    OVERRIDDEN!
+                    <li>3</li>
+                    OVERRIDDEN!
+                </ol>
+            </div>
+            """,
+        )
+
+    def test_duplicate_slots_nested_fallback(self):
+        self.template = Template(
+            """
+            {% load component_tags %}
+            {% component "duplicate_slot_nested" items=items %}
+            {% endcomponent %}
+            """
+        )
+        rendered = self.template.render(Context({"items": [1, 2, 3]}))
+
+        # NOTE: Slots should have different fallbacks even though they use the same name
+        self.assertHTMLEqual(
+            rendered,
+            """
+            START
+            <div class="dashboard-component">
+                <div class="calendar-component">
+                    <h1>
+                        NESTED
+                    </h1>
+                    <main>
+                        Here are your to-do items for today:
+                    </main>
+                </div>
+
+                <ol>
+                    <li>1</li>
+                    LOOP 1
+                    <li>2</li>
+                    LOOP 2
+                    <li>3</li>
+                    LOOP 3
+                </ol>
+            </div>
             """,
         )
 
