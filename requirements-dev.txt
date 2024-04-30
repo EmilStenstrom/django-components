@@ -61,7 +61,7 @@ platformdirs==4.1.0
     #   black
     #   tox
     #   virtualenv
-pluggy==1.4.0
+pluggy==1.5.0
     # via
     #   pytest
     #   tox
@@ -73,7 +73,7 @@ pyflakes==3.2.0
     # via flake8
 pyproject-api==1.6.1
     # via tox
-pytest==8.1.1
+pytest==8.2.0
     # via -r requirements-dev.in
 pyyaml==6.0.1
     # via pre-commit
