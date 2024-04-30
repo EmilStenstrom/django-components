@@ -6,7 +6,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.template.library import parse_bits
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.app_settings import app_settings, ContextBehavior
+from django_components.app_settings import ContextBehavior, app_settings
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry

@@ -297,7 +297,7 @@ class ParentArgsTests(BaseTestCase):
                     {% endcomponent %}
                 {% endfill %}
             {% endcomponent %}
-            """
+            """  # noqa: E501
         )
         rendered = template.render(Context())
         self.assertHTMLEqual(
@@ -310,7 +310,7 @@ class ParentArgsTests(BaseTestCase):
             </div>
             <div>
                 <h1>Shadowing variable = value_from_slot</h1>
-                <h1>Uniquely named variable = passed_in</h1>            
+                <h1>Uniquely named variable = passed_in</h1>
             </div>
             """
         )
@@ -330,7 +330,7 @@ class ParentArgsTests(BaseTestCase):
                     {% endcomponent %}
                 {% endfill %}
             {% endcomponent %}
-            """
+            """  # noqa: E501
         )
         rendered = template.render(Context())
         self.assertHTMLEqual(
@@ -343,7 +343,7 @@ class ParentArgsTests(BaseTestCase):
             </div>
             <div>
                 <h1>Shadowing variable = value_from_slot</h1>
-                <h1>Uniquely named variable = </h1>            
+                <h1>Uniquely named variable = </h1>
             </div>
             """
         )

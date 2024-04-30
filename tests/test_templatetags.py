@@ -13,7 +13,6 @@ from .testutils import BaseTestCase
 
 import django_components
 import django_components.component_registry
-from django_components.component import safe_resolve_dict, safe_resolve_list
 from django_components import component
 
 
@@ -305,7 +304,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         COMPONENTS={
             "context_behavior": "django",
         }
-    )    
+    )
     def test_slotted_template_with_context_var__django(self):
         component.registry.register(name="test1", component=SlottedComponentWithContext)
 
@@ -779,7 +778,7 @@ class NestedSlotTests(BaseTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<div id="outer">Default</div>')
 
-    def test_inner_slot_overriden(self):      
+    def test_inner_slot_overriden(self):
         template = Template(
             """
             {% load component_tags %}

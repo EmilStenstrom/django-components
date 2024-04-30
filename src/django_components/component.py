@@ -21,21 +21,15 @@ from django.views import View
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
 from django_components.context import (
-    make_isolated_context_copy,
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
-    _ROOT_CTX_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
+    _ROOT_CTX_CONTEXT_KEY,
+    make_isolated_context_copy,
     prepare_context,
 )
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
-from django_components.slots import (
-    DEFAULT_SLOT_KEY,
-    FillContent,
-    FillNode,
-    SlotName,
-    resolve_slots,
-)
+from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotName, resolve_slots
 from django_components.utils import gen_id, search
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"

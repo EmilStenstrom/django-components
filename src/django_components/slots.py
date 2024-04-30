@@ -13,7 +13,7 @@ from django.utils.safestring import SafeString, mark_safe
 from django_components.app_settings import ContextBehavior, app_settings
 from django_components.context import _FILLED_SLOTS_CONTENT_CONTEXT_KEY, _ROOT_CTX_CONTEXT_KEY
 from django_components.logger import trace_msg
-from django_components.node import nodelist_has_content, walk_nodelist, NodeTraverse
+from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
@@ -518,7 +518,7 @@ name_escape_re = re.compile(r"[^\w]")
 def _escape_slot_name(name: str) -> str:
     """
     Users may define slots with names which are invalid identifiers like 'my slot'.
-    But these cannot be used as keys in the template context, e.g. `{{ slots.'my slot' }}`.
+    But these cannot be used as keys in the template context, e.g. `{{ component_vars.is_filled.'my slot' }}`.
     So as workaround, we instead use these escaped names which are valid identifiers.
 
     So e.g. `my slot` should be escaped as `my_slot`.
