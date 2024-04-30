@@ -6,7 +6,7 @@
 #
 asgiref==3.7.2
     # via django
-black==24.4.0
+black==24.4.2
     # via -r requirements-dev.in
 cachetools==5.3.2
     # via tox
@@ -40,7 +40,7 @@ isort==5.13.2
     # via -r requirements-dev.in
 mccabe==0.7.0
     # via flake8
-mypy==1.9.0
+mypy==1.10.0
     # via -r requirements-dev.in
 mypy-extensions==1.0.0
     # via
@@ -61,7 +61,7 @@ platformdirs==4.1.0
     #   black
     #   tox
     #   virtualenv
-pluggy==1.4.0
+pluggy==1.5.0
     # via
     #   pytest
     #   tox
@@ -73,13 +73,13 @@ pyflakes==3.2.0
     # via flake8
 pyproject-api==1.6.1
     # via tox
-pytest==8.1.1
+pytest==8.2.0
     # via -r requirements-dev.in
 pyyaml==6.0.1
     # via pre-commit
 sqlparse==0.5.0
     # via django
-tox==4.14.2
+tox==4.15.0
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via mypy
