@@ -20,7 +20,13 @@ from django.views import View
 # way the two modules depend on one another.
 from django_components.component_registry import registry  # NOQA
 from django_components.component_registry import AlreadyRegistered, ComponentRegistry, NotRegistered, register  # NOQA
-from django_components.context import make_isolated_context_copy, prepare_context
+from django_components.context import (
+    make_isolated_context_copy,
+    _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
+    _ROOT_CTX_CONTEXT_KEY,
+    _PARENT_COMP_CONTEXT_KEY,
+    prepare_context,
+)
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
@@ -28,7 +34,7 @@ from django_components.slots import (
     FillContent,
     FillNode,
     SlotName,
-    render_component_template_with_slots,
+    resolve_slots,
 )
 from django_components.utils import gen_id, search
 
@@ -252,24 +258,76 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
+    def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict) -> str:
+        component_context: dict = self.get_context_data(*args, **kwargs)
+
+        with context.update(component_context):
+            rendered_component = self.render(context, context_data=component_context)
+
+        if is_dependency_middleware_active():
+            output = RENDERED_COMMENT_TEMPLATE.format(name=self.registered_name) + rendered_component
+        else:
+            output = rendered_component
+
+        return output
+
     def render(
         self,
-        context_data: Union[Dict[str, Any], Context],
+        context: Union[Dict[str, Any], Context],
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
+        context_data: Optional[Dict[str, Any]] = None,
     ) -> str:
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
-        context = context_data if isinstance(context_data, Context) else Context(context_data)
-        prepare_context(context, component_id=self.component_id, outer_context=self.outer_context or Context())
+        context = context if isinstance(context, Context) else Context(context)
+        prepare_context(context, self.component_id)
         template = self.get_template(context)
 
+        # Support passing slots explicitly to `render` method
         if slots_data:
-            self._fill_slots(slots_data, escape_slots_content)
+            fill_content = self._fills_from_slots_data(slots_data, escape_slots_content)
+        else:
+            fill_content = self.fill_content
 
-        return render_component_template_with_slots(
-            self.component_id, template, context, self.fill_content, self.registered_name
+        # If this is top-level component and it has no parent, use outer context instead
+        if not context[_PARENT_COMP_CONTEXT_KEY]:
+            context_data = self.outer_context.flatten()
+        if context_data is None:
+            context_data = {}
+
+        slots, resolved_fills = resolve_slots(
+            template,
+            component_name=self.registered_name,
+            context_data=context_data,
+            fill_content=fill_content,
         )
+
+        # Available slot fills - this is internal to us
+        updated_slots = {
+            **context.get(_FILLED_SLOTS_CONTENT_CONTEXT_KEY, {}),
+            **resolved_fills,
+        }
+
+        # For users, we expose boolean variables that they may check
+        # to see if given slot was filled, e.g.:
+        # `{% if variable > 8 and component_vars.is_filled.header %}`
+        slot_bools = {
+            slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()
+        }
+
+        with context.update(
+            {
+                _ROOT_CTX_CONTEXT_KEY: self.outer_context,
+                _FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_slots,
+                # NOTE: Public API for variables accessible from within a component's template
+                # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
+                "component_vars": {
+                    "is_filled": slot_bools,
+                }
+            }
+        ):
+            return template.render(context)
 
     def render_to_response(
         self,
@@ -279,25 +337,30 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         *args: Any,
         **kwargs: Any,
     ) -> HttpResponse:
+        """
+        This is the interface for the `django.views.View` class which allows us to
+        use components as Django views with `component.as_view()`.
+        """
         return HttpResponse(
             self.render(context_data, slots_data, escape_slots_content),
             *args,
             **kwargs,
         )
 
-    def _fill_slots(
+    def _fills_from_slots_data(
         self,
         slots_data: Dict[SlotName, str],
         escape_content: bool = True,
-    ) -> None:
+    ) -> Dict[SlotName, FillContent]:
         """Fill component slots outside of template rendering."""
-        self.fill_content = {
+        slot_fills = {
             slot_name: FillContent(
                 nodes=NodeList([TextNode(escape(content) if escape_content else content)]),
                 alias=None,
             )
             for (slot_name, content) in slots_data.items()
         }
+        return slot_fills
 
 
 class ComponentNode(Node):
@@ -335,8 +398,8 @@ class ComponentNode(Node):
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
         # to get values to insert into the context
-        resolved_context_args = [safe_resolve(arg, context) for arg in self.context_args]
-        resolved_context_kwargs = {key: safe_resolve(kwarg, context) for key, kwarg in self.context_kwargs.items()}
+        resolved_context_args = safe_resolve_list(self.context_args, context)
+        resolved_context_kwargs = safe_resolve_dict(self.context_kwargs, context)
 
         is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
         if is_default_slot:
@@ -357,22 +420,25 @@ class ComponentNode(Node):
             component_id=self.component_id,
         )
 
-        component_context: dict = component.get_context_data(*resolved_context_args, **resolved_context_kwargs)
-
         # Prevent outer context from leaking into the template of the component
         if self.isolated_context:
             context = make_isolated_context_copy(context)
 
-        with context.update(component_context):
-            rendered_component = component.render(context)
-
-        if is_dependency_middleware_active():
-            output = RENDERED_COMMENT_TEMPLATE.format(name=resolved_component_name) + rendered_component
-        else:
-            output = rendered_component
+        output = component.render_from_input(context, resolved_context_args, resolved_context_kwargs)
 
         trace_msg("RENDR", "COMP", self.name_fexp, self.component_id, "...Done!")
         return output
+
+
+def safe_resolve_list(args: List[FilterExpression], context: Context) -> List:
+    return [safe_resolve(arg, context) for arg in args]
+
+
+def safe_resolve_dict(
+    kwargs: Union[Mapping[str, FilterExpression], Dict[str, FilterExpression]],
+    context: Context,
+) -> Dict:
+    return {key: safe_resolve(kwarg, context) for key, kwarg in kwargs.items()}
 
 
 def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
