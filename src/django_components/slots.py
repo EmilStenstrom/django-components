@@ -306,6 +306,7 @@ def _try_parse_as_default_fill(
 # SLOT RESOLUTION
 ####################
 
+
 def resolve_slots(
     template: Template,
     component_name: Optional[str],
@@ -515,6 +516,8 @@ def _report_slot_errors(
 
 
 name_escape_re = re.compile(r"[^\w]")
+
+
 def _escape_slot_name(name: str) -> str:
     """
     Users may define slots with names which are invalid identifiers like 'my slot'.

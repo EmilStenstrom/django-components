@@ -219,11 +219,13 @@ class ParentArgsTests(BaseTestCase):
         }
     )
     def test_parent_args_can_be_drawn_from_context__django(self):
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value=parent_value %}
             {% endcomponent %}
-        """)
+        """
+        )
         rendered = template.render(Context({"parent_value": "passed_in"}))
 
         self.assertHTMLEqual(
@@ -239,7 +241,7 @@ class ParentArgsTests(BaseTestCase):
                 <h1>Shadowing variable = slot_default_override</h1>
                 <h1>Uniquely named variable = passed_in</h1>
             </div>
-            """
+            """,
         )
 
     @override_settings(
@@ -248,11 +250,13 @@ class ParentArgsTests(BaseTestCase):
         }
     )
     def test_parent_args_can_be_drawn_from_context__isolated(self):
-        template = Template("""
+        template = Template(
+            """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value=parent_value %}
             {% endcomponent %}
-        """)
+        """
+        )
         rendered = template.render(Context({"parent_value": "passed_in"}))
 
         self.assertHTMLEqual(
@@ -268,7 +272,7 @@ class ParentArgsTests(BaseTestCase):
                 <h1>Shadowing variable = slot_default_override</h1>
                 <h1>Uniquely named variable = passed_in</h1>
             </div>
-            """
+            """,
         )
 
     def test_parent_args_available_outside_slots(self):
@@ -312,7 +316,7 @@ class ParentArgsTests(BaseTestCase):
                 <h1>Shadowing variable = value_from_slot</h1>
                 <h1>Uniquely named variable = passed_in</h1>
             </div>
-            """
+            """,
         )
 
     @override_settings(
@@ -345,7 +349,7 @@ class ParentArgsTests(BaseTestCase):
                 <h1>Shadowing variable = value_from_slot</h1>
                 <h1>Uniquely named variable = </h1>
             </div>
-            """
+            """,
         )
 
 
@@ -432,7 +436,7 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
             rendered,
             """
             Variable: <strong> outer_value </strong>
-            """
+            """,
         )
 
     @override_settings(
@@ -448,7 +452,7 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
             rendered,
             """
             Variable: <strong> </strong>
-            """
+            """,
         )
 
 

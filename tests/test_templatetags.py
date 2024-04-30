@@ -266,9 +266,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_slotted_template_with_context_var__isolated(self):
         component.registry.register(name="test1", component=SlottedComponentWithContext)
 
@@ -1086,9 +1084,7 @@ class ComponentNestingTests(BaseTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_component_nesting_component_without_fill__django(self):
         template = Template(
             """
@@ -1116,9 +1112,7 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_component_without_fill__isolated(self):
         template = Template(
             """
@@ -1143,9 +1137,7 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_slot_inside_component_fill__isolated(self):
         template = Template(
             """
@@ -1170,9 +1162,7 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_slot_inside_component_fill__isolated_2(self):
         template = Template(
             """
@@ -1201,9 +1191,7 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_deep_slot_inside_component_fill__isolated(self):
 
         template = Template(
@@ -1228,9 +1216,7 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_component_nesting_component_with_fill_and_super__django(self):
         template = Template(
             """
@@ -1259,9 +1245,7 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_component_with_fill_and_super__isolated(self):
         template = Template(
             """
@@ -1329,9 +1313,7 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_component_with_filled_conditional_slot__django(self):
         template = """
         {% load component_tags %}
@@ -1501,9 +1483,7 @@ class IterationFillTest(BaseTestCase):
     def setUp(self):
         django_components.component.registry.clear()
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_inner_slot_iteration_basic__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1528,9 +1508,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_basic__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1549,9 +1527,7 @@ class IterationFillTest(BaseTestCase):
 
         self.assertHTMLEqual(rendered, "")
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_inner_slot_iteration_with_variable_from_outer_scope__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1586,9 +1562,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_with_variable_from_outer_scope__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1621,9 +1595,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_inner_slot_iteration_nested__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1658,9 +1630,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_nested__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1687,9 +1657,7 @@ class IterationFillTest(BaseTestCase):
 
         self.assertHTMLEqual(rendered, "")
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_inner_slot_iteration_nested_with_outer_scope_variable__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1740,9 +1708,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_nested_with_outer_scope_variable__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1785,9 +1751,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_inner_slot_iteration_nested_with_slot_default__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1822,9 +1786,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_nested_with_slot_default__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -1850,9 +1812,7 @@ class IterationFillTest(BaseTestCase):
         rendered = template.render(Context({"objects": objects}))
         self.assertHTMLEqual(rendered, "")
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__django(
         self,
     ):
@@ -1905,9 +1865,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__isolated_1(
         self,
     ):
@@ -1955,9 +1913,7 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"}
-    )
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__isolated_2(
         self,
     ):

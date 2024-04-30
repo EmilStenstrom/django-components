@@ -306,9 +306,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # For users, we expose boolean variables that they may check
         # to see if given slot was filled, e.g.:
         # `{% if variable > 8 and component_vars.is_filled.header %}`
-        slot_bools = {
-            slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()
-        }
+        slot_bools = {slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()}
 
         with context.update(
             {
@@ -318,7 +316,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
                 # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
                 "component_vars": {
                     "is_filled": slot_bools,
-                }
+                },
             }
         ):
             return template.render(context)
