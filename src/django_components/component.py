@@ -409,7 +409,7 @@ class ComponentNode(Node):
                         f"Multiple fill tags cannot target the same slot name: "
                         f"Detected duplicate fill tag name '{resolved_name}'."
                     )
-                    
+
                 resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
                 fill_content[resolved_name] = FillContent(fill_node.nodelist, resolved_fill_alias)
 
