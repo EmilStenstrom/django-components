@@ -1062,7 +1062,7 @@ class TemplateSyntaxErrorTests(BaseTestCase):
             ).render(Context({}))
 
     def test_isolated_slot_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaises(KeyError):
             Template(
                 """
                 {% load component_tags %}
@@ -1079,7 +1079,7 @@ class TemplateSyntaxErrorTests(BaseTestCase):
             Template(
                 """
                 {% load component_tags %}
-                {% component "broken_component" %}
+                {% component "test" %}
                     {% fill "header" %}Custom header {% endfill %}
                     {% fill "header" %}Other header{% endfill %}
                 {% endcomponent %}

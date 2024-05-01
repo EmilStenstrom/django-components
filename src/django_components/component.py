@@ -9,6 +9,7 @@ from django.forms.widgets import Media, MediaDefiningClass
 from django.http import HttpResponse
 from django.template.base import FilterExpression, Node, NodeList, Template, TextNode
 from django.template.context import Context
+from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
@@ -403,6 +404,12 @@ class ComponentNode(Node):
                 # Note that outer component context is used to resolve variables in
                 # fill tag.
                 resolved_name = fill_node.name_fexp.resolve(context)
+                if resolved_name in fill_content:
+                    raise TemplateSyntaxError(
+                        f"Multiple fill tags cannot target the same slot name: "
+                        f"Detected duplicate fill tag name '{resolved_name}'."
+                    )
+                    
                 resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
                 fill_content[resolved_name] = FillContent(fill_node.nodelist, resolved_fill_alias)
 

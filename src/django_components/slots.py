@@ -258,15 +258,15 @@ def _try_parse_as_named_fill_tag_set(
     ComponentNodeCls: Type[Node],
 ) -> List[FillNode]:
     result = []
-    seen_name_fexps: Set[FilterExpression] = set()
+    seen_name_fexps: Set[str] = set()
     for node in nodelist:
         if isinstance(node, FillNode):
-            if node.name_fexp in seen_name_fexps:
+            if node.name_fexp.token in seen_name_fexps:
                 raise TemplateSyntaxError(
                     f"Multiple fill tags cannot target the same slot name: "
                     f"Detected duplicate fill tag name '{node.name_fexp}'."
                 )
-            seen_name_fexps.add(node.name_fexp)
+            seen_name_fexps.add(node.name_fexp.token)
             result.append(node)
         elif isinstance(node, CommentNode):
             pass
