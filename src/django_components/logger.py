@@ -63,7 +63,7 @@ def trace(logger: logging.Logger, message: str, *args: Any, **kwargs: Any) -> No
 
 def trace_msg(
     action: Literal["PARSE", "ASSOC", "RENDR", "GET", "SET"],
-    node_type: Literal["COMP", "FILL", "SLOT", "IFSB", "N/A"],
+    node_type: Literal["COMP", "FILL", "SLOT", "N/A"],
     node_name: str,
     node_id: str,
     msg: str = "",
@@ -80,7 +80,7 @@ def trace_msg(
         if not component_id:
             raise ValueError("component_id must be set for the ASSOC action")
         msg_prefix = f"TO COMP {component_id}"
-    elif action == "RENDR" and node_type != "COMP":
+    elif action == "RENDR" and node_type == "FILL":
         if not component_id:
             raise ValueError("component_id must be set for the RENDER action")
         msg_prefix = f"FOR COMP {component_id}"

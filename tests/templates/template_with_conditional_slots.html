@@ -2,7 +2,7 @@
 {% load component_tags %}
 <div class="frontmatter-component">
     <div class="title">{% slot "title" %}Title{% endslot %}</div>
-    {% if_filled "subtitle" %}
+    {% if component_vars.is_filled.subtitle %}
         <div class="subtitle">{% slot "subtitle" %}Optional subtitle{% endslot %}</div>
-    {% endif_filled %}
+    {% endif %}
 </div>

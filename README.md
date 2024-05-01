@@ -20,7 +20,12 @@ Read on to learn about the details!
 
 ## Release notes
 
-**Version 0.67** CHANGED the default way how context variables are resolved in slots. See the [documentation](#isolate-components-slots) for more details.
+🚨📢 **Version 0.70**
+
+- `{% if_filled "my_slot" %}` tags were replaced with `{{ component_vars.is_filled.my_slot }}` variables.
+- Simplified settings - `slot_context_behavior` and `context_behavior` were merged. See the [documentation](#context-behavior) for more details.
+
+**Version 0.67** CHANGED the default way how context variables are resolved in slots. See the [documentation](https://github.com/EmilStenstrom/django-components/tree/0.67#isolate-components-slots) for more details.
 
 🚨📢 **Version 0.5** CHANGES THE SYNTAX for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of components to the new syntax automatically.
 
@@ -72,7 +77,7 @@ Both routes are described in the official [docs of the _staticfiles_ app](https:
 
 Install the app into your environment:
 
-> ```pip install django_components```
+> `pip install django_components`
 
 Then add the app into INSTALLED_APPS in settings.py
 
@@ -118,7 +123,7 @@ STATICFILES_DIRS = [
 
 ### Optional
 
-To avoid loading the app in each template using ``` {% load component_tags %} ```, you can add the tag as a 'builtin' in settings.py
+To avoid loading the app in each template using `{% load component_tags %}`, you can add the tag as a 'builtin' in settings.py
 
 ```python
 TEMPLATES = [
@@ -174,19 +179,26 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 
 ```css
 /* In a file called [project root]/components/calendar/style.css */
-.calendar-component { width: 200px; background: pink; }
-.calendar-component span { font-weight: bold; }
+.calendar-component {
+  width: 200px;
+  background: pink;
+}
+.calendar-component span {
+  font-weight: bold;
+}
 ```
 
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
 ```js
 /* In a file called [project root]/components/calendar/script.js */
-(function(){
-    if (document.querySelector(".calendar-component")) {
-        document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
-    }
-})()
+(function () {
+  if (document.querySelector(".calendar-component")) {
+    document.querySelector(".calendar-component").onclick = function () {
+      alert("Clicked calendar!");
+    };
+  }
+})();
 ```
 
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
@@ -230,6 +242,7 @@ By default, the Python files in the `components` app are auto-imported in order 
 Autodiscovery occurs when Django is loaded, during the `ready` hook of the `apps.py` file.
 
 If you are using autodiscovery, keep a few points in mind:
+
 - Avoid defining any logic on the module-level inside the `components` dir, that you would not want to run anyway.
 - Components inside the auto-imported files still need to be registered with `@component.register()`
 - Auto-imported component files must be valid Python modules, they must use suffix `.py`, and module name should follow [PEP-8](https://peps.python.org/pep-0008/#package-and-module-names).
@@ -260,15 +273,23 @@ The output from the above template will be:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>My example calendar</title>
-    <link href="/static/calendar/style.css" type="text/css" media="all" rel="stylesheet">
-</head>
-<body>
-    <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
+    <link
+      href="/static/calendar/style.css"
+      type="text/css"
+      media="all"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="calendar-component">
+      Today's date is <span>2015-06-19</span>
+    </div>
     <script src="/static/calendar/script.js"></script>
-</body>
-<html>
+  </body>
+  <html></html>
+</html>
 ```
 
 This makes it possible to organize your front-end around reusable components. Instead of relying on template tags and keeping your CSS and Javascript in the static directory.
@@ -529,10 +550,11 @@ Produces:
 </div>
 ```
 
-
 #### Conditional slots
 
 _Added in version 0.26._
+
+> NOTE: In version 0.70, `{% if_filled %}` tags were replaced with `{{ component_vars.is_filled }}` variables. If your slot name contained special characters, see the section "Accessing slot names with special characters".
 
 In certain circumstances, you may want the behavior of slot filling to depend on
 whether or not a particular slot is filled.
@@ -566,60 +588,61 @@ explicit fills, the div containing the slot is still rendered, as shown below:
 This may not be what you want. What if instead the outer 'subtitle' div should only
 be included when the inner slot is in fact filled?
 
-The answer is to use the `{% if_filled <name> %}` tag. Together with `{% endif_filled %}`,
-these define a block whose contents will be rendered only if the component slot with
+The answer is to use the `{{ component_vars.is_filled.<name> }}` variable. You can use this together with Django's `{% if/elif/else/endif %}` tags to define a block whose contents will be rendered only if the component slot with
 the corresponding 'name' is filled.
 
-This is what our example looks like with an 'if_filled' tag.
+This is what our example looks like with `component_vars.is_filled`.
 
 ```htmldjango
 <div class="frontmatter-component">
     <div class="title">
         {% slot "title" %}Title{% endslot %}
     </div>
-    {% if_filled "subtitle" %}
+    {% if component_vars.is_filled.subtitle %}
     <div class="subtitle">
         {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
     </div>
-    {% endif_filled %}
+    {% endif %}
 </div>
 ```
 
-Just as Django's builtin 'if' tag has 'elif' and 'else' counterparts, so does 'if_filled'
-include additional tags for more complex branching. These tags are 'elif_filled' and
-'else_filled'. Here's what our example looks like with them.
+Here's our example with more complex branching.
 
 ```htmldjango
 <div class="frontmatter-component">
     <div class="title">
         {% slot "title" %}Title{% endslot %}
     </div>
-    {% if_filled "subtitle" %}
+    {% if component_vars.is_filled.subtitle %}
     <div class="subtitle">
         {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
     </div>
-    {% elif_filled "title" %}
+    {% elif component_vars.is_filled.title %}
         ...
-    {% else_filled %}
+    {% elif component_vars.is_filled.<name> %}
         ...
-    {% endif_filled %}
+    {% endif %}
 </div>
 ```
 
 Sometimes you're not interested in whether a slot is filled, but rather that it _isn't_.
-To negate the meaning of 'if_filled' in this way, an optional boolean can be passed to
-the 'if_filled' and 'elif_filled' tags.
-
-In the example below we use `False` to indicate that the content should be rendered
-only if the slot 'subtitle' is _not_ filled.
+To negate the meaning of `component_vars.is_filled`, simply treat it as boolean and negate it with `not`:
 
 ```htmldjango
-{% if_filled subtitle False %}
+{% if not component_vars.is_filled.subtitle %}
 <div class="subtitle">
     {% slot "subtitle" %}{% endslot %}
 </div>
-{% endif_filled %}
+{% endif %}
 ```
+
+**Accessing slot names with special characters**
+
+To be able to access a slot name via `component_vars.is_filled`, the slot name needs to be composed of only alphanumeric characters and underscores (e.g. `this__isvalid_123`).
+
+However, you can still define slots with other special characters. In such case, the slot name in `component_vars.is_filled` is modified to replace all invalid characters into `_`.
+
+So a slot named `"my super-slot :)"` will be available as `component_vars.is_filled.my_super_slot___`.
 
 ### Setting Up `ComponentDependencyMiddleware`
 
@@ -646,25 +669,25 @@ COMPONENTS = {
 
 ## Component context and scope
 
-By default, components can access context variables from the parent template, just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want the component template to have access to the parent context, add `only` to the end of the `{% component %}` tag):
+By default, components are ISOLATED and CANNOT access context variables from the parent template. This is useful if you want to make sure that components don't accidentally access the outer context.
+
+You can set the [context_behavior](#context-behavior) option to `"django"`, to make components behave just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want a specific component template to have access to the parent context, add `only` to the end of the `{% component %}` tag:
 
 ```htmldjango
-   {% component "calendar" date="2015-06-19" only %}{% endcomponent %}
+{% component "calendar" date="2015-06-19" only %}{% endcomponent %}
 ```
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
 
 Components can also access the outer context in their context methods by accessing the property `outer_context`.
 
-You can also set `context_behavior` to `isolated` to make all components isolated by default. This is useful if you want to make sure that components don't accidentally access the outer context.
-
 ## Available settings
 
-All library settings are handled from a global COMPONENTS variable that is read from settings.py. By default you don't need it set, there are resonable defaults.
+All library settings are handled from a global `COMPONENTS` variable that is read from `settings.py`. By default you don't need it set, there are resonable defaults.
 
 ### Configure the module where components are loaded from
 
-Configure the location where components are loaded. To do this, add a COMPONENTS variable to you settings.py with a list of python paths to load. This allows you to build a structure of components that are independent from your apps.
+Configure the location where components are loaded. To do this, add a `COMPONENTS` variable to you `settings.py` with a list of python paths to load. This allows you to build a structure of components that are independent from your apps.
 
 ```python
 COMPONENTS = {
@@ -696,9 +719,19 @@ COMPONENTS = {
 }
 ```
 
-### Isolate components' context by default
+### Context behavior
 
-If you'd like to prevent components from accessing the outer context by default, you can set the `context_behavior` setting to `isolated`. This is useful if you want to make sure that components don't accidentally access the outer context.
+> NOTE: `context_behavior` and `slot_context_behavior` options were merged in v0.70.
+>
+> If you are migrating from BEFORE v0.67, set `context_behavior` to `"django"`. From v0.67 and later use the default value `"isolated"`.
+
+You can configure what variables are available inside the `{% fill %}` tags. See [Component context and scope](#component-context-and-scope).
+
+This has two modes:
+
+- `"django"` - Context variables are taken from its surroundings (default before v0.67)
+
+- `"isolated"` - Default - Similar behavior to [Vue](https://vuejs.org/guide/components/slots.html#render-scope) or React - variables are taken ONLY from `get_context_data()` method of the component which defines the `{% fill %}` tag. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 ```python
 COMPONENTS = {
@@ -706,26 +739,77 @@ COMPONENTS = {
 }
 ```
 
-### Isolate components' slots
+#### Example "django"
 
-What variables should be available from inside a component slot?
+Given this template
 
-By default, variables inside component slots are preferentially taken from the root context.
-This is similar to [how Vue renders slots](https://vuejs.org/guide/components/slots.html#render-scope),
-except that, if variable is not found in the root, then the surrounding context is searched too.
-
-You can change this with the `slot_contet_behavior` setting. Options are:
-- `"prefer_root"` - Default - as described above
-- `"isolated"` - Same behavior as Vue - variables are taken ONLY from the root context
-- `"allow_override"` - slot context variables are taken from its surroundings (default before v0.67)
-
-```python
-COMPONENTS = {
-    "slot_context_behavior": "isolated",
-}
+```django
+{% with cheese="feta" %}
+    {% component 'my_comp' %}
+        {{ my_var }}  # my_var
+        {{ cheese }}  # cheese
+    {% endcomponent %}
+{% endwith %}
 ```
 
-For further details and examples, see [SlotContextBehavior](https://github.com/EmilStenstrom/django-components/blob/master/src/django_components/app_settings.py#L12).
+and this context returned from the `get_context_data()` method
+
+```py
+{ "my_var": 123 }
+```
+
+Then if component "my_comp" defines context
+
+```py
+{ "my_var": 456 }
+```
+
+Then this will render:
+
+```django
+456   # my_var
+feta  # cheese
+```
+
+Because "my_comp" overrides the variable "my_var",
+so `{{ my_var }}` equals `456`.
+And variable "cheese" equals `feta`, because the fill CAN access
+the current context.
+
+#### Example "isolated"
+
+Given this template
+
+```django
+{% with cheese="feta" %}
+    {% component 'my_comp' %}
+        {{ my_var }}  # my_var
+        {{ cheese }}  # cheese
+    {% endcomponent %}
+{% endwith %}
+```
+
+and this context returned from the `get_context_data()` method
+
+```py
+{ "my_var": 123 }
+```
+
+Then if component "my_comp" defines context
+
+```py
+{ "my_var": 456 }
+```
+
+Then this will render:
+
+```django
+123   # my_var
+      # cheese
+```
+
+Because both variables "my_var" and "cheese" are taken from the parent's `get_context_data()`.
+But since "cheese" is not defined there, it's empty.
 
 ## Logging and debugging
 
@@ -837,7 +921,6 @@ One of our goals with `django-components` is to make it easy to share components
 
 - [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
-
 ## Running django-components project locally
 
 ### Install locally and run the tests
@@ -879,25 +962,29 @@ How do you check that your changes to django-components project will work in an 
 Use the [sampleproject](./sampleproject/) demo project to validate the changes:
 
 1. Navigate to [sampleproject](./sampleproject/) directory:
-    ```sh
-    cd sampleproject
-    ```
+
+   ```sh
+   cd sampleproject
+   ```
 
 2. Install dependencies from the [requirements.txt](./sampleproject/requirements.txt) file:
-    ```sh
-    pip install -r requirements.txt
-    ```
+
+   ```sh
+   pip install -r requirements.txt
+   ```
 
 3. Link to your local version of django-components:
-    ```sh
-    pip install -e ..
-    ```
-    NOTE: The path (in this case `..`) must point to the directory that has the `setup.py` file.
+
+   ```sh
+   pip install -e ..
+   ```
+
+   NOTE: The path (in this case `..`) must point to the directory that has the `setup.py` file.
 
 4. Start Django server
-    ```sh
-    python manage.py runserver
-    ```
+   ```sh
+   python manage.py runserver
+   ```
 
 Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
@@ -905,15 +992,4 @@ To display individual components, add them to the `urls.py`, like in the case of
 
 ## Development guides
 
-### Slot rendering flow
-
-1. Flow starts when a template string is being parsed into Django Template instance.
-
-2. When a `{% component %}` template tag is encountered, its body is searched for all `{% fill %}` nodes (explicit or implicit). and this is attached to the created `ComponentNode`.
-
-    See the implementation of `component` template tag for details.
-
-3. Template rendering is a separate action from template parsing. When the template is being rendered, the `ComponentNode` creates an instance of the `Component` class and passes it the slot fills.
-
-    It's at this point when `Component.render` is called, and the slots are
-    rendered.
+- [Slot rendering flot](./docs/slot_rendering.md)

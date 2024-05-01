@@ -368,7 +368,6 @@ class ComponentTest(BaseTestCase):
     @override_settings(
         COMPONENTS={
             "context_behavior": "isolated",
-            "slot_context_behavior": "isolated",
         },
     )
     def test_slots_of_top_level_comps_can_access_full_outer_ctx(self):
@@ -387,15 +386,16 @@ class ComponentTest(BaseTestCase):
             {% load component_tags %}
             <body>
                 {% component "test" %}
-                    ABC: {{ name }}
+                    ABC: {{ name }} {{ some }}
                 {% endcomponent %}
             </body>
             """
         )
 
         nested_ctx = Context()
-        nested_ctx.push({"some": "var"})  # <-- Nested comp's take data only from this layer
-        nested_ctx.push({"name": "carl"})  # <-- But for top-level comp, it should access this layer too
+        # Check that the component can access vars across different context layers
+        nested_ctx.push({"some": "var"})
+        nested_ctx.push({"name": "carl"})
         rendered = self.template.render(nested_ctx)
 
         self.assertHTMLEqual(
@@ -403,7 +403,7 @@ class ComponentTest(BaseTestCase):
             """
             <body>
                 <div>
-                    <main> ABC: carl </main>
+                    <main> ABC: carl var </main>
                 </div>
             </body>
             """,
@@ -805,7 +805,9 @@ class ComponentIsolationTests(BaseTestCase):
 
 
 class SlotBehaviorTests(BaseTestCase):
-    def setUp(self):
+    # NOTE: This is standalone function instead of setUp, so we can configure
+    # Django settings per test with `@override_settings`
+    def make_template(self) -> Template:
         class SlottedComponent(component.Component):
             template_name = "slotted_template.html"
 
@@ -816,7 +818,7 @@ class SlotBehaviorTests(BaseTestCase):
 
         component.registry.register("test", SlottedComponent)
 
-        self.template = Template(
+        return Template(
             """
             {% load component_tags %}
             {% component "test" name='Igor' %}
@@ -841,11 +843,12 @@ class SlotBehaviorTests(BaseTestCase):
         )
 
     @override_settings(
-        COMPONENTS={"slot_context_behavior": "allow_override"},
+        COMPONENTS={"context_behavior": "django"},
     )
-    def test_slot_context_allow_override(self):
+    def test_slot_context__django(self):
+        template = self.make_template()
         # {{ name }} should be neither Jannete not empty, because overriden everywhere
-        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
+        rendered = template.render(Context({"day": "Monday", "name": "Jannete"}))
         self.assertHTMLEqual(
             rendered,
             """
@@ -864,15 +867,16 @@ class SlotBehaviorTests(BaseTestCase):
         )
 
         # {{ name }} should be effectively the same as before, because overriden everywhere
-        rendered2 = self.template.render(Context({"day": "Monday"}))
+        rendered2 = template.render(Context({"day": "Monday"}))
         self.assertHTMLEqual(rendered2, rendered)
 
     @override_settings(
-        COMPONENTS={"slot_context_behavior": "isolated"},
+        COMPONENTS={"context_behavior": "isolated"},
     )
-    def test_slot_context_isolated(self):
+    def test_slot_context__isolated(self):
+        template = self.make_template()
         # {{ name }} should be "Jannete" everywhere
-        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
+        rendered = template.render(Context({"day": "Monday", "name": "Jannete"}))
         self.assertHTMLEqual(
             rendered,
             """
@@ -891,7 +895,7 @@ class SlotBehaviorTests(BaseTestCase):
         )
 
         # {{ name }} should be empty everywhere
-        rendered2 = self.template.render(Context({"day": "Monday"}))
+        rendered2 = template.render(Context({"day": "Monday"}))
         self.assertHTMLEqual(
             rendered2,
             """
@@ -901,50 +905,6 @@ class SlotBehaviorTests(BaseTestCase):
                 <footer>
                     <custom-template>
                         <header>Name2: </header>
-                        <main>Day2: Monday</main>
-                        <footer>Default footer</footer>
-                    </custom-template>
-                </footer>
-            </custom-template>
-        """,
-        )
-
-    @override_settings(
-        COMPONENTS={
-            "slot_context_behavior": "prefer_root",
-        },
-    )
-    def test_slot_context_prefer_root(self):
-        # {{ name }} should be "Jannete" everywhere
-        rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <custom-template>
-                <header>Name: Jannete</header>
-                <main>Day: Monday</main>
-                <footer>
-                    <custom-template>
-                        <header>Name2: Jannete</header>
-                        <main>Day2: Monday</main>
-                        <footer>Default footer</footer>
-                    </custom-template>
-                </footer>
-            </custom-template>
-        """,
-        )
-
-        # {{ name }} should be neither "Jannete" nor empty anywhere
-        rendered = self.template.render(Context({"day": "Monday"}))
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <custom-template>
-                <header>Name: Igor</header>
-                <main>Day: Monday</main>
-                <footer>
-                    <custom-template>
-                        <header>Name2: Joe2</header>
                         <main>Day2: Monday</main>
                         <footer>Default footer</footer>
                     </custom-template>

@@ -1,0 +1,10 @@
+{% load component_tags %}
+<div class="frontmatter-component">
+    {% slot "title" %}{% endslot %}
+    {% slot "my_title" %}{% endslot %}
+    {% slot "my title 1" %}{% endslot %}
+    {% slot "my-title-2" %}{% endslot %}
+    {% slot "escape this: #$%^*()" %}{% endslot %}
+
+    {{ component_vars.is_filled }}
+</div>

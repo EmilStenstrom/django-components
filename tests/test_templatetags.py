@@ -266,7 +266,44 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """,
         )
 
-    def test_slotted_template_with_context_var(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_slotted_template_with_context_var__isolated(self):
+        component.registry.register(name="test1", component=SlottedComponentWithContext)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% with my_first_variable="test123" %}
+                {% component "test1" variable="test456" %}
+                    {% fill "main" %}
+                        {{ my_first_variable }} - {{ variable }}
+                    {% endfill %}
+                    {% fill "footer" %}
+                        {{ my_second_variable }}
+                    {% endfill %}
+                {% endcomponent %}
+            {% endwith %}
+        """
+        )
+        rendered = template.render(Context({"my_second_variable": "test321"}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Default header</header>
+                <main>test123 - </main>
+                <footer>test321</footer>
+            </custom-template>
+        """,
+        )
+
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "django",
+        }
+    )
+    def test_slotted_template_with_context_var__django(self):
         component.registry.register(name="test1", component=SlottedComponentWithContext)
 
         template = Template(
@@ -743,7 +780,9 @@ class NestedSlotTests(BaseTestCase):
         template = Template(
             """
             {% load component_tags %}
-            {% component 'test' %}{% fill 'inner' %}Override{% endfill %}{% endcomponent %}
+            {% component 'test' %}
+                {% fill 'inner' %}Override{% endfill %}
+            {% endcomponent %}
         """
         )
         rendered = template.render(Context({}))
@@ -1045,7 +1084,8 @@ class ComponentNestingTests(BaseTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_component_nesting_component_without_fill(self):
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_component_nesting_component_without_fill__django(self):
         template = Template(
             """
             {% load component_tags %}
@@ -1072,13 +1112,8 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "isolated",
-            "slot_context_behavior": "isolated",
-        }
-    )
-    def test_component_nesting_slot_inside_component_fill_isolated(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_component_nesting_component_without_fill__isolated(self):
         template = Template(
             """
             {% load component_tags %}
@@ -1102,13 +1137,33 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "isolated",
-            "slot_context_behavior": "isolated",
-        }
-    )
-    def test_component_nesting_slot_inside_component_fill_isolated_2(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_component_nesting_slot_inside_component_fill__isolated(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "dashboard" %}{% endcomponent %}
+            """
+        )
+        rendered = template.render(Context({"items": [1, 2, 3]}))
+        expected = """
+        <div class="dashboard-component">
+          <div class="calendar-component">
+            <h1>
+              Welcome to your dashboard!
+            </h1>
+            <main>
+              Here are your to-do items for today:
+            </main>
+          </div>
+          <ol>
+          </ol>
+        </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_component_nesting_slot_inside_component_fill__isolated_2(self):
         template = Template(
             """
             {% load component_tags %}
@@ -1136,13 +1191,8 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "isolated",
-            "slot_context_behavior": "isolated",
-        }
-    )
-    def test_component_nesting_deep_slot_inside_component_fill_isolated(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_component_nesting_deep_slot_inside_component_fill__isolated(self):
 
         template = Template(
             """
@@ -1166,7 +1216,8 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    def test_component_nesting_component_with_fill_and_super(self):
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_component_nesting_component_with_fill_and_super__django(self):
         template = Template(
             """
             {% load component_tags %}
@@ -1189,6 +1240,33 @@ class ComponentNestingTests(BaseTestCase):
           <ol>
             <li>1</li>
             <li>2</li>
+          </ol>
+        </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_component_nesting_component_with_fill_and_super__isolated(self):
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "dashboard" %}
+              {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
+            {% endcomponent %}
+            """
+        )
+        rendered = template.render(Context({"items": [1, 2]}))
+        expected = """
+        <div class="dashboard-component">
+          <div class="calendar-component">
+            <h1>
+              Hello! Welcome to your dashboard!
+            </h1>
+            <main>
+              Here are your to-do items for today:
+            </main>
+          </div>
+          <ol>
           </ol>
         </div>
         """
@@ -1235,7 +1313,8 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
 
-    def test_component_with_filled_conditional_slot(self):
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_component_with_filled_conditional_slot__django(self):
         template = """
         {% load component_tags %}
         {% component "conditional_slots" %}
@@ -1311,6 +1390,38 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
 
+class ContextVarsTests(BaseTestCase):
+    class IsFilledVarsComponent(component.Component):
+        template_name = "template_is_filled.html"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        component.registry.register("is_filled_vars", cls.IsFilledVarsComponent)
+
+    def test_is_filled_vars(self):
+        template = """
+            {% load component_tags %}
+            {% component "is_filled_vars" %}
+                {% fill "title" %}{% endfill %}
+                {% fill "my-title-2" %}{% endfill %}
+                {% fill "escape this: #$%^*()" %}{% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        # NOTE: `&#x27;` are escaped quotes
+        expected = """
+            <div class="frontmatter-component">
+                {&#x27;title&#x27;: True,
+                &#x27;my_title&#x27;: False,
+                &#x27;my_title_1&#x27;: False,
+                &#x27;my_title_2&#x27;: True,
+                &#x27;escape_this_________&#x27;: True}
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+
 class RegressionTests(BaseTestCase):
     """Ensure we don't break the same thing AGAIN."""
 
@@ -1372,7 +1483,8 @@ class IterationFillTest(BaseTestCase):
     def setUp(self):
         django_components.component.registry.clear()
 
-    def test_inner_slot_iteration_basic(self):
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_inner_slot_iteration_basic__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         template = Template(
@@ -1396,7 +1508,27 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    def test_inner_slot_iteration_with_variable_from_outer_scope(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_basic__isolated(self):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ object }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        objects = ["OBJECT1", "OBJECT2"]
+        rendered = template.render(Context({"objects": objects}))
+
+        self.assertHTMLEqual(rendered, "")
+
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_inner_slot_iteration_with_variable_from_outer_scope__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         template = Template(
@@ -1430,7 +1562,41 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    def test_inner_slot_iteration_nested(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_with_variable_from_outer_scope__isolated(self):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable }}
+                    {{ object }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        objects = ["OBJECT1", "OBJECT2"]
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable": "OUTER_SCOPE_VARIABLE",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE
+            OUTER_SCOPE_VARIABLE
+            """,
+        )
+
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_inner_slot_iteration_nested__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
@@ -1464,7 +1630,35 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    def test_inner_slot_iteration_nested_with_outer_scope_variable(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_nested__isolated(self):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        objects = [
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {% component "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" %}
+                            {{ object }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        rendered = template.render(Context({"objects": objects}))
+
+        self.assertHTMLEqual(rendered, "")
+
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_inner_slot_iteration_nested_with_outer_scope_variable__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
@@ -1514,7 +1708,51 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    def test_inner_slot_iteration_nested_with_slot_default(self):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_nested_with_outer_scope_variable__isolated(self):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        objects = [
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable_1 }}
+                    {% component "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" %}
+                            {{ outer_scope_variable_2 }}
+                            {{ object }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable_1": "OUTER_SCOPE_VARIABLE1",
+                    "outer_scope_variable_2": "OUTER_SCOPE_VARIABLE2",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE1
+            """,
+        )
+
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_inner_slot_iteration_nested_with_slot_default__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
@@ -1548,7 +1786,34 @@ class IterationFillTest(BaseTestCase):
             """,
         )
 
-    def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable(
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_nested_with_slot_default__isolated(self):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        objects = [
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
+        ]
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {% component "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" as "super_slot_inner" %}
+                            {{ super_slot_inner.default }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        rendered = template.render(Context({"objects": objects}))
+        self.assertHTMLEqual(rendered, "")
+
+    @override_settings(COMPONENTS={"context_behavior": "django"})
+    def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__django(
         self,
     ):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
@@ -1597,5 +1862,109 @@ class IterationFillTest(BaseTestCase):
             ITER2_OBJ1 default
             OUTER_SCOPE_VARIABLE2
             ITER2_OBJ2 default
+            """,
+        )
+
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__isolated_1(
+        self,
+    ):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        objects = [
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
+        ]
+
+        # NOTE: In this case the `object.inner` in the inner "slot_in_a_loop"
+        # should be undefined, so the loop inside the inner `slot_in_a_loop`
+        # shouldn't run. Hence even the inner `slot_inner` fill should NOT run.
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable_1 }}
+                    {% component "slot_in_a_loop" objects=object.inner %}
+                        {% fill "slot_inner" as "super_slot_inner" %}
+                            {{ outer_scope_variable_2 }}
+                            {{ super_slot_inner.default }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable_1": "OUTER_SCOPE_VARIABLE1",
+                    "outer_scope_variable_2": "OUTER_SCOPE_VARIABLE2",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE1
+            """,
+        )
+
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__isolated_2(
+        self,
+    ):
+        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+
+        objects = [
+            {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
+            {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
+        ]
+
+        # NOTE: In this case we use `objects` in the inner "slot_in_a_loop", which
+        # is defined in the root context. So the loop inside the inner `slot_in_a_loop`
+        # should run.
+        template = Template(
+            """
+            {% load component_tags %}
+            {% component "slot_in_a_loop" objects=objects %}
+                {% fill "slot_inner" %}
+                    {{ outer_scope_variable_1 }}
+                    {% component "slot_in_a_loop" objects=objects %}
+                        {% fill "slot_inner" as "super_slot_inner" %}
+                            {{ outer_scope_variable_2 }}
+                            {{ super_slot_inner.default }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        )
+        rendered = template.render(
+            Context(
+                {
+                    "objects": objects,
+                    "outer_scope_variable_1": "OUTER_SCOPE_VARIABLE1",
+                    "outer_scope_variable_2": "OUTER_SCOPE_VARIABLE2",
+                }
+            )
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE2
+            {&#x27;inner&#x27;: [&#x27;ITER1_OBJ1&#x27;, &#x27;ITER1_OBJ2&#x27;]} default
+            OUTER_SCOPE_VARIABLE2
+            {&#x27;inner&#x27;: [&#x27;ITER2_OBJ1&#x27;, &#x27;ITER2_OBJ2&#x27;]} default
+            OUTER_SCOPE_VARIABLE1
+            OUTER_SCOPE_VARIABLE2
+            {&#x27;inner&#x27;: [&#x27;ITER1_OBJ1&#x27;, &#x27;ITER1_OBJ2&#x27;]} default
+            OUTER_SCOPE_VARIABLE2
+            {&#x27;inner&#x27;: [&#x27;ITER2_OBJ1&#x27;, &#x27;ITER2_OBJ2&#x27;]} default
             """,
         )

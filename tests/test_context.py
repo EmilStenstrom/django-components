@@ -213,17 +213,67 @@ class ParentArgsTests(BaseTestCase):
         component.registry.register(name="parent_with_args", component=ParentComponentWithArgs)
         component.registry.register(name="variable_display", component=VariableDisplay)
 
-    def test_parent_args_can_be_drawn_from_context(self):
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "django",
+        }
+    )
+    def test_parent_args_can_be_drawn_from_context__django(self):
         template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'parent_with_args' parent_value=parent_value %}"
-            "{% endcomponent %}"
+            """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'parent_with_args' parent_value=parent_value %}
+            {% endcomponent %}
+        """
         )
         rendered = template.render(Context({"parent_value": "passed_in"}))
 
-        self.assertIn("<h1>Shadowing variable = passed_in</h1>", rendered, rendered)
-        self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
-        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                <h1>Parent content</h1>
+                <h1>Shadowing variable = passed_in</h1>
+                <h1>Uniquely named variable = unique_val</h1>
+            </div>
+            <div>
+                <h2>Slot content</h2>
+                <h1>Shadowing variable = slot_default_override</h1>
+                <h1>Uniquely named variable = passed_in</h1>
+            </div>
+            """,
+        )
+
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "isolated",
+        }
+    )
+    def test_parent_args_can_be_drawn_from_context__isolated(self):
+        template = Template(
+            """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'parent_with_args' parent_value=parent_value %}
+            {% endcomponent %}
+        """
+        )
+        rendered = template.render(Context({"parent_value": "passed_in"}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                <h1>Parent content</h1>
+                <h1>Shadowing variable = passed_in</h1>
+                <h1>Uniquely named variable = unique_val</h1>
+            </div>
+            <div>
+                <h2>Slot content</h2>
+                <h1>Shadowing variable = slot_default_override</h1>
+                <h1>Uniquely named variable = passed_in</h1>
+            </div>
+            """,
+        )
 
     def test_parent_args_available_outside_slots(self):
         template = Template(
@@ -236,7 +286,12 @@ class ParentArgsTests(BaseTestCase):
         self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
-    def test_parent_args_available_in_slots(self):
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "django",
+        }
+    )
+    def test_parent_args_available_in_slots__django(self):
         template = Template(
             """
             {% load component_tags %}{% component_dependencies %}
@@ -246,13 +301,56 @@ class ParentArgsTests(BaseTestCase):
                     {% endcomponent %}
                 {% endfill %}
             {% endcomponent %}
-        """  # NOQA
+            """  # noqa: E501
         )
         rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                <h1>Parent content</h1>
+                <h1>Shadowing variable = passed_in</h1>
+                <h1>Uniquely named variable = unique_val</h1>
+            </div>
+            <div>
+                <h1>Shadowing variable = value_from_slot</h1>
+                <h1>Uniquely named variable = passed_in</h1>
+            </div>
+            """,
+        )
 
-        self.assertIn("<h1>Shadowing variable = value_from_slot</h1>", rendered, rendered)
-        self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
-        self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
+    @override_settings(
+        COMPONENTS={
+            "context_behavior": "isolated",
+        }
+    )
+    def test_parent_args_not_available_in_slots__isolated(self):
+        template = Template(
+            """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'parent_with_args' parent_value='passed_in' %}
+                {% fill 'content' %}
+                    {% component name='variable_display' shadowing_variable='value_from_slot' new_variable=inner_parent_value %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+            """  # noqa: E501
+        )
+        rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                <h1>Parent content</h1>
+                <h1>Shadowing variable = passed_in</h1>
+                <h1>Uniquely named variable = unique_val</h1>
+            </div>
+            <div>
+                <h1>Shadowing variable = value_from_slot</h1>
+                <h1>Uniquely named variable = </h1>
+            </div>
+            """,
+        )
 
 
 class ContextCalledOnceTests(BaseTestCase):
@@ -325,13 +423,37 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
         super().setUpClass()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
-    def test_simple_component_can_use_outer_context(self):
+    @override_settings(
+        COMPONENTS={"context_behavior": "django"},
+    )
+    def test_simple_component_can_use_outer_context__django(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component 'simple_component' %}{% endcomponent %}"
         )
-        rendered = template.render(Context({"variable": "outer_value"})).strip()
-        self.assertIn("outer_value", rendered, rendered)
+        rendered = template.render(Context({"variable": "outer_value"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong> outer_value </strong>
+            """,
+        )
+
+    @override_settings(
+        COMPONENTS={"context_behavior": "isolated"},
+    )
+    def test_simple_component_cannot_use_outer_context__isolated(self):
+        template = Template(
+            "{% load component_tags %}{% component_dependencies %}"
+            "{% component 'simple_component' %}{% endcomponent %}"
+        )
+        rendered = template.render(Context({"variable": "outer_value"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong> </strong>
+            """,
+        )
 
 
 class IsolatedContextTests(BaseTestCase):
@@ -424,9 +546,9 @@ class OuterContextPropertyTests(BaseTestCase):
         component.registry.register(name="outer_context_component", component=OuterContextComponent)
 
     @override_settings(
-        COMPONENTS={"context_behavior": "global"},
+        COMPONENTS={"context_behavior": "django"},
     )
-    def test_outer_context_property_with_component_global(self):
+    def test_outer_context_property_with_component__django(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component 'outer_context_component' only %}{% endcomponent %}"
@@ -437,7 +559,7 @@ class OuterContextPropertyTests(BaseTestCase):
     @override_settings(
         COMPONENTS={"context_behavior": "isolated"},
     )
-    def test_outer_context_property_with_component_isolated(self):
+    def test_outer_context_property_with_component__isolated(self):
         template = Template(
             "{% load component_tags %}{% component_dependencies %}"
             "{% component 'outer_context_component' only %}{% endcomponent %}"
