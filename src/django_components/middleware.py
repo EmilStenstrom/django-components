@@ -54,7 +54,7 @@ class ComponentDependencyMiddleware:
         response = self.process_response(response)
         return response
 
-    def process_response(self, response):
+    def process_response(self, response: HttpResponse) -> HttpResponse:
         if (
             getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)
             and not isinstance(response, StreamingHttpResponse)
