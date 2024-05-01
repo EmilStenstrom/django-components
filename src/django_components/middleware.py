@@ -48,7 +48,7 @@ class ComponentDependencyMiddleware:
         response = self.process_response(response)
         return response
 
-    async def __acall__(self, request):
+    async def __acall__(self, request: HttpRequest) -> HttpResponseBase:
 
         response = await self.get_response(request)
         response = self.process_response(response)
