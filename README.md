@@ -817,7 +817,7 @@ Django components supports [logging with Django](https://docs.djangoproject.com/
 
 To configure logging for Django components, set the `django_components` logger in `LOGGING` in `settings.py` (below).
 
-Also see the [`settings.py` file in sampleproject](./sampleproject/sampleproject/settings.py) for a real-life example.
+Also see the [`settings.py` file in sampleproject](https://github.com/EmilStenstrom/django-components/blob/master/sampleproject/sampleproject/settings.py) for a real-life example.
 
 ```py
 import logging
@@ -959,15 +959,15 @@ tox -p
 
 How do you check that your changes to django-components project will work in an actual Django project?
 
-Use the [sampleproject](./sampleproject/) demo project to validate the changes:
+Use the [sampleproject](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject/) demo project to validate the changes:
 
-1. Navigate to [sampleproject](./sampleproject/) directory:
+1. Navigate to [sampleproject](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject/) directory:
 
    ```sh
    cd sampleproject
    ```
 
-2. Install dependencies from the [requirements.txt](./sampleproject/requirements.txt) file:
+2. Install dependencies from the [requirements.txt](https://github.com/EmilStenstrom/django-components/blob/master/sampleproject/requirements.txt) file:
 
    ```sh
    pip install -r requirements.txt
@@ -992,4 +992,4 @@ To display individual components, add them to the `urls.py`, like in the case of
 
 ## Development guides
 
-- [Slot rendering flot](./docs/slot_rendering.md)
+- [Slot rendering flot](https://github.com/EmilStenstrom/django-components/blob/master/docs/slot_rendering.md)
