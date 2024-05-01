@@ -1086,6 +1086,19 @@ class TemplateSyntaxErrorTests(BaseTestCase):
                 """
             ).render(Context({}))
 
+    def test_non_unique_fill_names_is_error_via_vars(self):
+        with self.assertRaises(TemplateSyntaxError):
+            Template(
+                """
+                {% load component_tags %}
+                {% with var1="header" var2="header" %}
+                {% component "test" %}
+                    {% fill var1 %}Custom header {% endfill %}
+                    {% fill var2 %}Other header{% endfill %}
+                {% endcomponent %}
+                """
+            ).render(Context({}))
+
 
 class ComponentNestingTests(BaseTestCase):
     @classmethod

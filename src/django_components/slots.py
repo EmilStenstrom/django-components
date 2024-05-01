@@ -261,6 +261,9 @@ def _try_parse_as_named_fill_tag_set(
     seen_name_fexps: Set[str] = set()
     for node in nodelist:
         if isinstance(node, FillNode):
+            # Check that, after we've resolved the names, that there's still no duplicates.
+            # This makes sure that if two different variables refer to same string, we detect
+            # them.
             if node.name_fexp.token in seen_name_fexps:
                 raise TemplateSyntaxError(
                     f"Multiple fill tags cannot target the same slot name: "
