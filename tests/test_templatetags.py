@@ -130,6 +130,7 @@ class SlotInsideIncludeComponent(component.Component):
 # TESTS
 #######################
 
+
 class ComponentTemplateTagTest(BaseTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test

@@ -2,8 +2,8 @@ from typing import Callable, List, NamedTuple, Optional
 
 from django.template import Context, Template
 from django.template.base import Node, NodeList, TextNode
-from django.template.loader_tags import ExtendsNode, IncludeNode, construct_relative_path
 from django.template.defaulttags import CommentNode
+from django.template.loader_tags import ExtendsNode, IncludeNode, construct_relative_path
 
 
 def nodelist_has_content(nodelist: NodeList) -> bool:
@@ -33,9 +33,7 @@ def walk_nodelist(
         traverse = node_queue.pop()
         callback(traverse)
         child_nodes = get_node_children(traverse.node, context)
-        child_traverses = [
-            NodeTraverse(node=child_node, parent=traverse) for child_node in child_nodes
-        ]
+        child_traverses = [NodeTraverse(node=child_node, parent=traverse) for child_node in child_nodes]
         node_queue.extend(child_traverses)
 
 
