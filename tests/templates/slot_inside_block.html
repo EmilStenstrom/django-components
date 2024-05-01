@@ -1,0 +1,17 @@
+{% load component_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    {% component "slotted_component" %}
+      {% fill "header" %}{% endfill %}
+      {% fill "main" %}
+        Helloodiddoo
+        {% block inner %}
+          {% slot "body" %}
+            Default inner
+          {% endslot %}
+        {% endblock %}
+      {% endfill %}
+    {% endcomponent %}
+  </body>
+</html>

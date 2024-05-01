@@ -291,6 +291,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             context_data = {}
 
         slots, resolved_fills = resolve_slots(
+            context,
             template,
             component_name=self.registered_name,
             context_data=context_data,

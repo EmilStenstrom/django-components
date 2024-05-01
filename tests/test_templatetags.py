@@ -114,6 +114,22 @@ class _ComplexParentComponent(component.Component):
         return {"items": items}
 
 
+class BlockInSlotInComponent(component.Component):
+    template_name = "block_in_slot_in_component.html"
+
+
+class SlotInsideExtendsComponent(component.Component):
+    template_name = "slot_inside_extends.html"
+
+
+class SlotInsideIncludeComponent(component.Component):
+    template_name = "slot_inside_include.html"
+
+
+#######################
+# TESTS
+#######################
+
 class ComponentTemplateTagTest(BaseTestCase):
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
@@ -1422,9 +1438,7 @@ class ContextVarsTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
 
-class RegressionTests(BaseTestCase):
-    """Ensure we don't break the same thing AGAIN."""
-
+class BlockCompatTests(BaseTestCase):
     def setUp(self):
         component.registry.clear()
         super().setUp()
@@ -1434,7 +1448,61 @@ class RegressionTests(BaseTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_block_and_extends_tag_works(self):
+    def test_slots_inside_extends(self):
+        component.registry.register("slotted_component", SlottedComponent)
+        component.registry.register("slot_inside_extends", SlotInsideExtendsComponent)
+
+        template = """
+        {% load component_tags %}
+        {% component "slot_inside_extends" %}
+            {% fill "body" %}
+                BODY_FROM_FILL
+            {% endfill %}
+        {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+          <body>
+            <custom-template>
+              <header></header>
+              <main>BODY_FROM_FILL</main>
+              <footer>Default footer</footer>
+            </custom-template>
+          </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slots_inside_include(self):
+        component.registry.register("slotted_component", SlottedComponent)
+        component.registry.register("slot_inside_include", SlotInsideIncludeComponent)
+
+        template = """
+        {% load component_tags %}
+        {% component "slot_inside_include" %}
+            {% fill "body" %}
+                BODY_FROM_FILL
+            {% endfill %}
+        {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+          <body>
+            <custom-template>
+              <header></header>
+              <main>BODY_FROM_FILL</main>
+              <footer>Default footer</footer>
+            </custom-template>
+          </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_component_inside_block(self):
         component.registry.register("slotted_component", SlottedComponent)
         template = """
         {% extends "extendable_template_with_blocks.html" %}
@@ -1463,6 +1531,211 @@ class RegressionTests(BaseTestCase):
             </custom-template>
           </div>
         </main>
+        </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_block_inside_component(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        template = """
+        {% extends "block_inside_component.html" %}
+        {% load component_tags %}
+        {% block body %}
+          <div>
+            58 giraffes and 2 pantaloons
+          </div>
+        {% endblock %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+            <custom-template>
+              <header></header>
+              <main>
+                <div> 58 giraffes and 2 pantaloons </div>
+              </main>
+              <footer>Default footer</footer>
+            </custom-template>
+        </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_block_does_not_affect_inside_component(self):
+        """
+        Assert that when we call a component with `{% component %}`, that
+        the `{% block %}` will NOT affect the inner component.
+        """
+        component.registry.register("slotted_component", SlottedComponent)
+        component.registry.register("block_inside_slot_v1", BlockInSlotInComponent)
+
+        template = """
+        {% load component_tags %}
+        {% component "block_inside_slot_v1" %}
+            {% fill "body" %}
+                BODY_FROM_FILL
+            {% endfill %}
+        {% endcomponent %}
+        {% block inner %}
+            wow
+        {% endblock %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+            <custom-template>
+              <header></header>
+              <main>BODY_FROM_FILL</main>
+              <footer>Default footer</footer>
+            </custom-template>
+        </body>
+        </html>
+        wow
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_inside_block__slot_default_block_default(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        @component.register("slot_inside_block")
+        class _SlotInsideBlockComponent(component.Component):
+            template = """{% extends "slot_inside_block.html" %}"""
+
+        template = """
+            {% load component_tags %}
+            {% component "slot_inside_block" %}{% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+            <custom-template>
+              <header></header>
+              <main>
+                Helloodiddoo
+                Default inner
+              </main>
+              <footer>Default footer</footer>
+            </custom-template>
+        </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_inside_block__slot_default_block_override(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        @component.register("slot_inside_block")
+        class _SlotInsideBlockComponent(component.Component):
+            template = """
+                {% extends "slot_inside_block.html" %}
+                {% block inner %}
+                    INNER BLOCK OVERRIDEN
+                {% endblock %}
+            """
+
+        template = """
+            {% load component_tags %}
+            {% component "slot_inside_block" %}{% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+            <custom-template>
+              <header></header>
+              <main>
+                Helloodiddoo
+                INNER BLOCK OVERRIDEN
+              </main>
+              <footer>Default footer</footer>
+            </custom-template>
+        </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_inside_block__slot_overriden_block_default(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        @component.register("slot_inside_block")
+        class _SlotInsideBlockComponent(component.Component):
+            template = """{% extends "slot_inside_block.html" %}"""
+
+        template = """
+            {% load component_tags %}
+            {% component "slot_inside_block" %}
+                {% fill "body" %}
+                    SLOT OVERRIDEN
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+            <custom-template>
+              <header></header>
+              <main>
+                Helloodiddoo
+                SLOT OVERRIDEN
+              </main>
+              <footer>Default footer</footer>
+            </custom-template>
+        </body>
+        </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_inside_block__slot_overriden_block_overriden(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        @component.register("slot_inside_block")
+        class _SlotInsideBlockComponent(component.Component):
+            template = """
+                {% extends "slot_inside_block.html" %}
+                {% block inner %}
+                    {% load component_tags %}
+                    {% slot "new_slot" %}{% endslot %}
+                {% endblock %}
+                whut
+            """
+
+        # NOTE: The "body" fill will NOT show up, because we override the `inner` block
+        # with a different slot. But the "new_slot" WILL show up.
+        template = """
+            {% load component_tags %}
+            {% component "slot_inside_block" %}
+                {% fill "body" %}
+                    SLOT_BODY__OVERRIDEN
+                {% endfill %}
+                {% fill "new_slot" %}
+                    SLOT_NEW__OVERRIDEN
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <body>
+            <custom-template>
+              <header></header>
+              <main>
+                Helloodiddoo
+                SLOT_NEW__OVERRIDEN
+              </main>
+              <footer>Default footer</footer>
+            </custom-template>
         </body>
         </html>
         """

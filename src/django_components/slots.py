@@ -308,6 +308,7 @@ def _try_parse_as_default_fill(
 
 
 def resolve_slots(
+    context: Context,
     template: Template,
     component_name: Optional[str],
     context_data: Dict[str, Any],
@@ -374,7 +375,7 @@ def resolve_slots(
             slot_children[parent_slot_id].append(node.node_id)
             break
 
-    walk_nodelist(template.nodelist, on_node)
+    walk_nodelist(template.nodelist, on_node, context)
 
     # 3. Figure out which slot the default/implicit fill belongs to
     slot_fills = _resolve_default_slot(
