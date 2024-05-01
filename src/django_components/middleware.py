@@ -44,7 +44,7 @@ class ComponentDependencyMiddleware:
             return self.__acall__(request)
 
         response = self.get_response(request)
-        response = self.process_response(request)
+        response = self.process_response(response)
         return response
 
     async def __acall__(self, request):
