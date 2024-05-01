@@ -1092,10 +1092,11 @@ class TemplateSyntaxErrorTests(BaseTestCase):
                 """
                 {% load component_tags %}
                 {% with var1="header" var2="header" %}
-                {% component "test" %}
-                    {% fill var1 %}Custom header {% endfill %}
-                    {% fill var2 %}Other header{% endfill %}
-                {% endcomponent %}
+                    {% component "test" %}
+                        {% fill var1 %}Custom header {% endfill %}
+                        {% fill var2 %}Other header{% endfill %}
+                    {% endcomponent %}
+                {% endwith %}
                 """
             ).render(Context({}))
 
