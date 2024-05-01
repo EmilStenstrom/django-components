@@ -2,10 +2,12 @@ import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Iterable
 
+from asgiref.sync import iscoroutinefunction, markcoroutinefunction
 from django.conf import settings
 from django.forms import Media
 from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
 from django.http.response import HttpResponseBase
+from django.utils.decorators import sync_and_async_middleware
 
 from django_components.component_registry import registry
 
@@ -25,6 +27,7 @@ PLACEHOLDER_REGEX = re.compile(
 )
 
 
+@sync_and_async_middleware
 class ComponentDependencyMiddleware:
     """Middleware that inserts CSS/JS dependencies for all rendered components at points marked with template tags."""
 
@@ -33,14 +36,32 @@ class ComponentDependencyMiddleware:
     def __init__(self, get_response: "Callable[[HttpRequest], HttpResponse]") -> None:
         self.get_response = get_response
 
+        if iscoroutinefunction(self.get_response):
+            markcoroutinefunction(self)
+
     def __call__(self, request: HttpRequest) -> HttpResponseBase:
+
+        if iscoroutinefunction(self):
+            return self.__acall__(request)
+
         response = self.get_response(request)
+        response = self.process_response(response)
+        return response
+
+    async def __acall__(self, request: HttpRequest) -> HttpResponseBase:
+
+        response = await self.get_response(request)
+        response = self.process_response(response)
+        return response
+
+    def process_response(self, response: HttpResponse) -> HttpResponse:
         if (
             getattr(settings, "COMPONENTS", {}).get("RENDER_DEPENDENCIES", False)
             and not isinstance(response, StreamingHttpResponse)
             and response.get("Content-Type", "").startswith("text/html")
         ):
             response.content = process_response_content(response.content)
+
         return response
 
 
