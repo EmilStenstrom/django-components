@@ -2,13 +2,14 @@ import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Iterable
 
+from asgiref.sync import iscoroutinefunction, markcoroutinefunction
 from django.conf import settings
 from django.forms import Media
 from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
 from django.http.response import HttpResponseBase
 from django.utils.decorators import sync_and_async_middleware
+
 from django_components.component_registry import registry
-from asgiref.sync import iscoroutinefunction, markcoroutinefunction
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -65,20 +66,12 @@ class ComponentDependencyMiddleware:
 
 
 def process_response_content(content: bytes) -> bytes:
-    component_names_seen = {
-        match.group("name") for match in COMPONENT_COMMENT_REGEX.finditer(content)
-    }
-    all_components = [
-        registry.get(name.decode("utf-8"))("") for name in component_names_seen
-    ]
+    component_names_seen = {match.group("name") for match in COMPONENT_COMMENT_REGEX.finditer(content)}
+    all_components = [registry.get(name.decode("utf-8"))("") for name in component_names_seen]
     all_media = join_media(all_components)
     js_dependencies = b"".join(media.encode("utf-8") for media in all_media.render_js())
-    css_dependencies = b"".join(
-        media.encode("utf-8") for media in all_media.render_css()
-    )
-    return PLACEHOLDER_REGEX.sub(
-        DependencyReplacer(css_dependencies, js_dependencies), content
-    )
+    css_dependencies = b"".join(media.encode("utf-8") for media in all_media.render_css())
+    return PLACEHOLDER_REGEX.sub(DependencyReplacer(css_dependencies, js_dependencies), content)
 
 
 def add_module_attribute_to_scripts(scripts: str) -> str:
