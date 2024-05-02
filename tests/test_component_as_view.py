@@ -29,22 +29,8 @@ class MockInsecureComponentContext(component.Component):
         return self.render_to_response({"variable": "<script>alert(1);</script>"})
 
 
-class MockInsecureComponentSlot(component.Component):
-    template = """
-        {% load component_tags %}
-        <div>
-        {% slot "test_slot" %}
-        {% endslot %}
-        </div>
-        """
-
-    def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
-
-
 components_urlpatterns = [
     path("test_context_insecure/", MockInsecureComponentContext.as_view()),
-    path("test_slot_insecure/", MockInsecureComponentSlot.as_view()),
 ]
 
 
@@ -75,7 +61,6 @@ class TestComponentAsView(BaseTestCase):
     @classmethod
     def setUpClass(self):
         component.registry.register("testcomponent_context_insecure", MockInsecureComponentContext)
-        component.registry.register("testcomponent_slot_insecure", MockInsecureComponentSlot)
 
     def setUp(self):
         self.client = CustomClient()
@@ -196,7 +181,20 @@ class TestComponentAsView(BaseTestCase):
         )
 
     def test_replace_slot_in_view_with_insecure_content(self):
-        response = self.client.get("/test_slot_insecure/")
+        class MockInsecureComponentSlot(component.Component):
+            template = """
+                {% load component_tags %}
+                <div>
+                {% slot "test_slot" %}
+                {% endslot %}
+                </div>
+                """
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
+
+        client = CustomClient(urlpatterns=[path("test_slot_insecure/", MockInsecureComponentSlot.as_view())])
+        response = client.get("/test_slot_insecure/")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(
             b"<script>",
