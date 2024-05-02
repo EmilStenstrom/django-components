@@ -9,13 +9,16 @@ from django.urls import path
 # isort: off
 from .django_test_setup import *  # noqa
 from .testutils import BaseTestCase
+
 # isort: on
 
 from django_components import component
 
+
 class CustomClient(Client):
     def __init__(self, urlpatterns=None, *args, **kwargs):
         import types
+
         if urlpatterns:
             urls_module = types.ModuleType("urls")
             urls_module.urlpatterns = urlpatterns  # type: ignore
@@ -24,6 +27,7 @@ class CustomClient(Client):
             settings.ROOT_URLCONF = __name__
         settings.SECRET_KEY = "secret"  # noqa
         super().__init__(*args, **kwargs)
+
 
 class TestComponentAsView(BaseTestCase):
     def test_render_component_from_template(self):
