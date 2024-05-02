@@ -19,6 +19,9 @@ except ImportError:
                 params = (params,)
             return Annotated(self.type_, *params, **self.metadata[1])  # type: ignore
 
+        def __class_getitem__(self, *params: Any) -> "Annotated":  # type: ignore
+            return Annotated(*params)  # type: ignore
+
 
 css = Annotated[str, "css"]
 django_html = Annotated[str, "django_html"]

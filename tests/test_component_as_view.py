@@ -11,7 +11,7 @@ from .testutils import BaseTestCase
 
 # isort: on
 
-from django_components import component
+from django_components import component, types
 
 #########################
 # COMPONENTS
@@ -19,7 +19,7 @@ from django_components import component
 
 
 class MockComponentRequest(component.Component):
-    template = """
+    template: types.django_html = """
         <form method="post">
             {% csrf_token %}
             <input type="text" name="variable" value="{{ variable }}">
@@ -39,7 +39,7 @@ class MockComponentRequest(component.Component):
 
 
 class MockComponentSlot(component.Component):
-    template = """
+    template: types.django_html = """
         {% load component_tags %}
         <div>
         {% slot "first_slot" %}
@@ -48,44 +48,43 @@ class MockComponentSlot(component.Component):
         {% slot "second_slot" %}
         {% endslot %}
         </div>
-        """
+    """
 
     def get(self, request, *args, **kwargs) -> HttpResponse:
         return self.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
 
 
 class MockInsecureComponentContext(component.Component):
-    template = """
+    template: types.django_html = """
         {% load component_tags %}
         <div>
         {{ variable }}
         </div>
-        """
+    """
 
     def get(self, request, *args, **kwargs) -> HttpResponse:
         return self.render_to_response({"variable": "<script>alert(1);</script>"})
 
 
 class MockInsecureComponentSlot(component.Component):
-    template = """
+    template: types.django_html = """
         {% load component_tags %}
         <div>
         {% slot "test_slot" %}
         {% endslot %}
         </div>
-        """
+    """
 
     def get(self, request, *args, **kwargs) -> HttpResponse:
         return self.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
 
 
 def render_template_view(request):
-    template = Template(
-        """
+    template_str: types.django_html = """
         {% load component_tags %}
         {% component "testcomponent" variable="TEMPLATE" %}{% endcomponent %}
-        """
-    )
+    """
+    template = Template(template_str)
     return HttpResponse(template.render(Context({})))
 
 

@@ -2,12 +2,12 @@ from typing import Any, Dict
 
 from django.http import HttpResponse
 
-from django_components import component
+from django_components import component, types
 
 
 @component.register("single_file_component")
 class SingleFileComponent(component.Component):
-    template = """
+    template: types.django_html = """
         <form method="post">
             {% csrf_token %}
             <input type="text" name="variable" value="{{ variable }}">

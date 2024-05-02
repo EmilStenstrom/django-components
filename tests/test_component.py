@@ -9,70 +9,52 @@ from django.test import override_settings
 # isort: off
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase, autodiscover_with_cleanup
-
 # isort: on
 
-from django_components import component
-
-#########################
-# COMPONENTS
-#########################
-
-
-class ParentComponent(component.Component):
-    template_name = "parent_template.html"
-
-    def get_context_data(self):
-        return {"shadowing_variable": "NOT SHADOWED"}
-
-
-class VariableDisplay(component.Component):
-    template_name = "variable_display.html"
-
-    def get_context_data(self, shadowing_variable=None, new_variable=None):
-        context = {}
-        if shadowing_variable is not None:
-            context["shadowing_variable"] = shadowing_variable
-        if new_variable is not None:
-            context["unique_variable"] = new_variable
-        return context
-
-
-class DuplicateSlotComponent(component.Component):
-    template_name = "template_with_nonunique_slots.html"
-
-    def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
-        return {
-            "name": name,
-        }
-
-
-class DuplicateSlotNestedComponent(component.Component):
-    template_name = "template_with_nonunique_slots_nested.html"
-
-    def get_context_data(self, items: List) -> Dict[str, Any]:
-        return {
-            "items": items,
-        }
-
-
-class CalendarComponent(component.Component):
-    """Nested in ComponentWithNestedComponent"""
-
-    template_name = "slotted_component_nesting_template_pt1_calendar.html"
-
-
-#########################
-# TESTS
-#########################
+from django_components import component, types
 
 
 class ComponentTest(BaseTestCase):
+    class ParentComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <div>
+                <h1>Parent content</h1>
+                {% component name="variable_display" shadowing_variable='override' new_variable='unique_val' %}
+                {% endcomponent %}
+            </div>
+            <div>
+                {% slot 'content' %}
+                    <h2>Slot content</h2>
+                    {% component name="variable_display" shadowing_variable='slot_default_override' new_variable='slot_default_unique' %}
+                    {% endcomponent %}
+                {% endslot %}
+            </div>
+        """  # noqa
+
+        def get_context_data(self):
+            return {"shadowing_variable": "NOT SHADOWED"}
+
+    class VariableDisplay(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <h1>Shadowing variable = {{ shadowing_variable }}</h1>
+            <h1>Uniquely named variable = {{ unique_variable }}</h1>
+        """
+
+        def get_context_data(self, shadowing_variable=None, new_variable=None):
+            context = {}
+            if shadowing_variable is not None:
+                context["shadowing_variable"] = shadowing_variable
+            if new_variable is not None:
+                context["unique_variable"] = new_variable
+            return context
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        component.registry.register(name="parent_component", component=ParentComponent)
-        component.registry.register(name="variable_display", component=VariableDisplay)
+        component.registry.register(name="parent_component", component=cls.ParentComponent)
+        component.registry.register(name="variable_display", component=cls.VariableDisplay)
 
     def test_empty_component(self):
         class EmptyComponent(component.Component):
@@ -83,7 +65,9 @@ class ComponentTest(BaseTestCase):
 
     def test_simple_component(self):
         class SimpleComponent(component.Component):
-            template_name = "simple_template.html"
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+            """
 
             def get_context_data(self, variable=None):
                 return {
@@ -114,7 +98,9 @@ class ComponentTest(BaseTestCase):
 
     def test_css_only_component(self):
         class SimpleComponent(component.Component):
-            template_name = "simple_template.html"
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+            """
 
             class Media:
                 css = "style.css"
@@ -130,7 +116,9 @@ class ComponentTest(BaseTestCase):
 
     def test_js_only_component(self):
         class SimpleComponent(component.Component):
-            template_name = "simple_template.html"
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+            """
 
             class Media:
                 js = "script.js"
@@ -146,7 +134,9 @@ class ComponentTest(BaseTestCase):
 
     def test_empty_media_component(self):
         class SimpleComponent(component.Component):
-            template_name = "simple_template.html"
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+            """
 
             class Media:
                 pass
@@ -157,7 +147,9 @@ class ComponentTest(BaseTestCase):
 
     def test_missing_media_component(self):
         class SimpleComponent(component.Component):
-            template_name = "simple_template.html"
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+            """
 
         comp = SimpleComponent("simple_component")
 
@@ -183,7 +175,10 @@ class ComponentTest(BaseTestCase):
 
     def test_component_with_filtered_template(self):
         class FilteredComponent(component.Component):
-            template_name = "filtered_template.html"
+            template: types.django_html = """
+                Var1: <strong>{{ var1 }}</strong>
+                Var2 (uppercased): <strong>{{ var2|upper }}</strong>
+            """
 
             def get_context_data(self, var1=None, var2=None):
                 return {
@@ -213,17 +208,17 @@ class ComponentTest(BaseTestCase):
                 }
 
             def get_template_name(self, context):
-                return f"svg_{context['name']}.svg"
+                return f"dynamic_{context['name']}.svg"
 
         comp = SvgComponent("svg_component")
         self.assertHTMLEqual(
-            comp.render(Context(comp.get_context_data(name="dynamic1"))),
+            comp.render(Context(comp.get_context_data(name="svg1"))),
             """
             <svg>Dynamic1</svg>
             """,
         )
         self.assertHTMLEqual(
-            comp.render(Context(comp.get_context_data(name="dynamic2"))),
+            comp.render(Context(comp.get_context_data(name="svg2"))),
             """
             <svg>Dynamic2</svg>
             """,
@@ -243,8 +238,7 @@ class ComponentTest(BaseTestCase):
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
-            template = Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
                 {% component 'parent_component' %}
                     {% fill 'content' %}
@@ -252,14 +246,21 @@ class ComponentTest(BaseTestCase):
                         {% endcomponent %}
                     {% endfill %}
                 {% endcomponent %}
-                """  # NOQA
-            )
+            """
+            template = Template(template_str)
             rendered = template.render(Context({}))
             self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
 
     def test_component_inside_slot(self):
         class SlottedComponent(component.Component):
-            template_name = "slotted_template.html"
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
 
             def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
                 return {
@@ -268,8 +269,7 @@ class ComponentTest(BaseTestCase):
 
         component.registry.register("test", SlottedComponent)
 
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" name='Igor' %}
                 {% fill "header" %}
@@ -290,7 +290,7 @@ class ComponentTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        self.template = Template(template_str)
 
         # {{ name }} should be "Jannete" everywhere
         rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
@@ -313,7 +313,14 @@ class ComponentTest(BaseTestCase):
 
     def test_fill_inside_fill_with_same_name(self):
         class SlottedComponent(component.Component):
-            template_name = "slotted_template.html"
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
 
             def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
                 return {
@@ -322,8 +329,7 @@ class ComponentTest(BaseTestCase):
 
         component.registry.register("test", SlottedComponent)
 
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" name='Igor' %}
                 {% fill "header" %}
@@ -343,8 +349,8 @@ class ComponentTest(BaseTestCase):
                     WWW
                 {% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        self.template = Template(template_str)
 
         # {{ name }} should be "Jannete" everywhere
         rendered = self.template.render(Context({"day": "Monday", "name": "Jannete"}))
@@ -372,7 +378,12 @@ class ComponentTest(BaseTestCase):
     )
     def test_slots_of_top_level_comps_can_access_full_outer_ctx(self):
         class SlottedComponent(component.Component):
-            template_name = "template_with_default_slot.html"
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <main>{% slot "main" default %}Easy to override{% endslot %}</main>
+                </div>
+            """
 
             def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
                 return {
@@ -381,16 +392,15 @@ class ComponentTest(BaseTestCase):
 
         component.registry.register("test", SlottedComponent)
 
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             <body>
                 {% component "test" %}
                     ABC: {{ name }} {{ some }}
                 {% endcomponent %}
             </body>
-            """
-        )
+        """
+        self.template = Template(template_str)
 
         nested_ctx = Context()
         # Check that the component can access vars across different context layers
@@ -411,16 +421,70 @@ class ComponentTest(BaseTestCase):
 
 
 class DuplicateSlotTest(BaseTestCase):
+    class DuplicateSlotComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <header>{% slot "header" %}Default header{% endslot %}</header>
+             {# Slot name 'header' used twice. #}
+            <main>{% slot "header" %}Default main header{% endslot %}</main>
+            <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+        """
+
+        def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+            return {
+                "name": name,
+            }
+
+    class DuplicateSlotNestedComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% slot "header" %}START{% endslot %}
+            <div class="dashboard-component">
+            {% component "calendar" date="2020-06-06" %}
+                {% fill "header" %}  {# fills and slots with same name relate to diff. things. #}
+                    {% slot "header" %}NESTED{% endslot %}
+                {% endfill %}
+                {% fill "body" %}Here are your to-do items for today:{% endfill %}
+            {% endcomponent %}
+            <ol>
+                {% for item in items %}
+                    <li>{{ item }}</li>
+                    {% slot "header" %}LOOP {{ item }} {% endslot %}
+                {% endfor %}
+            </ol>
+            </div>
+        """
+
+        def get_context_data(self, items: List) -> Dict[str, Any]:
+            return {
+                "items": items,
+            }
+
+    class CalendarComponent(component.Component):
+        """Nested in ComponentWithNestedComponent"""
+        template: types.django_html = """
+            {% load component_tags %}
+            <div class="calendar-component">
+            <h1>
+                {% slot "header" %}Today's date is <span>{{ date }}</span>{% endslot %}
+            </h1>
+            <main>
+                {% slot "body" %}
+                    You have no events today.
+                {% endslot %}
+            </main>
+            </div>
+        """
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        component.registry.register(name="duplicate_slot", component=DuplicateSlotComponent)
-        component.registry.register(name="duplicate_slot_nested", component=DuplicateSlotNestedComponent)
-        component.registry.register(name="calendar", component=CalendarComponent)
+        component.registry.register(name="duplicate_slot", component=cls.DuplicateSlotComponent)
+        component.registry.register(name="duplicate_slot_nested", component=cls.DuplicateSlotNestedComponent)
+        component.registry.register(name="calendar", component=cls.CalendarComponent)
 
     def test_duplicate_slots(self):
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot" %}
                 {% fill "header" %}
@@ -430,8 +494,8 @@ class DuplicateSlotTest(BaseTestCase):
                     Hello
                 {% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        self.template = Template(template_str)
 
         rendered = self.template.render(Context({"name": "Jannete"}))
         self.assertHTMLEqual(
@@ -444,13 +508,12 @@ class DuplicateSlotTest(BaseTestCase):
         )
 
     def test_duplicate_slots_fallback(self):
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot" %}
             {% endcomponent %}
-            """
-        )
+        """
+        self.template = Template(template_str)
         rendered = self.template.render(Context({}))
 
         # NOTE: Slots should have different fallbacks even though they use the same name
@@ -464,16 +527,15 @@ class DuplicateSlotTest(BaseTestCase):
         )
 
     def test_duplicate_slots_nested(self):
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot_nested" items=items %}
                 {% fill "header" %}
                     OVERRIDDEN!
                 {% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        self.template = Template(template_str)
         rendered = self.template.render(Context({"items": [1, 2, 3]}))
 
         # NOTE: Slots should have different fallbacks even though they use the same name
@@ -504,13 +566,12 @@ class DuplicateSlotTest(BaseTestCase):
         )
 
     def test_duplicate_slots_nested_fallback(self):
-        self.template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot_nested" items=items %}
             {% endcomponent %}
-            """
-        )
+        """
+        self.template = Template(template_str)
         rendered = self.template.render(Context({"items": [1, 2, 3]}))
 
         # NOTE: Slots should have different fallbacks even though they use the same name
@@ -735,13 +796,12 @@ class ComponentMediaTests(BaseTestCase):
     def test_component_media_with_dict_with_relative_paths(self):
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
-            template = Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
                 {% component name='relative_file_component' variable=variable %}
                 {% endcomponent %}
-                """  # NOQA
-            )
+            """
+            template = Template(template_str)
             rendered = template.render(Context({"variable": "test"}))
             self.assertHTMLEqual(
                 rendered,
@@ -759,13 +819,19 @@ class ComponentMediaTests(BaseTestCase):
 class ComponentIsolationTests(BaseTestCase):
     def setUp(self):
         class SlottedComponent(component.Component):
-            template_name = "slotted_template.html"
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
 
         component.registry.register("test", SlottedComponent)
 
     def test_instances_of_component_do_not_share_slots(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" %}Override header{% endfill %}
@@ -777,7 +843,7 @@ class ComponentIsolationTests(BaseTestCase):
                 {% fill "footer" %}Override footer{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
 
         template.render(Context({}))
         rendered = template.render(Context({}))
@@ -809,7 +875,14 @@ class SlotBehaviorTests(BaseTestCase):
     # Django settings per test with `@override_settings`
     def make_template(self) -> Template:
         class SlottedComponent(component.Component):
-            template_name = "slotted_template.html"
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
 
             def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
                 return {
@@ -818,8 +891,7 @@ class SlotBehaviorTests(BaseTestCase):
 
         component.registry.register("test", SlottedComponent)
 
-        return Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" name='Igor' %}
                 {% fill "header" %}
@@ -840,7 +912,7 @@ class SlotBehaviorTests(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        return Template(template_str)
 
     @override_settings(
         COMPONENTS={"context_behavior": "django"},

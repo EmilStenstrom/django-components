@@ -4,16 +4,31 @@ from django.http import HttpResponseNotModified
 from django.template import Template
 from django.test import override_settings
 
-from django_components import component
+from django_components import component, types
 from django_components.middleware import ComponentDependencyMiddleware
 
 from .django_test_setup import *  # NOQA
-from .test_templatetags import SimpleComponent
 from .testutils import BaseTestCase, create_and_process_template_response
 
 
-class SimpleComponentAlternate(component.Component):
+class SimpleComponent(component.Component):
     template_name = "simple_template.html"
+
+    def get_context_data(self, variable, variable2="default"):
+        return {
+            "variable": variable,
+            "variable2": variable2,
+        }
+
+    class Media:
+        css = "style.css"
+        js = "script.js"
+
+
+class SimpleComponentAlternate(component.Component):
+    template: types.django_html = """
+        Variable: <strong>{{ variable }}</strong>
+    """
 
     def get_context_data(self, variable):
         return {}
@@ -24,7 +39,9 @@ class SimpleComponentAlternate(component.Component):
 
 
 class SimpleComponentWithSharedDependency(component.Component):
-    template_name = "simple_template.html"
+    template: types.django_html = """
+        Variable: <strong>{{ variable }}</strong>
+    """
 
     def get_context_data(self, variable, variable2="default"):
         return {}
@@ -35,7 +52,9 @@ class SimpleComponentWithSharedDependency(component.Component):
 
 
 class MultistyleComponent(component.Component):
-    template_name = "simple_template.html"
+    template: types.django_html = """
+        Variable: <strong>{{ variable }}</strong>
+    """
 
     class Media:
         css = ["style.css", "style2.css"]
@@ -51,7 +70,10 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_no_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_dependencies %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML(
@@ -63,14 +85,20 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_no_js_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_js_dependencies %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_js_dependencies %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
 
     def test_no_css_dependencies_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_css_dependencies %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_css_dependencies %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -81,7 +109,10 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_preload_dependencies_render_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_dependencies preload='test' %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies preload='test' %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML(
@@ -93,7 +124,10 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_preload_css_dependencies_render_when_no_components_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_css_dependencies preload='test' %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_css_dependencies preload='test' %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -104,10 +138,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_single_component_dependencies_render_when_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'test' variable='foo' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'test' variable='foo' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -119,10 +154,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_single_component_with_dash_or_slash_in_name(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'test' variable='foo' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'test' variable='foo' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -134,10 +170,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_preload_dependencies_render_once_when_used(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies preload='test' %}"
-            "{% component 'test' variable='foo' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies preload='test' %}
+            {% component 'test' variable='foo' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -149,27 +186,32 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_placeholder_removed_when_single_component_rendered(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'test' variable='foo' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'test' variable='foo' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
 
     def test_placeholder_removed_when_preload_rendered(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template("{% load component_tags %}{% component_dependencies preload='test' %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies preload='test' %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
 
     def test_single_component_css_dependencies(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_css_dependencies %}"
-            "{% component 'test' variable='foo' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_css_dependencies %}
+            {% component 'test' variable='foo' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -180,10 +222,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_single_component_js_dependencies(self):
         component.registry.register(name="test", component=SimpleComponent)
 
-        template = Template(
-            "{% load component_tags %}{% component_js_dependencies %}"
-            "{% component 'test' variable='foo' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_js_dependencies %}
+            {% component 'test' variable='foo' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
 
@@ -191,9 +234,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self,
     ):
         component.registry.register(name="test", component=MultistyleComponent)
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}{% component 'test' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'test' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
@@ -212,12 +257,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self,
     ):
         component.registry.register(name="test", component=MultistyleComponent)
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}{% component_js_dependencies %}
             {% component 'test' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
@@ -236,12 +280,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self,
     ):
         component.registry.register(name="test", component=MultistyleComponent)
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies %}
             {% component 'test' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
@@ -260,7 +303,10 @@ class ComponentMediaRenderingTests(BaseTestCase):
         component.registry.register(name="test1", component=SimpleComponent)
         component.registry.register(name="test2", component=SimpleComponentAlternate)
 
-        template = Template("{% load component_tags %}{% component_dependencies %}")
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
@@ -279,10 +325,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
         component.registry.register(name="test1", component=SimpleComponent)
         component.registry.register(name="test2", component=SimpleComponentAlternate)
 
-        template = Template(
-            "{% load component_tags %}{% component_css_dependencies %}"
-            "{% component 'test1' 'variable' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_css_dependencies %}
+            {% component 'test1' 'variable' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -299,10 +346,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
         component.registry.register(name="test1", component=SimpleComponent)
         component.registry.register(name="test2", component=SimpleComponentAlternate)
 
-        template = Template(
-            "{% load component_tags %}{% component_js_dependencies %}"
-            "{% component 'test1' 'variable' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_js_dependencies %}
+            {% component 'test1' 'variable' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
@@ -311,10 +359,11 @@ class ComponentMediaRenderingTests(BaseTestCase):
         component.registry.register(name="test1", component=SimpleComponent)
         component.registry.register(name="test2", component=SimpleComponentAlternate)
 
-        template = Template(
-            "{% load component_tags %}{% component_dependencies %}"
-            "{% component 'test2' variable='variable' %}{% endcomponent %}"
-        )
+        template_str: types.django_html = """
+            {% load component_tags %}{% component_dependencies %}
+            {% component 'test2' variable='variable' %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=0)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
@@ -334,14 +383,13 @@ class ComponentMediaRenderingTests(BaseTestCase):
         component.registry.register(name="test2", component=SimpleComponentAlternate)
         component.registry.register(name="test3", component=SimpleComponentWithSharedDependency)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'test1' variable='variable' %}{% endcomponent %}
             {% component 'test2' variable='variable' %}{% endcomponent %}
             {% component 'test1' variable='variable' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML('<script src="script2.js">', rendered, count=1)
@@ -361,14 +409,13 @@ class ComponentMediaRenderingTests(BaseTestCase):
         component.registry.register(name="test2", component=SimpleComponentAlternate)
         component.registry.register(name="test3", component=SimpleComponentWithSharedDependency)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'test1' variable='variable' %}{% endcomponent %}
             {% component 'test2' variable='variable' %}{% endcomponent %}
             {% component 'test1' variable='variable' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
 
@@ -388,12 +435,14 @@ class ComponentMediaRenderingTests(BaseTestCase):
         ]
         for component_name in component_names:
             component.registry.register(name=component_name, component=SimpleComponent)
-            template = Template(
-                "{% load component_tags %}"
-                "{% component_js_dependencies %}"
-                "{% component_css_dependencies %}"
-                f"{{% component '{component_name}' variable='value' %}}{{% endcomponent %}}"
-            )
+            template_str: types.django_html = f"""
+                {{% load component_tags %}}
+                {{% component_js_dependencies %}}
+                {{% component_css_dependencies %}}
+                {{% component '{component_name}' variable='value' %}}
+                {{% endcomponent %}}
+            """
+            template = Template(template_str)
             rendered = create_and_process_template_response(template)
             self.assertHTMLEqual(
                 rendered,

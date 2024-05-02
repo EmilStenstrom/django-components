@@ -13,117 +13,25 @@ from .testutils import BaseTestCase
 
 import django_components
 import django_components.component_registry
-from django_components import component
-
-
-class SimpleComponent(component.Component):
-    template_name = "simple_template.html"
-
-    def get_context_data(self, variable, variable2="default"):
-        return {
-            "variable": variable,
-            "variable2": variable2,
-        }
-
-    class Media:
-        css = "style.css"
-        js = "script.js"
-
-
-class IffedComponent(SimpleComponent):
-    template_name = "iffed_template.html"
+from django_components import component, types
 
 
 class SlottedComponent(component.Component):
     template_name = "slotted_template.html"
 
 
-class BrokenComponent(component.Component):
-    template_name = "template_with_illegal_slot.html"
-
-
-class NonUniqueSlotsComponent(component.Component):
-    template_name = "template_with_nonunique_slots.html"
-
-
-class SlottedComponentWithMissingVariable(component.Component):
-    template_name = "slotted_template_with_missing_variable.html"
-
-
-class SlottedComponentNoSlots(component.Component):
-    template_name = "slotted_template_no_slots.html"
-
-
 class SlottedComponentWithContext(component.Component):
-    template_name = "slotted_template.html"
+    template: types.django_html = """
+        {% load component_tags %}
+        <custom-template>
+            <header>{% slot "header" %}Default header{% endslot %}</header>
+            <main>{% slot "main" %}Default main{% endslot %}</main>
+            <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+        </custom-template>
+    """
 
     def get_context_data(self, variable):
         return {"variable": variable}
-
-
-class ComponentWithProvidedAndDefaultParameters(component.Component):
-    template_name = "template_with_provided_and_default_parameters.html"
-
-    def get_context_data(self, variable, default_param="default text"):
-        return {"variable": variable, "default_param": default_param}
-
-
-class _CalendarComponent(component.Component):
-    """Nested in ComponentWithNestedComponent"""
-
-    template_name = "slotted_component_nesting_template_pt1_calendar.html"
-
-
-class _DashboardComponent(component.Component):
-    template_name = "slotted_component_nesting_template_pt2_dashboard.html"
-
-
-class ComponentWithDefaultSlot(component.Component):
-    template_name = "template_with_default_slot.html"
-
-
-class ComponentWithDefaultAndRequiredSlot(component.Component):
-    template_name = "template_with_default_and_required_slot.html"
-
-
-class _ComplexChildComponent(component.Component):
-    template = """
-        {% load component_tags %}
-        <div>
-        {% slot "content" default %}
-            No slot!
-        {% endslot %}
-        </div>
-    """
-
-
-class _ComplexParentComponent(component.Component):
-    template = """
-        {% load component_tags %}
-        ITEMS: {{ items }}
-        {% for item in items %}
-        <li>
-            {% component "complex_child" %}
-                {{ item.value }}
-            {% endcomponent %}
-        </li>
-        {% endfor %}
-    """
-
-    def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
-        return {"items": items}
-
-
-class BlockInSlotInComponent(component.Component):
-    template_name = "block_in_slot_in_component.html"
-
-
-class SlotInsideExtendsComponent(component.Component):
-    template_name = "slot_inside_extends.html"
-
-
-class SlotInsideIncludeComponent(component.Component):
-    template_name = "slot_inside_include.html"
 
 
 #######################
@@ -132,6 +40,19 @@ class SlotInsideIncludeComponent(component.Component):
 
 
 class ComponentTemplateTagTest(BaseTestCase):
+    class SimpleComponent(component.Component):
+        template_name = "simple_template.html"
+
+        def get_context_data(self, variable, variable2="default"):
+            return {
+                "variable": variable,
+                "variable2": variable2,
+            }
+
+        class Media:
+            css = "style.css"
+            js = "script.js"
+
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
@@ -144,9 +65,9 @@ class ComponentTemplateTagTest(BaseTestCase):
         )
 
     def test_single_component(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        component.registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_tempate = """
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% component name="test" variable="variable" %}{% endcomponent %}
         """
@@ -160,7 +81,7 @@ class ComponentTemplateTagTest(BaseTestCase):
     def test_call_with_invalid_name(self):
         # Note: No tag registered
 
-        simple_tag_tempate = """
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% component name="test" variable="variable" %}{% endcomponent %}
         """
@@ -172,9 +93,9 @@ class ComponentTemplateTagTest(BaseTestCase):
                 template.render(Context({}))
 
     def test_component_called_with_positional_name(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        component.registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_tempate = """
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% component "test" variable="variable" %}{% endcomponent %}
         """
@@ -186,9 +107,26 @@ class ComponentTemplateTagTest(BaseTestCase):
             self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_call_component_with_two_variables(self):
-        component.registry.register(name="test", component=IffedComponent)
+        @component.register("test")
+        class IffedComponent(component.Component):
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+                {% if variable2 != "default" %}
+                    Variable2: <strong>{{ variable2 }}</strong>
+                {% endif %}
+            """
 
-        simple_tag_tempate = """
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+            class Media:
+                css = "style.css"
+                js = "script.js"
+
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% component name="test" variable="variable" variable2="hej" %}{% endcomponent %}
         """
@@ -201,9 +139,9 @@ class ComponentTemplateTagTest(BaseTestCase):
             self.assertHTMLEqual(rendered, textwrap.dedent(expected_outcome))
 
     def test_component_called_with_singlequoted_name(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        component.registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_tempate = """
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% component 'test' variable="variable" %}{% endcomponent %}
         """
@@ -215,9 +153,9 @@ class ComponentTemplateTagTest(BaseTestCase):
             self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_component_called_with_variable_as_name(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        component.registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_tempate = """
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% with component_name="test" %}
                 {% component component_name variable="variable" %}{% endcomponent %}
@@ -231,9 +169,9 @@ class ComponentTemplateTagTest(BaseTestCase):
             self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     def test_component_called_with_invalid_variable_as_name(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        component.registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_tempate = """
+        simple_tag_tempate: types.django_html = """
             {% load component_tags %}
             {% with component_name="BLAHONGA" %}
                 {% component component_name variable="variable" %}{% endcomponent %}
@@ -249,16 +187,36 @@ class ComponentTemplateTagTest(BaseTestCase):
 
 
 class ComponentSlottedTemplateTagTest(BaseTestCase):
+    class ComponentWithDefaultSlot(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <div>
+                <main>{% slot "main" default %}Easy to override{% endslot %}</main>
+            </div>
+        """
+
     def setUp(self):
         # NOTE: component.registry is global, so need to clear before each test
         component.registry.clear()
 
     def test_slotted_template_basic(self):
         component.registry.register(name="test1", component=SlottedComponent)
-        component.registry.register(name="test2", component=SimpleComponent)
 
-        template = Template(
-            """
+        @component.register("test2")
+        class SimpleComponent(component.Component):
+            template_name = "simple_template.html"
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+            class Media:
+                css = "style.css"
+                js = "script.js"
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test1" %}
                 {% fill "header" %}
@@ -269,7 +227,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(
@@ -287,8 +245,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     def test_slotted_template_with_context_var__isolated(self):
         component.registry.register(name="test1", component=SlottedComponentWithContext)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% with my_first_variable="test123" %}
                 {% component "test1" variable="test456" %}
@@ -301,7 +258,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 {% endcomponent %}
             {% endwith %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"my_second_variable": "test321"}))
 
         self.assertHTMLEqual(
@@ -323,8 +280,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     def test_slotted_template_with_context_var__django(self):
         component.registry.register(name="test1", component=SlottedComponentWithContext)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% with my_first_variable="test123" %}
                 {% component "test1" variable="test456" %}
@@ -337,7 +293,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 {% endcomponent %}
             {% endwith %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"my_second_variable": "test321"}))
 
         self.assertHTMLEqual(
@@ -354,7 +310,11 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     def test_slotted_template_no_slots_filled(self):
         component.registry.register(name="test", component=SlottedComponent)
 
-        template = Template('{% load component_tags %}{% component "test" %}{% endcomponent %}')
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}{% endcomponent %}
+        """
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(
@@ -369,41 +329,48 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         )
 
     def test_slotted_template_without_slots(self):
-        component.registry.register(name="test", component=SlottedComponentNoSlots)
-        template = Template(
+        @component.register("test")
+        class SlottedComponentNoSlots(component.Component):
+            template: types.django_html = """
+                <custom-template></custom-template>
             """
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
 
     def test_slotted_template_without_slots_and_single_quotes(self):
-        component.registry.register(name="test", component=SlottedComponentNoSlots)
-        template = Template(
+        @component.register("test")
+        class SlottedComponentNoSlots(component.Component):
+            template: types.django_html = """
+                <custom-template></custom-template>
             """
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(rendered, "<custom-template></custom-template>")
 
     def test_variable_fill_name(self):
         component.registry.register(name="test", component=SlottedComponent)
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% with slotname="header" %}
                 {% component 'test' %}
                     {% fill slotname %}Hi there!{% endfill %}
             {% endcomponent %}
             {% endwith %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({}))
         expected = """
         <custom-template>
@@ -416,30 +383,34 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     def test_missing_required_slot_raises_error(self):
         class Component(component.Component):
-            template_name = "slotted_template_with_required_slot.html"
-
-        component.registry.register("test", Component)
-        template = Template(
+            template: types.django_html = """
+                {% load component_tags %}
+                <div class="header-box">
+                    <h1>{% slot "title" required %}{% endslot %}</h1>
+                    <h2>{% slot "subtitle" %}{% endslot %}</h2>
+                </div>
             """
+        component.registry.register("test", Component)
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
     def test_default_slot_is_fillable_by_implicit_fill_content(self):
-        component.registry.register("test_comp", ComponentWithDefaultSlot)
+        component.registry.register("test_comp", self.ComponentWithDefaultSlot)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               <p>This fills the 'main' slot.</p>
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
 
         expected = """
         <div>
@@ -450,44 +421,50 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     def test_default_slot_is_fillable_by_explicit_fill_content(self):
-        component.registry.register("test_comp", ComponentWithDefaultSlot)
+        component.registry.register("test_comp", self.ComponentWithDefaultSlot)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         expected = """
-        <div>
-          <main><p>This fills the 'main' slot.</p></main>
-        </div>
+            <div>
+            <main><p>This fills the 'main' slot.</p></main>
+            </div>
         """
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, expected)
 
     def test_error_raised_when_default_and_required_slot_not_filled(self):
-        component.registry.register("test_comp", ComponentWithDefaultAndRequiredSlot)
-        template = Template(
+        @component.register("test_comp")
+        class ComponentWithDefaultAndRequiredSlot(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <header>{% slot "header" %}Your Header Here{% endslot %}</header>
+                    <main>{% slot "main" default required %}Easy to override{% endslot %}</main>
+                </div>
             """
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
     def test_fill_tag_can_occur_within_component_nested_in_implicit_fill(
         self,
     ):
-        component.registry.register("test_comp", ComponentWithDefaultSlot)
+        component.registry.register("test_comp", self.ComponentWithDefaultSlot)
         component.registry.register("slotted", SlottedComponent)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               {% component "slotted" %}
@@ -496,40 +473,38 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 {% fill "footer" %}{% endfill %}
               {% endcomponent %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         expected = """
-        <div>
-          <main>
-            <custom-template>
-              <header>This Is Allowed</header>
-              <main></main>
-              <footer></footer>
-            </custom-template>
-          </main>
-        </div>
+            <div>
+            <main>
+                <custom-template>
+                <header>This Is Allowed</header>
+                <main></main>
+                <footer></footer>
+                </custom-template>
+            </main>
+            </div>
         """
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, expected)
 
     def test_error_from_mixed_implicit_and_explicit_fill_content(self):
-        component.registry.register("test_comp", ComponentWithDefaultSlot)
+        component.registry.register("test_comp", self.ComponentWithDefaultSlot)
 
         with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component 'test_comp' %}
                   {% fill "main" %}Main content{% endfill %}
                   <p>And add this too!</p>
                 {% endcomponent %}
-                """
-            )
+            """
+            Template(template_str)
 
     def test_comments_permitted_inside_implicit_fill_content(self):
-        component.registry.register("test_comp", ComponentWithDefaultSlot)
-        Template(
-            """
+        component.registry.register("test_comp", self.ComponentWithDefaultSlot)
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               <p>Main Content</p>
@@ -538,36 +513,34 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
               {% endcomment %}
               {# Nor will this #}
             {% endcomponent %}
-            """
-        )
+        """
+        Template(template_str)
         self.assertTrue(True)
 
     def test_component_without_default_slot_refuses_implicit_fill(self):
         component.registry.register("test_comp", SlottedComponent)
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               <p>This shouldn't work because the included component doesn't mark
               any of its slots as 'default'</p>
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
     def test_component_template_cannot_have_multiple_default_slots(self):
         class BadComponent(component.Component):
             def get_template(self, context, template_name: Optional[str] = None) -> Template:
-                return Template(
-                    """
+                template_str: types.django_html = """
                     {% load django_components %}
                     <div>
-                    {% slot "icon" %} {% endslot default %}
-                    {% slot "description" %} {% endslot default %}
+                        {% slot "icon" %} {% endslot default %}
+                        {% slot "description" %} {% endslot default %}
                     </div>
-                    """
-                )
+                """
+                return Template(template_str)
 
         c = BadComponent("name")
         with self.assertRaises(TemplateSyntaxError):
@@ -576,8 +549,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     def test_slot_name_fill_typo_gives_helpful_error_message(self):
         component.registry.register(name="test1", component=SlottedComponent)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test1" %}
                 {% fill "haeder" %}
@@ -588,7 +560,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         with self.assertRaises(TemplateSyntaxError):
             try:
                 template.render(Context({}))
@@ -611,13 +583,23 @@ class SlottedTemplateRegressionTests(BaseTestCase):
         component.registry.clear()
 
     def test_slotted_template_that_uses_missing_variable(self):
-        component.registry.register(name="test", component=SlottedComponentWithMissingVariable)
-        template = Template(
+        @component.register("test")
+        class SlottedComponentWithMissingVariable(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    {{ missing_context_variable }}
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
             """
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(
@@ -628,19 +610,26 @@ class SlottedTemplateRegressionTests(BaseTestCase):
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
-        """,
+            """,
         )
 
     def test_component_accepts_provided_and_default_parameters(self):
-        component.registry.register(name="test", component=ComponentWithProvidedAndDefaultParameters)
-
-        template = Template(
+        @component.register("test")
+        class ComponentWithProvidedAndDefaultParameters(component.Component):
+            template: types.django_html = """
+                Provided variable: <strong>{{ variable }}</strong>
+                Default: <p>{{ default_param }}</p>
             """
+
+            def get_context_data(self, variable, default_param="default text"):
+                return {"variable": variable, "default_param": default_param}
+
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" variable="provided value" %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(
             rendered,
@@ -657,11 +646,16 @@ class MultiComponentTests(BaseTestCase):
         component.registry.register("second_component", SlottedComponentWithContext)
 
     def make_template(self, first_component_slot="", second_component_slot=""):
-        return Template(
-            "{% load component_tags %}"
-            "{% component 'first_component' %}" + first_component_slot + "{% endcomponent %}"
-            "{% component 'second_component' variable='xyz' %}" + second_component_slot + "{% endcomponent %}"
-        )
+        template_str: types.django_html = f"""
+            {{% load component_tags %}}
+            {{% component 'first_component' %}}
+                {first_component_slot}
+            {{% endcomponent %}}
+            {{% component 'second_component' variable='xyz' %}}
+                {second_component_slot}
+            {{% endcomponent %}}
+        """
+        return Template(template_str)
 
     def expected_result(self, first_component_slot="", second_component_slot=""):
         return (
@@ -724,7 +718,20 @@ class TemplateInstrumentationTest(BaseTestCase):
     def setUp(self):
         component.registry.clear()
         component.registry.register("test_component", SlottedComponent)
-        component.registry.register("inner_component", SimpleComponent)
+
+        @component.register("inner_component")
+        class SimpleComponent(component.Component):
+            template_name = "simple_template.html"
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+            class Media:
+                css = "style.css"
+                js = "script.js"
 
     def templates_used_to_render(self, subject_template, render_context=None):
         """Emulate django.test.client.Client (see request method)."""
@@ -741,28 +748,24 @@ class TemplateInstrumentationTest(BaseTestCase):
         return templates_used
 
     def test_template_shown_as_used(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_component' %}{% endcomponent %}
-            """,
-            name="root",
-        )
+        """
+        template = Template(template_str, name="root")
         templates_used = self.templates_used_to_render(template)
         self.assertIn("slotted_template.html", templates_used)
 
     def test_nested_component_templates_all_shown_as_used(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_component' %}
               {% fill "header" %}
                 {% component 'inner_component' variable='foo' %}{% endcomponent %}
               {% endfill %}
             {% endcomponent %}
-            """,
-            name="root",
-        )
+        """
+        template = Template(template_str, name="root")
         templates_used = self.templates_used_to_render(template)
         self.assertIn("slotted_template.html", templates_used)
         self.assertIn("simple_template.html", templates_used)
@@ -770,7 +773,12 @@ class TemplateInstrumentationTest(BaseTestCase):
 
 class NestedSlotTests(BaseTestCase):
     class NestedComponent(component.Component):
-        template_name = "nested_slot_template.html"
+        template: types.django_html = """
+            {% load component_tags %}
+            {% slot 'outer' %}
+                <div id="outer">{% slot 'inner' %}Default{% endslot %}</div>
+            {% endslot %}
+        """
 
     @classmethod
     def setUpClass(cls):
@@ -784,54 +792,57 @@ class NestedSlotTests(BaseTestCase):
         component.registry.clear()
 
     def test_default_slot_contents_render_correctly(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<div id="outer">Default</div>')
 
     def test_inner_slot_overriden(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
                 {% fill 'inner' %}Override{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<div id="outer">Override</div>')
 
     def test_outer_slot_overriden(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% fill 'outer' %}<p>Override</p>{% endfill %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "<p>Override</p>")
 
     def test_both_overriden_and_inner_removed(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
                 {% fill 'outer' %}<p>Override</p>{% endfill %}
                 {% fill 'inner' %}<p>Will not appear</p>{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "<p>Override</p>")
 
 
 class ConditionalSlotTests(BaseTestCase):
     class ConditionalComponent(component.Component):
-        template_name = "conditional_template.html"
+        template: types.django_html = """
+            {% load component_tags %}
+            {% if branch == 'a' %}
+                <p id="a">{% slot 'a' %}Default A{% endslot %}</p>
+            {% elif branch == 'b' %}
+                <p id="b">{% slot 'b' %}Default B{% endslot %}</p>
+            {% endif %}
+        """
 
         def get_context_data(self, branch=None):
             return {"branch": branch}
@@ -848,32 +859,29 @@ class ConditionalSlotTests(BaseTestCase):
         component.registry.clear()
 
     def test_no_content_if_branches_are_false(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
                 {% fill 'a' %}Override A{% endfill %}
                 {% fill 'b' %}Override B{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "")
 
     def test_default_content_if_no_slots(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' branch='a' %}{% endcomponent %}
             {% component 'test' branch='b' %}{% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Default B</p>')
 
     def test_one_slot_overridden(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' branch='a' %}
                 {% fill 'b' %}Override B{% endfill %}
@@ -882,13 +890,12 @@ class ConditionalSlotTests(BaseTestCase):
                 {% fill 'b' %}Override B{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Override B</p>')
 
     def test_both_slots_overridden(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' branch='a' %}
                 {% fill 'a' %}Override A{% endfill %}
@@ -899,7 +906,7 @@ class ConditionalSlotTests(BaseTestCase):
                 {% fill 'b' %}Override B{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
 
@@ -917,8 +924,7 @@ class SlotSuperTests(BaseTestCase):
         component.registry.clear()
 
     def test_basic_super_functionality(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" as "header" %}Before: {{ header.default }}{% endfill %}
@@ -926,7 +932,7 @@ class SlotSuperTests(BaseTestCase):
                 {% fill "footer" as "footer" %}{{ footer.default }}, after{% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(
@@ -937,18 +943,20 @@ class SlotSuperTests(BaseTestCase):
                 <main>Default main</main>
                 <footer>Default footer, after</footer>
             </custom-template>
-        """,
+            """,
         )
 
     def test_multiple_super_calls(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}First: {{ header.default }}; Second: {{ header.default }}{% endfill %}
+                {% fill "header" as "header" %}
+                    First: {{ header.default }};
+                    Second: {{ header.default }}
+                {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({}))
 
         self.assertHTMLEqual(
@@ -963,8 +971,7 @@ class SlotSuperTests(BaseTestCase):
         )
 
     def test_super_under_if_node(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" as "header" %}
@@ -976,7 +983,7 @@ class SlotSuperTests(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"range": range(3)}))
 
         self.assertHTMLEqual(
@@ -987,7 +994,7 @@ class SlotSuperTests(BaseTestCase):
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
-        """,
+            """,
         )
 
 
@@ -996,7 +1003,6 @@ class TemplateSyntaxErrorTests(BaseTestCase):
     def setUpClass(cls):
         super().setUpClass()
         component.registry.register("test", SlottedComponent)
-        component.registry.register("broken_component", BrokenComponent)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -1007,32 +1013,29 @@ class TemplateSyntaxErrorTests(BaseTestCase):
         # As of v0.28 this is valid, provided the component registered under "test"
         # contains a slot tag marked as 'default'. This is verified outside
         # template compilation time.
-        Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {{ anything }}
             {% endcomponent %}
-            """
-        )
+        """
+        Template(template_str)
 
     def test_text_outside_fill_tag_is_not_error(self):
         # As of v0.28 this is valid, provided the component registered under "test"
         # contains a slot tag marked as 'default'. This is verified outside
         # template compilation time.
-        Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 Text
             {% endcomponent %}
-            """
-        )
+        """
+        Template(template_str)
 
     def test_nonfill_block_outside_fill_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
                     {% if True %}
@@ -1040,56 +1043,58 @@ class TemplateSyntaxErrorTests(BaseTestCase):
                     {% endif %}
                 {% endcomponent %}
             """
-            )
+            Template(template_str)
 
     def test_unclosed_component_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
                 {% fill "header" %}{% endfill %}
             """
-            )
+            Template(template_str)
 
     def test_fill_with_no_parent_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% fill "header" %}contents{% endfill %}
             """
-            ).render(Context({}))
+            Template(template_str).render(Context({}))
 
     def test_isolated_slot_is_error(self):
+        @component.register("broken_component")
+        class BrokenComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% include 'slotted_template.html' with context=None only %}
+            """
+
         with self.assertRaises(KeyError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "broken_component" %}
                     {% fill "header" %}Custom header {% endfill %}
                     {% fill "main" %}Custom main{% endfill %}
                     {% fill "footer" %}Custom footer{% endfill %}
                 {% endcomponent %}
-                """
-            ).render(Context({}))
+            """
+            Template(template_str).render(Context({}))
 
     def test_non_unique_fill_names_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
                     {% fill "header" %}Custom header {% endfill %}
                     {% fill "header" %}Other header{% endfill %}
                 {% endcomponent %}
-                """
-            ).render(Context({}))
+            """
+            Template(template_str).render(Context({}))
 
     def test_non_unique_fill_names_is_error_via_vars(self):
         with self.assertRaises(TemplateSyntaxError):
-            Template(
-                """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% with var1="header" var2="header" %}
                     {% component "test" %}
@@ -1097,18 +1102,79 @@ class TemplateSyntaxErrorTests(BaseTestCase):
                         {% fill var2 %}Other header{% endfill %}
                     {% endcomponent %}
                 {% endwith %}
-                """
-            ).render(Context({}))
+            """
+            Template(template_str).render(Context({}))
 
 
 class ComponentNestingTests(BaseTestCase):
+
+    class CalendarComponent(component.Component):
+        """Nested in ComponentWithNestedComponent"""
+        template: types.django_html = """
+            {% load component_tags %}
+            <div class="calendar-component">
+            <h1>
+                {% slot "header" %}Today's date is <span>{{ date }}</span>{% endslot %}
+            </h1>
+            <main>
+            {% slot "body" %}
+                You have no events today.
+            {% endslot %}
+            </main>
+            </div>
+        """
+
+    class DashboardComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <div class="dashboard-component">
+            {% component "calendar" date="2020-06-06" %}
+                {% fill "header" %}  {# fills and slots with same name relate to diff. things. #}
+                {% slot "header" %}Welcome to your dashboard!{% endslot %}
+                {% endfill %}
+                {% fill "body" %}Here are your to-do items for today:{% endfill %}
+            {% endcomponent %}
+            <ol>
+                {% for item in items %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ol>
+            </div>
+        """
+
+    class ComplexChildComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <div>
+            {% slot "content" default %}
+                No slot!
+            {% endslot %}
+            </div>
+        """
+
+    class ComplexParentComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            ITEMS: {{ items }}
+            {% for item in items %}
+            <li>
+                {% component "complex_child" %}
+                    {{ item.value }}
+                {% endcomponent %}
+            </li>
+            {% endfor %}
+        """
+
+        def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
+            return {"items": items}
+
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        component.registry.register("dashboard", _DashboardComponent)
-        component.registry.register("calendar", _CalendarComponent)
-        component.registry.register("complex_child", _ComplexChildComponent)
-        component.registry.register("complex_parent", _ComplexParentComponent)
+        component.registry.register("dashboard", cls.DashboardComponent)
+        component.registry.register("calendar", cls.CalendarComponent)
+        component.registry.register("complex_child", cls.ComplexChildComponent)
+        component.registry.register("complex_parent", cls.ComplexParentComponent)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -1117,202 +1183,230 @@ class ComponentNestingTests(BaseTestCase):
 
     @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_component_nesting_component_without_fill__django(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}{% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2, 3]}))
         expected = """
-        <div class="dashboard-component">
-          <div class="calendar-component">
-            <h1>
-              Welcome to your dashboard!
-            </h1>
-            <main>
-              Here are your to-do items for today:
-            </main>
-          </div>
-          <ol>
-            <li>1</li>
-            <li>2</li>
-            <li>3</li>
-          </ol>
-        </div>
+            <div class="dashboard-component">
+            <div class="calendar-component">
+                <h1>
+                Welcome to your dashboard!
+                </h1>
+                <main>
+                Here are your to-do items for today:
+                </main>
+            </div>
+            <ol>
+                <li>1</li>
+                <li>2</li>
+                <li>3</li>
+            </ol>
+            </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_component_without_fill__isolated(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}{% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2, 3]}))
         expected = """
-        <div class="dashboard-component">
-          <div class="calendar-component">
-            <h1>
-              Welcome to your dashboard!
-            </h1>
-            <main>
-              Here are your to-do items for today:
-            </main>
-          </div>
-          <ol>
-          </ol>
-        </div>
+            <div class="dashboard-component">
+            <div class="calendar-component">
+                <h1>
+                Welcome to your dashboard!
+                </h1>
+                <main>
+                Here are your to-do items for today:
+                </main>
+            </div>
+            <ol>
+            </ol>
+            </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_slot_inside_component_fill__isolated(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}{% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2, 3]}))
         expected = """
-        <div class="dashboard-component">
-          <div class="calendar-component">
-            <h1>
-              Welcome to your dashboard!
-            </h1>
-            <main>
-              Here are your to-do items for today:
-            </main>
-          </div>
-          <ol>
-          </ol>
-        </div>
+            <div class="dashboard-component">
+            <div class="calendar-component">
+                <h1>
+                Welcome to your dashboard!
+                </h1>
+                <main>
+                Here are your to-do items for today:
+                </main>
+            </div>
+            <ol>
+            </ol>
+            </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_slot_inside_component_fill__isolated_2(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
                 {% fill "header" %}
                     Whoa!
                 {% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2, 3]}))
         expected = """
-        <div class="dashboard-component">
-          <div class="calendar-component">
-            <h1>
-              Whoa!
-            </h1>
-            <main>
-              Here are your to-do items for today:
-            </main>
-          </div>
-          <ol>
-          </ol>
-        </div>
+            <div class="dashboard-component">
+            <div class="calendar-component">
+                <h1>
+                Whoa!
+                </h1>
+                <main>
+                Here are your to-do items for today:
+                </main>
+            </div>
+            <ol>
+            </ol>
+            </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_deep_slot_inside_component_fill__isolated(self):
-
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "complex_parent" items=items %}{% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         items = [{"value": 1}, {"value": 2}, {"value": 3}]
         rendered = template.render(Context({"items": items}))
         expected = """
-        ITEMS: [{&#x27;value&#x27;: 1}, {&#x27;value&#x27;: 2}, {&#x27;value&#x27;: 3}]
-        <li>
-            <div> 1 </div>
-        </li>
-        <li>
-            <div> 2 </div>
-        </li>
-        <li>
-            <div> 3 </div>
-        </li>
+            ITEMS: [{&#x27;value&#x27;: 1}, {&#x27;value&#x27;: 2}, {&#x27;value&#x27;: 3}]
+            <li>
+                <div> 1 </div>
+            </li>
+            <li>
+                <div> 2 </div>
+            </li>
+            <li>
+                <div> 3 </div>
+            </li>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_component_nesting_component_with_fill_and_super__django(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
               {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2]}))
         expected = """
-        <div class="dashboard-component">
-          <div class="calendar-component">
-            <h1>
-              Hello! Welcome to your dashboard!
-            </h1>
-            <main>
-              Here are your to-do items for today:
-            </main>
-          </div>
-          <ol>
-            <li>1</li>
-            <li>2</li>
-          </ol>
-        </div>
+            <div class="dashboard-component">
+            <div class="calendar-component">
+                <h1>
+                Hello! Welcome to your dashboard!
+                </h1>
+                <main>
+                Here are your to-do items for today:
+                </main>
+            </div>
+            <ol>
+                <li>1</li>
+                <li>2</li>
+            </ol>
+            </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_component_nesting_component_with_fill_and_super__isolated(self):
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
               {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
             {% endcomponent %}
-            """
-        )
+        """
+        template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2]}))
         expected = """
-        <div class="dashboard-component">
-          <div class="calendar-component">
-            <h1>
-              Hello! Welcome to your dashboard!
-            </h1>
-            <main>
-              Here are your to-do items for today:
-            </main>
-          </div>
-          <ol>
-          </ol>
-        </div>
+            <div class="dashboard-component">
+            <div class="calendar-component">
+                <h1>
+                Hello! Welcome to your dashboard!
+                </h1>
+                <main>
+                Here are your to-do items for today:
+                </main>
+            </div>
+            <ol>
+            </ol>
+            </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
 
 class ConditionalIfFilledSlotsTests(BaseTestCase):
     class ComponentWithConditionalSlots(component.Component):
-        template_name = "template_with_conditional_slots.html"
+        template: types.django_html = """
+            {# Example from django-components/issues/98 #}
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                {% if component_vars.is_filled.subtitle %}
+                    <div class="subtitle">
+                        {% slot "subtitle" %}Optional subtitle
+                        {% endslot %}
+                    </div>
+                {% endif %}
+            </div>
+        """
 
     class ComponentWithComplexConditionalSlots(component.Component):
-        template_name = "template_with_if_elif_else_conditional_slots.html"
+        template: types.django_html = """
+            {# Example from django-components/issues/98 #}
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                {% if component_vars.is_filled.subtitle %}
+                    <div class="subtitle">{% slot "subtitle" %}Optional subtitle{% endslot %}</div>
+                {% elif component_vars.is_filled.alt_subtitle %}
+                    <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
+                {% else %}
+                <div class="warning">Nothing filled!</div>
+                {% endif %}
+            </div>
+        """
 
     class ComponentWithNegatedConditionalSlot(component.Component):
-        template_name = "template_with_negated_conditional_slots.html"
+        template: types.django_html = """
+            {# Example from django-components/issues/98 #}
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                {% if not component_vars.is_filled.subtitle %}
+                <div class="warning">Subtitle not filled!</div>
+                {% else %}
+                    <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
+                {% endif %}
+            </div>
+        """
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -1330,55 +1424,55 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
         component.registry.clear()
 
     def test_simple_component_with_conditional_slot(self):
-        template = """
-        {% load component_tags %}
-        {% component "conditional_slots" %}{% endcomponent %}
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "conditional_slots" %}{% endcomponent %}
         """
         expected = """
-        <div class="frontmatter-component">
-          <div class="title">
-          Title
-          </div>
-        </div>
+            <div class="frontmatter-component">
+            <div class="title">
+            Title
+            </div>
+            </div>
         """
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "django"})
     def test_component_with_filled_conditional_slot__django(self):
-        template = """
-        {% load component_tags %}
-        {% component "conditional_slots" %}
-          {% fill "subtitle" %} My subtitle {% endfill %}
-        {% endcomponent %}
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "conditional_slots" %}
+            {% fill "subtitle" %} My subtitle {% endfill %}
+            {% endcomponent %}
         """
         expected = """
-        <div class="frontmatter-component">
-          <div class="title">
-          Title
-          </div>
-          <div class="subtitle">
-            My subtitle
-          </div>
-        </div>
+            <div class="frontmatter-component">
+                <div class="title">
+                    Title
+                </div>
+                <div class="subtitle">
+                    My subtitle
+                </div>
+            </div>
         """
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
 
     def test_elif_of_complex_conditional_slots(self):
-        template = """
-        {% load component_tags %}
-        {% component "complex_conditional_slots" %}
-            {% fill "alt_subtitle" %} A different subtitle {% endfill %}
-        {% endcomponent %}
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "complex_conditional_slots" %}
+                {% fill "alt_subtitle" %} A different subtitle {% endfill %}
+            {% endcomponent %}
         """
         expected = """
            <div class="frontmatter-component">
              <div class="title">
-             Title
+                Title
              </div>
              <div class="subtitle">
-             A different subtitle
+                A different subtitle
              </div>
            </div>
         """
@@ -1386,7 +1480,7 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     def test_else_of_complex_conditional_slots(self):
-        template = """
+        template: types.django_html = """
            {% load component_tags %}
            {% component "complex_conditional_slots" %}
            {% endcomponent %}
@@ -1403,19 +1497,19 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     def test_component_with_negated_conditional_slot(self):
-        template = """
-        {% load component_tags %}
-        {% component "negated_conditional_slot" %}
-            {# Whoops! Forgot to fill a slot! #}
-        {% endcomponent %}
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "negated_conditional_slot" %}
+                {# Whoops! Forgot to fill a slot! #}
+            {% endcomponent %}
         """
         expected = """
-        <div class="frontmatter-component">
-          <div class="title">
-          Title
-          </div>
-          <div class="warning">Subtitle not filled!</div>
-        </div>
+            <div class="frontmatter-component">
+                <div class="title">
+                Title
+                </div>
+                <div class="warning">Subtitle not filled!</div>
+            </div>
         """
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
@@ -1423,7 +1517,17 @@ class ConditionalIfFilledSlotsTests(BaseTestCase):
 
 class ContextVarsTests(BaseTestCase):
     class IsFilledVarsComponent(component.Component):
-        template_name = "template_is_filled.html"
+        template: types.django_html = """
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                {% slot "title" %}{% endslot %}
+                {% slot "my_title" %}{% endslot %}
+                {% slot "my title 1" %}{% endslot %}
+                {% slot "my-title-2" %}{% endslot %}
+                {% slot "escape this: #$%^*()" %}{% endslot %}
+                {{ component_vars.is_filled }}
+            </div>
+        """
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -1431,7 +1535,7 @@ class ContextVarsTests(BaseTestCase):
         component.registry.register("is_filled_vars", cls.IsFilledVarsComponent)
 
     def test_is_filled_vars(self):
-        template = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "is_filled_vars" %}
                 {% fill "title" %}{% endfill %}
@@ -1465,118 +1569,128 @@ class BlockCompatTests(BaseTestCase):
 
     def test_slots_inside_extends(self):
         component.registry.register("slotted_component", SlottedComponent)
-        component.registry.register("slot_inside_extends", SlotInsideExtendsComponent)
 
-        template = """
-        {% load component_tags %}
-        {% component "slot_inside_extends" %}
-            {% fill "body" %}
-                BODY_FROM_FILL
-            {% endfill %}
-        {% endcomponent %}
+        @component.register("slot_inside_extends")
+        class SlotInsideExtendsComponent(component.Component):
+            template: types.django_html = """
+                {% extends "block_in_slot_in_component.html" %}
+            """
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "slot_inside_extends" %}
+                {% fill "body" %}
+                    BODY_FROM_FILL
+                {% endfill %}
+            {% endcomponent %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-          <body>
-            <custom-template>
-              <header></header>
-              <main>BODY_FROM_FILL</main>
-              <footer>Default footer</footer>
-            </custom-template>
-          </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>BODY_FROM_FILL</main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
     def test_slots_inside_include(self):
         component.registry.register("slotted_component", SlottedComponent)
-        component.registry.register("slot_inside_include", SlotInsideIncludeComponent)
 
-        template = """
-        {% load component_tags %}
-        {% component "slot_inside_include" %}
-            {% fill "body" %}
-                BODY_FROM_FILL
-            {% endfill %}
-        {% endcomponent %}
+        @component.register("slot_inside_include")
+        class SlotInsideIncludeComponent(component.Component):
+            template: types.django_html = """
+                {% include "block_in_slot_in_component.html" %}
+            """
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "slot_inside_include" %}
+                {% fill "body" %}
+                    BODY_FROM_FILL
+                {% endfill %}
+            {% endcomponent %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-          <body>
-            <custom-template>
-              <header></header>
-              <main>BODY_FROM_FILL</main>
-              <footer>Default footer</footer>
-            </custom-template>
-          </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>BODY_FROM_FILL</main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
     def test_component_inside_block(self):
         component.registry.register("slotted_component", SlottedComponent)
-        template = """
-        {% extends "extendable_template_with_blocks.html" %}
-        {% load component_tags %}
-        {% block body %}
-          {% component "slotted_component" %}
-            {% fill "header" %}{% endfill %}
-            {% fill "main" %}
-              TEST
-            {% endfill %}
-            {% fill "footer" %}{% endfill %}
-          {% endcomponent %}
-        {% endblock %}
+        template: types.django_html = """
+            {% extends "block.html" %}
+            {% load component_tags %}
+            {% block body %}
+            {% component "slotted_component" %}
+                {% fill "header" %}{% endfill %}
+                {% fill "main" %}
+                TEST
+                {% endfill %}
+                {% fill "footer" %}{% endfill %}
+            {% endcomponent %}
+            {% endblock %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-        <main role="main">
-          <div class='container main-container'>
-            <custom-template>
-              <header></header>
-              <main>TEST</main>
-              <footer></footer>
-            </custom-template>
-          </div>
-        </main>
-        </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+            <main role="main">
+            <div class='container main-container'>
+                <custom-template>
+                <header></header>
+                <main>TEST</main>
+                <footer></footer>
+                </custom-template>
+            </div>
+            </main>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
     def test_block_inside_component(self):
         component.registry.register("slotted_component", SlottedComponent)
 
-        template = """
-        {% extends "block_inside_component.html" %}
-        {% load component_tags %}
-        {% block body %}
-          <div>
-            58 giraffes and 2 pantaloons
-          </div>
-        {% endblock %}
+        template: types.django_html = """
+            {% extends "block_in_component.html" %}
+            {% load component_tags %}
+            {% block body %}
+            <div>
+                58 giraffes and 2 pantaloons
+            </div>
+            {% endblock %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <custom-template>
-              <header></header>
-              <main>
-                <div> 58 giraffes and 2 pantaloons </div>
-              </main>
-              <footer>Default footer</footer>
-            </custom-template>
-        </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    <div> 58 giraffes and 2 pantaloons </div>
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -1586,32 +1700,35 @@ class BlockCompatTests(BaseTestCase):
         the `{% block %}` will NOT affect the inner component.
         """
         component.registry.register("slotted_component", SlottedComponent)
-        component.registry.register("block_inside_slot_v1", BlockInSlotInComponent)
 
-        template = """
-        {% load component_tags %}
-        {% component "block_inside_slot_v1" %}
-            {% fill "body" %}
-                BODY_FROM_FILL
-            {% endfill %}
-        {% endcomponent %}
-        {% block inner %}
-            wow
-        {% endblock %}
+        @component.register("block_inside_slot_v1")
+        class BlockInSlotInComponent(component.Component):
+            template_name = "block_in_slot_in_component.html"
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "block_inside_slot_v1" %}
+                {% fill "body" %}
+                    BODY_FROM_FILL
+                {% endfill %}
+            {% endcomponent %}
+            {% block inner %}
+                wow
+            {% endblock %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <custom-template>
-              <header></header>
-              <main>BODY_FROM_FILL</main>
-              <footer>Default footer</footer>
-            </custom-template>
-        </body>
-        </html>
-        wow
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>BODY_FROM_FILL</main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
+            wow
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -1620,27 +1737,29 @@ class BlockCompatTests(BaseTestCase):
 
         @component.register("slot_inside_block")
         class _SlotInsideBlockComponent(component.Component):
-            template = """{% extends "slot_inside_block.html" %}"""
+            template: types.django_html = """
+                {% extends "slot_inside_block.html" %}
+            """
 
-        template = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}{% endcomponent %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <custom-template>
-              <header></header>
-              <main>
-                Helloodiddoo
-                Default inner
-              </main>
-              <footer>Default footer</footer>
-            </custom-template>
-        </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    Helloodiddoo
+                    Default inner
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -1649,32 +1768,32 @@ class BlockCompatTests(BaseTestCase):
 
         @component.register("slot_inside_block")
         class _SlotInsideBlockComponent(component.Component):
-            template = """
+            template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
                 {% block inner %}
                     INNER BLOCK OVERRIDEN
                 {% endblock %}
             """
 
-        template = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}{% endcomponent %}
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <custom-template>
-              <header></header>
-              <main>
-                Helloodiddoo
-                INNER BLOCK OVERRIDEN
-              </main>
-              <footer>Default footer</footer>
-            </custom-template>
-        </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    Helloodiddoo
+                    INNER BLOCK OVERRIDEN
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -1683,9 +1802,11 @@ class BlockCompatTests(BaseTestCase):
 
         @component.register("slot_inside_block")
         class _SlotInsideBlockComponent(component.Component):
-            template = """{% extends "slot_inside_block.html" %}"""
+            template: types.django_html = """
+                {% extends "slot_inside_block.html" %}
+            """
 
-        template = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}
                 {% fill "body" %}
@@ -1695,19 +1816,19 @@ class BlockCompatTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <custom-template>
-              <header></header>
-              <main>
-                Helloodiddoo
-                SLOT OVERRIDEN
-              </main>
-              <footer>Default footer</footer>
-            </custom-template>
-        </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    Helloodiddoo
+                    SLOT OVERRIDEN
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -1716,7 +1837,7 @@ class BlockCompatTests(BaseTestCase):
 
         @component.register("slot_inside_block")
         class _SlotInsideBlockComponent(component.Component):
-            template = """
+            template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
                 {% block inner %}
                     {% load component_tags %}
@@ -1727,7 +1848,7 @@ class BlockCompatTests(BaseTestCase):
 
         # NOTE: The "body" fill will NOT show up, because we override the `inner` block
         # with a different slot. But the "new_slot" WILL show up.
-        template = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}
                 {% fill "body" %}
@@ -1740,19 +1861,19 @@ class BlockCompatTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <custom-template>
-              <header></header>
-              <main>
-                Helloodiddoo
-                SLOT_NEW__OVERRIDEN
-              </main>
-              <footer>Default footer</footer>
-            </custom-template>
-        </body>
-        </html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    Helloodiddoo
+                    SLOT_NEW__OVERRIDEN
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -1761,7 +1882,14 @@ class IterationFillTest(BaseTestCase):
     """Tests a behaviour of {% fill .. %} tag which is inside a template {% for .. %} loop."""
 
     class ComponentSimpleSlotInALoop(django_components.component.Component):
-        template_name = "template_with_slot_in_a_loop.html"
+        template: types.django_html = """
+            {% load component_tags %}
+            {% for object in objects %}
+                {% slot 'slot_inner' %}
+                    {{ object }} default
+                {% endslot %}
+            {% endfor %}
+        """
 
         def get_context_data(self, objects, *args, **kwargs) -> dict:
             return {
@@ -1775,8 +1903,7 @@ class IterationFillTest(BaseTestCase):
     def test_inner_slot_iteration_basic__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1784,7 +1911,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         objects = ["OBJECT1", "OBJECT2"]
         rendered = template.render(Context({"objects": objects}))
 
@@ -1800,8 +1927,7 @@ class IterationFillTest(BaseTestCase):
     def test_inner_slot_iteration_basic__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1809,7 +1935,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         objects = ["OBJECT1", "OBJECT2"]
         rendered = template.render(Context({"objects": objects}))
 
@@ -1819,8 +1945,7 @@ class IterationFillTest(BaseTestCase):
     def test_inner_slot_iteration_with_variable_from_outer_scope__django(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1829,7 +1954,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         objects = ["OBJECT1", "OBJECT2"]
         rendered = template.render(
             Context(
@@ -1854,8 +1979,7 @@ class IterationFillTest(BaseTestCase):
     def test_inner_slot_iteration_with_variable_from_outer_scope__isolated(self):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1864,7 +1988,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         objects = ["OBJECT1", "OBJECT2"]
         rendered = template.render(
             Context(
@@ -1892,8 +2016,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1905,7 +2028,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"objects": objects}))
 
         self.assertHTMLEqual(
@@ -1927,8 +2050,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1940,7 +2062,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"objects": objects}))
 
         self.assertHTMLEqual(rendered, "")
@@ -1954,8 +2076,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -1969,7 +2090,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(
             Context(
                 {
@@ -2005,8 +2126,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -2020,7 +2140,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(
             Context(
                 {
@@ -2048,8 +2168,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -2061,7 +2180,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"objects": objects}))
 
         self.assertHTMLEqual(
@@ -2083,8 +2202,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -2096,7 +2214,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(Context({"objects": objects}))
         self.assertHTMLEqual(rendered, "")
 
@@ -2111,8 +2229,7 @@ class IterationFillTest(BaseTestCase):
             {"inner": ["ITER2_OBJ1", "ITER2_OBJ2"]},
         ]
 
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -2126,7 +2243,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(
             Context(
                 {
@@ -2167,8 +2284,7 @@ class IterationFillTest(BaseTestCase):
         # NOTE: In this case the `object.inner` in the inner "slot_in_a_loop"
         # should be undefined, so the loop inside the inner `slot_in_a_loop`
         # shouldn't run. Hence even the inner `slot_inner` fill should NOT run.
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -2182,7 +2298,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(
             Context(
                 {
@@ -2215,8 +2331,7 @@ class IterationFillTest(BaseTestCase):
         # NOTE: In this case we use `objects` in the inner "slot_in_a_loop", which
         # is defined in the root context. So the loop inside the inner `slot_in_a_loop`
         # should run.
-        template = Template(
-            """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
@@ -2230,7 +2345,7 @@ class IterationFillTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        )
+        template = Template(template_str)
         rendered = template.render(
             Context(
                 {
