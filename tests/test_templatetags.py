@@ -390,6 +390,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                     <h2>{% slot "subtitle" %}{% endslot %}</h2>
                 </div>
             """
+
         component.registry.register("test", Component)
 
         template_str: types.django_html = """
@@ -1110,6 +1111,7 @@ class ComponentNestingTests(BaseTestCase):
 
     class CalendarComponent(component.Component):
         """Nested in ComponentWithNestedComponent"""
+
         template: types.django_html = """
             {% load component_tags %}
             <div class="calendar-component">

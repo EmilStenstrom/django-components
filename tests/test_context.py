@@ -3,8 +3,7 @@ from unittest.mock import PropertyMock, patch
 from django.template import Context, Template
 from django.test import override_settings
 
-from django_components import component
-from django_components import types
+from django_components import component, types
 
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase
