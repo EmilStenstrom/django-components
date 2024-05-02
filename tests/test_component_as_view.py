@@ -79,22 +79,11 @@ class MockInsecureComponentSlot(component.Component):
         return self.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
 
 
-def render_template_view(request):
-    template = Template(
-        """
-        {% load component_tags %}
-        {% component "testcomponent" variable="TEMPLATE" %}{% endcomponent %}
-        """
-    )
-    return HttpResponse(template.render(Context({})))
-
-
 components_urlpatterns = [
     path("test/", MockComponentRequest.as_view()),
     path("test_slot/", MockComponentSlot.as_view()),
     path("test_context_insecure/", MockInsecureComponentContext.as_view()),
     path("test_slot_insecure/", MockInsecureComponentSlot.as_view()),
-    path("test_template/", render_template_view),
 ]
 
 
@@ -104,8 +93,14 @@ urlpatterns = [
 
 
 class CustomClient(Client):
-    def __init__(self, *args, **kwargs):
-        settings.ROOT_URLCONF = __name__  # noqa
+    def __init__(self, urlpatterns=None, *args, **kwargs):
+        import types
+        if urlpatterns:
+            urls_module = types.ModuleType("urls")
+            urls_module.urlpatterns = urlpatterns  # type: ignore
+            settings.ROOT_URLCONF = urls_module
+        else:
+            settings.ROOT_URLCONF = __name__
         settings.SECRET_KEY = "secret"  # noqa
         super().__init__(*args, **kwargs)
 
@@ -127,7 +122,17 @@ class TestComponentAsView(BaseTestCase):
         self.client = CustomClient()
 
     def test_render_component_from_template(self):
-        response = self.client.get("/test_template/")
+        def render_template_view(request):
+            template = Template(
+                """
+                {% load component_tags %}
+                {% component "testcomponent" variable="TEMPLATE" %}{% endcomponent %}
+                """
+            )
+            return HttpResponse(template.render(Context({})))
+
+        client = CustomClient(urlpatterns=[path("test_template/", render_template_view)])
+        response = client.get("/test_template/")
         self.assertEqual(response.status_code, 200)
         self.assertIn(
             b'<input type="text" name="variable" value="TEMPLATE">',
