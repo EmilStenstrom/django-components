@@ -17,22 +17,6 @@ from django_components import component
 # COMPONENTS
 #########################
 
-class MockComponentSlot(component.Component):
-    template = """
-        {% load component_tags %}
-        <div>
-        {% slot "first_slot" %}
-            Hey, I'm {{ name }}
-        {% endslot %}
-        {% slot "second_slot" %}
-        {% endslot %}
-        </div>
-        """
-
-    def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
-
-
 class MockInsecureComponentContext(component.Component):
     template = """
         {% load component_tags %}
@@ -59,7 +43,6 @@ class MockInsecureComponentSlot(component.Component):
 
 
 components_urlpatterns = [
-    path("test_slot/", MockComponentSlot.as_view()),
     path("test_context_insecure/", MockInsecureComponentContext.as_view()),
     path("test_slot_insecure/", MockInsecureComponentSlot.as_view()),
 ]
@@ -91,7 +74,6 @@ class CustomClient(Client):
 class TestComponentAsView(BaseTestCase):
     @classmethod
     def setUpClass(self):
-        component.registry.register("testcomponent_slot", MockComponentSlot)
         component.registry.register("testcomponent_context_insecure", MockInsecureComponentContext)
         component.registry.register("testcomponent_slot_insecure", MockInsecureComponentSlot)
 
@@ -186,7 +168,23 @@ class TestComponentAsView(BaseTestCase):
         )
 
     def test_replace_slot_in_view(self):
-        response = self.client.get("/test_slot/")
+        class MockComponentSlot(component.Component):
+            template = """
+                {% load component_tags %}
+                <div>
+                {% slot "first_slot" %}
+                    Hey, I'm {{ name }}
+                {% endslot %}
+                {% slot "second_slot" %}
+                {% endslot %}
+                </div>
+                """
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
+
+        client = CustomClient(urlpatterns=[path("test_slot/", MockComponentSlot.as_view())])
+        response = client.get("/test_slot/")
         self.assertEqual(response.status_code, 200)
         self.assertIn(
             b"Hey, I'm Bob",
