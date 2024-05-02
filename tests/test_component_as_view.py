@@ -1,14 +1,14 @@
 from typing import Any, Dict
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.template import Context, Template
 from django.test import Client
-from django.urls import include, path
+from django.urls import path
 
 # isort: off
 from .django_test_setup import *  # noqa
 from .testutils import BaseTestCase
-
 # isort: on
 
 from django_components import component
@@ -25,16 +25,7 @@ class CustomClient(Client):
         settings.SECRET_KEY = "secret"  # noqa
         super().__init__(*args, **kwargs)
 
-
-#########################
-# TESTS
-#########################
-
-
 class TestComponentAsView(BaseTestCase):
-    def setUp(self):
-        self.client = CustomClient()
-
     def test_render_component_from_template(self):
         @component.register("testcomponent")
         class MockComponentRequest(component.Component):
@@ -45,10 +36,6 @@ class TestComponentAsView(BaseTestCase):
                     <input type="submit">
                 </form>
                 """
-
-            def post(self, request, *args, **kwargs) -> HttpResponse:
-                variable = request.POST.get("variable")
-                return self.render_to_response({"variable": variable})
 
             def get(self, request, *args, **kwargs) -> HttpResponse:
                 return self.render_to_response({"variable": "GET"})
