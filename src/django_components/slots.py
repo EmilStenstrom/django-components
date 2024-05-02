@@ -258,15 +258,18 @@ def _try_parse_as_named_fill_tag_set(
     ComponentNodeCls: Type[Node],
 ) -> List[FillNode]:
     result = []
-    seen_name_fexps: Set[FilterExpression] = set()
+    seen_name_fexps: Set[str] = set()
     for node in nodelist:
         if isinstance(node, FillNode):
-            if node.name_fexp in seen_name_fexps:
+            # Check that, after we've resolved the names, that there's still no duplicates.
+            # This makes sure that if two different variables refer to same string, we detect
+            # them.
+            if node.name_fexp.token in seen_name_fexps:
                 raise TemplateSyntaxError(
                     f"Multiple fill tags cannot target the same slot name: "
                     f"Detected duplicate fill tag name '{node.name_fexp}'."
                 )
-            seen_name_fexps.add(node.name_fexp)
+            seen_name_fexps.add(node.name_fexp.token)
             result.append(node)
         elif isinstance(node, CommentNode):
             pass
@@ -308,6 +311,7 @@ def _try_parse_as_default_fill(
 
 
 def resolve_slots(
+    context: Context,
     template: Template,
     component_name: Optional[str],
     context_data: Dict[str, Any],
@@ -374,7 +378,7 @@ def resolve_slots(
             slot_children[parent_slot_id].append(node.node_id)
             break
 
-    walk_nodelist(template.nodelist, on_node)
+    walk_nodelist(template.nodelist, on_node, context)
 
     # 3. Figure out which slot the default/implicit fill belongs to
     slot_fills = _resolve_default_slot(
