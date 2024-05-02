@@ -13,32 +13,6 @@ from .testutils import BaseTestCase
 
 from django_components import component
 
-#########################
-# COMPONENTS
-#########################
-
-class MockInsecureComponentContext(component.Component):
-    template = """
-        {% load component_tags %}
-        <div>
-        {{ variable }}
-        </div>
-        """
-
-    def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response({"variable": "<script>alert(1);</script>"})
-
-
-components_urlpatterns = [
-    path("test_context_insecure/", MockInsecureComponentContext.as_view()),
-]
-
-
-urlpatterns = [
-    path("", include(components_urlpatterns)),
-]
-
-
 class CustomClient(Client):
     def __init__(self, urlpatterns=None, *args, **kwargs):
         import types
@@ -58,10 +32,6 @@ class CustomClient(Client):
 
 
 class TestComponentAsView(BaseTestCase):
-    @classmethod
-    def setUpClass(self):
-        component.registry.register("testcomponent_context_insecure", MockInsecureComponentContext)
-
     def setUp(self):
         self.client = CustomClient()
 
@@ -202,7 +172,19 @@ class TestComponentAsView(BaseTestCase):
         )
 
     def test_replace_context_in_view_with_insecure_content(self):
-        response = self.client.get("/test_context_insecure/")
+        class MockInsecureComponentContext(component.Component):
+            template = """
+                {% load component_tags %}
+                <div>
+                {{ variable }}
+                </div>
+                """
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({"variable": "<script>alert(1);</script>"})
+
+        client = CustomClient(urlpatterns=[path("test_context_insecure/", MockInsecureComponentContext.as_view())])
+        response = client.get("/test_context_insecure/")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(
             b"<script>",
