@@ -12,7 +12,7 @@ from .testutils import BaseTestCase
 
 # isort: on
 
-from django_components import component, types
+from django_components import component
 
 
 class CustomClient(Client):
