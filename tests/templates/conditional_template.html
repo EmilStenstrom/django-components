@@ -1,6 +1,0 @@
-{% load component_tags %}
-{% if branch == 'a' %}
-    <p id="a">{% slot 'a' %}Default A{% endslot %}</p>
-{% elif branch == 'b' %}
-    <p id="b">{% slot 'b' %}Default B{% endslot %}</p>
-{% endif %}
