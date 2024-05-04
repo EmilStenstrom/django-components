@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, Tuple
 import django.template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
-from django.template.library import parse_bits
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior, app_settings
@@ -17,6 +16,7 @@ from django_components.middleware import (
     is_dependency_middleware_active,
 )
 from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
+from django_components.template_parser import parse_bits
 from django_components.utils import gen_id
 
 if TYPE_CHECKING:
@@ -279,13 +279,7 @@ def parse_component_with_args(
         parser=parser,
         bits=bits,
         params=["tag_name", "name"],
-        takes_context=False,
         name=tag_name,
-        varargs=True,
-        varkw=[],
-        defaults=None,
-        kwonly=[],
-        kwonly_defaults=None,
     )
 
     if tag_name != tag_args[0].token:

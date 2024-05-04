@@ -667,6 +667,44 @@ COMPONENTS = {
 }
 ```
 
+## Passing data to components
+
+As seen above, you can pass arguments to components like so:
+
+```django
+<body>
+    {% component "calendar" date="2015-06-19" %}
+    {% endcomponent %}
+</body>
+```
+
+### Special characters
+
+Keyword arguments can contain special characters `# @ . - _`, so keywords like
+so are still valid:
+
+```django
+<body>
+    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True %}
+    {% endcomponent %}
+</body>
+```
+
+These can then be accessed inside `get_context_data` so:
+
+```py
+@component.register("calendar")
+class Calendar(component.Component):
+    # Since # . @ - are not valid identifiers, we have to
+    # use `**kwargs` so the method can accept these args.
+    def get_context_data(self, **kwargs):
+        return {
+            "date": kwargs["my-date"],
+            "id": kwargs["#some_id"],
+            "@click.native": kwargs["@click.native"]
+        }
+```
+
 ## Component context and scope
 
 By default, components are ISOLATED and CANNOT access context variables from the parent template. This is useful if you want to make sure that components don't accidentally access the outer context.
