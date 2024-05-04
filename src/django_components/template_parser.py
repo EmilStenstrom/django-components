@@ -3,6 +3,7 @@ Overrides for the Django Template system to allow finer control over template pa
 
 Based on Django Slippers v0.6.2 - https://github.com/mixxorz/slippers/blob/main/slippers/template.py
 """
+
 import re
 from typing import Any, Dict, List, Tuple
 
@@ -61,8 +62,7 @@ class ComponentsFilterExpression(FilterExpression):
             start = match.start()
             if upto != start:
                 raise TemplateSyntaxError(
-                    "Could not parse some characters: "
-                    "%s|%s|%s" % (token[:upto], token[upto:start], token[start:])
+                    "Could not parse some characters: " "%s|%s|%s" % (token[:upto], token[upto:start], token[start:])
                 )
             if var_obj is None:
                 var, constant = match["var"], match["constant"]
@@ -72,9 +72,7 @@ class ComponentsFilterExpression(FilterExpression):
                     except VariableDoesNotExist:
                         var_obj = None
                 elif var is None:
-                    raise TemplateSyntaxError(
-                        "Could not find variable at " "start of %s." % token
-                    )
+                    raise TemplateSyntaxError("Could not find variable at " "start of %s." % token)
                 else:
                     var_obj = Variable(var)
             else:
@@ -90,10 +88,7 @@ class ComponentsFilterExpression(FilterExpression):
                 filters.append((filter_func, args))
             upto = match.end()
         if upto != len(token):
-            raise TemplateSyntaxError(
-                "Could not parse the remainder: '%s' "
-                "from '%s'" % (token[upto:], token)
-            )
+            raise TemplateSyntaxError("Could not parse the remainder: '%s' " "from '%s'" % (token[upto:], token))
 
         self.filters = filters
         self.var = var_obj
@@ -179,10 +174,7 @@ def parse_bits(
             param, value = kwarg.popitem()
             if param in kwargs:
                 # The keyword argument has already been supplied once
-                raise TemplateSyntaxError(
-                    "'%s' received multiple values for keyword argument '%s'"
-                    % (name, param)
-                )
+                raise TemplateSyntaxError("'%s' received multiple values for keyword argument '%s'" % (name, param))
             else:
                 # All good, record the keyword argument
                 kwargs[str(param)] = value
@@ -193,8 +185,7 @@ def parse_bits(
         else:
             if kwargs:
                 raise TemplateSyntaxError(
-                    "'%s' received some positional argument(s) after some "
-                    "keyword argument(s)" % name
+                    "'%s' received some positional argument(s) after some " "keyword argument(s)" % name
                 )
             else:
                 # Record the positional argument

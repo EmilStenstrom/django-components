@@ -4,6 +4,7 @@ from django.template.base import Parser
 # isort: off
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase
+
 # isort: on
 
 from django_components import component, types
@@ -42,13 +43,16 @@ class ParserTest(BaseTestCase):
 
         self.assertEqual(name, "my_component")
         self.assertListEqual(args, [])
-        self.assertDictEqual(kwargs, {
-            "@event:na-me.mod": "fzz",
-            "@lol": 2,
-            "date": 2024,
-            "na-me": "fzz",
-            "#my-id": True,
-        })
+        self.assertDictEqual(
+            kwargs,
+            {
+                "@event:na-me.mod": "fzz",
+                "@lol": 2,
+                "date": 2024,
+                "na-me": "fzz",
+                "#my-id": True,
+            },
+        )
 
 
 class ParserComponentTest(BaseTestCase):
@@ -81,5 +85,5 @@ class ParserComponentTest(BaseTestCase):
             2015-06-19
             True
             abc
-            """
+            """,
         )
