@@ -138,7 +138,7 @@ class TestStaticFilesDirs(BaseTestCase):
     def tearDown(self) -> None:
         del settings.STATICFILES_DIRS  # noqa
 
-    @patch("django_components.logger.logger.warning")
+    @patch("django_components.template_loader.logger.warning")
     def test_static_files_dirs(self, mock_warning: MagicMock):
         mock_warning.reset_mock()
         current_engine = Engine.get_default()
