@@ -37,6 +37,16 @@ class Loader(FilesystemLoader):
 
         directories: Set[Path] = set()
         for component_dir in component_dirs:
+            if isinstance(component_dir, (tuple, list)) and len(component_dir) == 2:
+                component_dir = component_dir[1]
+            try:
+                Path(component_dir)
+            except TypeError:
+                logger.warning(
+                    f"STATICFILES_DIRS expected str, bytes or os.PathLike object, or tuple/list of length 2. "
+                    f"See Django documentation. Got {type(component_dir)} : {component_dir}"
+                )
+                continue
             curr_directories: Set[Path] = set()
 
             # For each dir in `settings.STATICFILES_DIRS`, we go over all Django apps
