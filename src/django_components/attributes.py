@@ -17,7 +17,7 @@ from django_components.utils import FrozenDict
 _AttrItem = Tuple[str, FilterExpression]
 
 
-# When we have the `{% html_attrs %}` tag, we can specify if we want to SET
+# When we have the `{% merge_attrs %}` tag, we can specify if we want to SET
 # a value, or APPEND (merge) it. SET uses `=` while APPEND uses `+=`. E.g.:
 # `{% merge_attrs attributes data-value+="some-value" %}>`
 attribute_re: re.Pattern = _lazy_re_compile(
@@ -44,7 +44,7 @@ class HtmlAttributes(FrozenDict):
         return attributes_to_string(self)
 
 
-class HtmlAttrsNode(Node):
+class MergeAttrsNode(Node):
     def __init__(
         self,
         attributes: FilterExpression,

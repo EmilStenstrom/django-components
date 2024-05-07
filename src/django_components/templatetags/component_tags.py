@@ -6,7 +6,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior, app_settings
-from django_components.attributes import HtmlAttrsNode, parse_attributes
+from django_components.attributes import MergeAttrsNode, parse_attributes
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
@@ -249,8 +249,8 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     return component_node
 
 
-@register.tag("html_attrs")
-def do_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
+@register.tag("merge_attrs")
+def do_merge_attrs(parser: Parser, token: Token) -> MergeAttrsNode:
     tag_name, *remaining_bits = token.split_contents()
     if not remaining_bits:
         raise TemplateSyntaxError("'%s' tag takes at least one argument, the attributes" % tag_name)
@@ -258,8 +258,8 @@ def do_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     attributes = parser.compile_filter(remaining_bits[0])
     attr_list = remaining_bits[1:]
 
-    default_attrs, append_attrs = parse_attributes("html_attrs", parser, attr_list)
-    return HtmlAttrsNode(attributes, default_attrs, append_attrs)
+    default_attrs, append_attrs = parse_attributes("merge_attrs", parser, attr_list)
+    return MergeAttrsNode(attributes, default_attrs, append_attrs)
 
 
 def is_whitespace_node(node: Node) -> bool:

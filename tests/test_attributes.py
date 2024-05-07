@@ -12,6 +12,7 @@ from django_components import component, types
 # isort: off
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase
+
 # isort: on
 
 
@@ -188,6 +189,7 @@ class AttrsInTemplateTests(BaseTestCase):
                 <div {{ attrs }} >
                 </div>
             """
+
             def get_context_data(self, *args, attrs):
                 return {"attrs": attrs}
 
@@ -214,6 +216,7 @@ class AttrsInTemplateTests(BaseTestCase):
                 <div {{ attrs }} >
                 </div>
             """
+
             def get_context_data(self, *args, attrs):
                 attrs["my_super_key"] = "abc"
                 return {"attrs": attrs}
@@ -232,7 +235,7 @@ class AttrsInTemplateTests(BaseTestCase):
         class AttrsComponent(component.Component):
             template: types.django_html = """
                 {% load component_tags %}
-                <div {% html_attrs component_vars.attrs class+="added_class" data-id=123 %}>
+                <div {% merge_attrs component_vars.attrs class+="added_class" data-id=123 %}>
                     content
                 </div>
             """
