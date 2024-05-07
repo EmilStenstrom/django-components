@@ -1,7 +1,7 @@
 import glob
+from collections import UserDict
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, no_type_check
-from collections import UserDict
 
 from django.template.engine import Engine
 
@@ -63,7 +63,7 @@ def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
 class FrozenDict(UserDict):
     # NOTE: This __init__ is taken from `UserDict`, except `UserDict` calls
     # `self.update`, which we make immutable
-    def __init__(self, dict: Dict|None=None, /, **kwargs: Any):
+    def __init__(self, dict: Dict | None = None, /, **kwargs: Any):
         self._hash = None
         self.data = {}
         if dict is not None:
@@ -78,13 +78,13 @@ class FrozenDict(UserDict):
         return self._hash
 
     def _immutable(self, *args: Any, **kws: Any) -> None:
-        raise TypeError('cannot change object - object is immutable')
+        raise TypeError("cannot change object - object is immutable")
 
     # makes (deep)copy more efficient
     def __copy__(self) -> "FrozenDict":
         return self
 
-    def __deepcopy__(self, memo: Dict | None =None) -> "FrozenDict":
+    def __deepcopy__(self, memo: Dict | None = None) -> "FrozenDict":
         if memo is not None:
             memo[id(self)] = self
         return self

@@ -15,6 +15,8 @@ from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
+from django_components.attributes import extract_attrs_from_component_input
+
 # Global registry var and register() function moved to separate module.
 # Defining them here made little sense, since 1) component_tags.py and component.py
 # rely on them equally, and 2) it made it difficult to avoid circularity in the
@@ -29,7 +31,6 @@ from django_components.context import (
     prepare_context,
 )
 from django_components.logger import logger, trace_msg
-from django_components.attributes import extract_attrs_from_component_input
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotName, resolve_slots
 from django_components.utils import gen_id, search

@@ -3,16 +3,15 @@
 # And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py
 
 import re
-from typing import Any, Dict, List, Tuple, Union, Mapping
+from typing import Any, Dict, List, Mapping, Tuple, Union
 
-from django.template import Node, Context, TemplateSyntaxError
+from django.template import Context, Node, TemplateSyntaxError
 from django.template.base import FilterExpression, Parser
-from django.utils.html import format_html, conditional_escape
+from django.utils.html import conditional_escape, format_html
 from django.utils.regex_helper import _lazy_re_compile
-from django.utils.safestring import mark_safe, SafeString
+from django.utils.safestring import SafeString, mark_safe
 
 from django_components.utils import FrozenDict
-
 
 _AttrItem = Tuple[str, FilterExpression]
 
@@ -48,7 +47,7 @@ class MergeAttrsNode(Node):
     def __init__(
         self,
         attributes: FilterExpression,
-        default_attrs: List[_AttrItem], 
+        default_attrs: List[_AttrItem],
         append_attrs: List[_AttrItem],
     ):
         self.attributes = attributes
@@ -187,10 +186,10 @@ def extract_attrs_from_component_input(input: Dict) -> Tuple[Dict, HtmlAttribute
     """
     Split a dict into two by extracting keys that start with `attrs:`
     into a separate dict. The `attrs:` prefix is removed along the way.
-    
+
     We use the `attrs:` prefix to identify the "fallthrough" attributes,
     AKA HTML attributes that are to be passed to the underlying HTML tag.
-    
+
     These attributes are collected into an `attrs` kwarg that's passed to
     `get_context_data`, and also made available via `component_vars.attrs`
     in the template.
@@ -209,7 +208,7 @@ def extract_attrs_from_component_input(input: Dict) -> Tuple[Dict, HtmlAttribute
             continue
 
         # NOTE: Trim off attrs prefix from keys
-        trimmed_key = key[len(attr_prefix):]
+        trimmed_key = key[len(attr_prefix) :]
         fallthrough_attrs[trimmed_key] = val
 
     attrs = HtmlAttributes(fallthrough_attrs)

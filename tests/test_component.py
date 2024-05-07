@@ -9,6 +9,7 @@ from django.test import override_settings
 # isort: off
 from .django_test_setup import *  # NOQA
 from .testutils import BaseTestCase, autodiscover_with_cleanup
+
 # isort: on
 
 from django_components import component, types

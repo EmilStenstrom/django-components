@@ -1,13 +1,13 @@
-from django.template import Template, Context
-from django.utils.safestring import mark_safe, SafeString
+from django.template import Context, Template
+from django.utils.safestring import SafeString, mark_safe
 
+from django_components import component, types
 from django_components.attributes import (
+    append_attributes,
     attributes_to_string,
     merge_attributes,
     normalize_html_class,
-    append_attributes,
 )
-from django_components import component, types
 
 # isort: off
 from .django_test_setup import *  # NOQA
