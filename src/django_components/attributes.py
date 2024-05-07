@@ -1,5 +1,6 @@
 # Initial implementation based on attributes.py from django-web-components
 # See https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/templatetags/components.py
+# And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py
 
 import re
 from typing import Dict, List, Tuple, Union
