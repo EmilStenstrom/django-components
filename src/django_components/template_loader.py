@@ -37,7 +37,7 @@ class Loader(FilesystemLoader):
 
         directories: Set[Path] = set()
         for component_dir in component_dirs:
-            if isinstance(component_dir, tuple | list) and len(component_dir) == 2:
+            if isinstance(component_dir, (tuple, list)) and len(component_dir) == 2:
                 component_dir = component_dir[1]
             try:
                 Path(component_dir)
