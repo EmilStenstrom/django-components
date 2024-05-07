@@ -29,7 +29,7 @@ from django_components.context import (
     prepare_context,
 )
 from django_components.logger import logger, trace_msg
-from django_components.attributes import HtmlAttributes
+from django_components.attributes import extract_attrs_from_component_input
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotName, resolve_slots
 from django_components.utils import gen_id, search
@@ -255,27 +255,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         )
 
     def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict[str, Any]) -> str:
-        # Search for props/kwargs that start with `attrs:`. These are so called
-        # "fallthrough" attributes, AKA HTML attributes that are to be passed to
-        # the underlying HTML tag. These attributes are collected into an `attrs`
-        # kwarg that's passed to `get_context_data`.
-        #
-        # This is useful especially for passing styling or event handling to the
-        # underlying HTML. E.g.:
-        # `attrs:@click.stop="alert('clicked!')"` or `attrs:class="pa-4 d-flex text-black"`
-        attr_prefix = "attrs:"
-        processed_kwargs = {}
-        fallthrough_attrs = {}
-        for key, val in kwargs.items():
-            if not key.startswith(attr_prefix):
-                processed_kwargs[key] = val
-                continue
-
-            # NOTE: Trim off attrs prefix from keys
-            trimmed_key = key[len(attr_prefix):]
-            fallthrough_attrs[trimmed_key] = val
-
-        attrs = HtmlAttributes(fallthrough_attrs)
+        processed_kwargs, attrs = extract_attrs_from_component_input(kwargs)
         # TODO: Change `get_context_data` signature so we can distinguish
         #   input named "attrs" from the fallthrough attrs:
         #   `get_context_data(kwargs: Dict[Any, Any], attrs: Dict[str, Any])`

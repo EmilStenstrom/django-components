@@ -59,6 +59,7 @@ def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
     return -1
 
 
+# See https://stackoverflow.com/a/48725499/9788634
 class FrozenDict(UserDict):
     # NOTE: This __init__ is taken from `UserDict`, except `UserDict` calls
     # `self.update`, which we make immutable

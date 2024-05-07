@@ -181,3 +181,36 @@ def parse_attributes(
         else:
             raise TemplateSyntaxError("Unknown sign '%s' for attribute '%s'" % (sign, attr))
     return default_attrs, append_attrs
+
+
+def extract_attrs_from_component_input(input: Dict) -> Tuple[Dict, HtmlAttributes]:
+    """
+    Split a dict into two by extracting keys that start with `attrs:`
+    into a separate dict. The `attrs:` prefix is removed along the way.
+    
+    We use the `attrs:` prefix to identify the "fallthrough" attributes,
+    AKA HTML attributes that are to be passed to the underlying HTML tag.
+    
+    These attributes are collected into an `attrs` kwarg that's passed to
+    `get_context_data`, and also made available via `component_vars.attrs`
+    in the template.
+
+    This is useful especially for passing styling or event handling to the
+    underlying HTML. E.g.:
+
+    `attrs:@click.stop="alert('clicked!')"` or `attrs:class="pa-4 d-flex text-black"`
+    """
+    attr_prefix = "attrs:"
+    processed_kwargs = {}
+    fallthrough_attrs = {}
+    for key, val in input.items():
+        if not key.startswith(attr_prefix):
+            processed_kwargs[key] = val
+            continue
+
+        # NOTE: Trim off attrs prefix from keys
+        trimmed_key = key[len(attr_prefix):]
+        fallthrough_attrs[trimmed_key] = val
+
+    attrs = HtmlAttributes(fallthrough_attrs)
+    return processed_kwargs, attrs
