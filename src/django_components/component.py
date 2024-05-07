@@ -198,7 +198,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
-    def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def get_context_data(self, *args: Any, attrs: Dict, **kwargs: Any) -> Dict[str, Any]:
         return {}
 
     def get_template_name(self, context: Mapping) -> Optional[str]:
@@ -253,11 +253,38 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
-    def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict) -> str:
-        component_context: dict = self.get_context_data(*args, **kwargs)
+    def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict[str, Any]) -> str:
+        # Search for props/kwargs that start with `attrs:`. These are so called
+        # "fallthrough" attributes, AKA HTML attributes that are to be passed to
+        # the underlying HTML tag. These attributes are collected into an `attrs`
+        # kwarg that's passed to `get_context_data`.
+        #
+        # This is useful especially for passing styling or event handling to the
+        # underlying HTML. E.g.:
+        # `attrs:@click.stop="alert('clicked!')"` or `attrs:class="pa-4 d-flex text-black"`
+        attr_prefix = "attrs:"
+        processed_kwargs = {}
+        fallthrough_attrs = {}
+        for key, val in kwargs.items():
+            if not key.startswith(attr_prefix):
+                processed_kwargs[key] = val
+                continue
+
+            # NOTE: Trim off attrs prefix from keys
+            trimmed_key = key[len(attr_prefix):]
+            fallthrough_attrs[trimmed_key] = val
+
+        # TODO: Change `get_context_data` signature so we can distinguish
+        #   input named "attrs" from the fallthrough attrs:
+        #   `get_context_data(kwargs: Dict[Any, Any], attrs: Dict[str, Any])`
+        component_context: dict = self.get_context_data(*args, attrs=fallthrough_attrs, **processed_kwargs)
 
         with context.update(component_context):
-            rendered_component = self.render(context, context_data=component_context)
+            rendered_component = self.render(
+                context=context,
+                context_data=component_context,
+                attrs=fallthrough_attrs,
+            )
 
         if is_dependency_middleware_active():
             output = RENDERED_COMMENT_TEMPLATE.format(name=self.registered_name) + rendered_component
@@ -272,6 +299,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
         context_data: Optional[Dict[str, Any]] = None,
+        attrs: Optional[Dict[str, Any]] = None,
     ) -> str:
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
@@ -318,6 +346,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
                 # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
                 "component_vars": {
                     "is_filled": slot_bools,
+                    "attrs": attrs,
                 },
             }
         ):
