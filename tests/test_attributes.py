@@ -4,7 +4,7 @@ from django.utils.safestring import mark_safe, SafeString
 from django_components.attributes import (
     attributes_to_string,
     merge_attributes,
-    normalize_class,
+    normalize_html_class,
     append_attributes,
 )
 from django_components import component, types
@@ -110,37 +110,37 @@ class AppendAttributesTest(BaseTestCase):
 class NormalizeClassTest(BaseTestCase):
     def test_str(self):
         self.assertEqual(
-            normalize_class("foo"),
+            normalize_html_class("foo"),
             "foo",
         )
 
     def test_list(self):
         self.assertEqual(
-            normalize_class(["foo", "bar"]),
+            normalize_html_class(["foo", "bar"]),
             "foo bar",
         )
 
     def test_nested_list(self):
         self.assertEqual(
-            normalize_class(["foo", ["bar", "baz"]]),
+            normalize_html_class(["foo", ["bar", "baz"]]),
             "foo bar baz",
         )
 
     def test_tuple(self):
         self.assertEqual(
-            normalize_class(("foo", "bar")),
+            normalize_html_class(("foo", "bar")),
             "foo bar",
         )
 
     def test_dict(self):
         self.assertEqual(
-            normalize_class({"foo": True, "bar": False, "baz": None}),
+            normalize_html_class({"foo": True, "bar": False, "baz": None}),
             "foo",
         )
 
     def test_combined(self):
         self.assertEqual(
-            normalize_class(
+            normalize_html_class(
                 [
                     "class1",
                     ["class2", "class3"],
@@ -161,8 +161,7 @@ class AttrsInTemplateTests(BaseTestCase):
         class AttrsComponent(component.Component):
             template: types.django_html = """
                 {% load component_tags %}
-                <div>
-                    {{ component_vars.attrs|safe }}
+                <div {{ component_vars.attrs }} >
                 </div>
             """
 
@@ -176,13 +175,57 @@ class AttrsInTemplateTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div>
-                {'@click.stop': "dispatch('click_event')",
-                'x-data': "{hello: 'world'}",
-                'class': 'padding-top-8'}
+            <div @click.stop="dispatch('click_event')" x-data="{hello: 'world'}" class="padding-top-8" >
             </div>
             """,
         )
+
+    def test_attrs_accessible_in_get_context_data(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {{ attrs }} >
+                </div>
+            """
+            def get_context_data(self, *args, attrs):
+                return {"attrs": attrs}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div @click.stop="dispatch('click_event')" x-data="{hello: 'world'}" class="padding-top-8" >
+            </div>
+            """,
+        )
+
+    def test_attrs_immutable(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {{ attrs }} >
+                </div>
+            """
+            def get_context_data(self, *args, attrs):
+                attrs["my_super_key"] = "abc"
+                return {"attrs": attrs}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        with self.assertRaisesMessage(TypeError, "cannot change object - object is immutable"):
+            template.render(Context({"class_var": "padding-top-8"}))
 
     def test_attrs_tag(self):
         @component.register("test")

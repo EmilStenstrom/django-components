@@ -3,13 +3,15 @@
 # And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py
 
 import re
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Mapping
 
 from django.template import Node, Context, TemplateSyntaxError
 from django.template.base import FilterExpression, Parser
 from django.utils.html import format_html, conditional_escape
 from django.utils.regex_helper import _lazy_re_compile
 from django.utils.safestring import mark_safe, SafeString
+
+from django_components.utils import FrozenDict
 
 
 _AttrItem = Tuple[str, FilterExpression]
@@ -36,6 +38,12 @@ attribute_re: re.Pattern = _lazy_re_compile(
 )
 
 
+class HtmlAttributes(FrozenDict):
+    def __str__(self) -> str:
+        """Convert the attributes into a single HTML string."""
+        return attributes_to_string(self)
+
+
 class HtmlAttrsNode(Node):
     def __init__(
         self,
@@ -59,7 +67,7 @@ class HtmlAttrsNode(Node):
         return attributes_to_string(attrs)
 
 
-def attributes_to_string(attributes: dict) -> str:
+def attributes_to_string(attributes: Mapping[str, Any]) -> str:
     """Convert a dict of attributes to a string."""
     attr_list = []
 
@@ -91,7 +99,7 @@ def merge_attributes(*args: Dict) -> Dict:
             if key == "class":
                 klass = result.get("class")
                 if klass != value:
-                    result["class"] = normalize_class([klass, value])
+                    result["class"] = normalize_html_class([klass, value])
             elif key != "":
                 result[key] = value
 
@@ -117,7 +125,7 @@ def append_attributes(*args: Dict) -> Dict:
     return result
 
 
-def normalize_class(value: Union[str, list, tuple, dict]) -> str:
+def normalize_html_class(value: Union[str, list, tuple, dict]) -> str:
     """
     Normalizes the given class value into a string.
 
@@ -136,7 +144,7 @@ def normalize_class(value: Union[str, list, tuple, dict]) -> str:
         result = value
     elif isinstance(value, (list, tuple)):
         for v in value:
-            normalized = normalize_class(v)
+            normalized = normalize_html_class(v)
             if normalized:
                 result += normalized + " "
     elif isinstance(value, dict):
@@ -147,7 +155,11 @@ def normalize_class(value: Union[str, list, tuple, dict]) -> str:
     return result.strip()
 
 
-def parse_attributes(tag_name: str, parser: Parser, attr_list: List[str]) -> Tuple[List[_AttrItem], List[_AttrItem]]:
+def parse_attributes(
+    tag_name: str,
+    parser: Parser,
+    attr_list: List[str],
+) -> Tuple[List[_AttrItem], List[_AttrItem]]:
     default_attrs: List[_AttrItem] = []
     append_attrs: List[_AttrItem] = []
     for pair in attr_list:

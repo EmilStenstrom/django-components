@@ -29,6 +29,7 @@ from django_components.context import (
     prepare_context,
 )
 from django_components.logger import logger, trace_msg
+from django_components.attributes import HtmlAttributes
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotName, resolve_slots
 from django_components.utils import gen_id, search
@@ -198,7 +199,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
-    def get_context_data(self, *args: Any, attrs: Dict, **kwargs: Any) -> Dict[str, Any]:
+    def get_context_data(self, *args: Any, attrs: Mapping[str, Any], **kwargs: Any) -> Dict[str, Any]:
         return {}
 
     def get_template_name(self, context: Mapping) -> Optional[str]:
@@ -274,16 +275,17 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             trimmed_key = key[len(attr_prefix):]
             fallthrough_attrs[trimmed_key] = val
 
+        attrs = HtmlAttributes(fallthrough_attrs)
         # TODO: Change `get_context_data` signature so we can distinguish
         #   input named "attrs" from the fallthrough attrs:
         #   `get_context_data(kwargs: Dict[Any, Any], attrs: Dict[str, Any])`
-        component_context: dict = self.get_context_data(*args, attrs=fallthrough_attrs, **processed_kwargs)
+        component_context: dict = self.get_context_data(*args, attrs=attrs, **processed_kwargs)
 
         with context.update(component_context):
             rendered_component = self.render(
                 context=context,
                 context_data=component_context,
-                attrs=fallthrough_attrs,
+                attrs=attrs,
             )
 
         if is_dependency_middleware_active():
@@ -299,7 +301,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
         context_data: Optional[Dict[str, Any]] = None,
-        attrs: Optional[Dict[str, Any]] = None,
+        attrs: Optional[Mapping[str, Any]] = None,
     ) -> str:
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
