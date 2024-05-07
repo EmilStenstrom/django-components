@@ -461,7 +461,17 @@ def _resolve_default_slot(
 
             # Here we've identified which slot the default/implicit fill belongs to
             if default_fill:
-                named_fills[slot.name] = default_fill._replace(name=slot.name)
+                # NOTE: We recreate new instance, passing all fields, instead of using
+                # `NamedTuple._replace`, because `_replace` is not typed.
+                named_fills[slot.name] = SlotFill(
+                    is_filled=default_fill.is_filled,
+                    nodelist=default_fill.nodelist,
+                    context_data=default_fill.context_data,
+                    alias=default_fill.alias,
+                    # Updated fields
+                    name=slot.name,
+                    escaped_name=_escape_slot_name(slot.name),
+                )
 
     # Check: Only component templates that include a 'default' slot
     # can be invoked with implicit filling.

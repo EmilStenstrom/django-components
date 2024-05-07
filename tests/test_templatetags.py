@@ -1157,7 +1157,7 @@ class ComponentNestingTests(BaseTestCase):
     class ComplexParentComponent(component.Component):
         template: types.django_html = """
             {% load component_tags %}
-            ITEMS: {{ items }}
+            ITEMS: {{ items|safe }}
             {% for item in items %}
             <li>
                 {% component "complex_child" %}
@@ -1296,7 +1296,7 @@ class ComponentNestingTests(BaseTestCase):
         items = [{"value": 1}, {"value": 2}, {"value": 3}]
         rendered = template.render(Context({"items": items}))
         expected = """
-            ITEMS: [{&#x27;value&#x27;: 1}, {&#x27;value&#x27;: 2}, {&#x27;value&#x27;: 3}]
+            ITEMS: [{'value': 1}, {'value': 2}, {'value': 3}]
             <li>
                 <div> 1 </div>
             </li>
@@ -1522,12 +1522,12 @@ class ContextVarsTests(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             <div class="frontmatter-component">
-                {% slot "title" %}{% endslot %}
+                {% slot "title" default %}{% endslot %}
                 {% slot "my_title" %}{% endslot %}
                 {% slot "my title 1" %}{% endslot %}
                 {% slot "my-title-2" %}{% endslot %}
                 {% slot "escape this: #$%^*()" %}{% endslot %}
-                {{ component_vars.is_filled }}
+                {{ component_vars.is_filled|safe }}
             </div>
         """
 
@@ -1546,14 +1546,33 @@ class ContextVarsTests(BaseTestCase):
             {% endcomponent %}
         """
         rendered = Template(template).render(Context())
-        # NOTE: `&#x27;` are escaped quotes
         expected = """
             <div class="frontmatter-component">
-                {&#x27;title&#x27;: True,
-                &#x27;my_title&#x27;: False,
-                &#x27;my_title_1&#x27;: False,
-                &#x27;my_title_2&#x27;: True,
-                &#x27;escape_this_________&#x27;: True}
+                {'title': True,
+                'my_title': False,
+                'my_title_1': False,
+                'my_title_2': True,
+                'escape_this_________': True}
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_is_filled_vars_default(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "is_filled_vars" %}
+                bla bla
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div class="frontmatter-component">
+                bla bla
+                {'title': True,
+                'my_title': False,
+                'my_title_1': False,
+                'my_title_2': False,
+                'escape_this_________': False}
             </div>
         """
         self.assertHTMLEqual(rendered, expected)
@@ -2337,10 +2356,10 @@ class IterationFillTest(BaseTestCase):
             {% load component_tags %}
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
-                    {{ outer_scope_variable_1 }}
+                    {{ outer_scope_variable_1|safe }}
                     {% component "slot_in_a_loop" objects=objects %}
                         {% fill "slot_inner" as "super_slot_inner" %}
-                            {{ outer_scope_variable_2 }}
+                            {{ outer_scope_variable_2|safe }}
                             {{ super_slot_inner.default }}
                         {% endfill %}
                     {% endcomponent %}
@@ -2363,13 +2382,13 @@ class IterationFillTest(BaseTestCase):
             """
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
-            {&#x27;inner&#x27;: [&#x27;ITER1_OBJ1&#x27;, &#x27;ITER1_OBJ2&#x27;]} default
+            {'inner': ['ITER1_OBJ1', 'ITER1_OBJ2']} default
             OUTER_SCOPE_VARIABLE2
-            {&#x27;inner&#x27;: [&#x27;ITER2_OBJ1&#x27;, &#x27;ITER2_OBJ2&#x27;]} default
+            {'inner': ['ITER2_OBJ1', 'ITER2_OBJ2']} default
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
-            {&#x27;inner&#x27;: [&#x27;ITER1_OBJ1&#x27;, &#x27;ITER1_OBJ2&#x27;]} default
+            {'inner': ['ITER1_OBJ1', 'ITER1_OBJ2']} default
             OUTER_SCOPE_VARIABLE2
-            {&#x27;inner&#x27;: [&#x27;ITER2_OBJ1&#x27;, &#x27;ITER2_OBJ2&#x27;]} default
+            {'inner': ['ITER2_OBJ1', 'ITER2_OBJ2']} default
             """,
         )
