@@ -6,7 +6,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior, app_settings
-from django_components.attributes import MergeAttrsNode, parse_attributes
+from django_components.attributes import HtmlAttrsNode, parse_attributes
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
@@ -249,8 +249,24 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     return component_node
 
 
-@register.tag("merge_attrs")
-def do_merge_attrs(parser: Parser, token: Token) -> MergeAttrsNode:
+@register.tag("html_attrs")
+def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
+    """
+    This tag takes a Dict and optionally additional kwargs, merges them, and outputs
+    the resulting Dict as HTML attributes.
+
+    ```django
+    {% html_attrs my_dict class="default-class" data-id="123" add::"extra-class" %}
+    ```
+
+    Normal kwargs (`key=value`) are treated as defaults, meaning that if the same
+    key is set on the given dictionary, the dict takes precedence.
+
+    Kwargs that start with `add::` will be concatenated to existing keys. So if e.g.
+    key "class" is supplied from the dict or another kwarg, with value "my-class",
+    then adding `add::"extra-class"` will result in value `"my-class extra-class"
+    for key "class".
+    """
     tag_name, *remaining_bits = token.split_contents()
     if not remaining_bits:
         raise TemplateSyntaxError("'%s' tag takes at least one argument, the attributes" % tag_name)
@@ -258,8 +274,8 @@ def do_merge_attrs(parser: Parser, token: Token) -> MergeAttrsNode:
     attributes = parser.compile_filter(remaining_bits[0])
     attr_list = remaining_bits[1:]
 
-    default_attrs, append_attrs = parse_attributes("merge_attrs", parser, attr_list)
-    return MergeAttrsNode(attributes, default_attrs, append_attrs)
+    default_attrs, append_attrs = parse_attributes(tag_name, parser, attr_list)
+    return HtmlAttrsNode(attributes, default_attrs, append_attrs)
 
 
 def is_whitespace_node(node: Node) -> bool:

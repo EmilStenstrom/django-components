@@ -15,8 +15,6 @@ from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
-from django_components.attributes import extract_attrs_from_component_input
-
 # Global registry var and register() function moved to separate module.
 # Defining them here made little sense, since 1) component_tags.py and component.py
 # rely on them equally, and 2) it made it difficult to avoid circularity in the
@@ -200,7 +198,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
-    def get_context_data(self, *args: Any, attrs: Mapping[str, Any], **kwargs: Any) -> Dict[str, Any]:
+    def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         return {}
 
     def get_template_name(self, context: Mapping) -> Optional[str]:
@@ -256,17 +254,12 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         )
 
     def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict[str, Any]) -> str:
-        processed_kwargs, attrs = extract_attrs_from_component_input(kwargs)
-        # TODO: Change `get_context_data` signature so we can distinguish
-        #   input named "attrs" from the fallthrough attrs:
-        #   `get_context_data(kwargs: Dict[Any, Any], attrs: Dict[str, Any])`
-        component_context: dict = self.get_context_data(*args, attrs=attrs, **processed_kwargs)
+        component_context: dict = self.get_context_data(*args, **kwargs)
 
         with context.update(component_context):
             rendered_component = self.render(
                 context=context,
                 context_data=component_context,
-                attrs=attrs,
             )
 
         if is_dependency_middleware_active():
@@ -282,7 +275,6 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slots_data: Optional[Dict[SlotName, str]] = None,
         escape_slots_content: bool = True,
         context_data: Optional[Dict[str, Any]] = None,
-        attrs: Optional[Mapping[str, Any]] = None,
     ) -> str:
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
@@ -329,7 +321,6 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
                 # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
                 "component_vars": {
                     "is_filled": slot_bools,
-                    "attrs": attrs,
                 },
             }
         ):
@@ -406,6 +397,7 @@ class ComponentNode(Node):
         # to get values to insert into the context
         resolved_context_args = safe_resolve_list(self.context_args, context)
         resolved_context_kwargs = safe_resolve_dict(self.context_kwargs, context)
+        resolved_context_kwargs = process_component_kwargs(resolved_context_kwargs)
 
         is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
         if is_default_slot:
@@ -457,3 +449,79 @@ def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
     """Resolve FilterExpressions and Variables in context if possible. Return other items unchanged."""
 
     return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
+
+
+def process_component_kwargs(input: Mapping[str, Any]) -> Dict[str, Any]:
+    """
+    This function "aggregates" component kwargs into dicts. So all kwargs that start
+    with the same prefix delimited with `::` (e.g. `attrs::`), are collected into a dict
+    and assigned to that prefix
+
+    Example:
+    ```py
+    process_component_kwargs({"abc::one": 1, "abc::two": 2, "def::three": 3, "four": 4})
+    # {"abc": {"one": 1, "two": 2}, "def": {"three": 3}, "four": 4}
+    ```
+
+    ---
+
+    We want to support a use case similar to Vue's fallthrough attributes.
+    In other words, where a component author can designate a prop (input)
+    which is a dict and which will be rendered as HTML attributes.
+
+    This is useful for allowing component users to tweak styling or add
+    event handling to the underlying HTML. E.g.:
+
+    `class="pa-4 d-flex text-black"` or `@click.stop="alert('clicked!')"`
+
+    So if the prop is `attrs`, and the component is called like so:
+    ```django
+    {% component "my_comp" attrs=attrs %}
+    ```
+
+    then, if `attrs` is:
+    ```py
+    {"class": "text-red pa-4", "@click": "dispatch('my_event', 123)"}
+    ```
+
+    and the component template is:
+    ```django
+    <div {% html_attrs attrs add::class="extra-class" %}></div>
+    ```
+
+    Then this renders:
+    ```html
+    <div class="text-red pa-4 extra-class" @click="dispatch('my_event', 123)" ></div>
+    ```
+
+    However, this way it is difficult for the component user to define the `attrs`
+    variable, especially if they want to combine static and dynamic values. Because
+    they will need to pre-process the `attrs` dict.
+
+    So, instead, we allow to "aggregate" props into a dict. So all props that start
+    with `attrs::`, like `attrs::class="text-red"`, will be collected into a dict
+    at key `attrs`.
+    """
+    processed_kwargs = {}
+    nested_kwargs: Dict[str, Dict[str, Any]] = {}
+    for key, val in input.items():
+        if "::" not in key:
+            processed_kwargs[key] = val
+            continue
+
+        # NOTE: Trim off the prefix from keys
+        prefix, sub_key = key.split("::", 1)
+        if prefix not in nested_kwargs:
+            nested_kwargs[prefix] = {}
+        nested_kwargs[prefix][sub_key] = val
+
+    # Assign aggregated values into normal input
+    for key, val in nested_kwargs.items():
+        if key in processed_kwargs:
+            raise TemplateSyntaxError(
+                f"Component received argument '{key}' both as a regular input ({key}=...)"
+                f" and as an aggregate dict ('{key}::key=...'). Must be only one of the two"
+            )
+        processed_kwargs[key] = val
+
+    return processed_kwargs

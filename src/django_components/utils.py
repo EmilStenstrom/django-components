@@ -1,7 +1,6 @@
 import glob
-from collections import UserDict
 from pathlib import Path
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, no_type_check
+from typing import Any, Callable, List, NamedTuple, Optional
 
 from django.template.engine import Engine
 
@@ -57,42 +56,3 @@ def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
         if predicate(elem):
             return len(lst) - 1 - r_idx
     return -1
-
-
-# See https://stackoverflow.com/a/48725499/9788634
-class FrozenDict(UserDict):
-    # NOTE: This __init__ is taken from `UserDict`, except `UserDict` calls
-    # `self.update`, which we make immutable
-    def __init__(self, dict: Dict | None = None, /, **kwargs: Any):
-        self._hash = None
-        self.data = {}
-        if dict is not None:
-            self.data.update(dict)
-        if kwargs:
-            self.data.update(kwargs)
-
-    @no_type_check
-    def __hash__(self) -> int:
-        if self._hash is None:
-            self._hash = hash(tuple(sorted(self.items())))
-        return self._hash
-
-    def _immutable(self, *args: Any, **kws: Any) -> None:
-        raise TypeError("cannot change object - object is immutable")
-
-    # makes (deep)copy more efficient
-    def __copy__(self) -> "FrozenDict":
-        return self
-
-    def __deepcopy__(self, memo: Dict | None = None) -> "FrozenDict":
-        if memo is not None:
-            memo[id(self)] = self
-        return self
-
-    __setitem__ = _immutable
-    __delitem__ = _immutable
-    pop = _immutable  # type: ignore
-    popitem = _immutable  # type: ignore
-    clear = _immutable  # type: ignore
-    update = _immutable  # type: ignore
-    setdefault = _immutable  # type: ignore

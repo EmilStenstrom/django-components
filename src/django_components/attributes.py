@@ -3,7 +3,7 @@
 # And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py
 
 import re
-from typing import Any, Dict, List, Mapping, Tuple, Union
+from typing import Any, Dict, List, Mapping, Tuple
 
 from django.template import Context, Node, TemplateSyntaxError
 from django.template.base import FilterExpression, Parser
@@ -11,22 +11,22 @@ from django.utils.html import conditional_escape, format_html
 from django.utils.regex_helper import _lazy_re_compile
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.utils import FrozenDict
-
 _AttrItem = Tuple[str, FilterExpression]
 
 
-# When we have the `{% merge_attrs %}` tag, we can specify if we want to SET
-# a value, or APPEND (merge) it. SET uses `=` while APPEND uses `+=`. E.g.:
-# `{% merge_attrs attributes data-value+="some-value" %}>`
+_ATTR_ADD_PREFIX = "add::"
+
+
+# When we have the `{% html_attrs %}` tag, we can specify if we want to SET
+# a value, or APPEND (merge) it. SET uses plain `key=val` while APPEND uses
+# `add:key=val`. E.g.:
+# `{% html_attrs attributes data-id="123" add:class="some-class" %}>`
 attribute_re: re.Pattern = _lazy_re_compile(
     r"""
     (?P<attr>
         [\w\-\:\@\.\_\#]+
     )
-    (?P<sign>
-        \+?=
-    )
+    =
     (?P<value>
         ['"]? # start quote
             [^"']*
@@ -37,13 +37,7 @@ attribute_re: re.Pattern = _lazy_re_compile(
 )
 
 
-class HtmlAttributes(FrozenDict):
-    def __str__(self) -> str:
-        """Convert the attributes into a single HTML string."""
-        return attributes_to_string(self)
-
-
-class MergeAttrsNode(Node):
+class HtmlAttrsNode(Node):
     def __init__(
         self,
         attributes: FilterExpression,
@@ -58,10 +52,10 @@ class MergeAttrsNode(Node):
         bound_attributes: dict = self.attributes.resolve(context)
 
         default_attrs = {key: value.resolve(context) for key, value in self.default_attrs}
-        append_attrs = {key: value.resolve(context) for key, value in self.append_attrs}
+        append_attrs = [(key, value.resolve(context)) for key, value in self.append_attrs]
 
-        attrs = merge_attributes(default_attrs, bound_attributes)
-        attrs = append_attributes(attrs, append_attrs)
+        attrs = {**default_attrs, **bound_attributes}
+        attrs = append_attributes(*attrs.items(), *append_attrs)
 
         return attributes_to_string(attrs)
 
@@ -81,77 +75,22 @@ def attributes_to_string(attributes: Mapping[str, Any]) -> str:
     return mark_safe(SafeString(" ").join(attr_list))
 
 
-def merge_attributes(*args: Dict) -> Dict:
+def append_attributes(*args: Tuple[str, Any]) -> Dict:
     """
-    Merges the input dictionaries and returns a new dictionary.
+    Merges the key-value pairs and returns a new dictionary.
 
-    Notes:
-    ------
-    The merge process is performed as follows:
-    - "class" values are normalized / concatenated
-    - Other values are added to the final dictionary as is
+    If a key is present multiple times, its values are concatenated with a space
+    character as separator in the final dictionary.
     """
     result: Dict = {}
 
-    for to_merge in args:
-        for key, value in to_merge.items():
-            if key == "class":
-                klass = result.get("class")
-                if klass != value:
-                    result["class"] = normalize_html_class([klass, value])
-            elif key != "":
-                result[key] = value
+    for key, value in args:
+        if key in result:
+            result[key] += " " + value
+        else:
+            result[key] = value
 
     return result
-
-
-def append_attributes(*args: Dict) -> Dict:
-    """
-    Merges the input dictionaries and returns a new dictionary.
-
-    If a key is present in multiple dictionaries, its values are concatenated with a space character
-    as separator in the final dictionary.
-    """
-    result: Dict = {}
-
-    for to_merge in args:
-        for key, value in to_merge.items():
-            if key in result:
-                result[key] += " " + value
-            else:
-                result[key] = value
-
-    return result
-
-
-def normalize_html_class(value: Union[str, list, tuple, dict]) -> str:
-    """
-    Normalizes the given class value into a string.
-
-    Notes:
-    ------
-    The normalization process is performed as follows:
-    - If the input value is a string, it is returned as is.
-    - If the input value is a list or a tuple, its elements are recursively normalized and concatenated
-      with a space character as separator.
-    - If the input value is a dictionary, its keys are concatenated with a space character as separator
-      only if their corresponding values are truthy.
-    """
-    result = ""
-
-    if isinstance(value, str):
-        result = value
-    elif isinstance(value, (list, tuple)):
-        for v in value:
-            normalized = normalize_html_class(v)
-            if normalized:
-                result += normalized + " "
-    elif isinstance(value, dict):
-        for key, val in value.items():
-            if val:
-                result += key + " "
-
-    return result.strip()
 
 
 def parse_attributes(
@@ -159,6 +98,7 @@ def parse_attributes(
     parser: Parser,
     attr_list: List[str],
 ) -> Tuple[List[_AttrItem], List[_AttrItem]]:
+    """Process dict and extra kwargs passed to `html_attr` tag."""
     default_attrs: List[_AttrItem] = []
     append_attrs: List[_AttrItem] = []
     for pair in attr_list:
@@ -168,48 +108,17 @@ def parse_attributes(
                 "Malformed arguments to '%s' tag. You must pass the attributes in the form attr=\"value\"." % tag_name
             )
         dct = match.groupdict()
-        attr, sign, value = (
+        raw_attr, value = (
             dct["attr"],
-            dct["sign"],
             parser.compile_filter(dct["value"]),
         )
-        if sign == "=":
-            default_attrs.append((attr, value))
-        elif sign == "+=":
+
+        # For those kwargs where keyword starts with 'add::', we assume that these
+        # keys should be concatenated. For the rest, we don't do any special processing.
+        if raw_attr.startswith(_ATTR_ADD_PREFIX):
+            attr = raw_attr[len(_ATTR_ADD_PREFIX) :]
             append_attrs.append((attr, value))
         else:
-            raise TemplateSyntaxError("Unknown sign '%s' for attribute '%s'" % (sign, attr))
+            default_attrs.append((raw_attr, value))
+
     return default_attrs, append_attrs
-
-
-def extract_attrs_from_component_input(input: Dict) -> Tuple[Dict, HtmlAttributes]:
-    """
-    Split a dict into two by extracting keys that start with `attrs:`
-    into a separate dict. The `attrs:` prefix is removed along the way.
-
-    We use the `attrs:` prefix to identify the "fallthrough" attributes,
-    AKA HTML attributes that are to be passed to the underlying HTML tag.
-
-    These attributes are collected into an `attrs` kwarg that's passed to
-    `get_context_data`, and also made available via `component_vars.attrs`
-    in the template.
-
-    This is useful especially for passing styling or event handling to the
-    underlying HTML. E.g.:
-
-    `attrs:@click.stop="alert('clicked!')"` or `attrs:class="pa-4 d-flex text-black"`
-    """
-    attr_prefix = "attrs:"
-    processed_kwargs = {}
-    fallthrough_attrs = {}
-    for key, val in input.items():
-        if not key.startswith(attr_prefix):
-            processed_kwargs[key] = val
-            continue
-
-        # NOTE: Trim off attrs prefix from keys
-        trimmed_key = key[len(attr_prefix) :]
-        fallthrough_attrs[trimmed_key] = val
-
-    attrs = HtmlAttributes(fallthrough_attrs)
-    return processed_kwargs, attrs
