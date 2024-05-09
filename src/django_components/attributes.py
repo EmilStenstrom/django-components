@@ -116,7 +116,7 @@ def parse_attributes(
         # For those kwargs where keyword starts with 'add::', we assume that these
         # keys should be concatenated. For the rest, we don't do any special processing.
         if raw_attr.startswith(_ATTR_ADD_PREFIX):
-            attr = raw_attr[len(_ATTR_ADD_PREFIX):]
+            attr = raw_attr[len(_ATTR_ADD_PREFIX) :]
             append_attrs.append((attr, value))
         else:
             default_attrs.append((raw_attr, value))
