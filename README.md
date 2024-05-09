@@ -701,9 +701,75 @@ class Calendar(component.Component):
         return {
             "date": kwargs["my-date"],
             "id": kwargs["#some_id"],
-            "@click.native": kwargs["@click.native"]
+            "on_click": kwargs["@click.native"]
         }
 ```
+
+### Pass dictonary by its key-value pairs
+
+Sometimes, a component may expect a dictionary as one of its inputs.
+
+Most commonly, this happens when a component accepts a dictionary
+of HTML attributes (usually called `attrs`) to pass to the underlying template.
+
+In such cases, we may want to define some HTML attributes statically, and other dynamically. But for that, we need to define this dictionary on Python side:
+
+```py
+@component.register("my_comp")
+class MyComp(component.Component):
+    template = """
+        {% component "other" attrs=attrs %}
+        {% endcomponent %}
+    """
+
+    def get_context_data(self, some_id: str):
+        attrs = {
+            "class": "pa-4 flex",
+            "data-some-id": some_id,
+            "@click.stop": "onClickHandler",
+        }
+        return {"attrs": attrs}
+```
+
+But as you can see in the case above, the event handler `@click.stop` and styling `pa-4 flex` are disconnected from the template. If the component grew in size and we moved the HTML to a separate file, we would have hard time reasoning about the component's template.
+
+Luckily, there's a better way.
+
+When we want to pass a dictionary to a component, we can define individual key-value pairs as component kwargs, so we can keep all the relevant information in the template. For that, we prefix the key with the name of the dict and `::`. So key `class` of input `attrs` becomes `attrs::class`. And our example becomes:
+
+```py
+@component.register("my_comp")
+class MyComp(component.Component):
+    template = """
+        {% component "other"
+            attrs::class="pa-4 flex"
+            attrs::data-some-id=some_id
+            attrs::@click.stop="onClickHandler"
+        %}
+        {% endcomponent %}
+    """
+
+    def get_context_data(self, some_id: str):
+        return {"some_id": some_id}
+```
+
+Sweet! Now we can move the template to it's own file without losing the context:
+
+```django
+{% component "other"
+    attrs::class="pa-4 flex"
+    attrs::data-some-id=some_id
+    attrs::@click.stop="onClickHandler"
+%}
+{% endcomponent %}
+```
+
+> Note: It is NOT possible to pass nested dictionaries like this, so
+`attrs::my_key::two=2` would be interpreted as:
+>
+> ```py
+> {"attrs": {"my_key::two": 2}}
+> ```
 
 ## Component context and scope
 
