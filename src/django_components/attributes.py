@@ -1,6 +1,6 @@
 # Initial implementation based on attributes.py from django-web-components
-# See https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/templatetags/components.py
-# And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py
+# See https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/templatetags/components.py  # noqa: E501
+# And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py  # noqa: E501
 
 import re
 from typing import Any, Dict, List, Mapping, Tuple
@@ -116,7 +116,7 @@ def parse_attributes(
         # For those kwargs where keyword starts with 'add::', we assume that these
         # keys should be concatenated. For the rest, we don't do any special processing.
         if raw_attr.startswith(_ATTR_ADD_PREFIX):
-            attr = raw_attr[len(_ATTR_ADD_PREFIX) :]
+            attr = raw_attr[len(_ATTR_ADD_PREFIX):]
             append_attrs.append((attr, value))
         else:
             default_attrs.append((raw_attr, value))

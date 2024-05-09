@@ -38,7 +38,7 @@ class AttributesToStringTest(BaseTestCase):
 
     def test_result_is_safe_string(self):
         result = attributes_to_string({"foo": mark_safe("'bar'")})
-        self.assertTrue(type(result) == SafeString)
+        self.assertTrue(isinstance(result, SafeString))
 
     def test_attribute_with_no_value(self):
         self.assertEqual(
@@ -82,7 +82,7 @@ class HtmlAttrsTests(BaseTestCase):
                 <div {% html_attrs attrs class="override-me" add::class="added_class" add::class="another-class" data-id=123 %}>
                     content
                 </div>
-            """
+            """  # noqa: E501
 
             def get_context_data(self, *args, attrs):
                 return {"attrs": attrs}
@@ -91,7 +91,7 @@ class HtmlAttrsTests(BaseTestCase):
             {% load component_tags %}
             {% component "test" attrs::@click.stop="dispatch('click_event')" attrs::x-data="{hello: 'world'}" attrs::class=class_var %}
             {% endcomponent %}
-        """
+        """  # noqa: E501
         template = Template(template_str)
         rendered = template.render(Context({"class_var": "padding-top-8"}))
         self.assertHTMLEqual(
@@ -100,6 +100,6 @@ class HtmlAttrsTests(BaseTestCase):
             <div @click.stop="dispatch('click_event')" x-data="{hello: 'world'}" class="padding-top-8 added_class another-class" data-id=123>
                 content
             </div>
-            """,
+            """,  # noqa: E501
         )
         self.assertNotIn("override-me", rendered)

@@ -1007,7 +1007,7 @@ class AggregateInputTests(BaseTestCase):
             {% load component_tags %}
             {% component "test" attrs::@click.stop="dispatch('click_event')" attrs::x-data="{hello: 'world'}" attrs::class=class_var my_dict::one=2 %}
             {% endcomponent %}
-        """
+        """  # noqa: E501
         template = Template(template_str)
         rendered = template.render(Context({"class_var": "padding-top-8"}))
         self.assertHTMLEqual(
@@ -1017,5 +1017,5 @@ class AggregateInputTests(BaseTestCase):
                 attrs: {'@click.stop': "dispatch('click_event')", 'x-data': "{hello: 'world'}", 'class': 'padding-top-8'}
                 my_dict: {'one': 2}
             </div>
-            """,
+            """,  # noqa: E501
         )
