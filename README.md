@@ -845,10 +845,10 @@ attrs = {
 }
 ```
 
-And on `merge_attrs` tag, we set the key `add::class`:
+And on `html_attrs` tag, we set the key `add::class`:
 
 ```django
-<div {% merge_attrs attrs add::class="some-class" %}>
+<div {% html_attrs attrs add::class="some-class" %}>
 </div>
 ```
 
