@@ -131,8 +131,7 @@ class HtmlAttrsTests(BaseTestCase):
         template = Template(self.template_str)
 
         with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Tag 'html_attrs' received unexpected positional arguments"
+            TemplateSyntaxError, "Tag 'html_attrs' received unexpected positional arguments"
         ):
             template.render(Context({"class_var": "padding-top-8"}))
 
@@ -233,10 +232,7 @@ class HtmlAttrsTests(BaseTestCase):
                 return {"attrs": attrs}
 
         template = Template(self.template_str)
-        with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Received argument 'attrs' both as a regular input"
-        ):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Received argument 'attrs' both as a regular input"):
             template.render(Context({"class_var": "padding-top-8"}))
 
     def test_tag_raises_on_aggregate_and_positional_args_for_defaults(self):
