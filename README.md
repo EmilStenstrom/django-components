@@ -20,6 +20,8 @@ Read on to learn about the details!
 
 ## Release notes
 
+**Version 0.74** introduces `html_attrs` tag and `prefix:key=val` construct for passing dicts to components.
+
 🚨📢 **Version 0.70**
 
 - `{% if_filled "my_slot" %}` tags were replaced with `{{ component_vars.is_filled.my_slot }}` variables.
@@ -816,7 +818,7 @@ This feature is inspired by [`merge_attrs` tag of django-web-components](https:/
 
 ### Default attributes
 
-Sometimes you may want to specify default values for attributes. You can pass a second argument (or kwarg `default`) to set the defaults.
+Sometimes you may want to specify default values for attributes. You can pass a second argument (or kwarg `defaults`) to set the defaults.
 
 ```django
 <div {% html_attrs attrs defaults %}>
@@ -830,7 +832,7 @@ In the example above, if `attrs` contains e.g. the `class` key, `html_attrs` wil
 
 Otherwise, `html_attrs` will render:
 
-`class="{{ default.class }}"`
+`class="{{ defaults.class }}"`
 
 ### Appending attributes
 
