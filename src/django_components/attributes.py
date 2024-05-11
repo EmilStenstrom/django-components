@@ -2,62 +2,65 @@
 # See https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/templatetags/components.py  # noqa: E501
 # And https://github.com/Xzya/django-web-components/blob/b43eb0c832837db939a6f8c1980334b0adfdd6e4/django_web_components/attributes.py  # noqa: E501
 
-import re
-from typing import Any, Dict, List, Mapping, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from django.template import Context, Node, TemplateSyntaxError
-from django.template.base import FilterExpression, Parser
+from django.template import Context, Node
+from django.template.base import FilterExpression
 from django.utils.html import conditional_escape, format_html
-from django.utils.regex_helper import _lazy_re_compile
 from django.utils.safestring import SafeString, mark_safe
 
-_AttrItem = Tuple[str, FilterExpression]
-
-
-_ATTR_ADD_PREFIX = "add::"
-
-
-# When we have the `{% html_attrs %}` tag, we can specify if we want to SET
-# a value, or APPEND (merge) it. SET uses plain `key=val` while APPEND uses
-# `add:key=val`. E.g.:
-# `{% html_attrs attributes data-id="123" add:class="some-class" %}>`
-attribute_re: re.Pattern = _lazy_re_compile(
-    r"""
-    (?P<attr>
-        [\w\-\:\@\.\_\#]+
-    )
-    =
-    (?P<value>
-        ['"]? # start quote
-            [^"']*
-        ['"]? # end quote
-    )
-    """,
-    re.VERBOSE | re.UNICODE,
-)
+from django_components.template_parser import process_aggregate_kwargs
 
 
 class HtmlAttrsNode(Node):
     def __init__(
         self,
-        attributes: FilterExpression,
-        default_attrs: List[_AttrItem],
-        append_attrs: List[_AttrItem],
+        attributes: Optional[FilterExpression],
+        default_attrs: Optional[FilterExpression],
+        kwargs: List[Tuple[str, FilterExpression]],
     ):
         self.attributes = attributes
         self.default_attrs = default_attrs
-        self.append_attrs = append_attrs
+        self.kwargs = kwargs
 
     def render(self, context: Context) -> str:
-        bound_attributes: dict = self.attributes.resolve(context)
+        append_attrs: List[Tuple[str, Any]] = []
+        attrs_and_defaults_from_kwargs = {}
 
-        default_attrs = {key: value.resolve(context) for key, value in self.default_attrs}
-        append_attrs = [(key, value.resolve(context)) for key, value in self.append_attrs]
+        # Resolve kwargs, while also extracting attrs and defaults keys
+        for key, value in self.kwargs:
+            resolved_value = value.resolve(context)
+            if key.startswith("attrs:") or key.startswith("defaults:"):
+                attrs_and_defaults_from_kwargs[key] = resolved_value
+                continue
+            # NOTE: These were already extracted into separate variables, so
+            # ignore them here.
+            elif key == "attrs" or key == "defaults":
+                continue
 
-        attrs = {**default_attrs, **bound_attributes}
-        attrs = append_attributes(*attrs.items(), *append_attrs)
+            append_attrs.append((key, resolved_value))
 
-        return attributes_to_string(attrs)
+        # NOTE: Here we delegate validation to `process_aggregate_kwargs`, which should
+        # raise error if the dict includes both `attrs` and `attrs:` keys.
+        #
+        # So by assigning the `attrs` and `defaults` keys, users are forced to use only
+        # one approach or the other, but not both simultaneously.
+        if self.attributes:
+            attrs_and_defaults_from_kwargs["attrs"] = self.attributes.resolve(context)
+        if self.default_attrs:
+            attrs_and_defaults_from_kwargs["defaults"] = self.default_attrs.resolve(context)
+
+        # Turn `{"attrs:blabla": 1}` into `{"attrs": {"blabla": 1}}`
+        attrs_and_defaults_from_kwargs = process_aggregate_kwargs(attrs_and_defaults_from_kwargs)
+
+        # NOTE: We want to allow to use `html_attrs` even without `attrs` or `defaults` params
+        attrs = attrs_and_defaults_from_kwargs.get("attrs", {})
+        default_attrs = attrs_and_defaults_from_kwargs.get("defualts", {})
+
+        final_attrs = {**default_attrs, **attrs}
+        final_attrs = append_attributes(*final_attrs.items(), *append_attrs)
+
+        return attributes_to_string(final_attrs)
 
 
 def attributes_to_string(attributes: Mapping[str, Any]) -> str:
@@ -91,35 +94,3 @@ def append_attributes(*args: Tuple[str, Any]) -> Dict:
             result[key] = value
 
     return result
-
-
-def parse_attributes(
-    tag_name: str,
-    parser: Parser,
-    attr_list: List[str],
-) -> Tuple[List[_AttrItem], List[_AttrItem]]:
-    """Process dict and extra kwargs passed to `html_attr` tag."""
-    default_attrs: List[_AttrItem] = []
-    append_attrs: List[_AttrItem] = []
-    for pair in attr_list:
-        match = attribute_re.match(pair)
-        if not match:
-            raise TemplateSyntaxError(
-                "Malformed arguments to '%s' tag. You must pass the attributes in the form attr=\"value\"." % tag_name
-            )
-        dct = match.groupdict()
-        raw_attr, value = (
-            dct["attr"],
-            parser.compile_filter(dct["value"]),
-        )
-
-        # For those kwargs where keyword starts with 'add::', we assume that these
-        # keys should be concatenated. For the rest, we don't do any special processing.
-        if raw_attr.startswith(_ATTR_ADD_PREFIX):
-            skipped_chars_num = len(_ATTR_ADD_PREFIX)
-            attr = raw_attr[skipped_chars_num:]
-            append_attrs.append((attr, value))
-        else:
-            default_attrs.append((raw_attr, value))
-
-    return default_attrs, append_attrs

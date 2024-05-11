@@ -1,4 +1,4 @@
-from django.template import Context, Template
+from django.template import Context, Template, TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components import component, types
@@ -74,12 +74,222 @@ class AppendAttributesTest(BaseTestCase):
 
 
 class HtmlAttrsTests(BaseTestCase):
-    def test_attrs_tag(self):
+    def setUp(self):
+        super().setUp()
+
+        self.template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var %}
+            {% endcomponent %}
+        """  # noqa: E501
+
+    def test_tag_positional_args(self):
         @component.register("test")
         class AttrsComponent(component.Component):
             template: types.django_html = """
                 {% load component_tags %}
-                <div {% html_attrs attrs class="override-me" add::class="added_class" add::class="another-class" data-id=123 %}>
+                <div {% html_attrs attrs defaults class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "attrs": attrs,
+                    "defaults": {"class": "override-me"},
+                }
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div @click.stop="dispatch('click_event')" x-data="{hello: 'world'}" class="padding-top-8 added_class another-class" data-id=123>
+                content
+            </div>
+            """,  # noqa: E501
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_raises_on_extra_positional_args(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs attrs defaults class %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "attrs": attrs,
+                    "defaults": {"class": "override-me"},
+                    "class": "123 457",
+                }
+
+        template = Template(self.template_str)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Tag 'html_attrs' received unexpected positional arguments"
+        ):
+            template.render(Context({"class_var": "padding-top-8"}))
+
+    def test_tag_kwargs(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs attrs=attrs defaults=defaults class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "attrs": attrs,
+                    "defaults": {"class": "override-me"},
+                }
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div @click.stop="dispatch('click_event')" class="added_class another-class padding-top-8" data-id="123" x-data="{hello: 'world'}">
+                content
+            </div>
+            """,  # noqa: E501
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_kwargs_2(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs class="added_class" class="another-class" data-id=123 defaults=defaults attrs=attrs %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "attrs": attrs,
+                    "defaults": {"class": "override-me"},
+                }
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div @click.stop="dispatch('click_event')" x-data="{hello: 'world'}" class="padding-top-8 added_class another-class" data-id=123>
+                content
+            </div>
+            """,  # noqa: E501
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_aggregate_args(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs attrs:class="from_agg_key" attrs:type="submit" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {"attrs": attrs}
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+
+        # NOTE: The attrs from self.template_str should be ignored because they are not used.
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div class="added_class another-class from_agg_key" data-id="123" type="submit">
+                content
+            </div>
+            """,  # noqa: E501
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_raises_on_aggregate_and_positional_args_for_attrs(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs attrs attrs:class="from_agg_key" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {"attrs": attrs}
+
+        template = Template(self.template_str)
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Received argument 'attrs' both as a regular input"
+        ):
+            template.render(Context({"class_var": "padding-top-8"}))
+
+    def test_tag_raises_on_aggregate_and_positional_args_for_defaults(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs defaults=defaults attrs:class="from_agg_key" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {"attrs": attrs}
+
+        template = Template(self.template_str)
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Received argument 'defaults' both as a regular input",
+        ):
+            template.render(Context({"class_var": "padding-top-8"}))
+
+    def test_tag_no_attrs(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {"attrs": attrs}
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div class="added_class another-class" data-id=123>
+                content
+            </div>
+            """,
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_no_defaults(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs attrs class="added_class" class="another-class" data-id=123 %}>
                     content
                 </div>
             """  # noqa: E501
@@ -89,7 +299,7 @@ class HtmlAttrsTests(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% component "test" attrs::@click.stop="dispatch('click_event')" attrs::x-data="{hello: 'world'}" attrs::class=class_var %}
+            {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var %}
             {% endcomponent %}
         """  # noqa: E501
         template = Template(template_str)
@@ -101,5 +311,58 @@ class HtmlAttrsTests(BaseTestCase):
                 content
             </div>
             """,  # noqa: E501
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_no_attrs_no_defaults(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs class="added_class" class="another-class" data-id=123 %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {"attrs": attrs}
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div class="added_class another-class" data-id="123">
+                content
+            </div>
+            """,
+        )
+        self.assertNotIn("override-me", rendered)
+
+    def test_tag_empty(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs %}>
+                    content
+                </div>
+            """
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "attrs": attrs,
+                    "defaults": {"class": "override-me"},
+                }
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div >
+                content
+            </div>
+            """,
         )
         self.assertNotIn("override-me", rendered)

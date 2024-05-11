@@ -739,16 +739,16 @@ But as you can see in the case above, the event handler `@click.stop` and stylin
 
 Luckily, there's a better way.
 
-When we want to pass a dictionary to a component, we can define individual key-value pairs as component kwargs, so we can keep all the relevant information in the template. For that, we prefix the key with the name of the dict and `::`. So key `class` of input `attrs` becomes `attrs::class`. And our example becomes:
+When we want to pass a dictionary to a component, we can define individual key-value pairs as component kwargs, so we can keep all the relevant information in the template. For that, we prefix the key with the name of the dict and `:`. So key `class` of input `attrs` becomes `attrs:class`. And our example becomes:
 
 ```py
 @component.register("my_comp")
 class MyComp(component.Component):
     template = """
         {% component "other"
-            attrs::class="pa-4 flex"
-            attrs::data-some-id=some_id
-            attrs::@click.stop="onClickHandler"
+            attrs:class="pa-4 flex"
+            attrs:data-some-id=some_id
+            attrs:@click.stop="onClickHandler"
         %}
         {% endcomponent %}
     """
@@ -761,18 +761,18 @@ Sweet! Now all the relevant HTML is inside the template, and we can move it to a
 
 ```django
 {% component "other"
-    attrs::class="pa-4 flex"
-    attrs::data-some-id=some_id
-    attrs::@click.stop="onClickHandler"
+    attrs:class="pa-4 flex"
+    attrs:data-some-id=some_id
+    attrs:@click.stop="onClickHandler"
 %}
 {% endcomponent %}
 ```
 
 > Note: It is NOT possible to define nested dictionaries, so
-`attrs::my_key::two=2` would be interpreted as:
+`attrs:my_key:two=2` would be interpreted as:
 >
 > ```py
-> {"attrs": {"my_key::two": 2}}
+> {"attrs": {"my_key:two": 2}}
 > ```
 
 ## Rendering HTML attributes
@@ -835,7 +835,7 @@ instead of overriding them. For example, if you're authoring a component, you ma
 want to ensure that the component will ALWAYS have a specific class. Yet, you may
 want to allow users of your component to supply their own classes.
 
-We can achieve this by prefixing the keys with `add::` to indicate that these values
+We can achieve this by prefixing the keys with `add:` to indicate that these values
 should be appended, instead of overwriting the previous value.
 
 So if we have a variable `attrs`:
@@ -845,10 +845,10 @@ attrs = {
 }
 ```
 
-And on `html_attrs` tag, we set the key `add::class`:
+And on `html_attrs` tag, we set the key `add:class`:
 
 ```django
-<div {% html_attrs attrs add::class="some-class" %}>
+<div {% html_attrs attrs add:class="some-class" %}>
 </div>
 ```
 
@@ -868,8 +868,8 @@ class MyComp(component.Component):
         <div
             {% html_attrs attrs
                 class="pa-4 text-red"
-                add::class="my-comp-date"
-                add::class=class_from_var
+                add:class="my-comp-date"
+                add:class=class_from_var
                 data-id="123"
             %}
         >
@@ -889,9 +889,9 @@ class Parent(component.Component):
     template: t.django_html = """
         {% component "my_comp"
             date=date
-            attrs::class="pa-0 border-solid border-red"
-            attrs::data-json=json_data
-            attrs::@click="(e) => onClick(e, 'from_parent')"
+            attrs:class="pa-0 border-solid border-red"
+            attrs:data-json=json_data
+            attrs:@click="(e) => onClick(e, 'from_parent')"
         %}
         {% endcomponent %}
     """
@@ -911,8 +911,8 @@ Inside `MyComp`, we define these default attributes:
 
 So if `attrs` includes these keys, the defaults above will be ignored.
 
-`MyComp` also defines `add::class` twice. It means that whether the `class`
-attribute is taken from `attrs` or the defaults, the two `add::class` values
+`MyComp` also defines `add:class` twice. It means that whether the `class`
+attribute is taken from `attrs` or the defaults, the two `add:class` values
 will be appended to it.
 
 So by default, `MyComp` renders:
@@ -931,12 +931,12 @@ contents of that dictionary are rendered as the HTML attributes.
 In `Parent`, we make use of passing dictionary key-value pairs as kwargs to define
 individual attributes as if they were regular kwargs.
 
-So all kwargs that start with `attrs::` will be collected into an `attrs` dict.
+So all kwargs that start with `attrs:` will be collected into an `attrs` dict.
 
 ```django
-    attrs::class="pa-0 border-solid border-red"
-    attrs::data-json=json_data
-    attrs::@click="(e) => onClick(e, 'from_parent')"
+    attrs:class="pa-0 border-solid border-red"
+    attrs:data-json=json_data
+    attrs:@click="(e) => onClick(e, 'from_parent')"
 ```
 
 And `MyComp` will receive `attrs` input with following keys:
