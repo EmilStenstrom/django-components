@@ -940,7 +940,7 @@ Then:
 	renders: <br/>
 	`class="from-attrs" type="submit"`
 
-- ONLY defaults (as kwarg) <br/>
+- Only defaults (as kwarg) <br/>
 	`{% html_attr defaults=defaults %}`
 
 	renders: <br/>
