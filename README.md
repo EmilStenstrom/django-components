@@ -716,7 +716,8 @@ Sometimes, a component may expect a dictionary as one of its inputs.
 Most commonly, this happens when a component accepts a dictionary
 of HTML attributes (usually called `attrs`) to pass to the underlying template.
 
-In such cases, we may want to define some HTML attributes statically, and other dynamically. But for that, we need to define this dictionary on Python side:
+In such cases, we may want to define some HTML attributes statically, and other dynamically.
+But for that, we need to define this dictionary on Python side:
 
 ```py
 @component.register("my_comp")
@@ -735,11 +736,16 @@ class MyComp(component.Component):
         return {"attrs": attrs}
 ```
 
-But as you can see in the case above, the event handler `@click.stop` and styling `pa-4 flex` are disconnected from the template. If the component grew in size and we moved the HTML to a separate file, we would have hard time reasoning about the component's template.
+But as you can see in the case above, the event handler `@click.stop` and styling `pa-4 flex`
+are disconnected from the template. If the component grew in size and we moved the HTML
+to a separate file, we would have hard time reasoning about the component's template.
 
 Luckily, there's a better way.
 
-When we want to pass a dictionary to a component, we can define individual key-value pairs as component kwargs, so we can keep all the relevant information in the template. For that, we prefix the key with the name of the dict and `:`. So key `class` of input `attrs` becomes `attrs:class`. And our example becomes:
+When we want to pass a dictionary to a component, we can define individual key-value pairs
+as component kwargs, so we can keep all the relevant information in the template. For that,
+we prefix the key with the name of the dict and `:`. So key `class` of input `attrs` becomes
+`attrs:class`. And our example becomes:
 
 ```py
 @component.register("my_comp")
@@ -810,23 +816,21 @@ This feature is inspired by [`merge_attrs` tag of django-web-components](https:/
 
 ### Default attributes
 
-Sometimes you may want to specify default values for attributes. You can pass additional keyword arguments to set the defaults.
+Sometimes you may want to specify default values for attributes. You can pass a second argument (or kwarg `default`) to set the defaults.
 
 ```django
-<div {% html_attrs attrs class="alert" role="alert" %}>
+<div {% html_attrs attrs defaults %}>
     ...
 </div>
 ```
 
-In the example above, if `attrs` contains the `class` key, `html_attrs` will render:
+In the example above, if `attrs` contains e.g. the `class` key, `html_attrs` will render:
 
 `class="{{ attrs.class }}"`
 
 Otherwise, `html_attrs` will render:
 
-`class="alert"`
-
-Same applies to the `role` attribute.
+`class="{{ default.class }}"`
 
 ### Appending attributes
 
@@ -835,8 +839,8 @@ instead of overriding them. For example, if you're authoring a component, you ma
 want to ensure that the component will ALWAYS have a specific class. Yet, you may
 want to allow users of your component to supply their own classes.
 
-We can achieve this by prefixing the keys with `add:` to indicate that these values
-should be appended, instead of overwriting the previous value.
+We can achieve this by adding extra kwargs. These values
+will be appended, instead of overwriting the previous value.
 
 So if we have a variable `attrs`:
 ```py
@@ -845,10 +849,10 @@ attrs = {
 }
 ```
 
-And on `html_attrs` tag, we set the key `add:class`:
+And on `html_attrs` tag, we set the key `class`:
 
 ```django
-<div {% html_attrs attrs add:class="some-class" %}>
+<div {% html_attrs attrs class="some-class" %}>
 </div>
 ```
 
@@ -859,7 +863,118 @@ Then these will be merged and rendered as:
 </div>
 ```
 
-### Full example
+To simplify merging of variables, you can supply the same key multiple times, and these will be all joined together:
+
+```django
+{# my_var = "class-from-var text-red" #}
+<div {% html_attrs attrs class="some-class" class=my_var %}>
+</div>
+```
+
+Renders:
+
+```html
+<div data-value="my-class pa-4 some-class class-from-var text-red">
+</div>
+```
+
+### Rules for `html_attrs`
+
+1. Both `attrs` and `defaults` can be passed as positional args
+    
+    `{% html_attrs attrs defaults key=val %}`
+    
+    or as kwargs
+    
+    `{% html_attrs key=val defaults=defaults attrs=attrs %}`
+
+2. Both `attrs` and `defaults` are optional (can be omitted)
+
+3. Both `attrs` and `defaults` are dictionaries, and we can define them the same way [we define dictionaries for the `component` tag](#pass-dictonary-by-its-key-value-pairs). So either as `attrs=attrs` or `attrs:key=value`.
+
+4. All other kwargs are appended and can be repeated.
+
+### Examples for `html_attrs`
+
+Assuming that:
+
+```py
+class_from_var = "from-var"
+
+attrs = {
+	"class": "from-attrs",
+	"type": "submit",
+}
+
+defaults = {
+	"class": "from-defaults",
+	"role": "button",
+}
+```
+
+Then:
+
+- Empty tag <br/>
+	`{% html_attr %}`
+
+	renders (empty string): <br/>
+	` `
+
+- Only kwargs <br/>
+	`{% html_attr class="some-class" class=class_from_var data-id="123" %}`
+
+	renders: <br/>
+	`class="some-class from-var" data-id="123"`
+
+- Only attrs <br/>
+	`{% html_attr attrs %}`
+
+	renders: <br/>
+	`class="from-attrs" type="submit"`
+
+- Attrs as kwarg <br/>
+	`{% html_attr attrs=attrs %}`
+
+	renders: <br/>
+	`class="from-attrs" type="submit"`
+
+- ONLY defaults (as kwarg) <br/>
+	`{% html_attr defaults=defaults %}`
+
+	renders: <br/>
+	`class="from-defaults" role="button"`
+
+- Attrs using the `prefix:key=value` construct <br/>
+	`{% html_attr attrs:class="from-attrs" attrs:type="submit" %}`
+
+	renders: <br/>
+	`class="from-attrs" type="submit"`
+
+- Defaults using the `prefix:key=value` construct <br/>
+	`{% html_attr defaults:class="from-defaults" %}`
+
+	renders: <br/>
+	`class="from-defaults" role="button"`
+
+- All together (1) - attrs and defaults as positional args: <br/>
+	`{% html_attrs attrs defaults class="added_class" class=class_from_var data-id=123 %}`
+
+	renders: <br/>
+	`class="from-attrs added_class from-var" type="submit" role="button" data-id=123`
+
+- All together (2) - attrs and defaults as kwargs args: <br/>
+	`{% html_attrs class="added_class" class=class_from_var data-id=123 attrs=attrs defaults=defaults %}`
+
+	renders: <br/>
+	`class="from-attrs added_class from-var" type="submit" role="button" data-id=123`
+
+- All together (3) - mixed: <br/>
+	`{% html_attrs attrs defaults:class="default-class" class="added_class" class=class_from_var data-id=123 %}`
+
+	renders: <br/>
+	`class="from-attrs added_class from-var" type="submit" data-id=123`
+
+### Full example for `html_attrs`
 
 ```py
 @component.register("my_comp")
@@ -867,9 +982,9 @@ class MyComp(component.Component):
     template: t.django_html = """
         <div
             {% html_attrs attrs
-                class="pa-4 text-red"
-                add:class="my-comp-date"
-                add:class=class_from_var
+                defaults:class="pa-4 text-red"
+                class="my-comp-date"
+                class=class_from_var
                 data-id="123"
             %}
         >
@@ -905,14 +1020,14 @@ class Parent(component.Component):
 
 Note: For readability, we've split the tags across multiple lines.
 
-Inside `MyComp`, we define these default attributes:
-- `class="pa-4 text-red"`
-- `data-id="123"`
+Inside `MyComp`, we defined a default attribute
 
-So if `attrs` includes these keys, the defaults above will be ignored.
+`defaults:class="pa-4 text-red"`
 
-`MyComp` also defines `add:class` twice. It means that whether the `class`
-attribute is taken from `attrs` or the defaults, the two `add:class` values
+So if `attrs` includes key `class`, the default above will be ignored.
+
+`MyComp` also defines `class` key twice. It means that whether the `class`
+attribute is taken from `attrs` or `defaults`, the two `class` values
 will be appended to it.
 
 So by default, `MyComp` renders:
@@ -939,23 +1054,23 @@ So all kwargs that start with `attrs:` will be collected into an `attrs` dict.
     attrs:@click="(e) => onClick(e, 'from_parent')"
 ```
 
-And `MyComp` will receive `attrs` input with following keys:
+And `get_context_data` of `MyComp` will receive `attrs` input with following keys:
 
 ```py
 attrs = {
-    "class": "pa-0 border-solid border-red",
+    "class": "pa-0 border-solid",
     "data-json": '{"value": 456}',
     "@click": "(e) => onClick(e, 'from_parent')",
 }
 ```
 
-`attrs["class"]` will override the default value for `class`, whereas other keys
+`attrs["class"]` overrides the default value for `class`, whereas other keys
 will be merged.
 
 So in the end `MyComp` will render:
 ```html
 <div
-    class="pa-0 border-solid border-red my-comp-date extra-class"
+    class="pa-0 border-solid my-comp-date extra-class"
     data-id="123"
     data-json='{"value": 456}'
     @click="(e) => onClick(e, 'from_parent')"
