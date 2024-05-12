@@ -816,6 +816,68 @@ attrs = {
 This feature is inspired by [`merge_attrs` tag of django-web-components](https://github.com/Xzya/django-web-components/tree/master?tab=readme-ov-file#default--merged-attributes) and
 ["fallthrough attributes" feature of Vue](https://vuejs.org/guide/components/attrs).
 
+### Removing atttributes
+
+Attributes that are set to `None` or `False` are NOT rendered.
+
+So given this input:
+
+```py
+attrs = {
+    "class": "text-green",
+    "required": False,
+    "data-id": None,
+}
+```
+
+And template:
+
+```django
+<div {% html_attrs attrs %}>
+</div>
+```
+
+Then this renders:
+
+```html
+<div class="text-green">
+</div>
+```
+
+### Boolean attributes
+
+In HTML, boolean attributes are usually rendered with no value. Consider the example below where the first button is disabled and the second is not:
+
+```html
+<button disabled> Click me! </button>
+<button> Click me! </button>
+```
+
+HTML rendering with `html_attrs` tag or `attributes_to_string` works the same way, where `key=True` is rendered simply as `key`, and `key=False` is not render at all.
+
+So given this input:
+
+```py
+attrs = {
+    "disabled": True,
+    "autofocus": False,
+}
+```
+
+And template:
+
+```django
+<div {% html_attrs attrs %}>
+</div>
+```
+
+Then this renders:
+
+```html
+<div disabled>
+</div>
+```
+
 ### Default attributes
 
 Sometimes you may want to specify default values for attributes. You can pass a second argument (or kwarg `defaults`) to set the defaults.
@@ -1078,6 +1140,25 @@ So in the end `MyComp` will render:
     @click="(e) => onClick(e, 'from_parent')"
 >
     ...
+```
+
+### Rendering HTML attributes outside of templates
+
+If you need to use serialize HTML attributes outside of Django template and the `html_attrs` tag, you can use `attributes_to_string`:
+
+```py
+from django_components.attributes import attributes_to_string
+
+attrs = {
+    "class": "my-class text-red pa-4",
+    "data-id": 123,
+    "required": True,
+    "disabled": False,
+    "ignored-attr": None,
+}
+
+attributes_to_string(attrs)
+# 'class="my-class text-red pa-4" data-id="123" required'
 ```
 
 ## Component context and scope
