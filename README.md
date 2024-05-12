@@ -869,14 +869,14 @@ To simplify merging of variables, you can supply the same key multiple times, an
 
 ```django
 {# my_var = "class-from-var text-red" #}
-<div {% html_attrs attrs class="some-class" class=my_var %}>
+<div {% html_attrs attrs class="some-class another-class" class=my_var %}>
 </div>
 ```
 
 Renders:
 
 ```html
-<div data-value="my-class pa-4 some-class class-from-var text-red">
+<div data-value="my-class pa-4 some-class another-class class-from-var text-red">
 </div>
 ```
 
