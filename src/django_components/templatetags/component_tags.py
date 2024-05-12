@@ -256,7 +256,7 @@ def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     - Optional dictionary of attributes (`attrs`)
     - Optional dictionary of defaults (`defaults`)
     - Additional kwargs that are appended to the former two
-    
+
     The inputs are merged and resulting dict is rendered as HTML attributes
     (`key="value"`).
 
