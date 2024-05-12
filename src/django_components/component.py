@@ -31,6 +31,7 @@ from django_components.context import (
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotName, resolve_slots
+from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id, search
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
@@ -253,11 +254,14 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
-    def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict) -> str:
+    def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict[str, Any]) -> str:
         component_context: dict = self.get_context_data(*args, **kwargs)
 
         with context.update(component_context):
-            rendered_component = self.render(context, context_data=component_context)
+            rendered_component = self.render(
+                context=context,
+                context_data=component_context,
+            )
 
         if is_dependency_middleware_active():
             output = RENDERED_COMMENT_TEMPLATE.format(name=self.registered_name) + rendered_component
@@ -394,6 +398,7 @@ class ComponentNode(Node):
         # to get values to insert into the context
         resolved_context_args = safe_resolve_list(self.context_args, context)
         resolved_context_kwargs = safe_resolve_dict(self.context_kwargs, context)
+        resolved_context_kwargs = process_aggregate_kwargs(resolved_context_kwargs)
 
         is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
         if is_default_slot:

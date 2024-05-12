@@ -986,3 +986,36 @@ class SlotBehaviorTests(BaseTestCase):
             </custom-template>
         """,
         )
+
+
+class AggregateInputTests(BaseTestCase):
+    def test_agg_input_accessible_in_get_context_data(self):
+        @component.register("test")
+        class AttrsComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    attrs: {{ attrs|safe }}
+                    my_dict: {{ my_dict|safe }}
+                </div>
+            """
+
+            def get_context_data(self, *args, attrs, my_dict):
+                return {"attrs": attrs, "my_dict": my_dict}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var my_dict:one=2 %}
+            {% endcomponent %}
+        """  # noqa: E501
+        template = Template(template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                attrs: {'@click.stop': "dispatch('click_event')", 'x-data': "{hello: 'world'}", 'class': 'padding-top-8'}
+                my_dict: {'one': 2}
+            </div>
+            """,  # noqa: E501
+        )

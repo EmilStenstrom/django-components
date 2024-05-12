@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Tuple
 
 import django.template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode, Token, TokenType
@@ -6,6 +6,7 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior, app_settings
+from django_components.attributes import HtmlAttrsNode
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
@@ -248,6 +249,39 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     return component_node
 
 
+@register.tag("html_attrs")
+def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
+    """
+    This tag takes:
+    - Optional dictionary of attributes (`attrs`)
+    - Optional dictionary of defaults (`defaults`)
+    - Additional kwargs that are appended to the former two
+
+    The inputs are merged and resulting dict is rendered as HTML attributes
+    (`key="value"`).
+
+    Rules:
+    1. Both `attrs` and `defaults` can be passed as positional args or as kwargs
+    2. Both `attrs` and `defaults` are optional (can be omitted)
+    3. Both `attrs` and `defaults` are dictionaries, and we can define them the same way
+       we define dictionaries for the `component` tag. So either as `attrs=attrs` or
+       `attrs:key=value`.
+    4. All other kwargs (`key=value`) are appended and can be repeated.
+
+    Normal kwargs (`key=value`) are concatenated to existing keys. So if e.g. key
+    "class" is supplied with value "my-class", then adding `class="extra-class"`
+    will result in `class="my-class extra-class".
+
+    Example:
+    ```django
+    {% html_attrs attrs defaults:class="default-class" class="extra-class" data-id="123" %}
+    ```
+    """
+    bits = token.split_contents()
+    attributes, default_attrs, append_attrs = parse_html_attrs_args(parser, bits, "html_attrs")
+    return HtmlAttrsNode(attributes, default_attrs, append_attrs)
+
+
 def is_whitespace_node(node: Node) -> bool:
     return isinstance(node, TextNode) and node.s.isspace()
 
@@ -275,29 +309,86 @@ def check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool
 def parse_component_with_args(
     parser: Parser, bits: List[str], tag_name: str
 ) -> Tuple[str, List[FilterExpression], Mapping[str, FilterExpression]]:
-    tag_args, tag_kwargs = parse_bits(
+    tag_args, tag_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
         params=["tag_name", "name"],
         name=tag_name,
     )
 
+    tag_kwargs = {}
+    for key, val in tag_kwarg_pairs:
+        if key in tag_kwargs:
+            # The keyword argument has already been supplied once
+            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
+        tag_kwargs[key] = val
+
     if tag_name != tag_args[0].token:
         raise RuntimeError(f"Internal error: Expected tag_name to be {tag_name}, but it was {tag_args[0].token}")
-    if len(tag_args) > 1:
-        # At least one position arg, so take the first as the component name
-        component_name = tag_args[1].token
-        context_args = tag_args[2:]
-        context_kwargs = tag_kwargs
-    else:  # No positional args, so look for component name as keyword arg
-        try:
-            component_name = tag_kwargs.pop("name").token
-            context_args = []
-            context_kwargs = tag_kwargs
-        except IndexError:
-            raise TemplateSyntaxError(f"Call the '{tag_name}' tag with a component name as the first parameter")
 
-    return component_name, context_args, context_kwargs
+    component_name = _get_positional_param(tag_name, "name", 1, tag_args, tag_kwargs).token
+    if len(tag_args) > 1:
+        # Positional args given. Skip tag and component name and take the rest
+        context_args = tag_args[2:]
+    else:  # No positional args
+        context_args = []
+
+    return component_name, context_args, tag_kwargs
+
+
+def parse_html_attrs_args(
+    parser: Parser, bits: List[str], tag_name: str
+) -> Tuple[Optional[FilterExpression], Optional[FilterExpression], List[Tuple[str, FilterExpression]]]:
+    tag_args, tag_kwarg_pairs = parse_bits(
+        parser=parser,
+        bits=bits,
+        params=["tag_name"],
+        name=tag_name,
+    )
+
+    # NOTE: Unlike in the `component` tag, in this case we don't care about duplicates,
+    # as we're constructing the dict simply to find the `attrs` kwarg.
+    tag_kwargs = {key: val for key, val in tag_kwarg_pairs}
+
+    if tag_name != tag_args[0].token:
+        raise RuntimeError(f"Internal error: Expected tag_name to be {tag_name}, but it was {tag_args[0].token}")
+
+    # Allow to optioanlly provide `attrs` as positional arg `{% html_attrs attrs %}`
+    try:
+        attrs = _get_positional_param(tag_name, "attrs", 1, tag_args, tag_kwargs)
+    except TemplateSyntaxError:
+        attrs = None
+
+    # Allow to optionally provide `defaults` as positional arg `{% html_attrs attrs defaults %}`
+    try:
+        defaults = _get_positional_param(tag_name, "defaults", 2, tag_args, tag_kwargs)
+    except TemplateSyntaxError:
+        defaults = None
+
+    # Allow only up to 2 positional args - [0] == tag name, [1] == attrs, [2] == defaults
+    if len(tag_args) > 3:
+        raise TemplateSyntaxError(f"Tag '{tag_name}' received unexpected positional arguments: {tag_args[2:]}")
+
+    return attrs, defaults, tag_kwarg_pairs
+
+
+def _get_positional_param(
+    tag_name: str,
+    param_name: str,
+    param_index: int,
+    args: List[FilterExpression],
+    kwargs: Dict[str, FilterExpression],
+) -> FilterExpression:
+    # Param is given as positional arg, e.g. `{% tag param %}`
+    if len(args) > param_index:
+        param = args[param_index]
+        return param
+    # Check if param was given as kwarg, e.g. `{% tag param_name=param %}`
+    elif param_name in kwargs:
+        param = kwargs.pop(param_name)
+        return param
+
+    raise TemplateSyntaxError(f"Param '{param_name}' not found in '{tag_name}' tag")
 
 
 def is_wrapped_in_quotes(s: str) -> bool:
