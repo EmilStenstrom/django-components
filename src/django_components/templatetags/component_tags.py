@@ -252,20 +252,30 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
 @register.tag("html_attrs")
 def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     """
-    This tag takes a Dict and optionally additional kwargs, merges them, and outputs
-    the resulting Dict as HTML attributes.
+    This tag takes:
+    - Optional dictionary of attributes (`attrs`)
+    - Optional dictionary of defaults (`defaults`)
+    - Additional kwargs that are appended to the former two
+    
+    The inputs are merged and resulting dict is rendered as HTML attributes
+    (`key="value"`).
 
+    Rules:
+    1. Both `attrs` and `defaults` can be passed as positional args or as kwargs
+    2. Both `attrs` and `defaults` are optional (can be omitted)
+    3. Both `attrs` and `defaults` are dictionaries, and we can define them the same way
+       we define dictionaries for the `component` tag. So either as `attrs=attrs` or
+       `attrs:key=value`.
+    4. All other kwargs (`key=value`) are appended and can be repeated.
+
+    Normal kwargs (`key=value`) are concatenated to existing keys. So if e.g. key
+    "class" is supplied with value "my-class", then adding `class="extra-class"`
+    will result in `class="my-class extra-class".
+
+    Example:
     ```django
-    {% html_attrs my_dict class="default-class" data-id="123" add:"extra-class" %}
+    {% html_attrs attrs defaults:class="default-class" class="extra-class" data-id="123" %}
     ```
-
-    Normal kwargs (`key=value`) are treated as defaults, meaning that if the same
-    key is set on the given dictionary, the dict takes precedence.
-
-    Kwargs that start with `add:` will be concatenated to existing keys. So if e.g.
-    key "class" is supplied from the dict or another kwarg, with value "my-class",
-    then adding `add:"extra-class"` will result in value `"my-class extra-class"
-    for key "class".
     """
     bits = token.split_contents()
     attributes, default_attrs, append_attrs = parse_html_attrs_args(parser, bits, "html_attrs")
