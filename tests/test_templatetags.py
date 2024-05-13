@@ -2392,3 +2392,277 @@ class IterationFillTest(BaseTestCase):
             {'inner': ['ITER2_OBJ1', 'ITER2_OBJ2']} default
             """,
         )
+
+
+class ScopedSlotTest(BaseTestCase):
+    def test_slot_data_as_kwarg(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data=slot_data %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "slot_data": {"abc": "def", "123": 456},
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_data_as_aggregate_kwarg(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data:abc=abc data:123=var123 %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_data_raises_on_combined_kwarg_and_aggregate(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data=data data:abc=abc %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "data": {"x": "y"},
+                    "abc": "def",
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Received argument 'data' both as a regular input (data=...) and as an aggregate dict",
+        ):
+            Template(template).render(Context())
+
+    def test_slot_data_with_flags(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" default data:abc=abc data:123=var123 required %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_data_fill_with_as(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data:abc=abc data:123=var123 %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" as "slot_var" %}
+                    {{ slot_var.default }}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                Default text
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_data_raises_on_slot_data_and_as_same_var(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data:abc=abc data:123=var123 %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_var" as "slot_var" %}
+                    {{ slot_var.default }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "'fill' received the same string for slot alias (as ...) and slot data (data=...)",
+        ):
+            Template(template).render(Context())
+
+    def test_slot_data_fill_without_data(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data=slot_data %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "slot_data": {"abc": "def", "123": 456},
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" %}
+                    overriden
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = "<div> overriden </div>"
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_data_fill_without_slot_data(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" %}Default text{% endslot %}
+                </div>
+            """
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data" %}
+                    {{ slot_data|safe }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = "<div> {} </div>"
+        self.assertHTMLEqual(rendered, expected)
+
+    def test_slot_data_no_fill(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" data=slot_data %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "slot_data": {"abc": "def", "123": 456},
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = "<div> Default text </div>"
+        self.assertHTMLEqual(rendered, expected)
