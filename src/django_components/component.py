@@ -28,6 +28,7 @@ from django_components.context import (
     make_isolated_context_copy,
     prepare_context,
 )
+from django_components.expression import safe_resolve_dict, safe_resolve_list
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotName, resolve_slots
@@ -355,6 +356,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             slot_name: FillContent(
                 nodes=NodeList([TextNode(escape(content) if escape_content else content)]),
                 alias=None,
+                scope=None,
             )
             for (slot_name, content) in slots_data.items()
         }
@@ -402,7 +404,9 @@ class ComponentNode(Node):
 
         is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
         if is_default_slot:
-            fill_content: Dict[str, FillContent] = {DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None)}
+            fill_content: Dict[str, FillContent] = {
+                DEFAULT_SLOT_KEY: FillContent(self.fill_nodes[0].nodelist, None, None),
+            }
         else:
             fill_content = {}
             for fill_node in self.fill_nodes:
@@ -416,7 +420,12 @@ class ComponentNode(Node):
                     )
 
                 resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
-                fill_content[resolved_name] = FillContent(fill_node.nodelist, resolved_fill_alias)
+                resolved_scope_var = fill_node.resolve_scope(context, resolved_component_name)
+                fill_content[resolved_name] = FillContent(
+                    nodes=fill_node.nodelist,
+                    alias=resolved_fill_alias,
+                    scope=resolved_scope_var,
+                )
 
         component: Component = component_cls(
             registered_name=resolved_component_name,
@@ -433,20 +442,3 @@ class ComponentNode(Node):
 
         trace_msg("RENDR", "COMP", self.name_fexp, self.component_id, "...Done!")
         return output
-
-
-def safe_resolve_list(args: List[FilterExpression], context: Context) -> List:
-    return [safe_resolve(arg, context) for arg in args]
-
-
-def safe_resolve_dict(
-    kwargs: Union[Mapping[str, FilterExpression], Dict[str, FilterExpression]],
-    context: Context,
-) -> Dict:
-    return {key: safe_resolve(kwarg, context) for key, kwarg in kwargs.items()}
-
-
-def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
-    """Resolve FilterExpressions and Variables in context if possible. Return other items unchanged."""
-
-    return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
