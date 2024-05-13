@@ -396,8 +396,7 @@ def _parse_fill_args(
 
     if not len(bits):
         raise TemplateSyntaxError(
-            "'fill' tag does not match pattern "
-            f"{{% fill <name> [{DATA_KEY}=val] [as alias] %}}. "
+            "'fill' tag does not match pattern " f"{{% fill <name> [{DATA_KEY}=val] [as alias] %}}. "
         )
 
     slot_name = bits.pop(0)
@@ -422,9 +421,7 @@ def _parse_fill_args(
     tag_kwargs: Dict[str, FilterExpression] = {}
     for key, val in tag_kwarg_pairs:
         if key in tag_kwargs:
-            raise TemplateSyntaxError(
-                f"'{tag_name}' received multiple values for keyword argument '{key}'"
-            )
+            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
         tag_kwargs[key] = val
 
     scope_var_fexp: Optional[FilterExpression] = None
