@@ -16,7 +16,7 @@ from django_components.middleware import (
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
-from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
+from django_components.slots import SLOT_DATA_ATTR, FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
 from django_components.template_parser import parse_bits
 from django_components.utils import gen_id
 
@@ -329,8 +329,6 @@ def _parse_slot_args(
     bits: List[str],
     tag_name: str,
 ) -> Tuple[str, bool, bool, Dict[str, FilterExpression]]:
-    DATA_KEY = "data"
-
     if not len(bits):
         raise TemplateSyntaxError(
             "'slot' tag does not match pattern "
@@ -376,7 +374,7 @@ def _parse_slot_args(
     kwarg_keys = list(tag_kwargs.keys())
     for key in kwarg_keys:
         # NOTE: Allow the slot kwargs to be defined as both `data={...}` or `data:key=val`
-        if key == DATA_KEY or key.startswith(f"{DATA_KEY}:"):
+        if key == SLOT_DATA_ATTR or key.startswith(f"{SLOT_DATA_ATTR}:"):
             slot_kwargs_fexp[key] = tag_kwargs.pop(key)
 
     if len(tag_kwargs):
@@ -392,11 +390,9 @@ def _parse_fill_args(
     bits: List[str],
     tag_name: str,
 ) -> Tuple[FilterExpression, Optional[FilterExpression], Optional[FilterExpression]]:
-    DATA_KEY = "data"
-
     if not len(bits):
         raise TemplateSyntaxError(
-            "'fill' tag does not match pattern " f"{{% fill <name> [{DATA_KEY}=val] [as alias] %}}. "
+            "'fill' tag does not match pattern " f"{{% fill <name> [{SLOT_DATA_ATTR}=val] [as alias] %}}. "
         )
 
     slot_name = bits.pop(0)
@@ -425,11 +421,11 @@ def _parse_fill_args(
         tag_kwargs[key] = val
 
     scope_var_fexp: Optional[FilterExpression] = None
-    if DATA_KEY in tag_kwargs:
-        scope_var_fexp = tag_kwargs.pop(DATA_KEY)
+    if SLOT_DATA_ATTR in tag_kwargs:
+        scope_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
         if not is_wrapped_in_quotes(scope_var_fexp.token):
             raise TemplateSyntaxError(
-                f"Value of '{DATA_KEY}' in '{tag_name}' tag must be a string literal, got '{scope_var_fexp}'"
+                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, " f"got '{scope_var_fexp}'"
             )
 
     if scope_var_fexp and alias_fexp and scope_var_fexp.token == alias_fexp.token:

@@ -19,6 +19,7 @@ from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
+SLOT_DATA_ATTR = "data"
 
 # Type aliases
 
@@ -154,7 +155,7 @@ class SlotNode(Node):
         if slot_fill.scope:
             slot_kwargs = safe_resolve_dict(self.slot_kwargs, context)
             slot_kwargs = process_aggregate_kwargs(slot_kwargs)
-            extra_context[slot_fill.scope] = slot_kwargs.get("data", {})
+            extra_context[slot_fill.scope] = slot_kwargs.get(SLOT_DATA_ATTR, {})
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
