@@ -9,13 +9,13 @@ from .testutils import BaseTestCase
 
 from django_components import component, types
 from django_components.component import safe_resolve_dict, safe_resolve_list
-from django_components.templatetags.component_tags import parse_component_with_args
+from django_components.templatetags.component_tags import _parse_component_with_args
 
 
 class ParserTest(BaseTestCase):
     def test_parses_args_kwargs(self):
         bits = ["component", "my_component", "42", "myvar", "key='val'", "key2=val2"]
-        name, raw_args, raw_kwargs = parse_component_with_args(Parser(""), bits, "component")
+        name, raw_args, raw_kwargs = _parse_component_with_args(Parser(""), bits, "component")
 
         ctx = {"myvar": {"a": "b"}, "val2": 1}
         args = safe_resolve_list(raw_args, ctx)
@@ -35,7 +35,7 @@ class ParserTest(BaseTestCase):
             "@event:na-me.mod=bzz",
             "#my-id=True",
         ]
-        name, raw_args, raw_kwargs = parse_component_with_args(Parser(""), bits, "component")
+        name, raw_args, raw_kwargs = _parse_component_with_args(Parser(""), bits, "component")
 
         ctx = Context({"date": 2024, "bzz": "fzz"})
         args = safe_resolve_list(raw_args, ctx)
