@@ -753,35 +753,14 @@ Using scoped slots consists of two steps:
 
 #### Passing data to slots
 
-To pass the data to the `slot` tag, define the `data` attribute. `data` must be a dictionary:
+To pass the data to the `slot` tag, simply pass them as keyword attributes (`key=value`):
 
 ```py
 @component.register("my_comp")
 class MyComp(component.Component):
 	template = """
 		<div>
-			{% slot "content" default data=slot_data %}
-				input: {{ input }}
-			{% endslot %}
-		</div>
-	"""
-
-	def get_context_data(self, input):
-		processed_input = do_something(input)
-		return {
-            "input": processed_input,
-            "slot_data": {"input": processed_input},
-        }
-```
-
-And since the `data` attribute is a dictionary, you can also set it using the `data:key=value` syntax:
-
-```py
-@component.register("my_comp")
-class MyComp(component.Component):
-	template = """
-		<div>
-			{% slot "content" default data:input=input %}
+			{% slot "content" default input=input %}
 				input: {{ input }}
 			{% endslot %}
 		</div>
@@ -797,13 +776,13 @@ class MyComp(component.Component):
 #### Accessing slot data in fill
 
 Next, we head over to where we define a fill for this slot. Here, to access the slot data
-we set the `data` attribute to the name of the variable through which we want to access
-the slot data. In the example below, we set it to `slot_data`:
+we set the `slot_data` attribute to the name of the variable through which we want to access
+the slot data. In the example below, we set it to `data`:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" data="slot_data" %}
-        {{ slot_data.input }}
+    {% fill "content" slot_data="data" %}
+        {{ data.input }}
     {% endfill %}
 {% endcomponent %}
 ```
@@ -814,7 +793,7 @@ So this works:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" data="slot_data" %}
+    {% fill "content" slot_data="slot_data" %}
         {{ slot_data.input }}
     {% endfill %}
 {% endcomponent %}
@@ -823,17 +802,18 @@ So this works:
 While this does not:
 
 ```django
-{% component "my_comp" data="slot_data" %}
+{% component "my_comp" slot_data="slot_data" %}
     {{ slot_data.input }}
 {% endcomponent %}
 ```
 
-Note: You cannot set the `data` attribute and [slot alias (`as var` syntax)](#accessing-original-content-of-slots)
-to the same name. This raises error:
+Note: You cannot set the `slot_data` attribute and
+[slot alias (`as var` syntax)](#accessing-original-content-of-slots)
+to the same name. This raises an error:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" data="slot_var" as "slot_var" %}
+    {% fill "content" slot_data="slot_var" as "slot_var" %}
         {{ slot_var.input }}
     {% endfill %}
 {% endcomponent %}

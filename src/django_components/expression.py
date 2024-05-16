@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Mapping, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 from django.template import Context
-from django.template.base import FilterExpression
+from django.template.base import FilterExpression, Parser
 
 
 def resolve_expression_as_identifier(
@@ -34,3 +34,13 @@ def safe_resolve_dict(
 def safe_resolve(context_item: FilterExpression, context: Context) -> Any:
     """Resolve FilterExpressions and Variables in context if possible. Return other items unchanged."""
     return context_item.resolve(context) if hasattr(context_item, "resolve") else context_item
+
+
+def resolve_string(
+    s: str,
+    parser: Optional[Parser] = None,
+    context: Optional[Mapping[str, Any]] = None,
+) -> str:
+    parser = parser or Parser([])
+    context = context or {}
+    return parser.compile_filter(s).resolve(context)

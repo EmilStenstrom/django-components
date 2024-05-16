@@ -10,13 +10,14 @@ from django_components.attributes import HtmlAttrsNode
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
+from django_components.expression import resolve_string
 from django_components.logger import trace_msg
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
-from django_components.slots import SLOT_DATA_ATTR, FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
+from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
 from django_components.template_parser import parse_bits
 from django_components.utils import gen_id
 
@@ -29,6 +30,7 @@ register = django.template.Library()
 
 SLOT_REQUIRED_OPTION_KEYWORD = "required"
 SLOT_DEFAULT_OPTION_KEYWORD = "default"
+SLOT_DATA_ATTR = "slot_data"
 
 
 def get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
@@ -340,7 +342,7 @@ def _parse_slot_args(
     if not is_wrapped_in_quotes(slot_name):
         raise TemplateSyntaxError(f"'{tag_name}' name must be a string 'literal'.")
 
-    slot_name = parser.compile_filter(slot_name).resolve({})
+    slot_name = resolve_string(slot_name, parser)
 
     # Parse flags - Since `parse_bits` doesn't handle "shorthand" kwargs
     # (AKA `required` for `required=True`), we have to first get the flags out
@@ -370,19 +372,7 @@ def _parse_slot_args(
             raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
         tag_kwargs[key] = val
 
-    slot_kwargs_fexp: Dict[str, FilterExpression] = {}
-    kwarg_keys = list(tag_kwargs.keys())
-    for key in kwarg_keys:
-        # NOTE: Allow the slot kwargs to be defined as both `data={...}` or `data:key=val`
-        if key == SLOT_DATA_ATTR or key.startswith(f"{SLOT_DATA_ATTR}:"):
-            slot_kwargs_fexp[key] = tag_kwargs.pop(key)
-
-    if len(tag_kwargs):
-        extra_keywords = tag_kwargs.keys()
-        extra_keys = ", ".join(extra_keywords)
-        raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
-
-    return slot_name, is_default, is_required, slot_kwargs_fexp
+    return slot_name, is_default, is_required, tag_kwargs
 
 
 def _parse_fill_args(
