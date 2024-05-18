@@ -2525,7 +2525,7 @@ class ScopedSlotTest(BaseTestCase):
         """
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "'fill' received the same string for slot alias (as ...) and slot data (data=...)",
+            "'fill' received the same string for slot alias (as ...) and slot data (slot_data=...)",
         ):
             Template(template).render(Context())
 

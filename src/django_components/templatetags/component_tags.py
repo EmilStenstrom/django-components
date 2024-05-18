@@ -420,7 +420,8 @@ def _parse_fill_args(
 
     if scope_var_fexp and alias_fexp and scope_var_fexp.token == alias_fexp.token:
         raise TemplateSyntaxError(
-            f"'{tag_name}' received the same string for slot alias (as ...) and slot data (data=...)"
+            f"'{tag_name}' received the same string for slot alias (as ...)"
+            f" and slot data ({SLOT_DATA_ATTR}=...)"
         )
 
     if len(tag_kwargs):
