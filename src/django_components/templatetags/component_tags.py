@@ -415,12 +415,12 @@ def _parse_fill_args(
         scope_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
         if not is_wrapped_in_quotes(scope_var_fexp.token):
             raise TemplateSyntaxError(
-                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, " f"got '{scope_var_fexp}'"
+                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, got '{scope_var_fexp}'"
             )
 
     if scope_var_fexp and alias_fexp and scope_var_fexp.token == alias_fexp.token:
         raise TemplateSyntaxError(
-            f"'{tag_name}' received the same string for slot alias (as ...)" f" and slot data ({SLOT_DATA_ATTR}=...)"
+            f"'{tag_name}' received the same string for slot alias (as ...) and slot data ({SLOT_DATA_ATTR}=...)"
         )
 
     if len(tag_kwargs):
