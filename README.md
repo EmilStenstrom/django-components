@@ -18,6 +18,30 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 Read on to learn about the details!
 
+## Table of Contents
+
+- [Release notes](#release-notes)
+- [Security notes 🚨](#security-notes-)
+- [Installation](#installation)
+- [Compatiblity](#compatiblity)
+- [Create your first component](#create-your-first-component)
+- [Using single-file components](#using-single-file-components)
+- [Use the component in a template](#use-the-component-in-a-template)
+- [Use components as views](#use-components-as-views)
+- [Registering components](#registering-components)
+- [Autodiscovery](#autodiscovery)
+- [Using slots in templates](#using-slots-in-templates)
+- [Passing data to components](#passing-data-to-components)
+- [Rendering HTML attributes](#rendering-html-attributes)
+- [Component context and scope](#component-context-and-scope)
+- [Rendering JS and CSS dependencies](#rendering-js-and-css-dependencies)
+- [Available settings](#available-settings)
+- [Logging and debugging](#logging-and-debugging)
+- [Management Command](#management-command)
+- [Community examples](#community-examples)
+- [Running django-components project locally](#running-django-components-project-locally)
+- [Development guides](#development-guides)
+
 ## Release notes
 
 **Version 0.74** introduces `html_attrs` tag and `prefix:key=val` construct for passing dicts to components.
