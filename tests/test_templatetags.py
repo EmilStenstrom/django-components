@@ -2401,7 +2401,7 @@ class ScopedSlotTest(BaseTestCase):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" abc=abc 123=var123 %}Default text{% endslot %}
+                    {% slot "my_slot" abc=abc def=var123 %}Default text{% endslot %}
                 </div>
             """
 
@@ -2416,7 +2416,7 @@ class ScopedSlotTest(BaseTestCase):
             {% component "test" %}
                 {% fill "my_slot" slot_data="slot_data_in_fill" %}
                     {{ slot_data_in_fill.abc }}
-                    {{ slot_data_in_fill.123 }}
+                    {{ slot_data_in_fill.def }}
                 {% endfill %}
             {% endcomponent %}
         """
@@ -2550,7 +2550,6 @@ class ScopedSlotTest(BaseTestCase):
             {% component "test" %}
                 {% fill "my_slot" %}
                     overriden
-                    {{ slot_data_in_fill }}
                 {% endfill %}
             {% endcomponent %}
         """
