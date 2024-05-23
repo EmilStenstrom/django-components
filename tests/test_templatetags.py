@@ -912,7 +912,7 @@ class ConditionalSlotTests(BaseTestCase):
         self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
 
 
-class SlotSuperTests(BaseTestCase):
+class SlotDefaultTests(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -924,13 +924,13 @@ class SlotSuperTests(BaseTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_basic_super_functionality(self):
+    def test_basic(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}Before: {{ header.default }}{% endfill %}
-                {% fill "main" as "main" %}{{ main.default }}{% endfill %}
-                {% fill "footer" as "footer" %}{{ footer.default }}, after{% endfill %}
+                {% fill "header" default="header" %}Before: {{ header.default }}{% endfill %}
+                {% fill "main" default="main" %}{{ main.default }}{% endfill %}
+                {% fill "footer" default="footer" %}{{ footer.default }}, after{% endfill %}
             {% endcomponent %}
         """
         template = Template(template_str)
@@ -947,11 +947,11 @@ class SlotSuperTests(BaseTestCase):
             """,
         )
 
-    def test_multiple_super_calls(self):
+    def test_multiple_calls(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}
+                {% fill "header" default="header" %}
                     First: {{ header.default }};
                     Second: {{ header.default }}
                 {% endfill %}
@@ -971,14 +971,16 @@ class SlotSuperTests(BaseTestCase):
         """,
         )
 
-    def test_super_under_if_node(self):
+    def test_under_if_and_forloop(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}
+                {% fill "header" default="header" %}
                     {% for i in range %}
-                        {% if forloop.first %}First {{ header.default }}
-                        {% else %}Later {{ header.default }}
+                        {% if forloop.first %}
+                            First {{ header.default }}
+                        {% else %}
+                            Later {{ header.default }}
                         {% endif %}
                     {% endfor %}
                 {% endfill %}
@@ -1310,11 +1312,11 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "django"})
-    def test_component_nesting_component_with_fill_and_super__django(self):
+    def test_component_nesting_component_with_slot_default__django(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
-              {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
+              {% fill "header" default="h" %} Hello! {{ h.default }} {% endfill %}
             {% endcomponent %}
         """
         template = Template(template_str)
@@ -1338,11 +1340,11 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
-    def test_component_nesting_component_with_fill_and_super__isolated(self):
+    def test_component_nesting_component_with_slot_default__isolated(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
-              {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
+              {% fill "header" default="h" %} Hello! {{ h.default }} {% endfill %}
             {% endcomponent %}
         """
         template = Template(template_str)
@@ -2194,7 +2196,7 @@ class IterationFillTest(BaseTestCase):
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ super_slot_inner.default }}
                         {% endfill %}
                     {% endcomponent %}
@@ -2228,7 +2230,7 @@ class IterationFillTest(BaseTestCase):
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ super_slot_inner.default }}
                         {% endfill %}
                     {% endcomponent %}
@@ -2256,7 +2258,7 @@ class IterationFillTest(BaseTestCase):
                 {% fill "slot_inner" %}
                     {{ outer_scope_variable_1 }}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ outer_scope_variable_2 }}
                             {{ super_slot_inner.default }}
                         {% endfill %}
@@ -2311,7 +2313,7 @@ class IterationFillTest(BaseTestCase):
                 {% fill "slot_inner" %}
                     {{ outer_scope_variable_1 }}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ outer_scope_variable_2 }}
                             {{ super_slot_inner.default }}
                         {% endfill %}
@@ -2358,7 +2360,7 @@ class IterationFillTest(BaseTestCase):
                 {% fill "slot_inner" %}
                     {{ outer_scope_variable_1|safe }}
                     {% component "slot_in_a_loop" objects=objects %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ outer_scope_variable_2|safe }}
                             {{ super_slot_inner.default }}
                         {% endfill %}
@@ -2482,7 +2484,7 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" data="slot_data_in_fill" as "slot_var" %}
+                {% fill "my_slot" data="slot_data_in_fill" default="slot_var" %}
                     {{ slot_var.default }}
                     {{ slot_data_in_fill.abc }}
                     {{ slot_data_in_fill.123 }}
@@ -2518,14 +2520,14 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" data="slot_var" as "slot_var" %}
+                {% fill "my_slot" data="slot_var" default="slot_var" %}
                     {{ slot_var.default }}
                 {% endfill %}
             {% endcomponent %}
         """
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "'fill' received the same string for slot alias (as ...) and slot data (data=...)",
+            "'fill' received the same string for slot default (default=...) and slot data (data=...)",
         ):
             Template(template).render(Context())
 

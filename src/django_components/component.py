@@ -358,8 +358,8 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slot_fills = {
             slot_name: FillContent(
                 nodes=NodeList([TextNode(escape(content) if escape_content else content)]),
-                alias=None,
-                scope=None,
+                slot_default_var=None,
+                slot_data_var=None,
             )
             for (slot_name, content) in slots_data.items()
         }
@@ -422,12 +422,12 @@ class ComponentNode(Node):
                         f"Detected duplicate fill tag name '{resolved_name}'."
                     )
 
-                resolved_fill_alias = fill_node.resolve_alias(context, resolved_component_name)
-                resolved_scope_var = fill_node.resolve_scope(context, resolved_component_name)
+                resolved_slot_default_var = fill_node.resolve_slot_default(context, resolved_component_name)
+                resolved_slot_data_var = fill_node.resolve_slot_data(context, resolved_component_name)
                 fill_content[resolved_name] = FillContent(
                     nodes=fill_node.nodelist,
-                    alias=resolved_fill_alias,
-                    scope=resolved_scope_var,
+                    slot_default_var=resolved_slot_default_var,
+                    slot_data_var=resolved_slot_data_var,
                 )
 
         component: Component = component_cls(
