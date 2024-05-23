@@ -912,7 +912,7 @@ class ConditionalSlotTests(BaseTestCase):
         self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
 
 
-class SlotSuperTests(BaseTestCase):
+class SlotDefaultTests(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -924,13 +924,13 @@ class SlotSuperTests(BaseTestCase):
         super().tearDownClass()
         component.registry.clear()
 
-    def test_basic_super_functionality(self):
+    def test_basic(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}Before: {{ header.default }}{% endfill %}
-                {% fill "main" as "main" %}{{ main.default }}{% endfill %}
-                {% fill "footer" as "footer" %}{{ footer.default }}, after{% endfill %}
+                {% fill "header" default="header" %}Before: {{ header }}{% endfill %}
+                {% fill "main" default="main" %}{{ main }}{% endfill %}
+                {% fill "footer" default="footer" %}{{ footer }}, after{% endfill %}
             {% endcomponent %}
         """
         template = Template(template_str)
@@ -947,13 +947,13 @@ class SlotSuperTests(BaseTestCase):
             """,
         )
 
-    def test_multiple_super_calls(self):
+    def test_multiple_calls(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}
-                    First: {{ header.default }};
-                    Second: {{ header.default }}
+                {% fill "header" default="header" %}
+                    First: {{ header }};
+                    Second: {{ header }}
                 {% endfill %}
             {% endcomponent %}
         """
@@ -971,14 +971,16 @@ class SlotSuperTests(BaseTestCase):
         """,
         )
 
-    def test_super_under_if_node(self):
+    def test_under_if_and_forloop(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "header" as "header" %}
+                {% fill "header" default="header" %}
                     {% for i in range %}
-                        {% if forloop.first %}First {{ header.default }}
-                        {% else %}Later {{ header.default }}
+                        {% if forloop.first %}
+                            First {{ header }}
+                        {% else %}
+                            Later {{ header }}
                         {% endif %}
                     {% endfor %}
                 {% endfill %}
@@ -992,6 +994,52 @@ class SlotSuperTests(BaseTestCase):
             """
             <custom-template>
                 <header>First Default header Later Default header Later Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
+
+    def test_nested_fills(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "header" default="header1" %}
+                    header1_in_header1: {{ header1 }}
+                    {% component "test" %}
+                        {% fill "header" default="header2" %}
+                            header1_in_header2: {{ header1 }}
+                            header2_in_header2: {{ header2 }}
+                        {% endfill %}
+                        {% fill "footer" default="footer2" %}
+                            header1_in_footer2: {{ header1 }}
+                            footer2_in_footer2: {{ footer2 }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>
+                    header1_in_header1: Default header
+                    <custom-template>
+                        <header>
+                            header1_in_header2: Default header
+                            header2_in_header2: Default header
+                        </header>
+                        <main>Default main</main>
+                        <footer>
+                            header1_in_footer2: Default header
+                            footer2_in_footer2: Default footer
+                        </footer>
+                    </custom-template>
+                </header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
@@ -1310,11 +1358,11 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "django"})
-    def test_component_nesting_component_with_fill_and_super__django(self):
+    def test_component_nesting_component_with_slot_default__django(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
-              {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
+              {% fill "header" default="h" %} Hello! {{ h }} {% endfill %}
             {% endcomponent %}
         """
         template = Template(template_str)
@@ -1338,11 +1386,11 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @override_settings(COMPONENTS={"context_behavior": "isolated"})
-    def test_component_nesting_component_with_fill_and_super__isolated(self):
+    def test_component_nesting_component_with_slot_default__isolated(self):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "dashboard" %}
-              {% fill "header" as "h" %} Hello! {{ h.default }} {% endfill %}
+              {% fill "header" default="h" %} Hello! {{ h }} {% endfill %}
             {% endcomponent %}
         """
         template = Template(template_str)
@@ -2194,8 +2242,8 @@ class IterationFillTest(BaseTestCase):
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
-                            {{ super_slot_inner.default }}
+                        {% fill "slot_inner" default="super_slot_inner" %}
+                            {{ super_slot_inner }}
                         {% endfill %}
                     {% endcomponent %}
                 {% endfill %}
@@ -2228,8 +2276,8 @@ class IterationFillTest(BaseTestCase):
             {% component "slot_in_a_loop" objects=objects %}
                 {% fill "slot_inner" %}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
-                            {{ super_slot_inner.default }}
+                        {% fill "slot_inner" default="super_slot_inner" %}
+                            {{ super_slot_inner }}
                         {% endfill %}
                     {% endcomponent %}
                 {% endfill %}
@@ -2256,9 +2304,9 @@ class IterationFillTest(BaseTestCase):
                 {% fill "slot_inner" %}
                     {{ outer_scope_variable_1 }}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ outer_scope_variable_2 }}
-                            {{ super_slot_inner.default }}
+                            {{ super_slot_inner }}
                         {% endfill %}
                     {% endcomponent %}
                 {% endfill %}
@@ -2311,9 +2359,9 @@ class IterationFillTest(BaseTestCase):
                 {% fill "slot_inner" %}
                     {{ outer_scope_variable_1 }}
                     {% component "slot_in_a_loop" objects=object.inner %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ outer_scope_variable_2 }}
-                            {{ super_slot_inner.default }}
+                            {{ super_slot_inner }}
                         {% endfill %}
                     {% endcomponent %}
                 {% endfill %}
@@ -2358,9 +2406,9 @@ class IterationFillTest(BaseTestCase):
                 {% fill "slot_inner" %}
                     {{ outer_scope_variable_1|safe }}
                     {% component "slot_in_a_loop" objects=objects %}
-                        {% fill "slot_inner" as "super_slot_inner" %}
+                        {% fill "slot_inner" default="super_slot_inner" %}
                             {{ outer_scope_variable_2|safe }}
-                            {{ super_slot_inner.default }}
+                            {{ super_slot_inner }}
                         {% endfill %}
                     {% endcomponent %}
                 {% endfill %}
@@ -2401,7 +2449,7 @@ class ScopedSlotTest(BaseTestCase):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" abc=abc def=var123 %}Default text{% endslot %}
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
                 </div>
             """
 
@@ -2416,7 +2464,7 @@ class ScopedSlotTest(BaseTestCase):
             {% component "test" %}
                 {% fill "my_slot" data="slot_data_in_fill" %}
                     {{ slot_data_in_fill.abc }}
-                    {{ slot_data_in_fill.def }}
+                    {{ slot_data_in_fill.var123 }}
                 {% endfill %}
             {% endcomponent %}
         """
@@ -2435,7 +2483,7 @@ class ScopedSlotTest(BaseTestCase):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" default abc=abc 123=var123 required %}Default text{% endslot %}
+                    {% slot "my_slot" default abc=abc var123=var123 required %}Default text{% endslot %}
                 </div>
             """
 
@@ -2450,7 +2498,7 @@ class ScopedSlotTest(BaseTestCase):
             {% component "test" %}
                 {% fill "my_slot" data="slot_data_in_fill" %}
                     {{ slot_data_in_fill.abc }}
-                    {{ slot_data_in_fill.123 }}
+                    {{ slot_data_in_fill.var123 }}
                 {% endfill %}
             {% endcomponent %}
         """
@@ -2463,13 +2511,13 @@ class ScopedSlotTest(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    def test_slot_data_fill_with_as(self):
+    def test_slot_data_with_slot_default(self):
         @component.register("test")
         class TestComponent(component.Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" abc=abc 123=var123 %}Default text{% endslot %}
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
                 </div>
             """
 
@@ -2482,10 +2530,10 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" data="slot_data_in_fill" as "slot_var" %}
-                    {{ slot_var.default }}
+                {% fill "my_slot" data="slot_data_in_fill" default="slot_var" %}
+                    {{ slot_var }}
                     {{ slot_data_in_fill.abc }}
-                    {{ slot_data_in_fill.123 }}
+                    {{ slot_data_in_fill.var123 }}
                 {% endfill %}
             {% endcomponent %}
         """
@@ -2499,13 +2547,13 @@ class ScopedSlotTest(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    def test_slot_data_raises_on_slot_data_and_as_same_var(self):
+    def test_slot_data_raises_on_slot_data_and_slot_default_same_var(self):
         @component.register("test")
         class TestComponent(component.Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" abc=abc 123=var123 %}Default text{% endslot %}
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
                 </div>
             """
 
@@ -2518,14 +2566,14 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" data="slot_var" as "slot_var" %}
-                    {{ slot_var.default }}
+                {% fill "my_slot" data="slot_var" default="slot_var" %}
+                    {{ slot_var }}
                 {% endfill %}
             {% endcomponent %}
         """
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "'fill' received the same string for slot alias (as ...) and slot data (data=...)",
+            "'fill' received the same string for slot default (default=...) and slot data (data=...)",
         ):
             Template(template).render(Context())
 
@@ -2535,7 +2583,7 @@ class ScopedSlotTest(BaseTestCase):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" abc=abc 123=var123 %}Default text{% endslot %}
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
                 </div>
             """
 
@@ -2585,7 +2633,7 @@ class ScopedSlotTest(BaseTestCase):
             template: types.django_html = """
                 {% load component_tags %}
                 <div>
-                    {% slot "my_slot" abc=abc 123=var123 %}Default text{% endslot %}
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
                 </div>
             """
 
@@ -2603,3 +2651,49 @@ class ScopedSlotTest(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = "<div> Default text </div>"
         self.assertHTMLEqual(rendered, expected)
+
+    def test_nested_fills(self):
+        @component.register("test")
+        class TestComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" abc=abc input=input %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self, input):
+                return {
+                    "abc": "def",
+                    "input": input,
+                }
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" input=1 %}
+                {% fill "my_slot" data="data1" %}
+                    data1_in_slot1: {{ data1|safe }}
+                    {% component "test" input=2 %}
+                        {% fill "my_slot" data="data2" %}
+                            data1_in_slot2: {{ data1|safe }}
+                            data2_in_slot2: {{ data2|safe }}
+                        {% endfill %}
+                    {% endcomponent %}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                data1_in_slot1: {'abc': 'def', 'input': 1}
+                <div>
+                    data1_in_slot2: {'abc': 'def', 'input': 1}
+                    data2_in_slot2: {'abc': 'def', 'input': 2}
+                </div>
+            </div>
+            """,
+        )

@@ -44,6 +44,12 @@ Read on to learn about the details!
 
 ## Release notes
 
+🚨📢 **Version 0.77** CHANGED the syntax for accessing default slot content.
+- Previously, the syntax was
+`{% fill "my_slot" as "alias" %}` and `{{ alias.default }}`.
+- Now, the syntax is
+`{% fill "my_slot" default="alias" %}` and `{{ alias }}`.
+
 **Version 0.74** introduces `html_attrs` tag and `prefix:key=val` construct for passing dicts to components.
 
 🚨📢 **Version 0.70**
@@ -627,13 +633,26 @@ Which you can then use are regular default slot:
 
 _Added in version 0.26_
 
-Certain properties of a slot can be accessed from within a 'fill' context. They are provided as attributes on a user-defined alias of the targeted slot. For instance, let's say you're filling a slot called 'body'. To access properties of this slot, alias it using the 'as' keyword to a new name -- or keep the original name. With the new slot alias, you can call `<alias>.default` to insert the default content.
+> NOTE: In version 0.77, the syntax was changed from
+> ```django
+> {% fill "my_slot" as "alias" %} {{ alias.default }}
+> ```
+> to
+> ```django
+> {% fill "my_slot" default="slot_default" %} {{ slot_default }}
+> ```
 
-Notice the use of `as "body"` below:
+Sometimes you may want to keep the original slot, but only wrap or prepend/append content to it. To do so, you can access the default slot via the `default` kwarg.
+
+Similarly to the `data` attribute, you specify the variable name through which the default slot will be made available. 
+
+For instance, let's say you're filling a slot called 'body'. To render the original slot, assign it to a variable using the `'default'` keyword. You then render this variable to insert the default content:
 
 ```htmldjango
 {% component "calendar" date="2020-06-06" %}
-    {% fill "body" as "body" %}{{ body.default }}. Have a great day!{% endfill %}
+    {% fill "body" default="body_default" %}
+        {{ body_default }}. Have a great day!
+    {% endfill %}
 {% endcomponent %}
 ```
 
@@ -832,12 +851,12 @@ While this does not:
 ```
 
 Note: You cannot set the `data` attribute and
-[slot alias (`as var` syntax)](#accessing-original-content-of-slots)
+[`default` attribute)](#accessing-original-content-of-slots)
 to the same name. This raises an error:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" data="slot_var" as "slot_var" %}
+    {% fill "content" data="slot_var" default="slot_var" %}
         {{ slot_var.input }}
     {% endfill %}
 {% endcomponent %}

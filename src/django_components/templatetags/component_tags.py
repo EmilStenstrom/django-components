@@ -31,6 +31,7 @@ register = django.template.Library()
 SLOT_REQUIRED_OPTION_KEYWORD = "required"
 SLOT_DEFAULT_OPTION_KEYWORD = "default"
 SLOT_DATA_ATTR = "data"
+SLOT_DEFAULT_ATTR = "default"
 
 
 def get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
@@ -147,7 +148,7 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     """
     # e.g. {% fill <name> %}
     tag_name, *args = token.split_contents()
-    slot_name_fexp, alias_fexp, scope_var_fexp = _parse_fill_args(parser, args, tag_name)
+    slot_name_fexp, slot_default_var_fexp, slot_data_var_fexp = _parse_fill_args(parser, args, tag_name)
 
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
@@ -160,8 +161,8 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     fill_node = FillNode(
         nodelist,
         name_fexp=slot_name_fexp,
-        alias_fexp=alias_fexp,
-        scope_fexp=scope_var_fexp,
+        slot_default_var_fexp=slot_default_var_fexp,
+        slot_data_var_fexp=slot_data_var_fexp,
         node_id=fill_id,
     )
 
@@ -382,18 +383,12 @@ def _parse_fill_args(
 ) -> Tuple[FilterExpression, Optional[FilterExpression], Optional[FilterExpression]]:
     if not len(bits):
         raise TemplateSyntaxError(
-            "'fill' tag does not match pattern " f"{{% fill <name> [{SLOT_DATA_ATTR}=val] [as alias] %}}. "
+            "'fill' tag does not match pattern "
+            f"{{% fill <name> [{SLOT_DATA_ATTR}=val] [{SLOT_DEFAULT_ATTR}=slot_var] %}} "
         )
 
     slot_name = bits.pop(0)
     slot_name_fexp = parser.compile_filter(slot_name)
-
-    alias_fexp: Optional[FilterExpression] = None
-    # e.g. {% fill <name> as <alias> %}
-    if len(bits) >= 2 and bits[-2].lower() == "as":
-        alias = bits.pop()
-        bits.pop()  # Remove the "as" keyword
-        alias_fexp = parser.compile_filter(alias)
 
     # Even tho we want to parse only single kwarg, we use the same logic for parsing
     # as we use for other tags, for consistency.
@@ -410,17 +405,29 @@ def _parse_fill_args(
             raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
         tag_kwargs[key] = val
 
-    scope_var_fexp: Optional[FilterExpression] = None
+    # Extract known kwargs
+    slot_data_var_fexp: Optional[FilterExpression] = None
     if SLOT_DATA_ATTR in tag_kwargs:
-        scope_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
-        if not is_wrapped_in_quotes(scope_var_fexp.token):
+        slot_data_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
+        if not is_wrapped_in_quotes(slot_data_var_fexp.token):
             raise TemplateSyntaxError(
-                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, got '{scope_var_fexp}'"
+                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, got '{slot_data_var_fexp}'"
             )
 
-    if scope_var_fexp and alias_fexp and scope_var_fexp.token == alias_fexp.token:
+    slot_default_var_fexp: Optional[FilterExpression] = None
+    if SLOT_DEFAULT_ATTR in tag_kwargs:
+        slot_default_var_fexp = tag_kwargs.pop(SLOT_DEFAULT_ATTR)
+        if not is_wrapped_in_quotes(slot_default_var_fexp.token):
+            raise TemplateSyntaxError(
+                f"Value of '{SLOT_DEFAULT_ATTR}' in '{tag_name}' tag must be a string literal,"
+                f" got '{slot_default_var_fexp}'"
+            )
+
+    # data and default cannot be bound to the same variable
+    if slot_data_var_fexp and slot_default_var_fexp and slot_data_var_fexp.token == slot_default_var_fexp.token:
         raise TemplateSyntaxError(
-            f"'{tag_name}' received the same string for slot alias (as ...) and slot data ({SLOT_DATA_ATTR}=...)"
+            f"'{tag_name}' received the same string for slot default ({SLOT_DEFAULT_ATTR}=...)"
+            f" and slot data ({SLOT_DATA_ATTR}=...)"
         )
 
     if len(tag_kwargs):
@@ -428,7 +435,7 @@ def _parse_fill_args(
         extra_keys = ", ".join(extra_keywords)
         raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
 
-    return slot_name_fexp, alias_fexp, scope_var_fexp
+    return slot_name_fexp, slot_default_var_fexp, slot_data_var_fexp
 
 
 def _get_positional_param(
