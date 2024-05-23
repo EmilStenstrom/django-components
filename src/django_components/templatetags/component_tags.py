@@ -419,7 +419,8 @@ def _parse_fill_args(
         slot_default_var_fexp = tag_kwargs.pop(SLOT_DEFAULT_ATTR)
         if not is_wrapped_in_quotes(slot_default_var_fexp.token):
             raise TemplateSyntaxError(
-                f"Value of '{SLOT_DEFAULT_ATTR}' in '{tag_name}' tag must be a string literal, got '{slot_default_var_fexp}'"
+                f"Value of '{SLOT_DEFAULT_ATTR}' in '{tag_name}' tag must be a string literal,"
+                f" got '{slot_default_var_fexp}'"
             )
 
     # data and default cannot be bound to the same variable
