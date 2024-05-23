@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Tuple
 
 import django.template
-from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode, Token, TokenType
+from django.template.base import FilterExpression, NodeList, Parser, Token
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
@@ -10,6 +10,7 @@ from django_components.attributes import HtmlAttrsNode
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
+from django_components.expression import resolve_string
 from django_components.logger import trace_msg
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
@@ -29,6 +30,7 @@ register = django.template.Library()
 
 SLOT_REQUIRED_OPTION_KEYWORD = "required"
 SLOT_DEFAULT_OPTION_KEYWORD = "default"
+SLOT_DATA_ATTR = "data"
 
 
 def get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
@@ -110,36 +112,9 @@ def component_js_dependencies_tag(preload: str = "") -> SafeString:
 
 @register.tag("slot")
 def do_slot(parser: Parser, token: Token) -> SlotNode:
-    bits = token.split_contents()
-    args = bits[1:]
-    # e.g. {% slot <name> %}
-    is_required = False
-    is_default = False
-    if 1 <= len(args) <= 3:
-        slot_name, *options = args
-        if not is_wrapped_in_quotes(slot_name):
-            raise TemplateSyntaxError(f"'{bits[0]}' name must be a string 'literal'.")
-        slot_name = strip_quotes(slot_name)
-        modifiers_count = len(options)
-        if SLOT_REQUIRED_OPTION_KEYWORD in options:
-            is_required = True
-            modifiers_count -= 1
-        if SLOT_DEFAULT_OPTION_KEYWORD in options:
-            is_default = True
-            modifiers_count -= 1
-        if modifiers_count != 0:
-            keywords = [
-                SLOT_REQUIRED_OPTION_KEYWORD,
-                SLOT_DEFAULT_OPTION_KEYWORD,
-            ]
-            raise TemplateSyntaxError(f"Invalid options passed to 'slot' tag. Valid choices: {keywords}.")
-    else:
-        raise TemplateSyntaxError(
-            "'slot' tag does not match pattern "
-            "{% slot <name> ['default'] ['required'] %}. "
-            "Order of options is free."
-        )
-
+    # e.g. {% slot <name> ... %}
+    tag_name, *args = token.split_contents()
+    slot_name, is_default, is_required, slot_kwargs = _parse_slot_args(parser, args, tag_name)
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
     slot_id = gen_id()
@@ -153,6 +128,7 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
         is_required=is_required,
         is_default=is_default,
         node_id=slot_id,
+        slot_kwargs=slot_kwargs,
     )
 
     trace_msg("PARSE", "SLOT", slot_name, slot_id, "...Done!")
@@ -161,45 +137,35 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
 
 @register.tag("fill")
 def do_fill(parser: Parser, token: Token) -> FillNode:
-    """Block tag whose contents 'fill' (are inserted into) an identically named
+    """
+    Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
     It exists to make component nesting easier.
 
     This tag is available only within a {% component %}..{% endcomponent %} block.
     Runtime checks should prohibit other usages.
     """
-    bits = token.split_contents()
-    tag = bits[0]
-    args = bits[1:]
     # e.g. {% fill <name> %}
-    alias_fexp: Optional[FilterExpression] = None
-    if len(args) == 1:
-        tgt_slot_name: str = args[0]
-    # e.g. {% fill <name> as <alias> %}
-    elif len(args) == 3:
-        tgt_slot_name, as_keyword, alias = args
-        if as_keyword.lower() != "as":
-            raise TemplateSyntaxError(f"{tag} tag args do not conform to pattern '<target slot> as <alias>'")
-        alias_fexp = FilterExpression(alias, parser)
-    else:
-        raise TemplateSyntaxError(f"'{tag}' tag takes either 1 or 3 arguments: Received {len(args)}.")
+    tag_name, *args = token.split_contents()
+    slot_name_fexp, alias_fexp, scope_var_fexp = _parse_fill_args(parser, args, tag_name)
 
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
     fill_id = gen_id()
-    trace_msg("PARSE", "FILL", tgt_slot_name, fill_id)
+    trace_msg("PARSE", "FILL", str(slot_name_fexp), fill_id)
 
     nodelist = parser.parse(parse_until=["endfill"])
     parser.delete_first_token()
 
     fill_node = FillNode(
         nodelist,
-        name_fexp=FilterExpression(tgt_slot_name, tag),
+        name_fexp=slot_name_fexp,
         alias_fexp=alias_fexp,
+        scope_fexp=scope_var_fexp,
         node_id=fill_id,
     )
 
-    trace_msg("PARSE", "FILL", tgt_slot_name, fill_id, "...Done!")
+    trace_msg("PARSE", "FILL", str(slot_name_fexp), fill_id, "...Done!")
     return fill_node
 
 
@@ -219,8 +185,8 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     """
 
     bits = token.split_contents()
-    bits, isolated_context = check_for_isolated_context_keyword(bits)
-    component_name, context_args, context_kwargs = parse_component_with_args(parser, bits, "component")
+    bits, isolated_context = _check_for_isolated_context_keyword(bits)
+    component_name, context_args, context_kwargs = _parse_component_with_args(parser, bits, "component")
 
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
@@ -278,23 +244,11 @@ def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     ```
     """
     bits = token.split_contents()
-    attributes, default_attrs, append_attrs = parse_html_attrs_args(parser, bits, "html_attrs")
+    attributes, default_attrs, append_attrs = _parse_html_attrs_args(parser, bits, "html_attrs")
     return HtmlAttrsNode(attributes, default_attrs, append_attrs)
 
 
-def is_whitespace_node(node: Node) -> bool:
-    return isinstance(node, TextNode) and node.s.isspace()
-
-
-def is_whitespace_token(token: Token) -> bool:
-    return token.token_type == TokenType.TEXT and not token.contents.strip()
-
-
-def is_block_tag_token(token: Token, name: str) -> bool:
-    return token.token_type == TokenType.BLOCK and token.split_contents()[0] == name
-
-
-def check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool]:
+def _check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool]:
     """Return True and strip the last word if token ends with 'only' keyword or if CONTEXT_BEHAVIOR is 'isolated'."""
 
     if bits[-1] == "only":
@@ -306,7 +260,7 @@ def check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool
     return bits, False
 
 
-def parse_component_with_args(
+def _parse_component_with_args(
     parser: Parser, bits: List[str], tag_name: str
 ) -> Tuple[str, List[FilterExpression], Mapping[str, FilterExpression]]:
     tag_args, tag_kwarg_pairs = parse_bits(
@@ -336,7 +290,7 @@ def parse_component_with_args(
     return component_name, context_args, tag_kwargs
 
 
-def parse_html_attrs_args(
+def _parse_html_attrs_args(
     parser: Parser, bits: List[str], tag_name: str
 ) -> Tuple[Optional[FilterExpression], Optional[FilterExpression], List[Tuple[str, FilterExpression]]]:
     tag_args, tag_kwarg_pairs = parse_bits(
@@ -372,6 +326,111 @@ def parse_html_attrs_args(
     return attrs, defaults, tag_kwarg_pairs
 
 
+def _parse_slot_args(
+    parser: Parser,
+    bits: List[str],
+    tag_name: str,
+) -> Tuple[str, bool, bool, Dict[str, FilterExpression]]:
+    if not len(bits):
+        raise TemplateSyntaxError(
+            "'slot' tag does not match pattern "
+            "{% slot <name> ['default'] ['required'] [key=val, ...] %}. "
+            "Order of options is free."
+        )
+
+    slot_name, *options = bits
+    if not is_wrapped_in_quotes(slot_name):
+        raise TemplateSyntaxError(f"'{tag_name}' name must be a string 'literal'.")
+
+    slot_name = resolve_string(slot_name, parser)
+
+    # Parse flags - Since `parse_bits` doesn't handle "shorthand" kwargs
+    # (AKA `required` for `required=True`), we have to first get the flags out
+    # of the way.
+    def extract_value(lst: List[str], value: str) -> bool:
+        """Check if value exists in list, and if so, remove it from said list"""
+        try:
+            lst.remove(value)
+            return True
+        except ValueError:
+            return False
+
+    is_default = extract_value(options, SLOT_DEFAULT_OPTION_KEYWORD)
+    is_required = extract_value(options, SLOT_REQUIRED_OPTION_KEYWORD)
+
+    # Parse kwargs that will be passed to the fill
+    _, tag_kwarg_pairs = parse_bits(
+        parser=parser,
+        bits=options,
+        params=[],
+        name=tag_name,
+    )
+    tag_kwargs: Dict[str, FilterExpression] = {}
+    for key, val in tag_kwarg_pairs:
+        if key in tag_kwargs:
+            # The keyword argument has already been supplied once
+            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
+        tag_kwargs[key] = val
+
+    return slot_name, is_default, is_required, tag_kwargs
+
+
+def _parse_fill_args(
+    parser: Parser,
+    bits: List[str],
+    tag_name: str,
+) -> Tuple[FilterExpression, Optional[FilterExpression], Optional[FilterExpression]]:
+    if not len(bits):
+        raise TemplateSyntaxError(
+            "'fill' tag does not match pattern " f"{{% fill <name> [{SLOT_DATA_ATTR}=val] [as alias] %}}. "
+        )
+
+    slot_name = bits.pop(0)
+    slot_name_fexp = parser.compile_filter(slot_name)
+
+    alias_fexp: Optional[FilterExpression] = None
+    # e.g. {% fill <name> as <alias> %}
+    if len(bits) >= 2 and bits[-2].lower() == "as":
+        alias = bits.pop()
+        bits.pop()  # Remove the "as" keyword
+        alias_fexp = parser.compile_filter(alias)
+
+    # Even tho we want to parse only single kwarg, we use the same logic for parsing
+    # as we use for other tags, for consistency.
+    _, tag_kwarg_pairs = parse_bits(
+        parser=parser,
+        bits=bits,
+        params=[],
+        name=tag_name,
+    )
+
+    tag_kwargs: Dict[str, FilterExpression] = {}
+    for key, val in tag_kwarg_pairs:
+        if key in tag_kwargs:
+            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
+        tag_kwargs[key] = val
+
+    scope_var_fexp: Optional[FilterExpression] = None
+    if SLOT_DATA_ATTR in tag_kwargs:
+        scope_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
+        if not is_wrapped_in_quotes(scope_var_fexp.token):
+            raise TemplateSyntaxError(
+                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, got '{scope_var_fexp}'"
+            )
+
+    if scope_var_fexp and alias_fexp and scope_var_fexp.token == alias_fexp.token:
+        raise TemplateSyntaxError(
+            f"'{tag_name}' received the same string for slot alias (as ...) and slot data ({SLOT_DATA_ATTR}=...)"
+        )
+
+    if len(tag_kwargs):
+        extra_keywords = tag_kwargs.keys()
+        extra_keys = ", ".join(extra_keywords)
+        raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
+
+    return slot_name_fexp, alias_fexp, scope_var_fexp
+
+
 def _get_positional_param(
     tag_name: str,
     param_name: str,
@@ -393,7 +452,3 @@ def _get_positional_param(
 
 def is_wrapped_in_quotes(s: str) -> bool:
     return s.startswith(('"', "'")) and s[0] == s[-1]
-
-
-def strip_quotes(s: str) -> str:
-    return s.strip("\"'")

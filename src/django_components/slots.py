@@ -12,8 +12,10 @@ from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior, app_settings
 from django_components.context import _FILLED_SLOTS_CONTENT_CONTEXT_KEY, _ROOT_CTX_CONTEXT_KEY
+from django_components.expression import resolve_expression_as_identifier, safe_resolve_dict
 from django_components.logger import trace_msg
 from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
+from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
@@ -23,6 +25,7 @@ DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
 SlotId = str
 SlotName = str
 AliasName = str
+ScopeName = str
 
 
 class FillContent(NamedTuple):
@@ -42,6 +45,7 @@ class FillContent(NamedTuple):
 
     nodes: NodeList
     alias: Optional[AliasName]
+    scope: Optional[ScopeName]
 
 
 class Slot(NamedTuple):
@@ -77,6 +81,7 @@ class SlotFill(NamedTuple):
     nodelist: NodeList
     context_data: Dict
     alias: Optional[AliasName]
+    scope: Optional[ScopeName]
 
 
 class UserSlotVar:
@@ -107,12 +112,14 @@ class SlotNode(Node):
         is_required: bool = False,
         is_default: bool = False,
         node_id: Optional[str] = None,
+        slot_kwargs: Optional[Dict[str, FilterExpression]] = None,
     ):
         self.name = name
         self.nodelist = nodelist
         self.is_required = is_required
         self.is_default = is_default
         self.node_id = node_id or gen_id()
+        self.slot_kwargs = slot_kwargs or {}
 
     @property
     def active_flags(self) -> List[str]:
@@ -132,13 +139,22 @@ class SlotNode(Node):
         # NOTE: Slot entry MUST be present. If it's missing, there was an issue upstream.
         slot_fill = slots[self.node_id]
 
+        extra_context: Dict[str, Any] = {}
+
         # If slot is using alias `{% slot "myslot" as "abc" %}`, then set the "abc" to
         # the context, so users can refer to the slot from within the slot.
-        extra_context = {}
         if slot_fill.alias:
             if not slot_fill.alias.isidentifier():
                 raise TemplateSyntaxError(f"Invalid fill alias. Must be a valid identifier. Got '{slot_fill.alias}'")
             extra_context[slot_fill.alias] = UserSlotVar(self, context)
+
+        # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
+        # are made available through a variable name that was set on the `{% fill %}`
+        # tag.
+        if slot_fill.scope:
+            slot_kwargs = safe_resolve_dict(self.slot_kwargs, context)
+            slot_kwargs = process_aggregate_kwargs(slot_kwargs)
+            extra_context[slot_fill.scope] = slot_kwargs
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
@@ -177,6 +193,7 @@ class FillNode(Node):
         nodelist: NodeList,
         name_fexp: FilterExpression,
         alias_fexp: Optional[FilterExpression] = None,
+        scope_fexp: Optional[FilterExpression] = None,
         is_implicit: bool = False,
         node_id: Optional[str] = None,
     ):
@@ -185,6 +202,7 @@ class FillNode(Node):
         self.name_fexp = name_fexp
         self.alias_fexp = alias_fexp
         self.is_implicit = is_implicit
+        self.scope_fexp = scope_fexp
         self.component_id: Optional[str] = None
 
     def render(self, context: Context) -> str:
@@ -198,16 +216,29 @@ class FillNode(Node):
         return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
 
     def resolve_alias(self, context: Context, component_name: Optional[str] = None) -> Optional[str]:
-        if not self.alias_fexp:
+        return self.resolve_fexp("alias", self.alias_fexp, context, component_name)
+
+    def resolve_scope(self, context: Context, component_name: Optional[str] = None) -> Optional[str]:
+        return self.resolve_fexp("scope", self.scope_fexp, context, component_name)
+
+    def resolve_fexp(
+        self,
+        name: str,
+        fexp: Optional[FilterExpression],
+        context: Context,
+        component_name: Optional[str] = None,
+    ) -> Optional[str]:
+        if not fexp:
             return None
 
-        resolved_alias: Optional[str] = self.alias_fexp.resolve(context)
-        if resolved_alias and not resolved_alias.isidentifier():
+        try:
+            resolved_alias = resolve_expression_as_identifier(context, fexp)
+        except ValueError as err:
             raise TemplateSyntaxError(
-                f"Fill tag alias '{self.alias_fexp.var}' in component "
-                f"{component_name} does not resolve to "
-                f"a valid Python identifier. Got: '{resolved_alias}'."
-            )
+                f"Fill tag {name} '{fexp.var}' in component {component_name}"
+                f"does not resolve to a valid Python identifier."
+            ) from err
+
         return resolved_alias
 
 
@@ -333,6 +364,7 @@ def resolve_slots(
             nodelist=fill.nodes,
             context_data=context_data,
             alias=fill.alias,
+            scope=fill.scope,
         )
         for name, fill in fill_content.items()
     }
@@ -421,6 +453,7 @@ def resolve_slots(
                 nodelist=slot.nodelist,
                 context_data=context_data,
                 alias=None,
+                scope=None,
             )
             # Since the slot's default CAN include other slots (because it's defined in
             # the same template), we need to enqueue the slot's children
@@ -468,6 +501,7 @@ def _resolve_default_slot(
                     nodelist=default_fill.nodelist,
                     context_data=default_fill.context_data,
                     alias=default_fill.alias,
+                    scope=default_fill.scope,
                     # Updated fields
                     name=slot.name,
                     escaped_name=_escape_slot_name(slot.name),
