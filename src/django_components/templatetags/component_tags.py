@@ -30,7 +30,7 @@ register = django.template.Library()
 
 SLOT_REQUIRED_OPTION_KEYWORD = "required"
 SLOT_DEFAULT_OPTION_KEYWORD = "default"
-SLOT_DATA_ATTR = "slot_data"
+SLOT_DATA_ATTR = "data"
 
 
 def get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:

@@ -746,7 +746,7 @@ So a slot named `"my super-slot :)"` will be available as `component_vars.is_fil
 
 ### Scoped slots
 
-_Added in version 0.75_:
+_Added in version 0.76_:
 
 Consider a component with slot(s). This component may do some processing on the inputs, and then use the processed variable in the slot's default template:
 
@@ -800,12 +800,12 @@ class MyComp(component.Component):
 #### Accessing slot data in fill
 
 Next, we head over to where we define a fill for this slot. Here, to access the slot data
-we set the `slot_data` attribute to the name of the variable through which we want to access
+we set the `data` attribute to the name of the variable through which we want to access
 the slot data. In the example below, we set it to `data`:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" slot_data="data" %}
+    {% fill "content" data="data" %}
         {{ data.input }}
     {% endfill %}
 {% endcomponent %}
@@ -817,8 +817,8 @@ So this works:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" slot_data="slot_data" %}
-        {{ slot_data.input }}
+    {% fill "content" data="data" %}
+        {{ data.input }}
     {% endfill %}
 {% endcomponent %}
 ```
@@ -826,18 +826,18 @@ So this works:
 While this does not:
 
 ```django
-{% component "my_comp" slot_data="slot_data" %}
-    {{ slot_data.input }}
+{% component "my_comp" data="data" %}
+    {{ data.input }}
 {% endcomponent %}
 ```
 
-Note: You cannot set the `slot_data` attribute and
+Note: You cannot set the `data` attribute and
 [slot alias (`as var` syntax)](#accessing-original-content-of-slots)
 to the same name. This raises an error:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" slot_data="slot_var" as "slot_var" %}
+    {% fill "content" data="slot_var" as "slot_var" %}
         {{ slot_var.input }}
     {% endfill %}
 {% endcomponent %}

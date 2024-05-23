@@ -2414,7 +2414,7 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" slot_data="slot_data_in_fill" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
                     {{ slot_data_in_fill.abc }}
                     {{ slot_data_in_fill.def }}
                 {% endfill %}
@@ -2448,7 +2448,7 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" slot_data="slot_data_in_fill" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
                     {{ slot_data_in_fill.abc }}
                     {{ slot_data_in_fill.123 }}
                 {% endfill %}
@@ -2482,7 +2482,7 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" slot_data="slot_data_in_fill" as "slot_var" %}
+                {% fill "my_slot" data="slot_data_in_fill" as "slot_var" %}
                     {{ slot_var.default }}
                     {{ slot_data_in_fill.abc }}
                     {{ slot_data_in_fill.123 }}
@@ -2518,14 +2518,14 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" slot_data="slot_var" as "slot_var" %}
+                {% fill "my_slot" data="slot_var" as "slot_var" %}
                     {{ slot_var.default }}
                 {% endfill %}
             {% endcomponent %}
         """
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "'fill' received the same string for slot alias (as ...) and slot data (slot_data=...)",
+            "'fill' received the same string for slot alias (as ...) and slot data (data=...)",
         ):
             Template(template).render(Context())
 
@@ -2570,7 +2570,7 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill "my_slot" slot_data="data" %}
+                {% fill "my_slot" data="data" %}
                     {{ data|safe }}
                 {% endfill %}
             {% endcomponent %}
