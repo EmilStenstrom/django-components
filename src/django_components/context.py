@@ -5,6 +5,8 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
+from typing import Any, Dict, List
+
 from django.template import Context
 
 from django_components.utils import find_last_index
@@ -62,3 +64,49 @@ def copy_forloop_context(from_context: Context, to_context: Context) -> None:
     if "forloop" in from_context:
         forloop_dict_index = find_last_index(from_context.dicts, lambda d: "forloop" in d)
         to_context.update(from_context.dicts[forloop_dict_index])
+
+
+def get_injected_context_vars(
+    context: Context,
+    inject: List[str] | None,
+    component_name: str,
+) -> Dict[str, Any]:
+    """
+    Collect 'injected' fields so they can be made available inside `get_context_data`
+    and the component's template. These fields MUST have been previously 'provided'
+    by the component's ancestors using the `provide` class attribute.
+    """
+    injected = {}
+    for key in inject or []:
+        # NOTE: For simplicity, we keep the provided values directly on the context.
+        # This plays nicely with Django's Context, which behaves like a stack, so "newer"
+        # values overshadow the "older" ones.
+        internal_key = _INJECT_CONTEXT_KEY_PREFIX + key
+        if internal_key not in context:
+            raise RuntimeError(
+                f"Component '{component_name}' tried to inject a variable '{key}' before it was provided."
+                f"To fix this, make sure that at least one ancestor of component '{component_name}' has"
+                f" the variable '{key}' in their 'provide' attribute."
+            )
+        injected[key] = context[internal_key]
+    return injected
+
+
+def set_provided_context_vars(
+    context: Context,
+    provide: List[str] | None,
+    context_data: Dict[str, Any],
+    component_name: str,
+) -> None:
+    """
+    'Provide' specific fields from the context data. In other words, these fields
+    can be retrieved by the component's descendants using the `inject` class attribute.
+    """
+    for key in provide or []:
+        if key not in context_data:
+            raise RuntimeError(
+                f"Component '{component_name}' tried to provide a variable '{key}' but"
+                " the variable was not exported from get_context_data."
+            )
+        internal_key = _INJECT_CONTEXT_KEY_PREFIX + key
+        context[internal_key] = context_data[key]
