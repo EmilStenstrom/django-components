@@ -5,7 +5,7 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from django.template import Context
 
@@ -15,6 +15,7 @@ _FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 _ROOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_ROOT_CTX"
 _PARENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_PARENT_COMP"
 _CURRENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_CURRENT_COMP"
+_INJECT_CONTEXT_KEY_PREFIX = "_DJANGO_COMPONENTS_INJECT__"
 
 
 def prepare_context(
@@ -68,7 +69,7 @@ def copy_forloop_context(from_context: Context, to_context: Context) -> None:
 
 def get_injected_context_vars(
     context: Context,
-    inject: List[str] | None,
+    inject: Optional[List[str]],
     component_name: str,
 ) -> Dict[str, Any]:
     """
@@ -94,7 +95,7 @@ def get_injected_context_vars(
 
 def set_provided_context_vars(
     context: Context,
-    provide: List[str] | None,
+    provide: Optional[List[str]],
     context_data: Dict[str, Any],
     component_name: str,
 ) -> None:
