@@ -44,6 +44,12 @@ Read on to learn about the details!
 
 ## Release notes
 
+🚨📢 **Version 0.77** CHANGED the syntax for accessing default slot content.
+- Previously, the syntax was
+`{% fill "my_slot" as "alias" %}` and `{{ alias.default }}`.
+- Now, the syntax is
+`{% fill "my_slot" default="alias" %}` and `{{ alias }}`.
+
 **Version 0.74** introduces `html_attrs` tag and `prefix:key=val` construct for passing dicts to components.
 
 🚨📢 **Version 0.70**
