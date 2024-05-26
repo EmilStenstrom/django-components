@@ -454,21 +454,3 @@ class ComponentMediaRenderingTests(BaseTestCase):
                     "Variable: <strong>value</strong>\n"
                 ),
             )
-
-    # def test_dependencies_with_no_components(self):
-    #     from django.template import Context
-    #     template = Template(
-    #         """
-    #         {% load component_tags %}
-    #         {% component_dependencies %}
-    #         """
-    #     )
-    #     rendered = template.render(Context())
-    #     print("RENDERD: ", rendered)
-    #     # Assertions to ensure placeholders are properly replaced or removed
-    #     self.assertNotIn(
-    #         '<script name="JS_PLACEHOLDER"></script>', rendered, "JS placeholder should be removed"
-    #     )
-    #     self.assertNotIn(
-    #         '<link name="CSS_PLACEHOLDER">', rendered, "CSS placeholder should be removed or replaced"
-    #     )
