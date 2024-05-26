@@ -286,10 +286,12 @@ class ParentArgsTests(BaseTestCase):
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
     # NOTE: Second arg in tuple are expected values passed through components.
-    @parametrize_context_behavior([
-        ("django", ("passed_in", "passed_in")),
-        ("isolated", ("passed_in", "")),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", ("passed_in", "passed_in")),
+            ("isolated", ("passed_in", "")),
+        ]
+    )
     def test_parent_args_available_in_slots(self, context_behavior_data):
         first_val, second_val = context_behavior_data
 
@@ -418,10 +420,12 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
         component.registry.register(name="simple_component", component=SimpleComponent)
 
     # NOTE: Second arg in tuple is expected value.
-    @parametrize_context_behavior([
-        ("django", "outer_value"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "outer_value"),
+            ("isolated", ""),
+        ]
+    )
     def test_simple_component_can_use_outer_context(self, context_behavior_data):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}

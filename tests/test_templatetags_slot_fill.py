@@ -985,12 +985,14 @@ class DuplicateSlotTest(BaseTestCase):
         component.registry.register(name="calendar", component=cls.CalendarComponent)
 
     # NOTE: Second arg is the input for the "name" component kwarg
-    @parametrize_context_behavior([
-        # In "django" mode, we MUST pass name as arg through the component
-        ("django", "Jannete"),
-        # In "isolated" mode, the fill is already using top-level's context, so we pass nothing
-        ("isolated", None)
-    ])
+    @parametrize_context_behavior(
+        [
+            # In "django" mode, we MUST pass name as arg through the component
+            ("django", "Jannete"),
+            # In "isolated" mode, the fill is already using top-level's context, so we pass nothing
+            ("isolated", None),
+        ]
+    )
     def test_duplicate_slots(self, context_behavior_data):
         template_str: types.django_html = """
             {% load component_tags %}

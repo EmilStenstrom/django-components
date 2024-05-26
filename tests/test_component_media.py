@@ -284,6 +284,7 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
+
 class MediaRelativePathTests(BaseTestCase):
     class ParentComponent(component.Component):
         template: types.django_html = """

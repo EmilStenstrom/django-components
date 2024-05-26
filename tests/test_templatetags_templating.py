@@ -101,9 +101,7 @@ class NestedSlotTests(BaseTestCase):
     # NOTE: Second arg in tuple is expected name in nested fill. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should
     # remain top-level context.
-    @parametrize_context_behavior([
-        ("django", "Joe2"),
-        ("isolated", "Jannete")])
+    @parametrize_context_behavior([("django", "Joe2"), ("isolated", "Jannete")])
     def test_fill_inside_fill_with_same_name(self, context_behavior_data):
         class SlottedComponent(component.Component):
             template: types.django_html = """
@@ -271,10 +269,12 @@ class SlotIterationTest(BaseTestCase):
         django_components.component.registry.clear()
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        ("django", "OBJECT1 OBJECT2"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "OBJECT1 OBJECT2"),
+            ("isolated", ""),
+        ]
+    )
     def test_inner_slot_iteration_basic(self, context_behavior_data):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -294,10 +294,12 @@ class SlotIterationTest(BaseTestCase):
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, while loops should NOT leak,
     # we should still have access to root context (returned from get_context_data)
-    @parametrize_context_behavior([
-        ("django", "OUTER_SCOPE_VARIABLE OBJECT1 OUTER_SCOPE_VARIABLE OBJECT2"),
-        ("isolated", "OUTER_SCOPE_VARIABLE OUTER_SCOPE_VARIABLE"),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "OUTER_SCOPE_VARIABLE OBJECT1 OUTER_SCOPE_VARIABLE OBJECT2"),
+            ("isolated", "OUTER_SCOPE_VARIABLE OUTER_SCOPE_VARIABLE"),
+        ]
+    )
     def test_inner_slot_iteration_with_variable_from_outer_scope(self, context_behavior_data):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -324,10 +326,12 @@ class SlotIterationTest(BaseTestCase):
         self.assertHTMLEqual(rendered, context_behavior_data)
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        ("django", "ITER1_OBJ1 ITER1_OBJ2 ITER2_OBJ1 ITER2_OBJ2"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "ITER1_OBJ1 ITER1_OBJ2 ITER2_OBJ1 ITER2_OBJ2"),
+            ("isolated", ""),
+        ]
+    )
     def test_inner_slot_iteration_nested(self, context_behavior_data):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -355,10 +359,11 @@ class SlotIterationTest(BaseTestCase):
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, while loops should NOT leak,
     # we should still have access to root context (returned from get_context_data)
-    @parametrize_context_behavior([
-        (
-            "django",
-            """
+    @parametrize_context_behavior(
+        [
+            (
+                "django",
+                """
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
             ITER1_OBJ1
@@ -369,10 +374,11 @@ class SlotIterationTest(BaseTestCase):
             ITER2_OBJ1
             OUTER_SCOPE_VARIABLE2
             ITER2_OBJ2
-            """
-        ),
-        ("isolated", "OUTER_SCOPE_VARIABLE1 OUTER_SCOPE_VARIABLE1"),
-    ])
+            """,
+            ),
+            ("isolated", "OUTER_SCOPE_VARIABLE1 OUTER_SCOPE_VARIABLE1"),
+        ]
+    )
     def test_inner_slot_iteration_nested_with_outer_scope_variable(self, context_behavior_data):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -409,10 +415,12 @@ class SlotIterationTest(BaseTestCase):
         self.assertHTMLEqual(rendered, context_behavior_data)
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        ("django", "ITER1_OBJ1 default ITER1_OBJ2 default ITER2_OBJ1 default ITER2_OBJ2 default"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "ITER1_OBJ1 default ITER1_OBJ2 default ITER2_OBJ1 default ITER2_OBJ2 default"),
+            ("isolated", ""),
+        ]
+    )
     def test_inner_slot_iteration_nested_with_slot_default(self, context_behavior_data):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -439,10 +447,11 @@ class SlotIterationTest(BaseTestCase):
         self.assertHTMLEqual(rendered, context_behavior_data)
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        (
-            "django",
-            """
+    @parametrize_context_behavior(
+        [
+            (
+                "django",
+                """
             OUTER_SCOPE_VARIABLE1
             OUTER_SCOPE_VARIABLE2
             ITER1_OBJ1 default
@@ -454,14 +463,16 @@ class SlotIterationTest(BaseTestCase):
             OUTER_SCOPE_VARIABLE2
             ITER2_OBJ2 default
             """,
-        ),
-        # NOTE: In this case the `object.inner` in the inner "slot_in_a_loop"
-        # should be undefined, so the loop inside the inner `slot_in_a_loop`
-        # shouldn't run. Hence even the inner `slot_inner` fill should NOT run.
-        ("isolated", "OUTER_SCOPE_VARIABLE1 OUTER_SCOPE_VARIABLE1"),
-    ])
+            ),
+            # NOTE: In this case the `object.inner` in the inner "slot_in_a_loop"
+            # should be undefined, so the loop inside the inner `slot_in_a_loop`
+            # shouldn't run. Hence even the inner `slot_inner` fill should NOT run.
+            ("isolated", "OUTER_SCOPE_VARIABLE1 OUTER_SCOPE_VARIABLE1"),
+        ]
+    )
     def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable(
-        self, context_behavior_data,
+        self,
+        context_behavior_data,
     ):
         component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
@@ -630,9 +641,7 @@ class ComponentNestingTests(BaseTestCase):
     # NOTE: Second arg in tuple are expected names in nested fills. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should
     # remain top-level context.
-    @parametrize_context_behavior([
-        ("django", ("Igor", "Joe2")),
-        ("isolated", ("Jannete", "Jannete"))])
+    @parametrize_context_behavior([("django", ("Igor", "Joe2")), ("isolated", ("Jannete", "Jannete"))])
     def test_component_inside_slot(self, context_behavior_data):
         first_name, second_name = context_behavior_data
 
@@ -695,10 +704,12 @@ class ComponentNestingTests(BaseTestCase):
         )
 
     # NOTE: Second arg in tuple is expected list content. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        ("django", "<li>1</li> <li>2</li> <li>3</li>"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "<li>1</li> <li>2</li> <li>3</li>"),
+            ("isolated", ""),
+        ]
+    )
     def test_component_nesting_component_without_fill(self, context_behavior_data):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -724,10 +735,12 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     # NOTE: Second arg in tuple is expected list content. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        ("django", "<li>1</li> <li>2</li> <li>3</li>"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "<li>1</li> <li>2</li> <li>3</li>"),
+            ("isolated", ""),
+        ]
+    )
     def test_component_nesting_slot_inside_component_fill(self, context_behavior_data):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -780,10 +793,12 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     # NOTE: Second arg in tuple is expected list content. In isolated mode, loops should NOT leak.
-    @parametrize_context_behavior([
-        ("django", "<li>1</li> <li>2</li>"),
-        ("isolated", ""),
-    ])
+    @parametrize_context_behavior(
+        [
+            ("django", "<li>1</li> <li>2</li>"),
+            ("isolated", ""),
+        ]
+    )
     def test_component_nesting_component_with_slot_default(self, context_behavior_data):
         template_str: types.django_html = """
             {% load component_tags %}
