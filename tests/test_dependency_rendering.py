@@ -12,7 +12,9 @@ from .testutils import BaseTestCase, create_and_process_template_response
 
 
 class SimpleComponent(component.Component):
-    template_name = "simple_template.html"
+    template: types.django_html = """
+        Variable: <strong>{{ variable }}</strong>
+    """
 
     def get_context_data(self, variable, variable2="default"):
         return {
@@ -452,3 +454,21 @@ class ComponentMediaRenderingTests(BaseTestCase):
                     "Variable: <strong>value</strong>\n"
                 ),
             )
+
+    # def test_dependencies_with_no_components(self):
+    #     from django.template import Context
+    #     template = Template(
+    #         """
+    #         {% load component_tags %}
+    #         {% component_dependencies %}
+    #         """
+    #     )
+    #     rendered = template.render(Context())
+    #     print("RENDERD: ", rendered)
+    #     # Assertions to ensure placeholders are properly replaced or removed
+    #     self.assertNotIn(
+    #         '<script name="JS_PLACEHOLDER"></script>', rendered, "JS placeholder should be removed"
+    #     )
+    #     self.assertNotIn(
+    #         '<link name="CSS_PLACEHOLDER">', rendered, "CSS placeholder should be removed or replaced"
+    #     )

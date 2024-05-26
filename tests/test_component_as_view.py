@@ -8,7 +8,7 @@ from django.urls import path
 
 # isort: off
 from .django_test_setup import *  # noqa
-from .testutils import BaseTestCase
+from .testutils import BaseTestCase, parametrize_context_behavior
 
 # isort: on
 
@@ -113,6 +113,7 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_replace_slot_in_view(self):
         class MockComponentSlot(component.Component):
             template = """
@@ -141,6 +142,7 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_replace_slot_in_view_with_insecure_content(self):
         class MockInsecureComponentSlot(component.Component):
             template = """
@@ -162,6 +164,28 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_replace_context_in_view(self):
+        class TestComponent(component.Component):
+            template = """
+                {% load component_tags %}
+                <div>
+                Hey, I'm {{ name }}
+                </div>
+                """
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({"name": "Bob"})
+
+        client = CustomClient(urlpatterns=[path("test_context_django/", TestComponent.as_view())])
+        response = client.get("/test_context_django/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b"Hey, I'm Bob",
+            response.content,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_replace_context_in_view_with_insecure_content(self):
         class MockInsecureComponentContext(component.Component):
             template = """

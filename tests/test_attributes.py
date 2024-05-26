@@ -6,7 +6,7 @@ from django_components.attributes import append_attributes, attributes_to_string
 
 # isort: off
 from .django_test_setup import *  # NOQA
-from .testutils import BaseTestCase
+from .testutils import BaseTestCase, parametrize_context_behavior
 
 # isort: on
 
@@ -83,6 +83,7 @@ class HtmlAttrsTests(BaseTestCase):
             {% endcomponent %}
         """  # noqa: E501
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_tag_positional_args(self):
         @component.register("test")
         class AttrsComponent(component.Component):

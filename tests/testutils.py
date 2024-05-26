@@ -1,13 +1,16 @@
 import contextlib
+import functools
 import sys
-from typing import List
+from typing import Any, List, Tuple, Union
 from unittest.mock import Mock
 
 from django.template import Context, Node
+from django.template.loader import engines
 from django.template.response import TemplateResponse
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from django_components import autodiscover
+from django_components.app_settings import ContextBehavior
 from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
 
@@ -21,6 +24,11 @@ class BaseTestCase(SimpleTestCase):
     def setUpClass(self) -> None:
         registry.clear()
         return super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        registry.clear()
 
 
 request = Mock()
@@ -75,3 +83,94 @@ def autodiscover_with_cleanup(*args, **kwargs):
         # next time one of the tests calls `autodiscover`.
         for mod in imported_modules:
             del sys.modules[mod]
+
+
+ContextBehStr = Union[ContextBehavior, str]
+ContextBehParam = Union[ContextBehStr, Tuple[ContextBehStr, Any]]
+
+
+def parametrize_context_behavior(cases: List[ContextBehParam]):
+    """
+    Use this decorator to run a test function with django_component's
+    context_behavior settings set to given values.
+
+    You can set only a single mode:
+    ```py
+    @parametrize_context_behavior(["isolated"])
+    def test_bla_bla(self):
+        # do something with app_settings.CONTEXT_BEHAVIOR set
+        # to "isolated"
+        ...
+    ```
+
+    Or you can set a test to run in both modes:
+    ```py
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_bla_bla(self):
+        # Runs this test function twice. Once with
+        # app_settings.CONTEXT_BEHAVIOR set to "django",
+        # the other time set to "isolated"
+        ...
+    ```
+
+    If you need to pass parametrized data to the tests,
+    pass a tuple of (mode, data) instead of plain string.
+    To access the data as a fixture, add `context_behavior_data`
+    as a function argument:
+    ```py
+    @parametrize_context_behavior([
+        ("django", "result for django"),
+        ("isolated", "result for isolated"),
+    ])
+    def test_bla_bla(self, context_behavior_data):
+        # Runs this test function twice. Once with
+        # app_settings.CONTEXT_BEHAVIOR set to "django",
+        # the other time set to "isolated".
+        #
+        # `context_behavior_data` will first have a value
+        # of "result for django", then of "result for isolated"
+        print(context_behavior_data)
+        ...
+    ```
+
+    NOTE: Use only on functions and methods. This decorator was NOT tested on classes
+    """
+
+    def decorator(test_func):
+        # NOTE: Ideally this decorator would parametrize the test function
+        # with `pytest.mark.parametrize`, so all test cases would be treated as separate
+        # tests and thus isolated. But I wasn't able to get it to work. Hence,
+        # as a workaround, we run multiple test cases within the same test run.
+        # Because of this, we need to clear the loader cache, and, on error, we need to
+        # propagate the info on which test case failed.
+        @functools.wraps(test_func)
+        def wrapper(*args, **kwargs):
+            for case in cases:
+                # Clear loader cache, see https://stackoverflow.com/a/77531127/9788634
+                for engine in engines.all():
+                    engine.engine.template_loaders[0].reset()
+
+                case_has_data = not isinstance(case, str)
+
+                if isinstance(case, str):
+                    context_beh, fixture = case, None
+                else:
+                    context_beh, fixture = case
+
+                with override_settings(COMPONENTS={"context_behavior": context_beh}):
+                    # Call the test function with the fixture as an argument
+                    try:
+                        if case_has_data:
+                            test_func(*args, context_behavior_data=fixture, **kwargs)
+                        else:
+                            test_func(*args, **kwargs)
+                    except Exception as err:
+                        # Give a hint on which iteration the test failed
+                        raise RuntimeError(
+                            f"An error occured in test function '{test_func.__name__}' with"
+                            f" context_behavior='{context_beh}'. See the original error above."
+                        ) from err
+
+        return wrapper
+
+    return decorator

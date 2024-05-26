@@ -3,7 +3,7 @@ from django.template.base import Parser
 
 # isort: off
 from .django_test_setup import *  # NOQA
-from .testutils import BaseTestCase
+from .testutils import BaseTestCase, parametrize_context_behavior
 
 # isort: on
 
@@ -56,21 +56,23 @@ class ParserTest(BaseTestCase):
 
 
 class ParserComponentTest(BaseTestCase):
-    def test_special_chars_accessible_via_kwargs(self):
-        @component.register(name="test")
-        class SimpleComponent(component.Component):
-            template: types.django_html = """
-                {{ date }}
-                {{ id }}
-                {{ on_click }}
-            """
+    class SimpleComponent(component.Component):
+        template: types.django_html = """
+            {{ date }}
+            {{ id }}
+            {{ on_click }}
+        """
 
-            def get_context_data(self, **kwargs):
-                return {
-                    "date": kwargs["my-date"],
-                    "id": kwargs["#some_id"],
-                    "on_click": kwargs["@click.native"],
-                }
+        def get_context_data(self, **kwargs):
+            return {
+                "date": kwargs["my-date"],
+                "id": kwargs["#some_id"],
+                "on_click": kwargs["@click.native"],
+            }
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_special_chars_accessible_via_kwargs(self):
+        component.registry.register("test", self.SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}
