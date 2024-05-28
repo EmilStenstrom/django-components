@@ -206,19 +206,7 @@ class BlockCompatTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    # TODO: https://github.com/EmilStenstrom/django-components/issues/508
-    # Doesn't work in "django" mode. The problem is that, for some reason,
-    # the `context.render_context` inside Django's `BlockNode.render` has one
-    # extra layer pushed to the RenderContext's stack. But RenderContext checks only
-    # the latest layer, whereas the encountered {% block %} tags are defined in
-    # the second-last layer.
-    #
-    # The ideal solution would be figure out why there's the extra layer in "django" mode
-    # and not in "isolated", and fix "django" mode so inside `BlockNode.render`,
-    # the `context.render_context` has the same amount of layers as in the "isolated" mode.
-    #
-    # See https://github.com/django/django/blob/4.2/django/template/loader_tags.py
-    @parametrize_context_behavior(["isolated"])
+    @parametrize_context_behavior(["django", "isolated"])
     def test_block_inside_component(self):
         component.registry.register("slotted_component", SlottedComponent)
 
@@ -230,6 +218,35 @@ class BlockCompatTests(BaseTestCase):
                 58 giraffes and 2 pantaloons
             </div>
             {% endblock %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    <div> 58 giraffes and 2 pantaloons </div>
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_block_inside_component_parent(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        @component.register("block_in_component_parent")
+        class BlockInCompParent(component.Component):
+            template_name = "block_in_component_parent.html"
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "block_in_component_parent" %}{% endcomponent %}
         """
         rendered = Template(template).render(Context())
         expected = """
@@ -319,19 +336,7 @@ class BlockCompatTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    # TODO: https://github.com/EmilStenstrom/django-components/issues/508
-    # Doesn't work in "django" mode. The problem is that, for some reason,
-    # the `context.render_context` inside Django's `BlockNode.render` has one
-    # extra layer pushed to the RenderContext's stack. But RenderContext checks only
-    # the latest layer, whereas the encountered {% block %} tags are defined in
-    # the second-last layer.
-    #
-    # The ideal solution would be figure out why there's the extra layer in "django" mode
-    # and not in "isolated", and fix "django" mode so inside `BlockNode.render`,
-    # the `context.render_context` has the same amount of layers as in the "isolated" mode.
-    #
-    # See https://github.com/django/django/blob/4.2/django/template/loader_tags.py
-    @parametrize_context_behavior(["isolated"])
+    @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_default_block_override(self):
         component.registry.clear()
         component.registry.register("slotted_component", SlottedComponent)
@@ -403,19 +408,7 @@ class BlockCompatTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-    # TODO: https://github.com/EmilStenstrom/django-components/issues/508
-    # Doesn't work in "django" mode. The problem is that, for some reason,
-    # the `context.render_context` inside Django's `BlockNode.render` has one
-    # extra layer pushed to the RenderContext's stack. But RenderContext checks only
-    # the latest layer, whereas the encountered {% block %} tags are defined in
-    # the second-last layer.
-    #
-    # The ideal solution would be figure out why there's the extra layer in "django" mode
-    # and not in "isolated", and fix "django" mode so inside `BlockNode.render`,
-    # the `context.render_context` has the same amount of layers as in the "isolated" mode.
-    #
-    # See https://github.com/django/django/blob/4.2/django/template/loader_tags.py
-    @parametrize_context_behavior(["isolated"])
+    @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_overriden_block_overriden(self):
         component.registry.register("slotted_component", SlottedComponent)
 
