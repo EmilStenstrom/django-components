@@ -12,7 +12,9 @@ from .testutils import BaseTestCase, create_and_process_template_response
 
 
 class SimpleComponent(component.Component):
-    template_name = "simple_template.html"
+    template: types.django_html = """
+        Variable: <strong>{{ variable }}</strong>
+    """
 
     def get_context_data(self, variable, variable2="default"):
         return {
