@@ -468,7 +468,7 @@ def _monkeypatch_template(template: Template) -> None:
     # which could lead to doubly parsing the source, and could be problematic if users
     # used more exotic subclasses of Template.
     #
-    # Instead, modifying only the `render` method of an already-existing instance is
+    # Instead, modifying only the `render` method of an already-existing instance
     # should work well with any user-provided custom subclasses of Template, and it
     # doesn't require the source to be parsed multiple times. User can pass extra args/kwargs,
     # and can modify the rendering behavior by overriding the `_render` method.
