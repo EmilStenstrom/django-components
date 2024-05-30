@@ -44,6 +44,11 @@ Read on to learn about the details!
 
 ## Release notes
 
+🚨📢 **Version 0.79**
+
+- BREAKING CHANGE: Default value for the `COMPONENTS.context_behavior` setting was changes from `"isolated"` to `"django"`. If you did not set this value explicitly before, this may be a breaking change. See the rationale for change [here](https://github.com/EmilStenstrom/django-components/issues/498).
+
+
 🚨📢 **Version 0.77** CHANGED the syntax for accessing default slot content.
 - Previously, the syntax was
 `{% fill "my_slot" as "alias" %}` and `{{ alias.default }}`.
@@ -1360,9 +1365,11 @@ attributes_to_string(attrs)
 
 ## Component context and scope
 
-By default, components are ISOLATED and CANNOT access context variables from the parent template. This is useful if you want to make sure that components don't accidentally access the outer context.
+By default, context variables are passed down the template as in regular Django - deeper scopes can access the variables from the outer scopes. So if you have several nested forloops, then inside the deep-most loop you can access variables defined by all previous loops.
 
-You can set the [context_behavior](#context-behavior) option to `"django"`, to make components behave just like templates that are included with the `{% include %}` tag. Just like with `{% include %}`, if you don't want a specific component template to have access to the parent context, add `only` to the end of the `{% component %}` tag:
+With this in mind, the `{% component %}` tag behaves similarly to `{% include %}` tag - inside the component tag, you can access all variables that were defined outside of it. 
+
+And just like with `{% include %}`, if you don't want a specific component template to have access to the parent context, add `only` to the end of the `{% component %}` tag:
 
 ```htmldjango
 {% component "calendar" date="2015-06-19" only %}{% endcomponent %}
@@ -1370,7 +1377,9 @@ You can set the [context_behavior](#context-behavior) option to `"django"`, to m
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.
 
-Components can also access the outer context in their context methods by accessing the property `outer_context`.
+If you find yourself using the `only` modifier often, you can set the [context_behavior](#context-behavior) option to `"isolated"`, which automatically applies the `only` modifier. This is useful if you want to make sure that components don't accidentally access the outer context.
+
+Components can also access the outer context in their context methods like `get_context_data` by accessing the property `self.outer_context`.
 
 ## Rendering JS and CSS dependencies
 
@@ -1448,15 +1457,25 @@ COMPONENTS = {
 
 > NOTE: `context_behavior` and `slot_context_behavior` options were merged in v0.70.
 >
-> If you are migrating from BEFORE v0.67, set `context_behavior` to `"django"`. From v0.67 and later use the default value `"isolated"`.
+> If you are migrating from BEFORE v0.67, set `context_behavior` to `"django"`. From v0.67 to v0.78 (incl) the default value was `"isolated"`.
+>
+> For v0.79 and later, the default is again `"django"`. See the rationale for change [here](https://github.com/EmilStenstrom/django-components/issues/498).
 
 You can configure what variables are available inside the `{% fill %}` tags. See [Component context and scope](#component-context-and-scope).
 
 This has two modes:
 
-- `"django"` - Context variables are taken from its surroundings (default before v0.67)
+- `"django"` - Default - The default Django template behavior.
 
-- `"isolated"` - Default - Similar behavior to [Vue](https://vuejs.org/guide/components/slots.html#render-scope) or React - variables are taken ONLY from `get_context_data()` method of the component which defines the `{% fill %}` tag. This is useful if you want to make sure that components don't accidentally access the outer context.
+    Inside the `{% fill %}` tag, the context variables you can access are a union of:
+    - All the variables that were OUTSIDE the fill tag, including any loops or with tag
+    - Data returned from `get_context_data()` of the component that wraps the fill tag.
+
+- `"isolated"` - Similar behavior to [Vue](https://vuejs.org/guide/components/slots.html#render-scope) or React, this is useful if you want to make sure that components don't accidentally access variables defined outside of the component.
+
+    Inside the `{% fill %}` tag, you can ONLY access variables from 2 places:
+    - `get_context_data()` of the component which defined the template (AKA the "root" component)
+    - Any loops (`{% for ... %}`) that the `{% fill %}` tag is part of.
 
 ```python
 COMPONENTS = {
@@ -1466,75 +1485,76 @@ COMPONENTS = {
 
 #### Example "django"
 
-Given this template
-
-```django
-{% with cheese="feta" %}
-    {% component 'my_comp' %}
-        {{ my_var }}  # my_var
-        {{ cheese }}  # cheese
-    {% endcomponent %}
-{% endwith %}
-```
-
-and this context returned from the `get_context_data()` method
+Given this template:
 
 ```py
-{ "my_var": 123 }
+class RootComp(component.Component):
+    template = """
+        {% with cheese="feta" %}
+            {% component 'my_comp' %}
+                {{ my_var }}  # my_var
+                {{ cheese }}  # cheese
+            {% endcomponent %}
+        {% endwith %}
+    """
+    def get_context_data(self):
+        return { "my_var": 123 }
 ```
 
-Then if component "my_comp" defines context
+Then if `get_context_data()` of the component `"my_comp"` returns following data:
 
 ```py
 { "my_var": 456 }
 ```
 
-Then this will render:
+Then the template will be rendered as:
 
 ```django
 456   # my_var
 feta  # cheese
 ```
 
-Because "my_comp" overrides the variable "my_var",
+Because `"my_comp"` overshadows the variable `"my_var"`,
 so `{{ my_var }}` equals `456`.
-And variable "cheese" equals `feta`, because the fill CAN access
-the current context.
+
+And variable `"cheese"` equals `feta`, because the fill CAN access
+all the data defined in the outer layers, like the `{% with %}` tag.
 
 #### Example "isolated"
 
-Given this template
-
-```django
-{% with cheese="feta" %}
-    {% component 'my_comp' %}
-        {{ my_var }}  # my_var
-        {{ cheese }}  # cheese
-    {% endcomponent %}
-{% endwith %}
-```
-
-and this context returned from the `get_context_data()` method
+Given this template:
 
 ```py
-{ "my_var": 123 }
+class RootComp(component.Component):
+    template = """
+        {% with cheese="feta" %}
+            {% component 'my_comp' %}
+                {{ my_var }}  # my_var
+                {{ cheese }}  # cheese
+            {% endcomponent %}
+        {% endwith %}
+    """
+    def get_context_data(self):
+        return { "my_var": 123 }
 ```
 
-Then if component "my_comp" defines context
+Then if `get_context_data()` of the component `"my_comp"` returns following data:
 
 ```py
 { "my_var": 456 }
 ```
 
-Then this will render:
+Then the template will be rendered as:
 
 ```django
 123   # my_var
       # cheese
 ```
 
-Because both variables "my_var" and "cheese" are taken from the parent's `get_context_data()`.
-But since "cheese" is not defined there, it's empty.
+Because variables `"my_var"` and `"cheese"` are searched only inside `RootComponent.get_context_data()`.
+But since `"cheese"` is not defined there, it's empty.
+
+Notice that the variables defined with the `{% with %}` tag are ignored inside the `{% fill %}` tag with the `"isolated"` mode.
 
 ## Logging and debugging
 
