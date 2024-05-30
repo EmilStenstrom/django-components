@@ -277,7 +277,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         an error if called elsewhere.
 
         Example:
-        
+
         Given this template:
         ```django
         {% provide "provider" hello="world" %}
@@ -285,7 +285,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             {% endcomponent %}
         {% endprovide %}
         ```
-        
+
         And given this definition of "my_comp" component:
         ```py
         @component.register("my_comp")
