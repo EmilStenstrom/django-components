@@ -73,6 +73,7 @@ class ProvideTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_empty(self):
         """Check provide tag with no kwargs"""
+
         @component.register("injectee")
         class InjectComponent(component.Component):
             template: types.django_html = """
@@ -106,6 +107,7 @@ class ProvideTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_no_inject(self):
         """Check that nothing breaks if we do NOT inject even if some data is provided"""
+
         @component.register("injectee")
         class InjectComponent(component.Component):
             template: types.django_html = """
@@ -272,6 +274,7 @@ class ProvideTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_does_not_expose_kwargs_to_context(self):
         """Check that `provide` tag doesn't assign the keys to the context like `with` tag does"""
+
         @component.register("injectee")
         class InjectComponent(component.Component):
             template: types.django_html = """
@@ -307,6 +310,7 @@ class ProvideTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_nested_in_provide_same_key(self):
         """Check that inner `provide` with same key overshadows outer `provide`"""
+
         @component.register("injectee")
         class InjectComponent(component.Component):
             template: types.django_html = """
@@ -346,6 +350,7 @@ class ProvideTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_nested_in_provide_different_key(self):
         """Check that `provide` tag with different keys don't affect each other"""
+
         @component.register("injectee")
         class InjectComponent(component.Component):
             template: types.django_html = """

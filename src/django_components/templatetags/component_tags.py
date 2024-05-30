@@ -469,9 +469,7 @@ def _parse_provide_args(
     tag_name: str,
 ) -> Tuple[str, Dict[str, FilterExpression]]:
     if not len(bits):
-        raise TemplateSyntaxError(
-            "'provide' tag does not match pattern {% provide <key> [key=val, ...] %}. "
-        )
+        raise TemplateSyntaxError("'provide' tag does not match pattern {% provide <key> [key=val, ...] %}. ")
 
     provide_key, *options = bits
     if not is_wrapped_in_quotes(provide_key):

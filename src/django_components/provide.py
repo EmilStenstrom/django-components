@@ -16,6 +16,7 @@ class ProvideNode(Node):
     Implementation of the `{% provide %}` tag.
     For more info see `Component.inject`.
     """
+
     def __init__(
         self,
         name: str,
