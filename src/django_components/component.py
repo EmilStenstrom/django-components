@@ -30,10 +30,8 @@ from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
-    get_injected_context_vars,
     make_isolated_context_copy,
     prepare_context,
-    set_provided_context_vars,
 )
 from django_components.expression import safe_resolve_dict, safe_resolve_list
 from django_components.logger import logger, trace_msg
@@ -187,8 +185,6 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     js: Optional[str] = None
     css: Optional[str] = None
     media: Media
-    inject: Optional[List[str]] = None
-    provide: Optional[List[str]] = None
 
     class Media:
         css: Optional[Union[str, List[str], Dict[str, str], Dict[str, List[str]]]] = None
@@ -265,23 +261,12 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         )
 
     def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict[str, Any]) -> str:
-        comp_name = self.registered_name or self.__class__.__name__
-        injected = get_injected_context_vars(context, self.inject, comp_name)
+        component_context: dict = self.get_context_data(*args, **kwargs)
 
-        # Make injected data available to get_context_data
-        kwargs_with_injected = {**injected, **kwargs}
-        context_data = self.get_context_data(*args, **kwargs_with_injected)
-
-        # Make injected data available inside component template
-        context_data = {**injected, **context_data}
-
-        # Store the keys that were marked as to be provided
-        set_provided_context_vars(context, self.provide, context_data, comp_name)
-
-        with context.update(context_data):
+        with context.update(component_context):
             rendered_component = self.render(
                 context=context,
-                context_data=context_data,
+                context_data=component_context,
             )
 
         if is_dependency_middleware_active():
