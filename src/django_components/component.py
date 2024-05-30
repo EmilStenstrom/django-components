@@ -30,6 +30,7 @@ from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
+    get_injected_context_var,
     make_isolated_context_copy,
     prepare_context,
 )
@@ -201,6 +202,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content or {}
         self.component_id = component_id or gen_id()
+        self._context: Optional[Context] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls.class_hash = hash(inspect.getfile(cls) + cls.__name__)
@@ -260,13 +262,71 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
             f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
-    def render_from_input(self, context: Context, args: Union[List, Tuple], kwargs: Dict[str, Any]) -> str:
-        component_context: dict = self.get_context_data(*args, **kwargs)
+    def inject(self, key: str, default: Optional[Any] = None) -> Any:
+        """
+        Use this method to retrieve the data that was passed to a `{% provide %}` tag
+        with the corresponding key.
 
-        with context.update(component_context):
+        To retrieve the data, `inject()` must be called inside a component that's
+        inside the `{% provide %}` tag.
+
+        You may also pass a default that will be used if the `provide` tag with given
+        key was NOT found.
+
+        This method mut be used inside the `get_context_data()` method and raises
+        an error if called elsewhere.
+
+        Example:
+        
+        Given this template:
+        ```django
+        {% provide "provider" hello="world" %}
+            {% component "my_comp" %}
+            {% endcomponent %}
+        {% endprovide %}
+        ```
+        
+        And given this definition of "my_comp" component:
+        ```py
+        @component.register("my_comp")
+        class MyComp(component.Component):
+            template = "hi {{ data.hello }}!"
+            def get_context_data(self):
+                data = self.inject("provider")
+                return {"data": data}
+        ```
+
+        This renders into:
+        ```
+        hi world!
+        ```
+
+        As the `{{ data.hello }}` is taken from the "provider".
+        """
+        comp_name = self.registered_name or self.__class__.__name__
+        if self._context is None:
+            raise RuntimeError(
+                f"Method 'inject()' of component '{comp_name}' was called outside of 'get_context_data()'"
+            )
+
+        return get_injected_context_var(comp_name, self._context, key, default)
+
+    def render_from_input(
+        self,
+        context: Context,
+        args: Union[List, Tuple],
+        kwargs: Dict[str, Any],
+    ) -> str:
+        # Temporarily populate _context so user can call `self.inject()` from
+        # within `get_context_data()`
+        self._context = context
+        context_data = self.get_context_data(*args, **kwargs)
+        self._context = None
+
+        with context.update(context_data):
             rendered_component = self.render(
                 context=context,
-                context_data=component_context,
+                context_data=context_data,
             )
 
         if is_dependency_middleware_active():
