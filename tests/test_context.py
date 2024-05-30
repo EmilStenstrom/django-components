@@ -1,12 +1,9 @@
-from unittest.mock import PropertyMock, patch
-
 from django.template import Context, Template
-from django.test import override_settings
 
 from django_components import component, types
 
 from .django_test_setup import *  # NOQA
-from .testutils import BaseTestCase
+from .testutils import BaseTestCase, parametrize_context_behavior
 
 #########################
 # COMPONENTS
@@ -94,6 +91,7 @@ class ContextTests(BaseTestCase):
         component.registry.register(name="variable_display", component=VariableDisplay)
         component.registry.register(name="parent_component", component=cls.ParentComponent)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_parent_with_unfilled_slots_and_component_tag(
         self,
     ):
@@ -112,6 +110,7 @@ class ContextTests(BaseTestCase):
         )
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_instances_have_unique_context_with_unfilled_slots_and_component_tag(
         self,
     ):
@@ -130,6 +129,7 @@ class ContextTests(BaseTestCase):
             rendered,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_parent_with_filled_slots(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -151,6 +151,7 @@ class ContextTests(BaseTestCase):
         )
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_instances_have_unique_context_with_filled_slots(self):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -172,6 +173,7 @@ class ContextTests(BaseTestCase):
             rendered,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_outer_context_with_unfilled_slots_and_component_tag(
         self,
     ):
@@ -191,6 +193,7 @@ class ContextTests(BaseTestCase):
         )
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_outer_context_with_filled_slots(
         self,
     ):
@@ -243,12 +246,8 @@ class ParentArgsTests(BaseTestCase):
         component.registry.register(name="parent_with_args", component=cls.ParentComponentWithArgs)
         component.registry.register(name="variable_display", component=VariableDisplay)
 
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "django",
-        }
-    )
-    def test_parent_args_can_be_drawn_from_context__django(self):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_parent_args_can_be_drawn_from_context(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value=parent_value %}
@@ -273,36 +272,7 @@ class ParentArgsTests(BaseTestCase):
             """,
         )
 
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "isolated",
-        }
-    )
-    def test_parent_args_can_be_drawn_from_context__isolated(self):
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
-            {% component 'parent_with_args' parent_value=parent_value %}
-            {% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = template.render(Context({"parent_value": "passed_in"}))
-
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <div>
-                <h1>Parent content</h1>
-                <h1>Shadowing variable = passed_in</h1>
-                <h1>Uniquely named variable = unique_val</h1>
-            </div>
-            <div>
-                <h2>Slot content</h2>
-                <h1>Shadowing variable = slot_default_override</h1>
-                <h1>Uniquely named variable = passed_in</h1>
-            </div>
-            """,
-        )
-
+    @parametrize_context_behavior(["django", "isolated"])
     def test_parent_args_available_outside_slots(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -315,12 +285,16 @@ class ParentArgsTests(BaseTestCase):
         self.assertIn("<h1>Uniquely named variable = passed_in</h1>", rendered, rendered)
         self.assertNotIn("<h1>Shadowing variable = NOT SHADOWED</h1>", rendered, rendered)
 
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "django",
-        }
+    # NOTE: Second arg in tuple are expected values passed through components.
+    @parametrize_context_behavior(
+        [
+            ("django", ("passed_in", "passed_in")),
+            ("isolated", ("passed_in", "")),
+        ]
     )
-    def test_parent_args_available_in_slots__django(self):
+    def test_parent_args_available_in_slots(self, context_behavior_data):
+        first_val, second_val = context_behavior_data
+
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value='passed_in' %}
@@ -334,47 +308,15 @@ class ParentArgsTests(BaseTestCase):
         rendered = template.render(Context())
         self.assertHTMLEqual(
             rendered,
-            """
+            f"""
             <div>
                 <h1>Parent content</h1>
-                <h1>Shadowing variable = passed_in</h1>
+                <h1>Shadowing variable = {first_val}</h1>
                 <h1>Uniquely named variable = unique_val</h1>
             </div>
             <div>
                 <h1>Shadowing variable = value_from_slot</h1>
-                <h1>Uniquely named variable = passed_in</h1>
-            </div>
-            """,
-        )
-
-    @override_settings(
-        COMPONENTS={
-            "context_behavior": "isolated",
-        }
-    )
-    def test_parent_args_not_available_in_slots__isolated(self):
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
-            {% component 'parent_with_args' parent_value='passed_in' %}
-                {% fill 'content' %}
-                    {% component name='variable_display' shadowing_variable='value_from_slot' new_variable=inner_parent_value %}
-                    {% endcomponent %}
-                {% endfill %}
-            {% endcomponent %}
-        """  # noqa: E501
-        template = Template(template_str)
-        rendered = template.render(Context())
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <div>
-                <h1>Parent content</h1>
-                <h1>Shadowing variable = passed_in</h1>
-                <h1>Uniquely named variable = unique_val</h1>
-            </div>
-            <div>
-                <h1>Shadowing variable = value_from_slot</h1>
-                <h1>Uniquely named variable = </h1>
+                <h1>Uniquely named variable = {second_val}</h1>
             </div>
             """,
         )
@@ -386,6 +328,7 @@ class ContextCalledOnceTests(BaseTestCase):
         super().setUpClass()
         component.registry.register(name="incrementer", component=IncrementerComponent)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_simple_component(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -398,6 +341,7 @@ class ContextCalledOnceTests(BaseTestCase):
             '<p class="incrementer">value=1;calls=1</p>',
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_simple_component_and_arg(self):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -408,6 +352,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
         self.assertHTMLEqual(rendered, '<p class="incrementer">value=3;calls=1</p>', rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_component(self):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -418,6 +363,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
         self.assertHTMLEqual(rendered, '<p class="incrementer">value=1;calls=1</p>', rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_component_and_arg(self):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -428,6 +374,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
         self.assertHTMLEqual(rendered, '<p class="incrementer">value=4;calls=1</p>', rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_slot(self):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -446,6 +393,7 @@ class ContextCalledOnceTests(BaseTestCase):
             rendered,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_slot_and_arg(self):
         template_str: types.django_html = """
             {% load component_tags %}
@@ -471,10 +419,14 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
         super().setUpClass()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"},
+    # NOTE: Second arg in tuple is expected value.
+    @parametrize_context_behavior(
+        [
+            ("django", "outer_value"),
+            ("isolated", ""),
+        ]
     )
-    def test_simple_component_can_use_outer_context__django(self):
+    def test_simple_component_can_use_outer_context(self, context_behavior_data):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' %}{% endcomponent %}
@@ -483,25 +435,8 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
         rendered = template.render(Context({"variable": "outer_value"}))
         self.assertHTMLEqual(
             rendered,
-            """
-            Variable: <strong> outer_value </strong>
-            """,
-        )
-
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"},
-    )
-    def test_simple_component_cannot_use_outer_context__isolated(self):
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
-            {% component 'simple_component' %}{% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = template.render(Context({"variable": "outer_value"}))
-        self.assertHTMLEqual(
-            rendered,
-            """
-            Variable: <strong> </strong>
+            f"""
+            Variable: <strong> {context_behavior_data} </strong>
             """,
         )
 
@@ -512,6 +447,7 @@ class IsolatedContextTests(BaseTestCase):
         super().setUpClass()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_simple_component_can_pass_outer_context_in_args(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -521,6 +457,7 @@ class IsolatedContextTests(BaseTestCase):
         rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertIn("outer_value", rendered, rendered)
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_simple_component_cannot_use_outer_context(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -537,17 +474,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         super().setUpClass()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
-    def setUp(self):
-        self.patcher = patch(
-            "django_components.app_settings.AppSettings.CONTEXT_BEHAVIOR",
-            new_callable=PropertyMock,
-        )
-        self.mock_isolate_context = self.patcher.start()
-        self.mock_isolate_context.return_value = "isolated"
-
-    def tearDown(self):
-        self.patcher.stop()
-
+    @parametrize_context_behavior(["isolated"])
     def test_component_tag_includes_variable_with_isolated_context_from_settings(
         self,
     ):
@@ -559,6 +486,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         rendered = template.render(Context({"variable": "outer_value"}))
         self.assertIn("outer_value", rendered, rendered)
 
+    @parametrize_context_behavior(["isolated"])
     def test_component_tag_excludes_variable_with_isolated_context_from_settings(
         self,
     ):
@@ -570,6 +498,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         rendered = template.render(Context({"variable": "outer_value"}))
         self.assertNotIn("outer_value", rendered, rendered)
 
+    @parametrize_context_behavior(["isolated"])
     def test_component_includes_variable_with_isolated_context_from_settings(
         self,
     ):
@@ -582,6 +511,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         rendered = template.render(Context({"variable": "outer_value"}))
         self.assertIn("outer_value", rendered, rendered)
 
+    @parametrize_context_behavior(["isolated"])
     def test_component_excludes_variable_with_isolated_context_from_settings(
         self,
     ):
@@ -609,10 +539,8 @@ class OuterContextPropertyTests(BaseTestCase):
         super().setUpClass()
         component.registry.register(name="outer_context_component", component=cls.OuterContextComponent)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "django"},
-    )
-    def test_outer_context_property_with_component__django(self):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_outer_context_property_with_component(self):
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'outer_context_component' only %}{% endcomponent %}
@@ -621,14 +549,216 @@ class OuterContextPropertyTests(BaseTestCase):
         rendered = template.render(Context({"variable": "outer_value"})).strip()
         self.assertIn("outer_value", rendered, rendered)
 
-    @override_settings(
-        COMPONENTS={"context_behavior": "isolated"},
-    )
-    def test_outer_context_property_with_component__isolated(self):
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
-            {% component 'outer_context_component' only %}{% endcomponent %}
+
+class ContextVarsIsFilledTests(BaseTestCase):
+    class IsFilledVarsComponent(component.Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                {% slot "title" default %}{% endslot %}
+                {% slot "my_title" %}{% endslot %}
+                {% slot "my title 1" %}{% endslot %}
+                {% slot "my-title-2" %}{% endslot %}
+                {% slot "escape this: #$%^*()" %}{% endslot %}
+                {{ component_vars.is_filled|safe }}
+            </div>
         """
-        template = Template(template_str)
-        rendered = template.render(Context({"variable": "outer_value"})).strip()
-        self.assertIn("outer_value", rendered, rendered)
+
+    class ComponentWithConditionalSlots(component.Component):
+        template: types.django_html = """
+            {# Example from django-components/issues/98 #}
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                {% if component_vars.is_filled.subtitle %}
+                    <div class="subtitle">
+                        {% slot "subtitle" %}Optional subtitle
+                        {% endslot %}
+                    </div>
+                {% endif %}
+            </div>
+        """
+
+    class ComponentWithComplexConditionalSlots(component.Component):
+        template: types.django_html = """
+            {# Example from django-components/issues/98 #}
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                {% if component_vars.is_filled.subtitle %}
+                    <div class="subtitle">{% slot "subtitle" %}Optional subtitle{% endslot %}</div>
+                {% elif component_vars.is_filled.alt_subtitle %}
+                    <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
+                {% else %}
+                <div class="warning">Nothing filled!</div>
+                {% endif %}
+            </div>
+        """
+
+    class ComponentWithNegatedConditionalSlot(component.Component):
+        template: types.django_html = """
+            {# Example from django-components/issues/98 #}
+            {% load component_tags %}
+            <div class="frontmatter-component">
+                <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                {% if not component_vars.is_filled.subtitle %}
+                <div class="warning">Subtitle not filled!</div>
+                {% else %}
+                    <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
+                {% endif %}
+            </div>
+        """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        component.registry.register("is_filled_vars", cls.IsFilledVarsComponent)
+        component.registry.register("conditional_slots", cls.ComponentWithConditionalSlots)
+        component.registry.register(
+            "complex_conditional_slots",
+            cls.ComponentWithComplexConditionalSlots,
+        )
+        component.registry.register("negated_conditional_slot", cls.ComponentWithNegatedConditionalSlot)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        component.registry.clear()
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_is_filled_vars(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "is_filled_vars" %}
+                {% fill "title" %}{% endfill %}
+                {% fill "my-title-2" %}{% endfill %}
+                {% fill "escape this: #$%^*()" %}{% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div class="frontmatter-component">
+                {'title': True,
+                'my_title': False,
+                'my_title_1': False,
+                'my_title_2': True,
+                'escape_this_________': True}
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_is_filled_vars_default(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "is_filled_vars" %}
+                bla bla
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div class="frontmatter-component">
+                bla bla
+                {'title': True,
+                'my_title': False,
+                'my_title_1': False,
+                'my_title_2': False,
+                'escape_this_________': False}
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_simple_component_with_conditional_slot(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "conditional_slots" %}{% endcomponent %}
+        """
+        expected = """
+            <div class="frontmatter-component">
+            <div class="title">
+            Title
+            </div>
+            </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_with_filled_conditional_slot(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "conditional_slots" %}
+            {% fill "subtitle" %} My subtitle {% endfill %}
+            {% endcomponent %}
+        """
+        expected = """
+            <div class="frontmatter-component">
+                <div class="title">
+                    Title
+                </div>
+                <div class="subtitle">
+                    My subtitle
+                </div>
+            </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_elif_of_complex_conditional_slots(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "complex_conditional_slots" %}
+                {% fill "alt_subtitle" %} A different subtitle {% endfill %}
+            {% endcomponent %}
+        """
+        expected = """
+           <div class="frontmatter-component">
+             <div class="title">
+                Title
+             </div>
+             <div class="subtitle">
+                A different subtitle
+             </div>
+           </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_else_of_complex_conditional_slots(self):
+        template: types.django_html = """
+           {% load component_tags %}
+           {% component "complex_conditional_slots" %}
+           {% endcomponent %}
+        """
+        expected = """
+           <div class="frontmatter-component">
+             <div class="title">
+             Title
+             </div>
+            <div class="warning">Nothing filled!</div>
+           </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_with_negated_conditional_slot(self):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "negated_conditional_slot" %}
+                {# Whoops! Forgot to fill a slot! #}
+            {% endcomponent %}
+        """
+        expected = """
+            <div class="frontmatter-component">
+                <div class="title">
+                Title
+                </div>
+                <div class="warning">Subtitle not filled!</div>
+            </div>
+        """
+        rendered = Template(template).render(Context({}))
+        self.assertHTMLEqual(rendered, expected)

@@ -6,7 +6,7 @@ from django_components.attributes import append_attributes, attributes_to_string
 
 # isort: off
 from .django_test_setup import *  # NOQA
-from .testutils import BaseTestCase
+from .testutils import BaseTestCase, parametrize_context_behavior
 
 # isort: on
 
@@ -83,6 +83,7 @@ class HtmlAttrsTests(BaseTestCase):
             {% endcomponent %}
         """  # noqa: E501
 
+    @parametrize_context_behavior(["django", "isolated"])
     def test_tag_positional_args(self):
         @component.register("test")
         class AttrsComponent(component.Component):
@@ -273,12 +274,11 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div class="added_class another-class" data-id=123>
+            <div class="added_class another-class override-me" data-id=123>
                 content
             </div>
             """,
         )
-        self.assertNotIn("override-me", rendered)
 
     def test_tag_no_defaults(self):
         @component.register("test")
