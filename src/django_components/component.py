@@ -1,6 +1,7 @@
 import inspect
 import os
 import sys
+import types
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
@@ -11,6 +12,7 @@ from django.template.base import FilterExpression, Node, NodeList, Template, Tex
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
+from django.template.loader_tags import BLOCK_CONTEXT_KEY
 from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
@@ -285,7 +287,14 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         # See https://github.com/EmilStenstrom/django-components/issues/414
         context = context if isinstance(context, Context) else Context(context)
         prepare_context(context, self.component_id)
+
         template = self.get_template(context)
+        _monkeypatch_template(template)
+
+        # Set `Template._is_component_nested` based on whether we're currently INSIDE
+        # the `{% extends %}` tag.
+        # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
+        template._is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
 
         # Support passing slots explicitly to `render` method
         if slots_data:
@@ -445,3 +454,47 @@ class ComponentNode(Node):
 
         trace_msg("RENDR", "COMP", self.name_fexp, self.component_id, "...Done!")
         return output
+
+
+def _monkeypatch_template(template: Template) -> None:
+    # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
+    # based on our custom `Template._is_component_nested`.
+    #
+    # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
+    #
+    # NOTE 1: While we could've subclassed Template, then we would need to either
+    # 1) ask the user to change the backend, so all templates are of our subclass, or
+    # 2) copy the data from user's Template class instance to our subclass instance,
+    # which could lead to doubly parsing the source, and could be problematic if users
+    # used more exotic subclasses of Template.
+    #
+    # Instead, modifying only the `render` method of an already-existing instance
+    # should work well with any user-provided custom subclasses of Template, and it
+    # doesn't require the source to be parsed multiple times. User can pass extra args/kwargs,
+    # and can modify the rendering behavior by overriding the `_render` method.
+    #
+    # NOTE 2: Instead of setting `Template._is_component_nested`, alternatively we could
+    # have passed the value to `_monkeypatch_template` directly. However, we intentionally
+    # did NOT do that, so the monkey-patched method is more robust, and can be e.g. copied
+    # to other.
+    def _template_render(self: Template, context: Context, *args: Any, **kwargs: Any) -> str:
+        #  ---------------- OUR CHANGES START ----------------
+        # We parametrized `isolated_context`, which was `True` in the original method.
+        if not hasattr(self, "_is_component_nested"):
+            isolated_context = True
+        else:
+            # MUST be `True` for templates that are NOT import with `{% extends %}` tag,
+            # and `False` otherwise.
+            isolated_context = not self._is_component_nested
+        #  ---------------- OUR CHANGES END ----------------
+
+        with context.render_context.push_state(self, isolated_context=isolated_context):
+            if context.template is None:
+                with context.bind_template(self):
+                    context.template_name = self.name
+                    return self._render(context, *args, **kwargs)
+            else:
+                return self._render(context, *args, **kwargs)
+
+    # See https://stackoverflow.com/a/42154067/9788634
+    template.render = types.MethodType(_template_render, template)
