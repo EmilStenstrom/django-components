@@ -11,6 +11,9 @@ from django.utils.safestring import SafeString, mark_safe
 
 from django_components.template_parser import process_aggregate_kwargs
 
+HTML_ATTRS_DEFAULTS_KEY = "defaults"
+HTML_ATTRS_ATTRS_KEY = "attrs"
+
 
 class HtmlAttrsNode(Node):
     def __init__(
@@ -30,12 +33,12 @@ class HtmlAttrsNode(Node):
         # Resolve kwargs, while also extracting attrs and defaults keys
         for key, value in self.kwargs:
             resolved_value = value.resolve(context)
-            if key.startswith("attrs:") or key.startswith("defaults:"):
+            if key.startswith(f"{HTML_ATTRS_ATTRS_KEY}:") or key.startswith(f"{HTML_ATTRS_DEFAULTS_KEY}:"):
                 attrs_and_defaults_from_kwargs[key] = resolved_value
                 continue
             # NOTE: These were already extracted into separate variables, so
             # ignore them here.
-            elif key == "attrs" or key == "defaults":
+            elif key == HTML_ATTRS_ATTRS_KEY or key == HTML_ATTRS_DEFAULTS_KEY:
                 continue
 
             append_attrs.append((key, resolved_value))
@@ -46,16 +49,16 @@ class HtmlAttrsNode(Node):
         # So by assigning the `attrs` and `defaults` keys, users are forced to use only
         # one approach or the other, but not both simultaneously.
         if self.attributes:
-            attrs_and_defaults_from_kwargs["attrs"] = self.attributes.resolve(context)
+            attrs_and_defaults_from_kwargs[HTML_ATTRS_ATTRS_KEY] = self.attributes.resolve(context)
         if self.default_attrs:
-            attrs_and_defaults_from_kwargs["defaults"] = self.default_attrs.resolve(context)
+            attrs_and_defaults_from_kwargs[HTML_ATTRS_DEFAULTS_KEY] = self.default_attrs.resolve(context)
 
         # Turn `{"attrs:blabla": 1}` into `{"attrs": {"blabla": 1}}`
         attrs_and_defaults_from_kwargs = process_aggregate_kwargs(attrs_and_defaults_from_kwargs)
 
         # NOTE: We want to allow to use `html_attrs` even without `attrs` or `defaults` params
-        attrs = attrs_and_defaults_from_kwargs.get("attrs", {})
-        default_attrs = attrs_and_defaults_from_kwargs.get("defaults", {})
+        attrs = attrs_and_defaults_from_kwargs.get(HTML_ATTRS_ATTRS_KEY, {})
+        default_attrs = attrs_and_defaults_from_kwargs.get(HTML_ATTRS_DEFAULTS_KEY, {})
 
         final_attrs = {**default_attrs, **attrs}
         final_attrs = append_attributes(*final_attrs.items(), *append_attrs)
