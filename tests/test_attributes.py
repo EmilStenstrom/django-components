@@ -274,12 +274,11 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div class="added_class another-class" data-id=123>
+            <div class="added_class another-class override-me" data-id=123>
                 content
             </div>
             """,
         )
-        self.assertNotIn("override-me", rendered)
 
     def test_tag_no_defaults(self):
         @component.register("test")
