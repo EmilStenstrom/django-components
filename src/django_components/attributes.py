@@ -55,7 +55,7 @@ class HtmlAttrsNode(Node):
 
         # NOTE: We want to allow to use `html_attrs` even without `attrs` or `defaults` params
         attrs = attrs_and_defaults_from_kwargs.get("attrs", {})
-        default_attrs = attrs_and_defaults_from_kwargs.get("defualts", {})
+        default_attrs = attrs_and_defaults_from_kwargs.get("defaults", {})
 
         final_attrs = {**default_attrs, **attrs}
         final_attrs = append_attributes(*final_attrs.items(), *append_attrs)
