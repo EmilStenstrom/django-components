@@ -105,7 +105,7 @@ class AppSettings:
 
     @property
     def CONTEXT_BEHAVIOR(self) -> ContextBehavior:
-        raw_value = self.settings.get("context_behavior", ContextBehavior.ISOLATED.value)
+        raw_value = self.settings.get("context_behavior", ContextBehavior.DJANGO.value)
         return self._validate_context_behavior(raw_value)
 
     def _validate_context_behavior(self, raw_value: ContextBehavior) -> ContextBehavior:
