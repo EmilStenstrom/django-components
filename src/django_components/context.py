@@ -129,15 +129,6 @@ def set_provided_context_var(
     # We turn the kwargs into a NamedTuple so that the object that's "provided"
     # is immutable. This ensures that the data returned from `inject` will always
     # have all the keys that were passed to the `provide` tag.
-    #
-    # Note that while users cannot mutate the top-level object,
-    # they can always mutate the objects under individual keys.
-    #
-    # So while they cannot do:
-    # `self.inject("foo").var = 123`
-    #
-    # They can still do:
-    # `self.inject("foo").a_list.append(123)`
     tpl_cls = namedtuple("DepInject", provided_kwargs.keys())  # type: ignore[misc]
     payload = tpl_cls(**provided_kwargs)
 

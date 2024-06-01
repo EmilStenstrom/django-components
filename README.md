@@ -1394,7 +1394,7 @@ For examples of advanced uses of provide / inject, [see this discussion](https:/
 
 ### Using `{% provide %}` tag
 
-First we use the `{% provde %}` tag to define the data we want to "provide" (make available).
+First we use the `{% provide %}` tag to define the data we want to "provide" (make available).
 
 ```django
 {% provide "my_data" key="hi" another=123 %}
@@ -1453,21 +1453,10 @@ class ChildComponent(component.Component):
         return {}
 ```
 
-
-> NOTE: `inject()` works strictly only in `get_context_data`. If you try to call it from elsewhere, it will raise an error.
-
-#### (Im)mutability
-
 The instance returned from `inject()` is a subclass of `NamedTuple`, so the instance is immutable. This ensures that the data returned from `inject` will always
 have all the keys that were passed to the `provide` tag.
 
-However, while you CANNOT mutate the top-level instance:
-
-`self.inject("foo").var = 123`
-
-You CAN mutate the data nested under individual keys:
-
-`self.inject("foo").a_list.append(123)`
+> NOTE: `inject()` works strictly only in `get_context_data`. If you try to call it from elsewhere, it will raise an error.
 
 
 ### Full example
