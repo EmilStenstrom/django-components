@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 from django.template import Context, Template, TemplateSyntaxError
 
 # isort: off
@@ -20,7 +18,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -42,6 +40,73 @@ class ProvideTemplateTagTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_provide_access_keys_in_python(self):
+        @component.register("injectee")
+        class InjectComponent(component.Component):
+            template: types.django_html = """
+                <div> key: {{ key }} </div>
+                <div> another: {{ another }} </div>
+            """
+
+            def get_context_data(self):
+                my_provide = self.inject("my_provide")
+                return {
+                    "key": my_provide.key,
+                    "another": my_provide.another,
+                }
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% provide "my_provide" key="hi" another=123 %}
+                {% component "injectee" %}
+                {% endcomponent %}
+            {% endprovide %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div> key: hi </div>
+            <div> another: 123 </div>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_provide_access_keys_in_django(self):
+        @component.register("injectee")
+        class InjectComponent(component.Component):
+            template: types.django_html = """
+                <div> key: {{ my_provide.key }} </div>
+                <div> another: {{ my_provide.another }} </div>
+            """
+
+            def get_context_data(self):
+                my_provide = self.inject("my_provide")
+                return {
+                    "my_provide": my_provide,
+                }
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% provide "my_provide" key="hi" another=123 %}
+                {% component "injectee" %}
+                {% endcomponent %}
+            {% endprovide %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div> key: hi </div>
+            <div> another: 123 </div>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_provide_does_not_leak(self):
         @component.register("injectee")
         class InjectComponent(component.Component):
@@ -49,7 +114,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -80,7 +145,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -114,7 +179,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div></div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 return {}
 
         template_str: types.django_html = """
@@ -145,7 +210,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -177,7 +242,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -201,7 +266,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -225,7 +290,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -250,7 +315,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -281,7 +346,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -317,7 +382,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -358,7 +423,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> second_provide: {{ second_provide|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 first_provide = self.inject("first_provide", "default")
                 second_provide = self.inject("second_provide", "default")
                 return {
@@ -394,7 +459,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
@@ -426,7 +491,7 @@ class InjectTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("my_provide")
                 return {"var": var}
 
@@ -455,7 +520,7 @@ class InjectTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("abc")
                 return {"var": var}
 
@@ -476,7 +541,7 @@ class InjectTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("abc", "default")
                 return {"var": var}
 
@@ -502,7 +567,7 @@ class InjectTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("")
                 return {"var": var}
 
@@ -527,7 +592,7 @@ class InjectTest(BaseTestCase):
                 <div> injected: {{ var|safe }} </div>
             """
 
-            def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+            def get_context_data(self):
                 var = self.inject("abc", "default")
                 return {"var": var}
 
