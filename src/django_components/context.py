@@ -5,6 +5,7 @@ pass data across components, nodes, slots, and contexts.
 You can think of the Context as our storage system.
 """
 
+from collections import namedtuple
 from typing import Any, Dict, Optional
 
 from django.template import Context, TemplateSyntaxError
@@ -125,5 +126,20 @@ def set_provided_context_var(
             "Provide tag received a non-identifier string. Key must be non-empty and a valid identifier."
         )
 
+    # We turn the kwargs into a NamedTuple so that the object that's "provided"
+    # is immutable. This ensures that the data returned from `inject` will always
+    # have all the keys that were passed to the `provide` tag.
+    #
+    # Note that while users cannot mutate the top-level object,
+    # they can always mutate the objects under individual keys.
+    #
+    # So while they cannot do:
+    # `self.inject("foo").var = 123`
+    #
+    # They can still do:
+    # `self.inject("foo").a_list.append(123)`
+    tpl_cls = namedtuple("DepInject", provided_kwargs.keys())  # type: ignore[misc]
+    payload = tpl_cls(**provided_kwargs)
+
     internal_key = _INJECT_CONTEXT_KEY_PREFIX + key
-    context[internal_key] = provided_kwargs
+    context[internal_key] = payload

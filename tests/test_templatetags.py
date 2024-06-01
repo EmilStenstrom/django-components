@@ -484,7 +484,7 @@ class BlockCompatTests(BaseTestCase):
                 <custom-template>
                 <header></header>
                 <main>
-                    <div> injected: {'hello': 'from_block'} </div>
+                    <div> injected: DepInject(hello='from_block') </div>
                 </main>
                 <footer>Default footer</footer>
                 </custom-template>

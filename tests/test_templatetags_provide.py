@@ -37,7 +37,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: {'key': 'hi', 'another': 123} </div>
+            <div> injected: DepInject(key='hi', another=123) </div>
             """,
         )
 
@@ -99,7 +99,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: {} </div>
+            <div> injected: DepInject() </div>
             <div> injected: default </div>
         """,
         )
@@ -164,7 +164,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: {'key': 'hi', 'another': 123} </div>
+            <div> injected: DepInject(key='hi', another=123) </div>
             <div> injected: default </div>
         """,
         )
@@ -267,7 +267,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: {'var1': {'key': 'hi', 'another': 123}, 'var2': {'x': 'y'}} </div>
+            <div> injected: DepInject(var1={'key': 'hi', 'another': 123}, var2={'x': 'y'}) </div>
             """,
         )
 
@@ -341,8 +341,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: {'key': 'hi1', 'another': 1231, 'new': 3} </div>
-            <div> injected: {'key': 'hi', 'another': 123, 'lost': 0} </div>
+            <div> injected: DepInject(key='hi1', another=1231, new=3) </div>
+            <div> injected: DepInject(key='hi', another=123, lost=0) </div>
             <div> injected: default </div>
             """,
         )
@@ -381,8 +381,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> first_provide: {'key': 'hi', 'another': 123, 'lost': 0} </div>
-            <div> second_provide: {'key': 'hi1', 'another': 1231, 'new': 3} </div>
+            <div> first_provide: DepInject(key='hi', another=123, lost=0) </div>
+            <div> second_provide: DepInject(key='hi1', another=1231, new=3) </div>
             """,
         )
 
@@ -411,7 +411,7 @@ class ProvideTemplateTagTest(BaseTestCase):
             rendered,
             """
             <div>
-                <div> injected: {'key': 'hi', 'another': 123} </div>
+                <div> injected: DepInject(key='hi', another=123) </div>
             </div>
             """,
         )
@@ -443,7 +443,7 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: {'key': 'hi', 'another': 123} </div>
+            <div> injected: DepInject(key='hi', another=123) </div>
             """,
         )
 
