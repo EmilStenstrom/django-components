@@ -63,7 +63,7 @@ def trace(logger: logging.Logger, message: str, *args: Any, **kwargs: Any) -> No
 
 def trace_msg(
     action: Literal["PARSE", "ASSOC", "RENDR", "GET", "SET"],
-    node_type: Literal["COMP", "FILL", "SLOT", "N/A"],
+    node_type: Literal["COMP", "FILL", "SLOT", "PROVIDE", "N/A"],
     node_name: str,
     node_id: str,
     msg: str = "",

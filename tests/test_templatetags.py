@@ -453,3 +453,42 @@ class BlockCompatTests(BaseTestCase):
             </html>
         """
         self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_inject_inside_block(self):
+        component.registry.register("slotted_component", SlottedComponent)
+
+        @component.register("injectee")
+        class InjectComponent(component.Component):
+            template: types.django_html = """
+                <div> injected: {{ var|safe }} </div>
+            """
+
+            def get_context_data(self):
+                var = self.inject("block_provide")
+                return {"var": var}
+
+        template: types.django_html = """
+            {% extends "block_in_component_provide.html" %}
+            {% load component_tags %}
+            {% block body %}
+                {% component "injectee" %}
+                {% endcomponent %}
+            {% endblock %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+                <custom-template>
+                <header></header>
+                <main>
+                    <div> injected: DepInject(hello='from_block') </div>
+                </main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </body>
+            </html>
+        """
+        self.assertHTMLEqual(rendered, expected)

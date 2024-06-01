@@ -17,6 +17,7 @@ from django_components.middleware import (
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
+from django_components.provide import ProvideNode
 from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
 from django_components.template_parser import parse_bits
 from django_components.utils import gen_id
@@ -214,6 +215,30 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
 
     trace_msg("PARSE", "COMP", component_name, component_id, "...Done!")
     return component_node
+
+
+@register.tag("provide")
+def do_provide(parser: Parser, token: Token) -> SlotNode:
+    # e.g. {% provide <name> key=val key2=val2 %}
+    tag_name, *args = token.split_contents()
+    provide_key, kwargs = _parse_provide_args(parser, args, tag_name)
+
+    # Use a unique ID to be able to tie the fill nodes with components and slots
+    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
+    slot_id = gen_id()
+    trace_msg("PARSE", "PROVIDE", provide_key, slot_id)
+
+    nodelist = parser.parse(parse_until=["endprovide"])
+    parser.delete_first_token()
+    slot_node = ProvideNode(
+        provide_key,
+        nodelist,
+        node_id=slot_id,
+        provide_kwargs=kwargs,
+    )
+
+    trace_msg("PARSE", "PROVIDE", provide_key, slot_id, "...Done!")
+    return slot_node
 
 
 @register.tag("html_attrs")
@@ -436,6 +461,32 @@ def _parse_fill_args(
         raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
 
     return slot_name_fexp, slot_default_var_fexp, slot_data_var_fexp
+
+
+def _parse_provide_args(
+    parser: Parser,
+    bits: List[str],
+    tag_name: str,
+) -> Tuple[str, Dict[str, FilterExpression]]:
+    if not len(bits):
+        raise TemplateSyntaxError("'provide' tag does not match pattern {% provide <key> [key=val, ...] %}. ")
+
+    provide_key, *options = bits
+    if not is_wrapped_in_quotes(provide_key):
+        raise TemplateSyntaxError(f"'{tag_name}' key must be a string 'literal'.")
+
+    provide_key = resolve_string(provide_key, parser)
+
+    # Parse kwargs that will be 'provided' under the given key
+    _, tag_kwarg_pairs = parse_bits(parser=parser, bits=options, params=[], name=tag_name)
+    tag_kwargs: Dict[str, FilterExpression] = {}
+    for key, val in tag_kwarg_pairs:
+        if key in tag_kwargs:
+            # The keyword argument has already been supplied once
+            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
+        tag_kwargs[key] = val
+
+    return provide_key, tag_kwargs
 
 
 def _get_positional_param(

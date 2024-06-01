@@ -1,0 +1,15 @@
+{% load component_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    {% provide "block_provide" hello="from_block" %}
+      {% component "slotted_component" %}
+        {% fill "header" %}{% endfill %}
+        {% fill "main" %}
+            {% block body %}
+            {% endblock %}
+        {% endfill %}
+      {% endcomponent %}
+    {% endprovide %}
+  </body>
+</html>
