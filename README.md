@@ -45,6 +45,8 @@ Read on to learn about the details!
 
 ## Release notes
 
+**Version 0.80** introduces dependency injection with the `{% provide %}` tag and `inject()` method.
+
 🚨📢 **Version 0.79**
 
 - BREAKING CHANGE: Default value for the `COMPONENTS.context_behavior` setting was changes from `"isolated"` to `"django"`. If you did not set this value explicitly before, this may be a breaking change. See the rationale for change [here](https://github.com/EmilStenstrom/django-components/issues/498).
@@ -1365,6 +1367,8 @@ attributes_to_string(attrs)
 ```
 
 ## Prop drilling and dependency injection (provide / inject)
+
+_New in version 0.80_:
 
 Django components supports dependency injection with the combination of:
 1. `{% provide %}` tag
