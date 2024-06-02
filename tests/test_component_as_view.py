@@ -69,16 +69,16 @@ class TestComponentAsView(BaseTestCase):
             template = """
                 <form method="post">
                     {% csrf_token %}
-                    <input type="text" name="variable" value="{{ variable }}">
+                    <input type="text" name="variable" value="{{ inner_var }}">
                     <input type="submit">
                 </form>
                 """
 
             def get(self, request, *args, **kwargs) -> HttpResponse:
-                return self.render_to_response({"variable": "GET"})
+                return self.render_to_response(kwargs={"variable": "GET"})
 
-            def get_context_data(self, variable, *args, **kwargs) -> Dict[str, Any]:
-                return {"variable": variable}
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
 
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.get("/test/")
@@ -93,17 +93,17 @@ class TestComponentAsView(BaseTestCase):
             template = """
                 <form method="post">
                     {% csrf_token %}
-                    <input type="text" name="variable" value="{{ variable }}">
+                    <input type="text" name="variable" value="{{ inner_var }}">
                     <input type="submit">
                 </form>
                 """
 
             def post(self, request, *args, **kwargs) -> HttpResponse:
                 variable = request.POST.get("variable")
-                return self.render_to_response({"variable": variable})
+                return self.render_to_response(kwargs={"variable": variable})
 
-            def get_context_data(self, variable, *args, **kwargs) -> Dict[str, Any]:
-                return {"variable": variable}
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
 
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.post("/test/", {"variable": "POST"})
