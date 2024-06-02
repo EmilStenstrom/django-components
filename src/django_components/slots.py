@@ -2,7 +2,7 @@ import difflib
 import json
 import re
 from collections import deque
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Type, Union
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -14,7 +14,13 @@ from django_components.app_settings import ContextBehavior, app_settings
 from django_components.context import _FILLED_SLOTS_CONTENT_CONTEXT_KEY, _ROOT_CTX_CONTEXT_KEY
 from django_components.expression import resolve_expression_as_identifier, safe_resolve_dict
 from django_components.logger import trace_msg
-from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
+from django_components.node import (
+    NodeTraverse,
+    RenderFunc,
+    nodelist_has_content,
+    nodelist_to_render_func,
+    walk_nodelist,
+)
 from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
 
@@ -26,6 +32,7 @@ SlotId = str
 SlotName = str
 SlotDefaultName = str
 SlotDataName = str
+SlotContent = Union[str, SafeString, RenderFunc]
 
 
 class FillContent(NamedTuple):
@@ -43,7 +50,7 @@ class FillContent(NamedTuple):
     ```
     """
 
-    nodes: NodeList
+    content_func: RenderFunc
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
@@ -78,7 +85,7 @@ class SlotFill(NamedTuple):
     name: str
     escaped_name: str
     is_filled: bool
-    nodelist: NodeList
+    content_func: RenderFunc
     context_data: Dict
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
@@ -134,7 +141,7 @@ class SlotNode(Node):
 
     def render(self, context: Context) -> SafeString:
         trace_msg("RENDR", "SLOT", self.name, self.node_id)
-        slots: dict[SlotId, "SlotFill"] = context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY]
+        slots: Dict[SlotId, "SlotFill"] = context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY]
         # NOTE: Slot entry MUST be present. If it's missing, there was an issue upstream.
         slot_fill = slots[self.node_id]
 
@@ -167,7 +174,8 @@ class SlotNode(Node):
         # came from (or current context if configured so)
         used_ctx = self._resolve_slot_context(context, slot_fill)
         with used_ctx.update(extra_context):
-            output = slot_fill.nodelist.render(used_ctx)
+            # Render slot as a function
+            output = slot_fill.content_func(used_ctx)
 
         trace_msg("RENDR", "SLOT", self.name, self.node_id, msg="...Done!")
         return output
@@ -368,7 +376,7 @@ def resolve_slots(
             name=name,
             escaped_name=_escape_slot_name(name),
             is_filled=True,
-            nodelist=fill.nodes,
+            content_func=fill.content_func,
             context_data=context_data,
             slot_default_var=fill.slot_default_var,
             slot_data_var=fill.slot_data_var,
@@ -457,7 +465,7 @@ def resolve_slots(
                 name=slot.name,
                 escaped_name=_escape_slot_name(slot.name),
                 is_filled=False,
-                nodelist=slot.nodelist,
+                content_func=nodelist_to_render_func(slot.nodelist),
                 context_data=context_data,
                 slot_default_var=None,
                 slot_data_var=None,
@@ -505,7 +513,7 @@ def _resolve_default_slot(
                 # `NamedTuple._replace`, because `_replace` is not typed.
                 named_fills[slot.name] = SlotFill(
                     is_filled=default_fill.is_filled,
-                    nodelist=default_fill.nodelist,
+                    content_func=default_fill.content_func,
                     context_data=default_fill.context_data,
                     slot_default_var=default_fill.slot_default_var,
                     slot_data_var=default_fill.slot_data_var,

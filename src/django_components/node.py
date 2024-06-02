@@ -1,9 +1,19 @@
-from typing import Callable, List, NamedTuple, Optional
+from typing import Callable, List, NamedTuple, Optional, Union
 
 from django.template import Context, Template
 from django.template.base import Node, NodeList, TextNode
 from django.template.defaulttags import CommentNode
 from django.template.loader_tags import ExtendsNode, IncludeNode, construct_relative_path
+from django.utils.safestring import SafeText
+
+RenderedContent = Union[str, SafeText]
+RenderFunc = Callable[[Context], RenderedContent]
+
+
+def nodelist_to_render_func(nodelist: NodeList) -> RenderFunc:
+    def render_func(ctx: Context) -> RenderedContent:
+        return nodelist.render(ctx)
+    return render_func
 
 
 def nodelist_has_content(nodelist: NodeList) -> bool:
