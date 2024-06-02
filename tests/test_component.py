@@ -3,8 +3,8 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
-from django.http import HttpResponse
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponse
 from django.template import Context, Template, TemplateSyntaxError
 
 # isort: off

@@ -202,6 +202,7 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     class Media:
         """Defines JS and CSS media files associated with this component."""
+
         css: Optional[Union[str, List[str], Dict[str, str], Dict[str, List[str]]]] = None
         js: Optional[Union[str, List[str]]] = None
 
@@ -492,14 +493,13 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     ) -> Dict[SlotName, FillContent]:
         """Fill component slots outside of template rendering."""
         slot_fills = {}
-        for (slot_name, content) in slots_data.items():
+        for slot_name, content in slots_data.items():
             if isinstance(content, (str, SafeString)):
                 content_func = nodelist_to_render_func(
-                    NodeList([
-                        TextNode(escape(content) if escape_content else content)
-                    ])
+                    NodeList([TextNode(escape(content) if escape_content else content)])
                 )
             else:
+
                 def content_func(ctx: Context) -> RenderedContent:
                     rendered = content(ctx)
                     return escape(rendered) if escape_content else rendered

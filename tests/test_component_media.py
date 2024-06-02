@@ -141,9 +141,7 @@ class InlineComponentTest(BaseTestCase):
                     "var2": var2,
                 }
 
-        rendered = FilteredComponent.render(
-            kwargs={"var1": "test1", "var2": "test2"}
-        )
+        rendered = FilteredComponent.render(kwargs={"var1": "test1", "var2": "test2"})
         self.assertHTMLEqual(
             rendered,
             """

@@ -13,6 +13,7 @@ RenderFunc = Callable[[Context], RenderedContent]
 def nodelist_to_render_func(nodelist: NodeList) -> RenderFunc:
     def render_func(ctx: Context) -> RenderedContent:
         return nodelist.render(ctx)
+
     return render_func
 
 
