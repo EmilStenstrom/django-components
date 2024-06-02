@@ -335,6 +335,24 @@ class ComponentRenderTest(BaseTestCase):
             """,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_render_to_response_change_response_class(self):
+        class MyResponse:
+            def __init__(self, content: str) -> None:
+                self.content = bytes(content, "utf-8")
+
+        class SimpleComponent(component.Component):
+            response_class = MyResponse
+            template: types.django_html = "HELLO"
+
+        rendered = SimpleComponent.render_to_response()
+        self.assertIsInstance(rendered, MyResponse)
+
+        self.assertHTMLEqual(
+            rendered.content.decode(),
+            "HELLO",
+        )
+
     @parametrize_context_behavior([("django", False), ("isolated", True)])
     def test_render_slot_as_func(self, context_behavior_data):
         is_isolated = context_behavior_data
