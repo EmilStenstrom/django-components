@@ -506,6 +506,6 @@ class ComponentRenderTest(BaseTestCase):
 
         rendered_resp = TestComponent(component_id="123").render_to_response()
         self.assertHTMLEqual(
-            rendered_resp.content.decode('utf-8'),
+            rendered_resp.content.decode("utf-8"),
             "Variable: <strong>123</strong>",
         )
