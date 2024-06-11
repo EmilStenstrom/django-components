@@ -228,6 +228,20 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         self.component_id = component_id or gen_id()
         self._context: Optional[Context] = None
 
+        # When user first instantiates the component class before calling
+        # `render` or `render_to_response`, then we want to allow the render
+        # function to make use of the instantiated object.
+        #
+        # So while `MyComp.render()` creates a new instance of MyComp internally,
+        # if we do `MyComp(registered_name="abc").render()`, then we use the
+        # already-instantiated object.
+        #
+        # To achieve that, we want to re-assign the class methods as instance methods.
+        # For that we have to "unwrap" the class methods via __func__.
+        # See https://stackoverflow.com/a/76706399/9788634
+        self.render_to_response = types.MethodType(self.__class__.render_to_response.__func__, self)  # type: ignore
+        self.render = types.MethodType(self.__class__.render.__func__, self)  # type: ignore
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls._class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
@@ -440,7 +454,13 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         )
         ```
         """
-        comp = cls()
+        # This method may be called as class method or as instance method.
+        # If called as class method, create a new instance.
+        if isinstance(cls, Component):
+            comp: Component = cls
+        else:
+            comp = cls()
+
         return comp._render(context, args, kwargs, slots, escape_slots_content)
 
     def _render(

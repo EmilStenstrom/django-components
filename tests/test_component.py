@@ -477,3 +477,35 @@ class ComponentRenderTest(BaseTestCase):
 
             """,
         )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_render_can_access_instance(self):
+        class TestComponent(component.Component):
+            template = "Variable: <strong>{{ id }}</strong>"
+
+            def get_context_data(self, **attrs):
+                return {
+                    "id": self.component_id,
+                }
+
+        rendered = TestComponent(component_id="123").render()
+        self.assertHTMLEqual(
+            rendered,
+            "Variable: <strong>123</strong>",
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_render_to_response_can_access_instance(self):
+        class TestComponent(component.Component):
+            template = "Variable: <strong>{{ id }}</strong>"
+
+            def get_context_data(self, **attrs):
+                return {
+                    "id": self.component_id,
+                }
+
+        rendered_resp = TestComponent(component_id="123").render_to_response()
+        self.assertHTMLEqual(
+            rendered_resp.content.decode('utf-8'),
+            "Variable: <strong>123</strong>",
+        )
