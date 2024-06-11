@@ -20,7 +20,7 @@ class ComponentRegistry:
 
     def register(self, name: str, component: Type["component.Component"]) -> None:
         existing_component = self._registry.get(name)
-        if existing_component and existing_component.class_hash != component.class_hash:
+        if existing_component and existing_component._class_hash != component._class_hash:
             raise AlreadyRegistered('The component "%s" has already been registered' % name)
         self._registry[name] = component
 

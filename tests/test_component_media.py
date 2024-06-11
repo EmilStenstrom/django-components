@@ -141,11 +141,9 @@ class InlineComponentTest(BaseTestCase):
                     "var2": var2,
                 }
 
-        comp = FilteredComponent("filtered_component")
-        context = Context(comp.get_context_data(var1="test1", var2="test2"))
-
+        rendered = FilteredComponent.render(kwargs={"var1": "test1", "var2": "test2"})
         self.assertHTMLEqual(
-            comp.render(context),
+            rendered,
             """
             Var1: <strong>test1</strong>
             Var2 (uppercased): <strong>TEST2</strong>
