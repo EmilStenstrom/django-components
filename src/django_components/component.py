@@ -37,8 +37,17 @@ from django_components.context import (
 from django_components.expression import safe_resolve_dict, safe_resolve_list
 from django_components.logger import logger, trace_msg
 from django_components.middleware import is_dependency_middleware_active
-from django_components.node import RenderedContent, nodelist_to_render_func
-from django_components.slots import DEFAULT_SLOT_KEY, FillContent, FillNode, SlotContent, SlotName, resolve_slots
+from django_components.slots import (
+    DEFAULT_SLOT_KEY,
+    FillContent,
+    FillNode,
+    SlotContent,
+    SlotName,
+    SlotRef,
+    SlotRenderedContent,
+    _nodelist_to_slot_render_func,
+    resolve_slots,
+)
 from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id, search
 
@@ -495,13 +504,13 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         slot_fills = {}
         for slot_name, content in slots_data.items():
             if isinstance(content, (str, SafeString)):
-                content_func = nodelist_to_render_func(
+                content_func = _nodelist_to_slot_render_func(
                     NodeList([TextNode(escape(content) if escape_content else content)])
                 )
             else:
 
-                def content_func(ctx: Context) -> RenderedContent:
-                    rendered = content(ctx)
+                def content_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotRenderedContent:
+                    rendered = content(ctx, kwargs, slot_ref)
                     return escape(rendered) if escape_content else rendered
 
             slot_fills[slot_name] = FillContent(
@@ -555,7 +564,7 @@ class ComponentNode(Node):
         if is_default_slot:
             fill_content: Dict[str, FillContent] = {
                 DEFAULT_SLOT_KEY: FillContent(
-                    content_func=nodelist_to_render_func(self.fill_nodes[0].nodelist),
+                    content_func=_nodelist_to_slot_render_func(self.fill_nodes[0].nodelist),
                     slot_data_var=None,
                     slot_default_var=None,
                 ),
@@ -575,7 +584,7 @@ class ComponentNode(Node):
                 resolved_slot_default_var = fill_node.resolve_slot_default(context, resolved_component_name)
                 resolved_slot_data_var = fill_node.resolve_slot_data(context, resolved_component_name)
                 fill_content[resolved_name] = FillContent(
-                    content_func=nodelist_to_render_func(fill_node.nodelist),
+                    content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
                     slot_default_var=resolved_slot_default_var,
                     slot_data_var=resolved_slot_data_var,
                 )

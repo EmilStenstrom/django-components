@@ -3,6 +3,8 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
+from typing import Dict
+
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
 from django.template import Context, Template, TemplateSyntaxError
@@ -14,6 +16,7 @@ from .testutils import BaseTestCase, parametrize_context_behavior
 # isort: on
 
 from django_components import component, types
+from django_components.slots import SlotRef
 
 
 class ComponentTest(BaseTestCase):
@@ -360,7 +363,8 @@ class ComponentRenderTest(BaseTestCase):
         class SimpleComponent(component.Component):
             template: types.django_html = """
                 {% load component_tags %}
-                {% slot "first" required %}
+                {% slot "first" required data1="abc" data2:hello="world" data2:one=123 %}
+                    SLOT_DEFAULT
                 {% endslot %}
             """
 
@@ -371,7 +375,7 @@ class ComponentRenderTest(BaseTestCase):
                     "kwargs": kwargs,
                 }
 
-        def first_slot(ctx: Context):
+        def first_slot(ctx: Context, slot_data: Dict, slot_ref: SlotRef):
             self.assertIsInstance(ctx, Context)
             # NOTE: Since the slot has access to the Context object, it should behave
             # the same way as it does in templates - when in "isolated" mode, then the
@@ -388,7 +392,16 @@ class ComponentRenderTest(BaseTestCase):
                 self.assertEqual(ctx["kwargs"], {})
                 self.assertEqual(ctx["abc"], "def")
 
-            return "FROM_INSIDE_FIRST_SLOT"
+            slot_data_expected = {
+                "data1": "abc",
+                "data2": {"hello": "world", "one": 123},
+            }
+            self.assertDictEqual(slot_data_expected, slot_data)
+
+            self.assertIsInstance(slot_ref, SlotRef)
+            self.assertEqual("SLOT_DEFAULT", str(slot_ref).strip())
+
+            return f"FROM_INSIDE_FIRST_SLOT | {slot_ref}"
 
         rendered = SimpleComponent.render(
             context={"abc": "def"},
@@ -398,7 +411,7 @@ class ComponentRenderTest(BaseTestCase):
         )
         self.assertHTMLEqual(
             rendered,
-            "FROM_INSIDE_FIRST_SLOT",
+            "FROM_INSIDE_FIRST_SLOT | SLOT_DEFAULT",
         )
 
     @parametrize_context_behavior(["django", "isolated"])

@@ -2,7 +2,7 @@ import difflib
 import json
 import re
 from collections import deque
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Tuple, Type, Union
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -14,17 +14,14 @@ from django_components.app_settings import ContextBehavior, app_settings
 from django_components.context import _FILLED_SLOTS_CONTENT_CONTEXT_KEY, _ROOT_CTX_CONTEXT_KEY
 from django_components.expression import resolve_expression_as_identifier, safe_resolve_dict
 from django_components.logger import trace_msg
-from django_components.node import (
-    NodeTraverse,
-    RenderFunc,
-    nodelist_has_content,
-    nodelist_to_render_func,
-    walk_nodelist,
-)
+from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
 from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
+
+SlotRenderedContent = Union[str, SafeString]
+SlotRenderFunc = Callable[[Context, Dict[str, Any], "SlotRef"], SlotRenderedContent]
 
 # Type aliases
 
@@ -32,7 +29,7 @@ SlotId = str
 SlotName = str
 SlotDefaultName = str
 SlotDataName = str
-SlotContent = Union[str, SafeString, RenderFunc]
+SlotContent = Union[str, SafeString, SlotRenderFunc]
 
 
 class FillContent(NamedTuple):
@@ -50,7 +47,7 @@ class FillContent(NamedTuple):
     ```
     """
 
-    content_func: RenderFunc
+    content_func: SlotRenderFunc
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
@@ -85,18 +82,18 @@ class SlotFill(NamedTuple):
     name: str
     escaped_name: str
     is_filled: bool
-    content_func: RenderFunc
+    content_func: SlotRenderFunc
     context_data: Dict
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
 
-class LazySlot:
+class SlotRef:
     """
-    Bound a slot and a context, so we can move these around as a single variable,
-    and lazily render the slot with given context only once coerced to string.
+    SlotRef allows to treat a slot as a variable. The slot is rendered only once
+    the instance is coerced to string.
 
-    This is used to access slots as variables inside the templates. When a LazySlot
+    This is used to access slots as variables inside the templates. When a SlotRef
     is rendered in the template with `{{ my_lazy_slot }}`, it will output the contents
     of the slot.
     """
@@ -105,7 +102,7 @@ class LazySlot:
         self._slot = slot
         self._context = context
 
-    # Render the slot when the template coerces LazySlot to string
+    # Render the slot when the template coerces SlotRef to string
     def __str__(self) -> str:
         return mark_safe(self._slot.nodelist.render(self._context))
 
@@ -149,25 +146,26 @@ class SlotNode(Node):
 
         # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
         # the context, so users can refer to the default slot from within the fill content.
+        slot_ref = SlotRef(self, context)
         default_var = slot_fill.slot_default_var
         if default_var:
             if not default_var.isidentifier():
                 raise TemplateSyntaxError(
                     f"Slot default alias in fill '{self.name}' must be a valid identifier. Got '{default_var}'"
                 )
-            extra_context[default_var] = LazySlot(self, context)
+            extra_context[default_var] = slot_ref
 
         # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
         # are made available through a variable name that was set on the `{% fill %}`
         # tag.
+        slot_kwargs = safe_resolve_dict(self.slot_kwargs, context)
+        slot_kwargs = process_aggregate_kwargs(slot_kwargs)
         data_var = slot_fill.slot_data_var
         if data_var:
             if not data_var.isidentifier():
                 raise TemplateSyntaxError(
                     f"Slot data alias in fill '{self.name}' must be a valid identifier. Got '{data_var}'"
                 )
-            slot_kwargs = safe_resolve_dict(self.slot_kwargs, context)
-            slot_kwargs = process_aggregate_kwargs(slot_kwargs)
             extra_context[data_var] = slot_kwargs
 
         # For the user-provided slot fill, we want to use the context of where the slot
@@ -175,7 +173,9 @@ class SlotNode(Node):
         used_ctx = self._resolve_slot_context(context, slot_fill)
         with used_ctx.update(extra_context):
             # Render slot as a function
-            output = slot_fill.content_func(used_ctx)
+            # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
+            #       the render function ALWAYS receives them.
+            output = slot_fill.content_func(used_ctx, slot_kwargs, slot_ref)
 
         trace_msg("RENDR", "SLOT", self.name, self.node_id, msg="...Done!")
         return output
@@ -465,7 +465,7 @@ def resolve_slots(
                 name=slot.name,
                 escaped_name=_escape_slot_name(slot.name),
                 is_filled=False,
-                content_func=nodelist_to_render_func(slot.nodelist),
+                content_func=_nodelist_to_slot_render_func(slot.nodelist),
                 context_data=context_data,
                 slot_default_var=None,
                 slot_data_var=None,
@@ -595,3 +595,10 @@ def _escape_slot_name(name: str) -> str:
     # we leave this obligation to the user.
     escaped_name = name_escape_re.sub("_", name)
     return escaped_name
+
+
+def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotRenderFunc:
+    def render_func(ctx: Context, slot_kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotRenderedContent:
+        return nodelist.render(ctx)
+
+    return render_func
