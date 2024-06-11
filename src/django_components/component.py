@@ -361,7 +361,8 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         - `kwargs` - Kwargs for the component. This is the same as calling the component
           as `{% component "my_comp" key1=val1 key2=val2 ... %}`
         - `slots` - Component slot fills. This is the same as pasing `{% fill %}` tags to the component.
-            Accepts a dictionary of `{ slot_name: slot_content }` where `slot_content` can be a string or render function.
+            Accepts a dictionary of `{ slot_name: slot_content }` where `slot_content` can be a string
+            or render function.
         - `escape_slots_content` - Whether the content from `slots` should be escaped.
         - `context` - A context (dictionary or Django's Context) within which the component
           is rendered. The keys on the context can be accessed from within the template.
@@ -416,7 +417,8 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
         - `kwargs` - Kwargs for the component. This is the same as calling the component
           as `{% component "my_comp" key1=val1 key2=val2 ... %}`
         - `slots` - Component slot fills. This is the same as pasing `{% fill %}` tags to the component.
-            Accepts a dictionary of `{ slot_name: slot_content }` where `slot_content` can be a string or render function.
+            Accepts a dictionary of `{ slot_name: slot_content }` where `slot_content` can be a string
+            or render function.
         - `escape_slots_content` - Whether the content from `slots` should be escaped.
         - `context` - A context (dictionary or Django's Context) within which the component
           is rendered. The keys on the context can be accessed from within the template.
