@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 from pathlib import Path
 
 from django.forms.widgets import Media
@@ -305,6 +305,7 @@ class ComponentMediaTests(BaseTestCase):
         class JSTag:
             def __init__(self, path: str) -> None:
                 self.path = path
+
             def __str__(self):
                 return f'<script js_tag src="{self.path}" type="module"></script>'
 
@@ -312,6 +313,7 @@ class ComponentMediaTests(BaseTestCase):
         class CSSTag:
             def __init__(self, path: str) -> None:
                 self.path = path
+
             def __str__(self):
                 return f'<link css_tag href="{self.path}" rel="stylesheet" />'
 
@@ -319,18 +321,18 @@ class ComponentMediaTests(BaseTestCase):
             class Media:
                 css = {
                     "all": [
-                        CSSTag("path/to/style.css"),                                # Formatted by CSSTag
-                        mark_safe('<link hi href="path/to/style2.css" rel="stylesheet" />'), # Literal
+                        CSSTag("path/to/style.css"),  # Formatted by CSSTag
+                        mark_safe('<link hi href="path/to/style2.css" rel="stylesheet" />'),  # Literal
                     ],
                     "print": [
-                        CSSTag("path/to/style3.css"),                               # Formatted by CSSTag
+                        CSSTag("path/to/style3.css"),  # Formatted by CSSTag
                     ],
-                    "screen": "path/to/style4.css",                                 # Formatted by Media.render_css
+                    "screen": "path/to/style4.css",  # Formatted by Media.render_css
                 }
                 js = [
-                    JSTag("path/to/script.js"),                                     # Formatted by JSTag
-                    mark_safe('<script hi src="path/to/script2.js"></script>'),    # Literal
-                    "path/to/script3.js",                                           # Formatted by Media.render_js
+                    JSTag("path/to/script.js"),  # Formatted by JSTag
+                    mark_safe('<script hi src="path/to/script2.js"></script>'),  # Literal
+                    "path/to/script3.js",  # Formatted by Media.render_js
                 ]
 
         comp = SimpleComponent()
@@ -353,9 +355,11 @@ class ComponentMediaTests(BaseTestCase):
         Test that media work with paths defined as instances of classes that define
         the `__fspath__` method.
         """
+
         class MyPath(os.PathLike):
             def __init__(self, path: str) -> None:
                 self.path = path
+
             def __fspath__(self):
                 return self.path
 
@@ -364,7 +368,7 @@ class ComponentMediaTests(BaseTestCase):
                 css = {
                     "all": [
                         MyPath("path/to/style.css"),
-                        Path('path/to/style2.css'),
+                        Path("path/to/style2.css"),
                     ],
                     "print": [
                         MyPath("path/to/style3.css"),
@@ -373,7 +377,7 @@ class ComponentMediaTests(BaseTestCase):
                 }
                 js = [
                     MyPath("path/to/script.js"),
-                    Path('path/to/script2.js'),
+                    Path("path/to/script2.js"),
                     "path/to/script3.js",
                 ]
 
@@ -397,6 +401,7 @@ class ComponentMediaTests(BaseTestCase):
         Test that media work with paths defined as instances of classes that
         subclass 'str'.
         """
+
         class MyStr(str):
             pass
 
@@ -405,7 +410,7 @@ class ComponentMediaTests(BaseTestCase):
                 css = {
                     "all": [
                         MyStr("path/to/style.css"),
-                        'path/to/style2.css',
+                        "path/to/style2.css",
                     ],
                     "print": [
                         MyStr("path/to/style3.css"),
@@ -436,6 +441,7 @@ class ComponentMediaTests(BaseTestCase):
         Test that media work with paths defined as instances of classes that
         subclass 'bytes'.
         """
+
         class MyBytes(bytes):
             pass
 
@@ -444,7 +450,7 @@ class ComponentMediaTests(BaseTestCase):
                 css = {
                     "all": [
                         MyBytes(b"path/to/style.css"),
-                        b'path/to/style2.css',
+                        b"path/to/style2.css",
                     ],
                     "print": [
                         MyBytes(b"path/to/style3.css"),
@@ -480,6 +486,7 @@ class ComponentMediaTests(BaseTestCase):
 
         class SimpleComponent(component.Component):
             media_class = MyMedia
+
             class Media:
                 js = ["path/to/script.js", "path/to/script2.js"]
 
@@ -505,6 +512,7 @@ class ComponentMediaTests(BaseTestCase):
 
         class SimpleComponent(component.Component):
             media_class = MyMedia
+
             class Media:
                 css = {
                     "all": "path/to/style.css",

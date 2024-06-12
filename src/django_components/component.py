@@ -3,7 +3,7 @@ import os
 import sys
 import types
 from pathlib import Path
-from typing import Any, ClassVar, Callable, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import Any, Callable, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -76,11 +76,13 @@ class ComponentMeta(MediaDefiningClass):
         # So we reused that and convert it to user-defined Media class
         media_prop: property = cls.media
         media_getter = media_prop.fget
+
         def media_wrapper(self: "Component") -> Any:
             if not media_getter:
                 return None
             media: Media = media_getter(self)
             return self.media_class(js=media._js, css=media._css)
+
         cls.media = property(media_wrapper)
 
         return cls
@@ -115,21 +117,24 @@ def _normalize_media_filepaths(media: "Component.Media") -> None:
 def _map_media_filepaths(media: "Component.Media", map_fn: Callable[[Any], Any]) -> None:
     if hasattr(media, "css"):
         if not isinstance(media.css, dict):
-            raise ValueError("#TODO") # TODO
+            raise ValueError("#TODO")  # TODO
 
         for media_type, path_list in media.css.items():
             media.css[media_type] = list(map(map_fn, path_list))
 
     if hasattr(media, "js"):
         if not isinstance(media.js, list):
-            raise ValueError("#TODO") # TODO
+            raise ValueError("#TODO")  # TODO
 
         media.js = list(map(map_fn, media.js))
 
 
-import pathlib
 import os
+import pathlib
+
 from django.utils.safestring import SafeData
+
+
 def _is_media_filepath(filepath: Any) -> bool:
     if isinstance(filepath, SafeData) or hasattr(filepath, "__html__"):
         return True
@@ -142,7 +147,7 @@ def _is_media_filepath(filepath: Any) -> bool:
 
     if isinstance(filepath, str):
         return True
-    
+
     return False
 
 
@@ -156,11 +161,11 @@ def _normalize_media_filepath(filepath: Any) -> str | SafeData:
         filepath = filepath.__fspath__()
 
     if isinstance(filepath, bytes):
-        filepath = filepath.decode('utf-8')
+        filepath = filepath.decode("utf-8")
 
     if isinstance(filepath, str):
         return filepath
-    
+
     raise ValueError("Unknown filepath. Must be str, bytes, PathLike")
 
 
