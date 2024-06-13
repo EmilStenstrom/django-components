@@ -3,7 +3,7 @@ import os
 import sys
 import types
 from pathlib import Path
-from typing import Any, ClassVar, Callable, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MediaDefiningClass
@@ -13,7 +13,6 @@ from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
-from django.templatetags.static import static
 from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
@@ -55,7 +54,7 @@ from django_components.utils import gen_id, search
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
 
-class ComponentMeta(MediaDefiningClass):
+class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
         # NOTE: Skip template/media file resolution when then Component class ITSELF
         # is being created.
@@ -63,105 +62,29 @@ class ComponentMeta(MediaDefiningClass):
             return super().__new__(mcs, name, bases, attrs)
 
         if "Media" in attrs:
-            media_data: Component.Media = attrs["Media"]
-            _normalize_media(media_data)
-            _normalize_media_filepaths(media_data)
+            media: Component.Media = attrs["Media"]
+
+            # Allow: class Media: css = "style.css"
+            if hasattr(media, "css") and isinstance(media.css, str):
+                media.css = [media.css]
+
+            # Allow: class Media: css = ["style.css"]
+            if hasattr(media, "css") and isinstance(media.css, list):
+                media.css = {"all": media.css}
+
+            # Allow: class Media: css = {"all": "style.css"}
+            if hasattr(media, "css") and isinstance(media.css, dict):
+                for media_type, path_list in media.css.items():
+                    if isinstance(path_list, str):
+                        media.css[media_type] = [path_list]  # type: ignore
+
+            # Allow: class Media: js = "script.js"
+            if hasattr(media, "js") and isinstance(media.js, str):
+                media.js = [media.js]
 
         _resolve_component_relative_files(attrs)
 
-        cls = super().__new__(mcs, name, bases, attrs)
-
-        # Allow users to provide custom subclasses of Media via `media_class`.
-        # `MediaDefiningClass` defines `media` as a getter (defined in djago.forms.widgets.media_property).
-        # So we reused that and convert it to user-defined Media class
-        media_prop: property = cls.media
-        media_getter = media_prop.fget
-        def media_wrapper(self: "Component") -> Any:
-            if not media_getter:
-                return None
-            media: Media = media_getter(self)
-            return self.media_class(js=media._js, css=media._css)
-        cls.media = property(media_wrapper)
-
-        return cls
-
-
-def _normalize_media(media: "Component.Media") -> None:
-    if hasattr(media, "css") and media.css:
-        # Allow: class Media: css = "style.css"
-        if _is_media_filepath(media.css):
-            media.css = [media.css]
-
-        # Allow: class Media: css = ["style.css"]
-        if isinstance(media.css, list):
-            media.css = {"all": media.css}
-
-        # Allow: class Media: css = {"all": "style.css"}
-        if isinstance(media.css, dict):
-            for media_type, path_list in media.css.items():
-                if _is_media_filepath(path_list):
-                    media.css[media_type] = [path_list]  # type: ignore
-
-    if hasattr(media, "js") and media.js:
-        # Allow: class Media: js = "script.js"
-        if _is_media_filepath(media.js):
-            media.js = [media.js]
-
-
-def _normalize_media_filepaths(media: "Component.Media") -> None:
-    return _map_media_filepaths(media, _normalize_media_filepath)
-
-
-def _map_media_filepaths(media: "Component.Media", map_fn: Callable[[Any], Any]) -> None:
-    if hasattr(media, "css"):
-        if not isinstance(media.css, dict):
-            raise ValueError("#TODO") # TODO
-
-        for media_type, path_list in media.css.items():
-            media.css[media_type] = list(map(map_fn, path_list))
-
-    if hasattr(media, "js"):
-        if not isinstance(media.js, list):
-            raise ValueError("#TODO") # TODO
-
-        media.js = list(map(map_fn, media.js))
-
-
-import pathlib
-import os
-from django.utils.safestring import SafeData
-def _is_media_filepath(filepath: Any) -> bool:
-    if isinstance(filepath, SafeData) or hasattr(filepath, "__html__"):
-        return True
-
-    elif isinstance(filepath, (pathlib.PurePath, os.PathLike)) or hasattr(filepath, "__fspath__"):
-        return True
-
-    if isinstance(filepath, bytes):
-        return True
-
-    if isinstance(filepath, str):
-        return True
-    
-    return False
-
-
-def _normalize_media_filepath(filepath: Any) -> str | SafeData:
-    print("_normalize_media_filepath: ", filepath)
-
-    if isinstance(filepath, SafeData) or hasattr(filepath, "__html__"):
-        return filepath
-
-    if isinstance(filepath, (pathlib.PurePath, os.PathLike)) or hasattr(filepath, "__fspath__"):
-        filepath = filepath.__fspath__()
-
-    if isinstance(filepath, bytes):
-        filepath = filepath.decode('utf-8')
-
-    if isinstance(filepath, str):
-        return filepath
-    
-    raise ValueError("Unknown filepath. Must be str, bytes, PathLike")
+        return super().__new__(mcs, name, bases, attrs)
 
 
 def _resolve_component_relative_files(attrs: MutableMapping) -> None:
@@ -203,17 +126,15 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     # Check if filepath refers to a file that's in the same directory as the component class.
     # If yes, modify the path to refer to the relative file.
     # If not, don't modify anything.
-    def resolve_file(filepath: str | SafeData) -> str | SafeData:
-        if isinstance(filepath, str):
-            maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
-            component_import_filepath = os.path.join(comp_dir_rel, filepath)
+    def resolve_file(filepath: str) -> str:
+        maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
+        component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
-            if os.path.isfile(maybe_resolved_filepath):
-                logger.debug(
-                    f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file"
-                )
-                return static(component_import_filepath)
-            return static(filepath)
+        if os.path.isfile(maybe_resolved_filepath):
+            logger.debug(
+                f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file"
+            )
+            return component_import_filepath
 
         logger.debug(
             f"Interpreting template '{filepath}' of component '{module_name}' relatively to components directory"
@@ -225,8 +146,16 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
         attrs["template_name"] = resolve_file(attrs["template_name"])
 
     if "Media" in attrs:
-        media: Component.Media = attrs["Media"]
-        _map_media_filepaths(media, resolve_file)
+        media = attrs["Media"]
+
+        # Now check the same for CSS files
+        if hasattr(media, "css") and isinstance(media.css, dict):
+            for media_type, path_list in media.css.items():
+                media.css[media_type] = [resolve_file(filepath) for filepath in path_list]
+
+        # And JS
+        if hasattr(media, "js") and isinstance(media.js, list):
+            media.js = [resolve_file(filepath) for filepath in media.js]
 
 
 def _get_dir_path_from_component_path(
@@ -258,7 +187,7 @@ def _get_dir_path_from_component_path(
     return comp_dir_path_abs, comp_dir_path_rel
 
 
-class Component(View, metaclass=ComponentMeta):
+class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     _class_hash: ClassVar[int]
@@ -277,7 +206,6 @@ class Component(View, metaclass=ComponentMeta):
 
     NOTE: This field is generated from Component.Media class.
     """
-    media_class: Media = Media
     response_class = HttpResponse
     """This allows to configure what class is used to generate response from `render_to_response`"""
 
