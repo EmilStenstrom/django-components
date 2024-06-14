@@ -1,12 +1,9 @@
 import inspect
-import os
-import sys
 import types
-from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
-from django.forms.widgets import Media, MediaDefiningClass
+from django.forms.widgets import Media
 from django.http import HttpResponse
 from django.template.base import FilterExpression, Node, NodeList, Template, TextNode
 from django.template.context import Context
@@ -17,6 +14,7 @@ from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
+from django_components.component_media import ComponentMediaInput, MediaMeta
 # Global registry var and register() function moved to separate module.
 # Defining them here made little sense, since 1) component_tags.py and component.py
 # rely on them equally, and 2) it made it difficult to avoid circularity in the
@@ -35,7 +33,7 @@ from django_components.context import (
     prepare_context,
 )
 from django_components.expression import safe_resolve_dict, safe_resolve_list
-from django_components.logger import logger, trace_msg
+from django_components.logger import trace_msg
 from django_components.middleware import is_dependency_middleware_active
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
@@ -49,145 +47,22 @@ from django_components.slots import (
     resolve_slots,
 )
 from django_components.template_parser import process_aggregate_kwargs
-from django_components.utils import gen_id, search
+from django_components.utils import gen_id
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
 
-class SimplifiedInterfaceMediaDefiningClass(MediaDefiningClass):
+class ComponentMeta(MediaMeta):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
         # NOTE: Skip template/media file resolution when then Component class ITSELF
         # is being created.
         if "__module__" in attrs and attrs["__module__"] == "django_components.component":
             return super().__new__(mcs, name, bases, attrs)
 
-        if "Media" in attrs:
-            media: Component.Media = attrs["Media"]
-
-            # Allow: class Media: css = "style.css"
-            if hasattr(media, "css") and isinstance(media.css, str):
-                media.css = [media.css]
-
-            # Allow: class Media: css = ["style.css"]
-            if hasattr(media, "css") and isinstance(media.css, list):
-                media.css = {"all": media.css}
-
-            # Allow: class Media: css = {"all": "style.css"}
-            if hasattr(media, "css") and isinstance(media.css, dict):
-                for media_type, path_list in media.css.items():
-                    if isinstance(path_list, str):
-                        media.css[media_type] = [path_list]  # type: ignore
-
-            # Allow: class Media: js = "script.js"
-            if hasattr(media, "js") and isinstance(media.js, str):
-                media.js = [media.js]
-
-        _resolve_component_relative_files(attrs)
-
         return super().__new__(mcs, name, bases, attrs)
 
 
-def _resolve_component_relative_files(attrs: MutableMapping) -> None:
-    """
-    Check if component's HTML, JS and CSS files refer to files in the same directory
-    as the component class. If so, modify the attributes so the class Django's rendering
-    will pick up these files correctly.
-    """
-    component_name = attrs["__qualname__"]
-    # Derive the full path of the file where the component was defined
-    module_name = attrs["__module__"]
-    module_obj = sys.modules[module_name]
-    file_path = module_obj.__file__
-
-    if not file_path:
-        logger.debug(
-            f"Could not resolve the path to the file for component '{component_name}'."
-            " Paths for HTML, JS or CSS templates will NOT be resolved relative to the component file."
-        )
-        return
-
-    # Prepare all possible directories we need to check when searching for
-    # component's template and media files
-    components_dirs = search().searched_dirs
-
-    # Get the directory where the component class is defined
-    try:
-        comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_path(file_path, components_dirs)
-    except RuntimeError:
-        # If no dir was found, we assume that the path is NOT relative to the component dir
-        logger.debug(
-            f"No component directory found for component '{component_name}' in {file_path}"
-            " If this component defines HTML, JS or CSS templates relatively to the component file,"
-            " then check that the component's directory is accessible from one of the paths"
-            " specified in the Django's 'STATICFILES_DIRS' settings."
-        )
-        return
-
-    # Check if filepath refers to a file that's in the same directory as the component class.
-    # If yes, modify the path to refer to the relative file.
-    # If not, don't modify anything.
-    def resolve_file(filepath: str) -> str:
-        maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
-        component_import_filepath = os.path.join(comp_dir_rel, filepath)
-
-        if os.path.isfile(maybe_resolved_filepath):
-            logger.debug(
-                f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file"
-            )
-            return component_import_filepath
-
-        logger.debug(
-            f"Interpreting template '{filepath}' of component '{module_name}' relatively to components directory"
-        )
-        return filepath
-
-    # Check if template name is a local file or not
-    if "template_name" in attrs and attrs["template_name"]:
-        attrs["template_name"] = resolve_file(attrs["template_name"])
-
-    if "Media" in attrs:
-        media = attrs["Media"]
-
-        # Now check the same for CSS files
-        if hasattr(media, "css") and isinstance(media.css, dict):
-            for media_type, path_list in media.css.items():
-                media.css[media_type] = [resolve_file(filepath) for filepath in path_list]
-
-        # And JS
-        if hasattr(media, "js") and isinstance(media.js, list):
-            media.js = [resolve_file(filepath) for filepath in media.js]
-
-
-def _get_dir_path_from_component_path(
-    abs_component_file_path: str,
-    candidate_dirs: Union[List[str], List[Path]],
-) -> Tuple[str, str]:
-    comp_dir_path_abs = os.path.dirname(abs_component_file_path)
-
-    # From all dirs defined in settings.STATICFILES_DIRS, find one that's the parent
-    # to the component file.
-    root_dir_abs = None
-    for candidate_dir in candidate_dirs:
-        candidate_dir_abs = os.path.abspath(candidate_dir)
-        if comp_dir_path_abs.startswith(candidate_dir_abs):
-            root_dir_abs = candidate_dir_abs
-            break
-
-    if root_dir_abs is None:
-        raise RuntimeError(
-            f"Failed to resolve template directory for component file '{abs_component_file_path}'",
-        )
-
-    # Derive the path from matched STATICFILES_DIRS to the dir where the current component file is.
-    comp_dir_path_rel = os.path.relpath(comp_dir_path_abs, candidate_dir_abs)
-
-    # Return both absolute and relative paths:
-    # - Absolute path is used to check if the file exists
-    # - Relative path is used for defining the import on the component class
-    return comp_dir_path_abs, comp_dir_path_rel
-
-
-class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
+class Component(View, metaclass=ComponentMeta):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     _class_hash: ClassVar[int]
@@ -206,14 +81,12 @@ class Component(View, metaclass=SimplifiedInterfaceMediaDefiningClass):
 
     NOTE: This field is generated from Component.Media class.
     """
+    media_class: Media = Media
     response_class = HttpResponse
     """This allows to configure what class is used to generate response from `render_to_response`"""
 
-    class Media:
-        """Defines JS and CSS media files associated with this component."""
-
-        css: Optional[Union[str, List[str], Dict[str, str], Dict[str, List[str]]]] = None
-        js: Optional[Union[str, List[str]]] = None
+    Media = ComponentMediaInput
+    """Defines JS and CSS media files associated with this component."""
 
     def __init__(
         self,
