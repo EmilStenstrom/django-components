@@ -15,6 +15,7 @@ from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
 from django_components.component_media import ComponentMediaInput, MediaMeta
+
 # Global registry var and register() function moved to separate module.
 # Defining them here made little sense, since 1) component_tags.py and component.py
 # rely on them equally, and 2) it made it difficult to avoid circularity in the

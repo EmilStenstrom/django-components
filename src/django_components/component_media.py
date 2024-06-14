@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, MutableMapping, Optional, Tuple, Type, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, MutableMapping, Optional, Tuple, Type, Union
 
 from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
@@ -160,7 +160,9 @@ def _normalize_media_filepath(filepath: Any) -> str | SafeData:
     if isinstance(filepath, str):
         return filepath
 
-    raise ValueError("Unknown filepath. Must be str, bytes, PathLike or a function that returns one of the former") # TODO UPDATE
+    raise ValueError(
+        "Unknown filepath. Must be str, bytes, PathLike or a function that returns one of the former"
+    )  # TODO UPDATE
 
 
 def _resolve_component_relative_files(attrs: MutableMapping) -> None:

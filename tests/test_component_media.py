@@ -286,7 +286,6 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-
     def test_path_as_object_safestring(self):
         """
         Test that media work with paths defined as instances of classes that define
