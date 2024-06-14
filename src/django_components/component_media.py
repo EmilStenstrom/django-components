@@ -72,7 +72,7 @@ class MediaMeta(MediaDefiningClass):
 # Allow users to provide custom subclasses of Media via `media_class`.
 # `MediaDefiningClass` defines `media` as a getter (defined in django.forms.widgets.media_property).
 # So we reused that and convert it to user-defined Media class
-def _monkeypatch_media_property(comp_cls: type["Component"]) -> None:
+def _monkeypatch_media_property(comp_cls: Type["Component"]) -> None:
     if not hasattr(comp_cls, "media_class"):
         return
 
@@ -144,7 +144,7 @@ def _is_media_filepath(filepath: Any) -> bool:
     return False
 
 
-def _normalize_media_filepath(filepath: Any) -> str | SafeData:
+def _normalize_media_filepath(filepath: Any) -> Union[str, SafeData]:
     if callable(filepath):
         filepath = filepath()
 
@@ -204,7 +204,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     # Check if filepath refers to a file that's in the same directory as the component class.
     # If yes, modify the path to refer to the relative file.
     # If not, don't modify anything.
-    def resolve_file(filepath: str | SafeData) -> str | SafeData:
+    def resolve_file(filepath: Union[str, SafeData]) -> Union[str, SafeData]:
         if isinstance(filepath, str):
             maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
             component_import_filepath = os.path.join(comp_dir_rel, filepath)
