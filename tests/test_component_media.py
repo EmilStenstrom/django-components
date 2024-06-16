@@ -291,8 +291,9 @@ class ComponentMediaTests(BaseTestCase):
         class MyMedia(Media):
             def render_js(self):
                 tags: list[str] = []
-                for path in self._js:
-                    tags.append(f'<my_script_tag src="{self.absolute_path(path)}"></my_script_tag>')
+                for path in self._js:  # type: ignore[attr-defined]
+                    abs_path = self.absolute_path(path)  # type: ignore[attr-defined]
+                    tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
                 return tags
 
         class SimpleComponent(component.Component):
@@ -314,9 +315,9 @@ class ComponentMediaTests(BaseTestCase):
         class MyMedia(Media):
             def render_css(self):
                 tags: list[str] = []
-                media = sorted(self._css)
+                media = sorted(self._css)  # type: ignore[attr-defined]
                 for medium in media:
-                    for path in self._css[medium]:
+                    for path in self._css[medium]:  # type: ignore[attr-defined]
                         tags.append(f'<my_link href="{path}" media="{medium}" rel="stylesheet" />')
                 return tags
 
@@ -620,8 +621,9 @@ class MediaStaticfilesTests(BaseTestCase):
         class MyMedia(Media):
             def render_js(self):
                 tags: list[str] = []
-                for path in self._js:
-                    tags.append(f'<my_script_tag src="{self.absolute_path(path)}"></my_script_tag>')
+                for path in self._js:  # type: ignore[attr-defined]
+                    abs_path = self.absolute_path(path)  # type: ignore[attr-defined]
+                    tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
                 return tags
 
         class SimpleComponent(component.Component):
@@ -676,8 +678,9 @@ class MediaStaticfilesTests(BaseTestCase):
         class MyMedia(Media):
             def render_js(self):
                 tags: list[str] = []
-                for path in self._js:
-                    tags.append(f'<my_script_tag src="{self.absolute_path(path)}"></my_script_tag>')
+                for path in self._js:  # type: ignore[attr-defined]
+                    abs_path = self.absolute_path(path)  # type: ignore[attr-defined]
+                    tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
                 return tags
 
         class SimpleComponent(component.Component):
