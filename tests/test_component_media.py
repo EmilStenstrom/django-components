@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 from django.forms.widgets import Media
+from django.templatetags.static import static
 from django.template import Context, Template
 from django.test import override_settings
 from django.utils.html import html_safe
@@ -286,7 +287,62 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-    def test_path_as_object_safestring(self):
+    def test_media_custom_render_js(self):
+        class MyMedia(Media):
+            def render_js(self):
+                tags: list[str] = []
+                for path in self._js:
+                    tags.append(f'<my_script_tag src="{self.absolute_path(path)}"></my_script_tag>')
+                return tags
+
+        class SimpleComponent(component.Component):
+            media_class = MyMedia
+
+            class Media:
+                js = ["path/to/script.js", "path/to/script2.js"]
+
+        comp = SimpleComponent()
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            """
+            <my_script_tag src="path/to/script.js"></my_script_tag>
+            <my_script_tag src="path/to/script2.js"></my_script_tag>
+            """,
+        )
+
+    def test_media_custom_render_css(self):
+        class MyMedia(Media):
+            def render_css(self):
+                tags: list[str] = []
+                media = sorted(self._css)
+                for medium in media:
+                    for path in self._css[medium]:
+                        tags.append(f'<my_link href="{path}" media="{medium}" rel="stylesheet" />')
+                return tags
+
+        class SimpleComponent(component.Component):
+            media_class = MyMedia
+
+            class Media:
+                css = {
+                    "all": "path/to/style.css",
+                    "print": ["path/to/style2.css"],
+                    "screen": "path/to/style3.css",
+                }
+
+        comp = SimpleComponent()
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            """
+            <my_link href="path/to/style.css" media="all" rel="stylesheet" />
+            <my_link href="path/to/style2.css" media="print" rel="stylesheet" />
+            <my_link href="path/to/style3.css" media="screen" rel="stylesheet" />
+            """,
+        )
+
+
+class MediaPathAsObjectTests(BaseTestCase):
+    def test_safestring(self):
         """
         Test that media work with paths defined as instances of classes that define
         the `__html__` method.
@@ -344,7 +400,7 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-    def test_path_as_object_pathlike(self):
+    def test_pathlike(self):
         """
         Test that media work with paths defined as instances of classes that define
         the `__fspath__` method.
@@ -390,7 +446,7 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-    def test_path_as_object_str(self):
+    def test_str(self):
         """
         Test that media work with paths defined as instances of classes that
         subclass 'str'.
@@ -430,7 +486,7 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-    def test_path_as_object_bytes(self):
+    def test_bytes(self):
         """
         Test that media work with paths defined as instances of classes that
         subclass 'bytes'.
@@ -470,7 +526,60 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-    def test_media_custom_render_js(self):
+    @override_settings(STATIC_URL="static/")
+    def test_works_with_static(self):
+        """Test that all the different ways of defining media files works with Django's staticfiles"""
+        class SimpleComponent(component.Component):
+            class Media:
+                css = [
+                    mark_safe(f'<link hi href="{static("calendar/style.css")}" rel="stylesheet" />'),  # Literal
+                    Path("calendar/style1.css"),
+                    "calendar/style2.css",
+                    b"calendar/style3.css",
+                ]
+                js = [
+                    mark_safe(f'<script hi src="{static("calendar/script.js")}"></script>'),  # Literal
+                    Path("calendar/script1.js"),
+                    "calendar/script2.js",
+                    b"calendar/script3.js",
+                ]
+
+        comp = SimpleComponent()
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            """
+            <link hi href="/static/calendar/style.css" rel="stylesheet" />
+            <link href="/static/calendar/style1.css" media="all" rel="stylesheet">
+            <link href="/static/calendar/style2.css" media="all" rel="stylesheet">
+            <link href="/static/calendar/style3.css" media="all" rel="stylesheet">
+
+            <script hi src="/static/calendar/script.js"></script>
+            <script src="/static/calendar/script1.js"></script>
+            <script src="/static/calendar/script2.js"></script>
+            <script src="/static/calendar/script3.js"></script>
+            """,
+        )
+
+
+class MediaStaticfilesTests(BaseTestCase):
+    # For context see https://github.com/EmilStenstrom/django-components/issues/522
+    @override_settings(
+        # Configure static files. The dummy files are set up in the `./static_root` dir.
+        # The URL should have path prefix /static/.
+        # NOTE: We don't need STATICFILES_DIRS, because we don't run collectstatic
+        #       See https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS
+        STATIC_URL="static/",
+        STATIC_ROOT=os.path.join(Path(__file__).resolve().parent, "static_root"),
+        # Either `django.contrib.staticfiles` or `django_components.safer_staticfiles` MUST
+        # be installed for staticfiles resolution to work.
+        INSTALLED_APPS=[
+            "django_components.safer_staticfiles",  # Or django.contrib.staticfiles
+            "django_components",
+        ],
+    )
+    def test_default_static_files_storage(self):
+        """Test integration with Django's staticfiles app"""
+
         class MyMedia(Media):
             def render_js(self):
                 tags: list[str] = []
@@ -482,45 +591,74 @@ class ComponentMediaTests(BaseTestCase):
             media_class = MyMedia
 
             class Media:
-                js = ["path/to/script.js", "path/to/script2.js"]
+                css = "calendar/style.css"
+                js = "calendar/script.js"
 
         comp = SimpleComponent()
-        self.maxDiff = None
+
+        # NOTE: Since we're using the default storage class for staticfiles, the files should
+        # be searched as specified above (e.g. `calendar/script.js`) inside `static_root` dir.
         self.assertHTMLEqual(
             comp.render_dependencies(),
             """
-            <my_script_tag src="path/to/script.js"></my_script_tag>
-            <my_script_tag src="path/to/script2.js"></my_script_tag>
+            <link href="/static/calendar/style.css" media="all" rel="stylesheet">
+            <my_script_tag src="/static/calendar/script.js"></my_script_tag>
             """,
         )
 
-    def test_media_custom_render_css(self):
+    # For context see https://github.com/EmilStenstrom/django-components/issues/522
+    @override_settings(
+        # Configure static files. The dummy files are set up in the `./static_root` dir.
+        # The URL should have path prefix /static/.
+        # NOTE: We don't need STATICFILES_DIRS, because we don't run collectstatic
+        #       See https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS
+        STATIC_URL="static/",
+        STATIC_ROOT=os.path.join(Path(__file__).resolve().parent, "static_root"),
+        # NOTE: STATICFILES_STORAGE is deprecated since 5.1, use STORAGES instead
+        #       See https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-storage
+        STORAGES={
+            # This was NOT changes
+            "default": {
+                "BACKEND": "django.core.files.storage.FileSystemStorage",
+            },
+            # This WAS changed so that static files are looked up by the `staticfiles.json`
+            "staticfiles": {
+                "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+            },
+        },
+        # Either `django.contrib.staticfiles` or `django_components.safer_staticfiles` MUST
+        # be installed for staticfiles resolution to work.
+        INSTALLED_APPS=[
+            "django_components.safer_staticfiles",  # Or django.contrib.staticfiles
+            "django_components",
+        ],
+    )
+    def test_manifest_static_files_storage(self):
+        """Test integration with Django's staticfiles app and ManifestStaticFilesStorage"""
+
         class MyMedia(Media):
-            def render_css(self):
+            def render_js(self):
                 tags: list[str] = []
-                media = sorted(self._css)
-                for medium in media:
-                    for path in self._css[medium]:
-                        tags.append(f'<my_link href="{path}" media="{medium}" rel="stylesheet" />')
+                for path in self._js:
+                    tags.append(f'<my_script_tag src="{self.absolute_path(path)}"></my_script_tag>')
                 return tags
 
         class SimpleComponent(component.Component):
             media_class = MyMedia
 
             class Media:
-                css = {
-                    "all": "path/to/style.css",
-                    "print": ["path/to/style2.css"],
-                    "screen": "path/to/style3.css",
-                }
+                css = "calendar/style.css"
+                js = "calendar/script.js"
 
         comp = SimpleComponent()
+
+        # NOTE: Since we're using ManifestStaticFilesStorage, we expect the rendered media to link
+        # to the files as defined in staticfiles.json
         self.assertHTMLEqual(
             comp.render_dependencies(),
             """
-            <my_link href="path/to/style.css" media="all" rel="stylesheet" />
-            <my_link href="path/to/style2.css" media="print" rel="stylesheet" />
-            <my_link href="path/to/style3.css" media="screen" rel="stylesheet" />
+            <link href="/static/calendar/style.0eeb72042b59.css" media="all" rel="stylesheet">
+            <my_script_tag src="/static/calendar/script.e1815e23e0ec.js"></my_script_tag>
             """,
         )
 

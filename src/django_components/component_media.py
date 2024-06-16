@@ -95,7 +95,7 @@ def _normalize_media(media: ComponentMediaInput) -> None:
             media.css = [media.css]  # type: ignore[list-item]
 
         # Allow: class Media: css = ["style.css"]
-        if isinstance(media.css, list):
+        if isinstance(media.css, (list, tuple)):
             media.css = {"all": media.css}
 
         # Allow: class Media: css = {"all": "style.css"}
@@ -119,7 +119,7 @@ def _map_media_filepaths(media: ComponentMediaInput, map_fn: Callable[[Any], Any
             media.css[media_type] = list(map(map_fn, path_list))  # type: ignore[assignment]
 
     if hasattr(media, "js") and media.js:
-        if not isinstance(media.js, list):
+        if not isinstance(media.js, (list, tuple)):
             raise ValueError("#TODO2")  # TODO
 
         media.js = list(map(map_fn, media.js))
