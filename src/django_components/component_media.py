@@ -171,6 +171,19 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     as the component class. If so, modify the attributes so the class Django's rendering
     will pick up these files correctly.
     """
+    # First check if we even need to resolve anything. If the class doesn't define any
+    # JS/CSS files, just skip.
+    will_resolve_files = False
+    if attrs.get("template_name", None):
+        will_resolve_files = True
+    if not will_resolve_files and "Media" in attrs:
+        media: ComponentMediaInput = attrs["Media"]
+        if getattr(media, 'css', None) or getattr(media, 'js', None):
+            will_resolve_files = True
+
+    if not will_resolve_files:
+        return
+
     component_name = attrs["__qualname__"]
     # Derive the full path of the file where the component was defined
     module_name = attrs["__module__"]
@@ -227,7 +240,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
         attrs["template_name"] = resolve_file(attrs["template_name"])
 
     if "Media" in attrs:
-        media: ComponentMediaInput = attrs["Media"]
+        media = attrs["Media"]
         _map_media_filepaths(media, resolve_file)
 
 
