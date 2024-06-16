@@ -16,7 +16,19 @@ if TYPE_CHECKING:
 # For full list, see https://docs.djangoproject.com/en/5.0/topics/forms/media/#css
 # Note that many of these are marked as deprecated. For the recommended
 # media types, see https://developer.mozilla.org/en-US/docs/Web/CSS/@media#media_types.
-CSS_MEDIA_TYPES = ("all", "aural", "braille", "embossed", "handheld", "print", "projection", "screen", "speech", "tty", "tv")
+CSS_MEDIA_TYPES = (
+    "all",
+    "aural",
+    "braille",
+    "embossed",
+    "handheld",
+    "print",
+    "projection",
+    "screen",
+    "speech",
+    "tty",
+    "tv",
+)
 
 
 class ComponentMediaInput:

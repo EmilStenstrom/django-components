@@ -290,8 +290,9 @@ class ComponentMediaTests(BaseTestCase):
     def test_css_as_dict_raises_on_invalid_media_type(self):
         with self.assertRaisesMessage(
             ValueError,
-            "Keys of Media.css must be valid CSS media types (all, aural, braille, embossed, handheld, print, projection, screen, speech, tty, tv), got haha."  # noqa: E501
+            "Keys of Media.css must be valid CSS media types (all, aural, braille, embossed, handheld, print, projection, screen, speech, tty, tv), got haha.",  # noqa: E501
         ):
+
             class SimpleComponent(component.Component):
                 class Media:
                     css = {
