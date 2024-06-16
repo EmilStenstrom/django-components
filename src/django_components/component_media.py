@@ -178,7 +178,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
         will_resolve_files = True
     if not will_resolve_files and "Media" in attrs:
         media: ComponentMediaInput = attrs["Media"]
-        if getattr(media, 'css', None) or getattr(media, 'js', None):
+        if getattr(media, "css", None) or getattr(media, "js", None):
             will_resolve_files = True
 
     if not will_resolve_files:

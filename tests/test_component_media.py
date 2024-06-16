@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 
 from django.forms.widgets import Media
-from django.templatetags.static import static
 from django.template import Context, Template
+from django.templatetags.static import static
 from django.test import override_settings
 from django.utils.html import html_safe
 from django.utils.safestring import mark_safe
@@ -561,6 +561,7 @@ class MediaPathAsObjectTests(BaseTestCase):
     @override_settings(STATIC_URL="static/")
     def test_works_with_static(self):
         """Test that all the different ways of defining media files works with Django's staticfiles"""
+
         class SimpleComponent(component.Component):
             class Media:
                 css = [
