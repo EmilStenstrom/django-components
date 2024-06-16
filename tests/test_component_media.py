@@ -526,6 +526,38 @@ class MediaPathAsObjectTests(BaseTestCase):
             """,
         )
 
+    def test_function(self):
+        class SimpleComponent(component.Component):
+            class Media:
+                css = [
+                    lambda: mark_safe('<link hi href="calendar/style.css" rel="stylesheet" />'),  # Literal
+                    lambda: Path("calendar/style1.css"),
+                    lambda: "calendar/style2.css",
+                    lambda: b"calendar/style3.css",
+                ]
+                js = [
+                    lambda: mark_safe('<script hi src="calendar/script.js"></script>'),  # Literal
+                    lambda: Path("calendar/script1.js"),
+                    lambda: "calendar/script2.js",
+                    lambda: b"calendar/script3.js",
+                ]
+
+        comp = SimpleComponent()
+        self.assertHTMLEqual(
+            comp.render_dependencies(),
+            """
+            <link hi href="calendar/style.css" rel="stylesheet" />
+            <link href="calendar/style1.css" media="all" rel="stylesheet">
+            <link href="calendar/style2.css" media="all" rel="stylesheet">
+            <link href="calendar/style3.css" media="all" rel="stylesheet">
+
+            <script hi src="calendar/script.js"></script>
+            <script src="calendar/script1.js"></script>
+            <script src="calendar/script2.js"></script>
+            <script src="calendar/script3.js"></script>
+            """,
+        )
+
     @override_settings(STATIC_URL="static/")
     def test_works_with_static(self):
         """Test that all the different ways of defining media files works with Django's staticfiles"""
@@ -536,12 +568,14 @@ class MediaPathAsObjectTests(BaseTestCase):
                     Path("calendar/style1.css"),
                     "calendar/style2.css",
                     b"calendar/style3.css",
+                    lambda: "calendar/style4.css",
                 ]
                 js = [
                     mark_safe(f'<script hi src="{static("calendar/script.js")}"></script>'),  # Literal
                     Path("calendar/script1.js"),
                     "calendar/script2.js",
                     b"calendar/script3.js",
+                    lambda: "calendar/script4.js",
                 ]
 
         comp = SimpleComponent()
@@ -552,11 +586,13 @@ class MediaPathAsObjectTests(BaseTestCase):
             <link href="/static/calendar/style1.css" media="all" rel="stylesheet">
             <link href="/static/calendar/style2.css" media="all" rel="stylesheet">
             <link href="/static/calendar/style3.css" media="all" rel="stylesheet">
+            <link href="/static/calendar/style4.css" media="all" rel="stylesheet">
 
             <script hi src="/static/calendar/script.js"></script>
             <script src="/static/calendar/script1.js"></script>
             <script src="/static/calendar/script2.js"></script>
             <script src="/static/calendar/script3.js"></script>
+            <script src="/static/calendar/script4.js"></script>
             """,
         )
 
