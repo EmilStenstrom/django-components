@@ -6,14 +6,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, MutableMapping, Opt
 from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
 
-# Global registry var and register() function moved to separate module.
-# Defining them here made little sense, since 1) component_tags.py and component.py
-# rely on them equally, and 2) it made it difficult to avoid circularity in the
-# way the two modules depend on one another.
-from django_components.component_registry import AlreadyRegistered as AlreadyRegistered  # NOQA
-from django_components.component_registry import ComponentRegistry as ComponentRegistry  # NOQA
-from django_components.component_registry import NotRegistered as NotRegistered  # NOQA
-from django_components.component_registry import register as register  # NOQA
 from django_components.logger import logger
 from django_components.utils import search
 
@@ -28,15 +20,91 @@ class ComponentMediaInput:
     js: Optional[Union[str, List[str]]] = None
 
 
-# TODO - ALLOW CALLABLE!
 # TODO - DOCUMENT IT ALL!
 # TODO - Document how when we pass a safe string to css/js, then
 #        Media.render_js/css DOES NOT format it (same as Django's
 #        see https://docs.djangoproject.com/en/5.0/topics/forms/media/#paths-as-objects)
 class MediaMeta(MediaDefiningClass):
     """
-    # TODO
-    Metaclass for classes that can have media definitions.
+    Metaclass for handling media files for components.
+
+    Similar to `MediaDefiningClass`, this class supports the use of `Media` attribute
+    to define associated JS/CSS files, which are then available under `media`
+    attribute as a instance of `Media` class.
+
+    This subclass has following changes:
+
+    ### 1. Support for multiple interfaces of JS/CSS
+
+    1. As plain strings
+        ```py
+        class MyComponent(component.Component):
+            class Media:
+                js = "path/to/script.js"
+                css = "path/to/style.css"
+        ```
+
+    2. As lists
+        ```py
+        class MyComponent(component.Component):
+            class Media:
+                js = ["path/to/script1.js", "path/to/script2.js"]
+                css = ["path/to/style1.css", "path/to/style2.css"]
+        ```
+
+    3. Dicts in case of CSS
+        ```py
+        class MyComponent(component.Component):
+            class Media:
+                css = {
+                    "all": "path/to/style1.css",
+                    "print": "path/to/style2.css",
+                }
+        ```
+
+    ### 2. Media are first resolved relative to class definition file
+
+    E.g. if in a directory `my_comp` you have `script.js` and `my_comp.py`,
+    and `my_comp.py` looks like this:
+
+    ```py
+    class MyComponent(component.Component):
+        class Media:
+            js = "script.js"
+    ```
+
+    Then `script.js` will be resolved as `my_comp/script.js`.
+
+    ### 3. Media can be defined as str, bytes, PathLike, SafeString, or function of thereof
+
+    E.g.:
+
+    ```py
+    def lazy_eval_css():
+        # do something
+        return path
+
+    class MyComponent(component.Component):
+        class Media:
+            js = b"script.js"
+            css = lazy_eval_css
+    ```
+
+    ### 4. Subclass `Media` class with `media_class`
+
+    Normal `MediaDefiningClass` creates an instance of `Media` class under the `media` attribute.
+    This class allows to override which class will be instantiated with `media_class` attribute:
+
+    ```py
+    class MyMedia(Media):
+        def render_js(self):
+            ...
+
+    class MyComponent(component.Component):
+        media_class = MyMedia
+        def get_context_data(self):
+            assert isinstance(self.media, MyMedia)
+    ```
     """
 
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
@@ -113,14 +181,14 @@ def _normalize_media(media: ComponentMediaInput) -> None:
 def _map_media_filepaths(media: ComponentMediaInput, map_fn: Callable[[Any], Any]) -> None:
     if hasattr(media, "css") and media.css:
         if not isinstance(media.css, dict):
-            raise ValueError("#TODO1")  # TODO
+            raise ValueError(f"Media.css must be a dict, got {type(media.css)}")
 
         for media_type, path_list in media.css.items():
             media.css[media_type] = list(map(map_fn, path_list))  # type: ignore[assignment]
 
     if hasattr(media, "js") and media.js:
         if not isinstance(media.js, (list, tuple)):
-            raise ValueError("#TODO2")  # TODO
+            raise ValueError(f"Media.css must be a list, got {type(media.css)}")
 
         media.js = list(map(map_fn, media.js))
 
@@ -161,8 +229,8 @@ def _normalize_media_filepath(filepath: Any) -> Union[str, SafeData]:
         return filepath
 
     raise ValueError(
-        "Unknown filepath. Must be str, bytes, PathLike or a function that returns one of the former"
-    )  # TODO UPDATE
+        "Unknown filepath. Must be str, bytes, PathLike, SafeString, or a function that returns one of the former"
+    )
 
 
 def _resolve_component_relative_files(attrs: MutableMapping) -> None:
