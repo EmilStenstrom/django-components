@@ -6,7 +6,7 @@ from django.forms.widgets import Media
 from django.template import Context, Template
 from django.templatetags.static import static
 from django.test import override_settings
-from django.utils.html import html_safe, format_html
+from django.utils.html import format_html, html_safe
 from django.utils.safestring import mark_safe
 
 # isort: off
@@ -385,7 +385,7 @@ class MediaPathAsObjectTests(BaseTestCase):
                 return f'<link css_tag href="{self.path}" rel="stylesheet" />'
 
         # Format as mentioned in https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
-        @html_safe 
+        @html_safe
         class PathObj:
             def __init__(self, static_path: str) -> None:
                 self.static_path = static_path
