@@ -6,7 +6,7 @@ from django.forms.widgets import Media
 from django.template import Context, Template
 from django.templatetags.static import static
 from django.test import override_settings
-from django.utils.html import html_safe
+from django.utils.html import html_safe, format_html
 from django.utils.safestring import mark_safe
 
 # isort: off
@@ -384,6 +384,15 @@ class MediaPathAsObjectTests(BaseTestCase):
             def __str__(self):
                 return f'<link css_tag href="{self.path}" rel="stylesheet" />'
 
+        # Format as mentioned in https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
+        @html_safe 
+        class PathObj:
+            def __init__(self, static_path: str) -> None:
+                self.static_path = static_path
+
+            def __str__(self):
+                return format_html(f'<script type="module" src="{static(self.static_path)}"></script>')
+
         class SimpleComponent(component.Component):
             class Media:
                 css = {
@@ -399,7 +408,8 @@ class MediaPathAsObjectTests(BaseTestCase):
                 js = [
                     JSTag("path/to/script.js"),  # Formatted by JSTag
                     mark_safe('<script hi src="path/to/script2.js"></script>'),  # Literal
-                    "path/to/script3.js",  # Formatted by Media.render_js
+                    PathObj("path/to/script3.js"),  # Literal
+                    "path/to/script4.js",  # Formatted by Media.render_js
                 ]
 
         comp = SimpleComponent()
@@ -413,7 +423,8 @@ class MediaPathAsObjectTests(BaseTestCase):
 
             <script js_tag src="path/to/script.js" type="module"></script>
             <script hi src="path/to/script2.js"></script>
-            <script src="path/to/script3.js"></script>
+            <script type="module" src="path/to/script3.js"></script>
+            <script src="path/to/script4.js"></script>
             """,
         )
 
