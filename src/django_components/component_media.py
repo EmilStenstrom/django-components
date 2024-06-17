@@ -326,14 +326,14 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
 
             if os.path.isfile(maybe_resolved_filepath):
                 logger.debug(
-                    f"Interpreting template '{filepath}' of component '{module_name}' relatively to component file"
+                    f"Interpreting template '{repr(filepath)}' of component '{module_name}' relatively to component file"
                 )
 
                 return component_import_filepath
             return filepath
 
         logger.debug(
-            f"Interpreting template '{filepath}' of component '{module_name}' relatively to components directory"
+            f"Interpreting template '{repr(filepath)}' of component '{module_name}' relatively to components directory"
         )
         return filepath
 
