@@ -36,7 +36,7 @@ class TestAutodiscover(BaseTestCase):
 
         all_components_after = component_registry.registry.all().copy()
         imported_components_count = len(all_components_after) - len(all_components_before)
-        self.assertEqual(imported_components_count, 1)
+        self.assertEqual(imported_components_count, 2)
 
 
 class TestLoaderSettingsModule(BaseTestCase):

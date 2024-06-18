@@ -786,6 +786,8 @@ class MediaRelativePathTests(BaseTestCase):
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+            component.registry.unregister("relative_file_pathobj_component")
+
             template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
                 {% component name='relative_file_component' variable=variable %}
@@ -819,6 +821,8 @@ class MediaRelativePathTests(BaseTestCase):
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+            component.registry.unregister("relative_file_pathobj_component")
+
             template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
                 {% component 'parent_component' %}
@@ -853,7 +857,7 @@ class MediaRelativePathTests(BaseTestCase):
 
         # Ensure that the module is executed again after import in autodiscovery
         if "tests.components.relative_file.relative_file" in sys.modules:
-            del sys.modules["tests.components.relative_file.relative_file"]
+            del sys.modules["tests.components.relative_file.relative_file_pathobj"]
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
