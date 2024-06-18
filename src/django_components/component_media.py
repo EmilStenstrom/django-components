@@ -325,6 +325,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
             component_import_filepath = os.path.join(comp_dir_rel, filepath)
 
             if os.path.isfile(maybe_resolved_filepath):
+                # NOTE: It's important to use `repr`, so we don't trigger __str__ on SafeStrings
                 logger.debug(
                     f"Interpreting template '{repr(filepath)}' of component '{module_name}'"
                     " relatively to component file"

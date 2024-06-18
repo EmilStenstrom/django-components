@@ -391,7 +391,7 @@ class MediaPathAsObjectTests(BaseTestCase):
                 self.static_path = static_path
 
             def __str__(self):
-                return format_html(f'<script type="module" src="{static(self.static_path)}"></script>')
+                return format_html('<script type="module" src="{}"></script>', static(self.static_path))
 
         class SimpleComponent(component.Component):
             class Media:
@@ -831,3 +831,43 @@ class MediaRelativePathTests(BaseTestCase):
             template = Template(template_str)
             rendered = template.render(Context({}))
             self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
+
+    # Settings required for autodiscover to work
+    @override_settings(
+        BASE_DIR=Path(__file__).resolve().parent,
+        STATICFILES_DIRS=[
+            Path(__file__).resolve().parent / "components",
+        ],
+    )
+    def test_component_with_relative_media_does_not_trigger_safestring_path_at__new__(self):
+        """
+        Test that, for the __html__ objects are not coerced into string throughout
+        the class creation. This is important to allow to call `collectstatic` command.
+        Because some users use `static` inside the `__html__` or `__str__` methods.
+        So if we "render" the safestring using str() during component class creation (__new__),
+        then we force to call `static`. And if this happens during `collectstatic` run,
+        then this triggers an error, because `static` is called before the static files exist.
+
+        https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
+        """
+
+        # Ensure that the module is executed again after import in autodiscovery
+        if "tests.components.relative_file.relative_file" in sys.modules:
+            del sys.modules["tests.components.relative_file.relative_file"]
+
+        # Fix the paths, since the "components" dir is nested
+        with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+            # Mark the PathObj instances of 'relative_file_pathobj_component' so they won raise
+            # error PathObj.__str__ is triggered.
+            CompCls = component.registry.get("relative_file_pathobj_component")
+            CompCls.Media.js[0].throw_on_calling_str = False  # type: ignore
+            CompCls.Media.css["all"][0].throw_on_calling_str = False  # type: ignore
+
+            rendered = CompCls().render_dependencies()
+            self.assertHTMLEqual(
+                rendered,
+                """
+                <script type="module" src="relative_file.css"></script>
+                <script type="module" src="relative_file.js"></script>
+                """,
+            )
