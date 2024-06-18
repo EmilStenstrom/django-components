@@ -30,4 +30,4 @@ jobs:
         python -m pip install -r sampleproject/requirements.txt
         python sampleproject/manage.py collecstatic
       env:
-        DJANGO_SETTINGS_MODULE: sampleproject.sampleproject.settings_test_manifest_static_files_storage
+        DJANGO_SETTINGS_MODULE: sampleproject.settings_test_manifest_static_files_storage
