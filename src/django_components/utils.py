@@ -1,9 +1,8 @@
 import glob
 from pathlib import Path
 from typing import Any, Callable, List, NamedTuple, Optional
-
 from django.template.engine import Engine
-
+from django_components import types as t
 from django_components.template_loader import Loader
 
 
@@ -56,3 +55,31 @@ def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
         if predicate(elem):
             return len(lst) - 1 - r_idx
     return -1
+
+
+def jsx2django_components(jsx: t.django_html):
+    html = jsx
+    more_components = True
+
+    while more_components:
+        tag = ""
+        try:
+            tag = jsx.split("<")[1].split("/>")[0]
+        except:
+            more_components = False
+            continue
+        if not tag:
+            more_components = False
+            continue
+
+        is_compoment = not str(tag)[0].isupper()
+        if is_compoment:
+            jsx = jsx.split(tag)[1]
+            continue
+        component_name, attributes = tag.split(" ", 1)
+
+        parsed_component = "{% component '" + component_name + "' " + attributes + "%} {% endcomponent %}"
+
+        html = html.replace("<" + tag + "/>", parsed_component)
+        jsx = jsx.split(tag)[1]
+    return html
