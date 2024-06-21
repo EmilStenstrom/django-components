@@ -287,22 +287,6 @@ class ComponentMediaTests(BaseTestCase):
             """,
         )
 
-    def test_css_as_dict_raises_on_invalid_media_type(self):
-        with self.assertRaisesMessage(
-            ValueError,
-            "Keys of Media.css must be valid CSS media types (all, aural, braille, embossed, handheld, print, projection, screen, speech, tty, tv), got haha.",  # noqa: E501
-        ):
-
-            class SimpleComponent(component.Component):
-                class Media:
-                    css = {
-                        "all": "path/to/style.css",
-                        "print": ["path/to/style2.css"],
-                        "screen": "path/to/style3.css",
-                        "haha": "path/to/style4.css",
-                    }
-                    js = ["path/to/script.js"]
-
     def test_media_custom_render_js(self):
         class MyMedia(Media):
             def render_js(self):

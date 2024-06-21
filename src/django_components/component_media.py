@@ -13,24 +13,6 @@ if TYPE_CHECKING:
     from django_components.component import Component
 
 
-# For full list, see https://docs.djangoproject.com/en/5.0/topics/forms/media/#css
-# Note that many of these are marked as deprecated. For the recommended
-# media types, see https://developer.mozilla.org/en-US/docs/Web/CSS/@media#media_types.
-CSS_MEDIA_TYPES = (
-    "all",
-    "aural",
-    "braille",
-    "embossed",
-    "handheld",
-    "print",
-    "projection",
-    "screen",
-    "speech",
-    "tty",
-    "tv",
-)
-
-
 class ComponentMediaInput:
     """Defines JS and CSS media files associated with this component."""
 
@@ -195,16 +177,6 @@ def _normalize_media(media: ComponentMediaInput) -> None:
             for media_type, path_list in media.css.items():
                 if _is_media_filepath(path_list):
                     media.css[media_type] = [path_list]  # type: ignore
-
-            # Validate CSS media types
-            # See https://developer.mozilla.org/en-US/docs/Web/CSS/@media#media_types
-            # And https://docs.djangoproject.com/en/5.0/topics/forms/media/#css
-            for media_type in media.css:
-                if media_type not in CSS_MEDIA_TYPES:
-                    raise ValueError(
-                        "Keys of Media.css must be valid CSS media types "
-                        f"({', '.join(CSS_MEDIA_TYPES)}), got {media_type}. "
-                    )
 
     if hasattr(media, "js") and media.js:
         # Allow: class Media: js = "script.js"
