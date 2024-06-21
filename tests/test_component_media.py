@@ -856,8 +856,8 @@ class MediaRelativePathTests(BaseTestCase):
         """
 
         # Ensure that the module is executed again after import in autodiscovery
-        if "tests.components.relative_file.relative_file" in sys.modules:
-            del sys.modules["tests.components.relative_file.relative_file_pathobj"]
+        if "tests.components.relative_file_pathobj.relative_file_pathobj" in sys.modules:
+            del sys.modules["tests.components.relative_file_pathobj.relative_file_pathobj"]
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
@@ -871,7 +871,7 @@ class MediaRelativePathTests(BaseTestCase):
             self.assertHTMLEqual(
                 rendered,
                 """
-                <script type="module" src="relative_file.css"></script>
-                <script type="module" src="relative_file.js"></script>
+                <script type="module" src="relative_file_pathobj.css"></script>
+                <script type="module" src="relative_file_pathobj.js"></script>
                 """,
             )

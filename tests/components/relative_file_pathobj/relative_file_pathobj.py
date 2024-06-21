@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from django.http import HttpResponse
 from django.templatetags.static import static
 from django.utils.html import format_html, html_safe
 
@@ -24,18 +23,11 @@ class PathObj:
 
 @component.register("relative_file_pathobj_component")
 class RelativeFileWithPathObjComponent(component.Component):
-    template_name = "relative_file.html"
+    template_name = "relative_file_pathobj.html"
 
     class Media:
-        js = PathObj("relative_file.js")
-        css = PathObj("relative_file.css")
-
-    def post(self, request, *args, **kwargs) -> HttpResponse:
-        variable = request.POST.get("variable")
-        return self.render_to_response({"variable": variable})
-
-    def get(self, request, *args, **kwargs) -> HttpResponse:
-        return self.render_to_response({"variable": "GET"})
+        js = PathObj("relative_file_pathobj.js")
+        css = PathObj("relative_file_pathobj.css")
 
     def get_context_data(self, variable, *args, **kwargs) -> Dict[str, Any]:
         return {"variable": variable}
