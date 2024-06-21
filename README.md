@@ -1712,7 +1712,7 @@ class MyComponent(component.Component):
 You can define which stylesheets will be associated with which
 [CSS Media types](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_media_queries/Using_media_queries#targeting_media_types). You do so by defining CSS files as a dictionary.
 
-See the correspondings [Django Documentation](https://docs.djangoproject.com/en/5.0/topics/forms/media/#css).
+See the corresponding [Django Documentation](https://docs.djangoproject.com/en/5.0/topics/forms/media/#css).
 
 Dictionary keys must be only supported media types: `all`, `aural`, `braille`, `embossed`, `handheld`, `print`, `projection`, `screen`, `speech`, `tty`, `tv`.
 
