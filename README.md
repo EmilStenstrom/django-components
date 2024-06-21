@@ -1846,7 +1846,7 @@ class Calendar(component.Component):
 
     class Media:
         css = "calendar/style.css"
-        js = ["calendar/script.js"]
+        js = "calendar/script.js"
     
     # Override the behavior of Media class
     media_class = MyMedia
