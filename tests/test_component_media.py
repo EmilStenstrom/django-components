@@ -683,7 +683,7 @@ class MediaStaticfilesTests(BaseTestCase):
         # NOTE: STATICFILES_STORAGE is deprecated since 5.1, use STORAGES instead
         #       See https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-storage
         STORAGES={
-            # This was NOT changes
+            # This was NOT changed
             "default": {
                 "BACKEND": "django.core.files.storage.FileSystemStorage",
             },
