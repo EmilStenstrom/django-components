@@ -26,6 +26,8 @@ class TestAutodiscover(BaseTestCase):
     def tearDown(self) -> None:
         del settings.SETTINGS_MODULE  # noqa
 
+    # TODO: As part of this test, check that `autoimport()` imports the components
+    # from the `tests/components` dir?
     def test_autodiscover_with_components_as_views(self):
         all_components_before = component_registry.registry.all().copy()
 
@@ -36,7 +38,7 @@ class TestAutodiscover(BaseTestCase):
 
         all_components_after = component_registry.registry.all().copy()
         imported_components_count = len(all_components_after) - len(all_components_before)
-        self.assertEqual(imported_components_count, 1)
+        self.assertEqual(imported_components_count, 2)
 
 
 class TestLoaderSettingsModule(BaseTestCase):
