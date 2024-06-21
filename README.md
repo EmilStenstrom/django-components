@@ -1714,10 +1714,6 @@ You can define which stylesheets will be associated with which
 
 See the corresponding [Django Documentation](https://docs.djangoproject.com/en/5.0/topics/forms/media/#css).
 
-Dictionary keys must be only supported media types: `all`, `aural`, `braille`, `embossed`, `handheld`, `print`, `projection`, `screen`, `speech`, `tty`, `tv`.
-
-Note that many of these media types are deprecated, and you should preferably use `all`, `print`, and `screen` ([See MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/@media#media_types)).
-
 Again, you can set either a single file or a list of files per media type:
 
 ```py
