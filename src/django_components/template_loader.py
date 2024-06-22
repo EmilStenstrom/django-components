@@ -23,7 +23,27 @@ def path_is_relative_to(child_path: str, parent_path: str) -> bool:
 
 
 class Loader(FilesystemLoader):
+    # TODO - Look deeper into how this function works
+    #      -> Are STATICFILES_DIRS absolute paths or relative to project root? README suggest absolute,
+    #         but the default suggests relative, and code suggests both. Document all the supported cases.
+    #      -> Why do we add settings directory?
+    #      -> Could we merge this with `autodiscover_modules()` in `autodiscover.py`, since there we also
+    #         look for `[app_name]/components`, or do these two accomplish different things?
     def get_dirs(self) -> List[Path]:
+        """
+        Prepare directories that may contain component files:
+
+        Searches for dirs set in `STATICFILES_DIRS` settings. If none set, defaults to searching
+        for a "components" dir. These dirs are tested as both relative and absolute paths.
+
+        Absolute paths are accepted only if they resolve to a directory and point to within one
+        of the apps. E.g. `/path/to/django_project/[app_name]/nested/components/`.
+
+        Relative paths are resolved relative to `BASE_DIR`, e.g. `[BASE_DIR]/components/`.
+        
+        Relative paths are also tested against the settings dir. Settings dir is the parent
+        directory of where `SETTINGS_MODULE` points, if set.
+        """
         # Allow to configure from settings which dirs should be checked for components
         if hasattr(settings, "STATICFILES_DIRS") and len(settings.STATICFILES_DIRS):
             component_dirs = settings.STATICFILES_DIRS
@@ -37,6 +57,7 @@ class Loader(FilesystemLoader):
 
         directories: Set[Path] = set()
         for component_dir in component_dirs:
+            # Consider tuples for STATICFILES_DIRS (See #489)
             if isinstance(component_dir, (tuple, list)) and len(component_dir) == 2:
                 component_dir = component_dir[1]
             try:
@@ -47,6 +68,7 @@ class Loader(FilesystemLoader):
                     f"See Django documentation. Got {type(component_dir)} : {component_dir}"
                 )
                 continue
+
             curr_directories: Set[Path] = set()
 
             # For each dir in `settings.STATICFILES_DIRS`, we go over all Django apps
@@ -56,18 +78,19 @@ class Loader(FilesystemLoader):
             for app_config in apps.get_app_configs():
                 if not app_config.path:
                     continue
-                if not Path(component_dir).is_dir():
-                    continue
 
-                if path_is_relative_to(component_dir, app_config.path):
+                # NOTE: This applies only to absolute paths
+                if path_is_relative_to(component_dir, app_config.path) and Path(component_dir).is_dir():
                     curr_directories.add(Path(component_dir).resolve())
 
+            # NOTE: This applies only to relative paths
             if hasattr(settings, "BASE_DIR"):
-                path = (Path(settings.BASE_DIR) / component_dir).resolve()
+                path: Path = (Path(settings.BASE_DIR) / component_dir).resolve()
                 if path.is_dir():
                     curr_directories.add(path)
 
             # Add the directory that holds the settings file
+            # NOTE: This applies only to relative paths
             if settings.SETTINGS_MODULE:
                 module_parts = settings.SETTINGS_MODULE.split(".")
                 module_path = Path(*module_parts)
