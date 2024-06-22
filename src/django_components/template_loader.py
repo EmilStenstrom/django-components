@@ -40,7 +40,7 @@ class Loader(FilesystemLoader):
         of the apps. E.g. `/path/to/django_project/[app_name]/nested/components/`.
 
         Relative paths are resolved relative to `BASE_DIR`, e.g. `[BASE_DIR]/components/`.
-        
+
         Relative paths are also tested against the settings dir. Settings dir is the parent
         directory of where `SETTINGS_MODULE` points, if set.
         """

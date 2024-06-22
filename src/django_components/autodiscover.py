@@ -47,7 +47,7 @@ def autodiscover(
     # but default to AUTODISCOVER settings.
     if skip_component_modules is None:
         skip_component_modules = not app_settings.AUTODISCOVER
-    
+
     if components_modules is None:
         components_modules = ["components"]
 
@@ -69,7 +69,7 @@ def autodiscover(
         #
         # TODO: Maybe we could remove this and modify the logic of `Loader.get_dirs`,
         #       so `<app_name>/components.py` is among the returned files? In which case
-        #       the `components_modules` arg in this function could be made into a setting 
+        #       the `components_modules` arg in this function could be made into a setting
         #       `COMPONENTS.component_modules`, and resolved in `Loader.get_dirs`.
         #
         # TODO2: Or maybe we should move `autodiscover_modules` and loading of libraries OUT from autodiscovery?
