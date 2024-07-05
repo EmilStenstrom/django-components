@@ -18,10 +18,10 @@ class Loader(FilesystemLoader):
         Prepare directories that may contain component files:
 
         Searches for dirs set in `STATICFILES_DIRS` settings. If none set, defaults to searching
-        for a "components" app. The dics in `STATICFILES_DIRS` must be absolute paths.
+        for a "components" app. The dirs in `STATICFILES_DIRS` must be absolute paths.
 
-        Paths are accepted only if they resolve to a directory and point to a location
-        within one of the apps. E.g. `/path/to/django_project/[app_name]/components/`.
+        Paths are accepted only if they resolve to a directory.
+        E.g. `/path/to/django_project/my_app/components/`.
 
         If `STATICFILES_DIRS` is not set or empty, then `BASE_DIR` is required.
         """
