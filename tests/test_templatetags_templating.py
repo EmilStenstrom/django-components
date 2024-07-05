@@ -248,7 +248,7 @@ class ConditionalSlotTests(BaseTestCase):
 class SlotIterationTest(BaseTestCase):
     """Tests a behaviour of {% fill .. %} tag which is inside a template {% for .. %} loop."""
 
-    class ComponentSimpleSlotInALoop(django_components.component.Component):
+    class ComponentSimpleSlotInALoop(component.Component):
         template: types.django_html = """
             {% load component_tags %}
             {% for object in objects %}
@@ -264,7 +264,7 @@ class SlotIterationTest(BaseTestCase):
             }
 
     def setUp(self):
-        django_components.component.registry.clear()
+        component.registry.clear()
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
     @parametrize_context_behavior(

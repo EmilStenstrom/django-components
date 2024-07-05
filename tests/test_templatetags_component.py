@@ -162,7 +162,7 @@ class ComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaises(django_components.component_registry.NotRegistered):
+        with self.assertRaises(component_registry.NotRegistered):
             template.render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])

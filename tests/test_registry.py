@@ -1,7 +1,5 @@
 import unittest
 
-from django.template import Library
-
 from django_components import component
 
 from .django_test_setup import setup_test_config
