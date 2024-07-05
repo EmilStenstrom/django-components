@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from django.test import SimpleTestCase, override_settings
 from django.contrib.staticfiles.management.commands.collectstatic import Command
+from django.test import SimpleTestCase, override_settings
 
 from .django_test_setup import *  # NOQA
 
