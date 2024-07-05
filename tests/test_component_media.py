@@ -770,7 +770,13 @@ class MediaRelativePathTests(BaseTestCase):
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
-            component.registry.unregister("relative_file_pathobj_component")
+            # Make sure that only relevant components are registered:
+            comps_to_remove = [
+                comp_name for comp_name in component.registry.all()
+                if comp_name not in ["relative_file_component", "parent_component", "variable_display"]
+            ]
+            for comp_name in comps_to_remove:
+                component.registry.unregister(comp_name)
 
             template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
