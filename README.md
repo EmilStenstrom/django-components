@@ -124,17 +124,14 @@ Note that `safer_staticfiles` excludes the `.py` and `.html` files for [collects
 python manage.py collectstatic
 ```
 
-and for [production deployment](https://docs.djangoproject.com/en/5.0/howto/deployment/), e.g.:
-
-```sh
-gunicorn sampleproject.wsgi:application
-```
-
-but it does NOTHING on the [development server](https://docs.djangoproject.com/en/5.0/ref/django-admin/#runserver):
+but it is ignored on the [development server](https://docs.djangoproject.com/en/5.0/ref/django-admin/#runserver):
 
 ```sh
 python manage.py runserver
 ```
+
+For a step-by-step guide on deploying production server with static files,
+[see the demo project](./sampleproject/README.md).
 
 ## Installation
 
