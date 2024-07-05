@@ -44,7 +44,6 @@ def _import_modules(
     modules: List[str],
     map_module: Optional[Callable[[str], str]] = None,
 ) -> List[str]:
-    """Import modules set in `COMPONENTS.libraries` setting"""
     imported_modules: List[str] = []
     for module_name in modules:
         if map_module:
