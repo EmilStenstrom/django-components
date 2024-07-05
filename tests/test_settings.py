@@ -1,35 +1,20 @@
-from django.conf import settings
+from django.test import override_settings
 
-from .django_test_setup import *  # NOQA
+from django_components.app_settings import app_settings
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
 
 
-class ValidateWrongContextBehaviorValueTestCase(BaseTestCase):
-    def setUp(self) -> None:
-        settings.COMPONENTS["context_behavior"] = "invalid_value"
-        return super().setUp()
+setup_test_config()
 
-    def tearDown(self) -> None:
-        del settings.COMPONENTS["context_behavior"]
-        return super().tearDown()
 
+class SettingsTestCase(BaseTestCase):
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
     def test_valid_context_behavior(self):
-        from django_components.app_settings import app_settings
+        self.assertEqual(app_settings.CONTEXT_BEHAVIOR, "isolated")
 
+    @override_settings(COMPONENTS={"context_behavior": "invalid_value"})
+    def test_raises_on_invalid_context_behavior(self):
         with self.assertRaises(ValueError):
             app_settings.CONTEXT_BEHAVIOR
-
-
-class ValidateCorrectContextBehaviorValueTestCase(BaseTestCase):
-    def setUp(self) -> None:
-        settings.COMPONENTS["context_behavior"] = "isolated"
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        del settings.COMPONENTS["context_behavior"]
-        return super().tearDown()
-
-    def test_valid_context_behavior(self):
-        from django_components.app_settings import app_settings
-
-        self.assertEqual(app_settings.CONTEXT_BEHAVIOR, "isolated")

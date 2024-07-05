@@ -4,11 +4,11 @@ from django.utils.safestring import SafeString, mark_safe
 from django_components import component, types
 from django_components.attributes import append_attributes, attributes_to_string
 
-# isort: off
-from .django_test_setup import *  # NOQA
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-# isort: on
+
+setup_test_config({"autodiscover": False})
 
 
 class AttributesToStringTest(BaseTestCase):

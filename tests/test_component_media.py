@@ -9,13 +9,13 @@ from django.test import override_settings
 from django.utils.html import format_html, html_safe
 from django.utils.safestring import mark_safe
 
-# isort: off
-from .django_test_setup import *  # NOQA
+from django_components import component, types
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, autodiscover_with_cleanup
 
-# isort: on
 
-from django_components import component, types
+setup_test_config()
 
 
 class InlineComponentTest(BaseTestCase):

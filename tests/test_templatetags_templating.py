@@ -4,15 +4,13 @@ from typing import Any, Dict, Optional
 
 from django.template import Context, Template
 
-# isort: off
-from .django_test_setup import *  # NOQA
+from django_components import component, types
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-# isort: on
 
-import django_components
-import django_components.component_registry
-from django_components import component, types
+setup_test_config()
 
 
 class SlottedComponent(component.Component):
