@@ -35,10 +35,10 @@ class MockCollectstaticCommand(Command):
             self.log("Pretending to copy '%s'" % source_path, level=1)
         else:
             self.log("Copying '%s'" % source_path, level=2)
-            ############## OUR CHANGE ##############
+            # ############# OUR CHANGE ##############
             # with source_storage.open(path) as source_file:
             #     self.storage.save(prefixed_path, source_file)
-            ############## OUR CHANGE ##############
+            # ############# OUR CHANGE ##############
         self.copied_files.append(prefixed_path)
 
 
