@@ -6,95 +6,54 @@ from typing import Callable, List, Optional
 
 from django.conf import settings
 from django.template.engine import Engine
-from django.utils.module_loading import autodiscover_modules
 
 from django_components.logger import logger
 from django_components.template_loader import Loader
 
 
 def autodiscover(
-    components_modules: Optional[List[str]] = None,
-    map_components_modules: Optional[Callable[[str], str]] = None,
-    skip_component_modules: Optional[bool] = None,
-    skip_libraries: Optional[bool] = False,
+    map_module: Optional[Callable[[str], str]] = None,
 ) -> List[str]:
     """
     Search for component files and import them. Returns a list of module
     paths of imported files.
 
-    Autodiscover searches in the following locations:
-
-    1. Component modules - `[app_name]/components.py` for all apps in the project
-    2. Component dirs - As defined by `Loader.get_dirs`
-    3. Libraries - Modules listed in `COMPONENTS.libraries`.
-
-    Import of component modules can be skipped, either by setting `skip_component_modules=True`,
-    or by setting `COMPONENTS.autodiscover` to `False`.
-
-    Import of libraries can be skipped by setting `skip_libraries=True`.
-
-    You can change the files searched in each app (Component modules) by setting `components_modules`
-    to a list of modules (relative to the app). E.g. `components_modules=["components", "nested.components"]`
-    will search in each app for `[app_name]/components.py` and `[app_name]/nested/components.py`. Defaults
-    to `["components"]`.
+    Autodiscover searches in the locations as defined by `Loader.get_dirs`.
 
     Autodiscover makes it possible to map the component module paths. This serves
     as an escape hatch for when you need to use autodiscover in tests.
     """
+    dirs = get_dirs()
+    component_filepaths = search_dirs(dirs, "**/*.py")
+    logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
+
+    modules = [_filepath_to_python_module(filepath) for filepath in component_filepaths]
+    return _import_modules(modules, map_module)
+
+
+def import_libraries(
+    map_module: Optional[Callable[[str], str]] = None,
+) -> List[str]:
+    """Import modules set in `COMPONENTS.libraries` setting"""
     from django_components.app_settings import app_settings
+    return _import_modules(app_settings.LIBRARIES, map_module)
 
-    # Allow users to specify directly whether to do search for component module,
-    # but default to AUTODISCOVER settings.
-    if skip_component_modules is None:
-        skip_component_modules = not app_settings.AUTODISCOVER
 
-    if components_modules is None:
-        components_modules = ["components"]
-
+def _import_modules(
+    modules: List[str],
+    map_module: Optional[Callable[[str], str]] = None,
+) -> List[str]:
+    """Import modules set in `COMPONENTS.libraries` setting"""
     imported_modules: List[str] = []
+    for module_name in modules:
+        if map_module:
+            module_name = map_module(module_name)
 
-    if not skip_component_modules:
-        # Autodetect a components.py file (or other files) in each app directory
-        #
-        # TODO1: THIS IS NOT DOCUMENTED!! - Do we want to keep it or not?
-        #        Basically it searches for "<app_name1>/components.py" in each app.
-        #        Altho I like that it could allow people to dynamically configure which components to import, eg.
-        #        ```py
-        #        if xyz:
-        #            import path.to.component
-        #            import path.to.component2
-        #        else:
-        #            import ...
-        #        ```
-        #
-        # TODO: Maybe we could remove this and modify the logic of `Loader.get_dirs`,
-        #       so `<app_name>/components.py` is among the returned files? In which case
-        #       the `components_modules` arg in this function could be made into a setting
-        #       `COMPONENTS.component_modules`, and resolved in `Loader.get_dirs`.
-        #
-        # TODO2: Or maybe we should move `autodiscover_modules` and loading of libraries OUT from autodiscovery?
-        autodiscover_modules(*components_modules)
-
-        # Autodetect a <component>.py file in components dirs
-        dirs = get_dirs()
-        component_filepaths = search_dirs(dirs, "**/*.py")
-        logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
-
-        for path in component_filepaths:
-            module_name = _filepath_to_python_module(path)
-            if map_components_modules:
-                module_name = map_components_modules(module_name)
-
-            # This imports the file and runs it's code. So if the file defines any
-            # django components, they will be registered.
-            logger.debug(f'Importing module "{module_name}" (derived from path "{path}")')
-            importlib.import_module(module_name)
-            imported_modules.append(module_name)
-
-    if not skip_libraries:
-        for path_lib in app_settings.LIBRARIES:
-            importlib.import_module(path_lib)
-
+        # This imports the file and runs it's code. So if the file defines any
+        # django components, they will be registered.
+        logger.debug(f'Importing module "{module_name}"')
+        importlib.import_module(module_name)
+        imported_modules.append(module_name)
     return imported_modules
 
 

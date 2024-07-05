@@ -28,6 +28,9 @@ class TestAutodiscover(BaseTestCase):
 
     # TODO: As part of this test, check that `autoimport()` imports the components
     # from the `tests/components` dir?
+    # TODO - Add tests for autodiscover - map_modules
+    #      - Add tests for import_libraries
+    #      - Add tests for import_libraries - map_modules
     def test_autodiscover_with_components_as_views(self):
         all_components_before = component_registry.registry.all().copy()
 
