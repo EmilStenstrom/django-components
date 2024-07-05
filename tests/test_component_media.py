@@ -772,7 +772,8 @@ class MediaRelativePathTests(BaseTestCase):
         with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
             # Make sure that only relevant components are registered:
             comps_to_remove = [
-                comp_name for comp_name in component.registry.all()
+                comp_name
+                for comp_name in component.registry.all()
                 if comp_name not in ["relative_file_component", "parent_component", "variable_display"]
             ]
             for comp_name in comps_to_remove:
