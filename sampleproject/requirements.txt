@@ -1,2 +1,4 @@
 django
 django_components
+gunicorn
+whitenoise

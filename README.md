@@ -16,7 +16,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
 ```
 
-Read on to learn about the details!
+[See the example project](./sampleproject) or read on to learn about the details!
 
 ## Table of Contents
 
