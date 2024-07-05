@@ -1,2 +1,3 @@
 .python-version
 *.sqlite3
+staticfiles
