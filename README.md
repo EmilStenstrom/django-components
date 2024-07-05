@@ -118,6 +118,24 @@ INSTALLED_APPS = [
 If you are on an older version of django-components, your alternatives are a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command, or b) defining a subclass of StaticFilesConfig.
 Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).
 
+Note that `safer_staticfiles` excludes the `.py` and `.html` files for [collectstatic command](https://docs.djangoproject.com/en/5.0/ref/contrib/staticfiles/#collectstatic):
+
+```sh
+python manage.py collectstatic
+```
+
+and for [production deployment](https://docs.djangoproject.com/en/5.0/howto/deployment/), e.g.:
+
+```sh
+gunicorn sampleproject.wsgi:application
+```
+
+but it does NOTHING on the [development server](https://docs.djangoproject.com/en/5.0/ref/django-admin/#runserver):
+
+```sh
+python manage.py runserver
+```
+
 ## Installation
 
 Install the app into your environment:
