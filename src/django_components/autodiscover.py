@@ -36,6 +36,7 @@ def import_libraries(
 ) -> List[str]:
     """Import modules set in `COMPONENTS.libraries` setting"""
     from django_components.app_settings import app_settings
+
     return _import_modules(app_settings.LIBRARIES, map_module)
 
 

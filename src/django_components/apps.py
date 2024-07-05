@@ -15,4 +15,3 @@ class ComponentsConfig(AppConfig):
 
         if app_settings.AUTODISCOVER:
             autodiscover()
-
