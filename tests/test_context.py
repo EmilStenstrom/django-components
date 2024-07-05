@@ -5,7 +5,6 @@ from django_components import component, types
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-
 setup_test_config()
 
 

@@ -15,7 +15,6 @@ from django_components.slots import SlotRef
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-
 setup_test_config({"autodiscover": False})
 
 

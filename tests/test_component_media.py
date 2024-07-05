@@ -14,7 +14,6 @@ from django_components import component, types
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, autodiscover_with_cleanup
 
-
 setup_test_config()
 
 

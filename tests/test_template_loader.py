@@ -9,7 +9,6 @@ from django_components.template_loader import Loader
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
 
-
 setup_test_config({"autodiscover": False})
 
 
@@ -31,7 +30,7 @@ class TemplateLoaderTest(BaseTestCase):
         )
 
     @override_settings(
-        BASE_DIR = Path(__file__).parent.resolve() / "test_structures" / "test_structure_1",  # noqa
+        BASE_DIR=Path(__file__).parent.resolve() / "test_structures" / "test_structure_1",  # noqa
     )
     def test_get_dirs__base_dir__complex(self):
         current_engine = Engine.get_default()
@@ -62,18 +61,14 @@ class TemplateLoaderTest(BaseTestCase):
         assert f"Got <class 'tuple'> : ('too_many', 'items', {repr(comps_path)})" in warn_inputs[0]
         assert "Got <class 'int'> : 3" in warn_inputs[1]
 
-    @override_settings(
-        STATICFILES_DIRS=["components"]
-    )
+    @override_settings(STATICFILES_DIRS=["components"])
     def test_get_dirs__staticfiles_dirs__raises_on_relative_path_1(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         with self.assertRaisesMessage(ValueError, "STATICFILES_DIRS must contain absolute paths"):
             loader.get_dirs()
 
-    @override_settings(
-        STATICFILES_DIRS=[("with_alias", "components")]
-    )
+    @override_settings(STATICFILES_DIRS=[("with_alias", "components")])
     def test_get_dirs__staticfiles_dirs__raises_on_relative_path_2(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)

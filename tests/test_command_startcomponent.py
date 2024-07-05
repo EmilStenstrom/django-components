@@ -9,7 +9,6 @@ from django.test import TestCase
 
 from .django_test_setup import setup_test_config
 
-
 setup_test_config()
 
 

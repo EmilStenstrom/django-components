@@ -10,7 +10,6 @@ from django_components.middleware import ComponentDependencyMiddleware
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, create_and_process_template_response
 
-
 setup_test_config()
 
 

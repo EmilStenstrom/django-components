@@ -5,7 +5,6 @@ from django_components.app_settings import app_settings
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
 
-
 setup_test_config()
 
 
