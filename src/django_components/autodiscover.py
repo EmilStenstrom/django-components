@@ -20,8 +20,8 @@ def autodiscover(
 
     Autodiscover searches in the locations as defined by `Loader.get_dirs`.
 
-    Autodiscover makes it possible to map the component module paths. This serves
-    as an escape hatch for when you need to use autodiscover in tests.
+    You can map the module paths with `map_module` function. This serves
+    as an escape hatch for when you need to use this function in tests.
     """
     dirs = get_dirs()
     component_filepaths = search_dirs(dirs, "**/*.py")
@@ -34,7 +34,12 @@ def autodiscover(
 def import_libraries(
     map_module: Optional[Callable[[str], str]] = None,
 ) -> List[str]:
-    """Import modules set in `COMPONENTS.libraries` setting"""
+    """
+    Import modules set in `COMPONENTS.libraries` setting.
+
+    You can map the module paths with `map_module` function. This serves
+    as an escape hatch for when you need to use this function in tests.
+    """
     from django_components.app_settings import app_settings
 
     return _import_modules(app_settings.LIBRARIES, map_module)
