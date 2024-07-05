@@ -2,7 +2,7 @@ import glob
 import importlib
 import os
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 from django.conf import settings
 from django.template.engine import Engine
@@ -62,7 +62,7 @@ def _import_modules(
     return imported_modules
 
 
-def _filepath_to_python_module(file_path: Path) -> str:
+def _filepath_to_python_module(file_path: Union[Path, str]) -> str:
     """
     Derive python import path from the filesystem path.
 
@@ -72,7 +72,7 @@ def _filepath_to_python_module(file_path: Path) -> str:
     - Then the path relative to project root is `app/components/mycomp.py`
     - Which we then turn into python import path `app.components.mycomp`
     """
-    if hasattr(settings, "BASE_DIR"):
+    if hasattr(settings, "BASE_DIR") and settings.BASE_DIR:
         project_root = str(settings.BASE_DIR)
     else:
         # Fallback for getting the root dir, see https://stackoverflow.com/a/16413955/9788634
@@ -81,7 +81,7 @@ def _filepath_to_python_module(file_path: Path) -> str:
     rel_path = os.path.relpath(file_path, start=project_root)
     rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
 
-    # NOTE: Path normalizes paths to use `/` as separator, while os.path
+    # NOTE: `Path` normalizes paths to use `/` as separator, while `os.path`
     # uses `os.path.sep`.
     sep = os.path.sep if os.path.sep in rel_path_without_suffix else "/"
     module_name = rel_path_without_suffix.replace(sep, ".")
