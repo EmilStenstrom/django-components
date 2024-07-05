@@ -1,7 +1,7 @@
 import contextlib
 import functools
 import sys
-from typing import Any, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from unittest.mock import Mock
 
 from django.template import Context, Node
@@ -89,7 +89,7 @@ ContextBehStr = Union[ContextBehavior, str]
 ContextBehParam = Union[ContextBehStr, Tuple[ContextBehStr, Any]]
 
 
-def parametrize_context_behavior(cases: List[ContextBehParam]):
+def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optional[Dict] = None):
     """
     Use this decorator to run a test function with django_component's
     context_behavior settings set to given values.
@@ -157,7 +157,17 @@ def parametrize_context_behavior(cases: List[ContextBehParam]):
                 else:
                     context_beh, fixture = case
 
-                with override_settings(COMPONENTS={"context_behavior": context_beh}):
+                # Set `COMPONENTS={"context_behavior": context_beh}`, but do so carefully,
+                # so we override only that single setting, and so that we operate on copies
+                # to avoid spilling settings across the test cases
+                merged_settings = {} if not settings else settings.copy()
+                if "COMPONENTS" in merged_settings:
+                    merged_settings["COMPONENTS"] = merged_settings["COMPONENTS"].copy()
+                else:
+                    merged_settings["COMPONENTS"] = {}
+                merged_settings["COMPONENTS"]["context_behavior"] = context_beh
+
+                with override_settings(**merged_settings):
                     # Call the test function with the fixture as an argument
                     try:
                         if case_has_data:
