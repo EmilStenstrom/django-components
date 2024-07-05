@@ -9,8 +9,8 @@ from django.template.loader import engines
 from django.template.response import TemplateResponse
 from django.test import SimpleTestCase, override_settings
 
-from django_components.autodiscover import autodiscover
 from django_components.app_settings import ContextBehavior
+from django_components.autodiscover import autodiscover
 from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
 
