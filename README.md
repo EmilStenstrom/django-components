@@ -46,6 +46,10 @@ Read on to learn about the details!
 
 ## Release notes
 
+🚨📢 **Version 0.83** Autodiscovery module resolution changed. Following undocumented behavior was removed:
+- Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
+- Previously, autodiscovery handled relative files in `STATICFILES_DIRS`. To align with Django, `STATICFILES_DIRS` now must be full paths ([Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS)).
+
 🚨📢 **Version 0.81** Aligned the `render_to_response` method with the (now public) `render` method of `Component` class. Moreover, slots passed to these can now be rendered also as functions.
 
 - BREAKING CHANGE: The order of arguments to `render_to_response` has changed.
