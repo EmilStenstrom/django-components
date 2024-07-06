@@ -11,7 +11,6 @@ from django.template.loaders.filesystem import Loader as FilesystemLoader
 from django_components.logger import logger
 
 
-# TODO - Document that `STATICFILES_DIRS` MUST have absolute paths
 class Loader(FilesystemLoader):
     def get_dirs(self) -> List[Path]:
         """
