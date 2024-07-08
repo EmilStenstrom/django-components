@@ -427,7 +427,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 "Component 'test1' passed fill that refers to undefined slot: 'haeder'.\\n"
                 "Unfilled slot names are: ['footer', 'header'].\\n"
                 "Did you mean 'header'?"
-            )
+            ),
         ):
             template.render(Context({}))
 
