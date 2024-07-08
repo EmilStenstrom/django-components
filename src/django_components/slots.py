@@ -11,7 +11,11 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior, app_settings
-from django_components.context import _FILLED_SLOTS_CONTENT_CONTEXT_KEY, _ROOT_CTX_CONTEXT_KEY
+from django_components.context import (
+    _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
+    _INJECT_CONTEXT_KEY_PREFIX,
+    _ROOT_CTX_CONTEXT_KEY,
+)
 from django_components.expression import resolve_expression_as_identifier, safe_resolve_dict
 from django_components.logger import trace_msg
 from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
@@ -143,6 +147,16 @@ class SlotNode(Node):
         slot_fill = slots[self.node_id]
 
         extra_context: Dict[str, Any] = {}
+
+        # Irrespective of which context we use ("root" context or the one passed to this
+        # render function), pass down the keys used by inject/provide feature. This makes it
+        # possible to pass the provided values down the slots, e.g.:
+        # {% provide "abc" val=123 %}
+        #   {% slot "content" %}{% endslot %}
+        # {% endprovide %}
+        for key, value in context.flatten().items():
+            if key.startswith(_INJECT_CONTEXT_KEY_PREFIX):
+                extra_context[key] = value
 
         # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
         # the context, so users can refer to the default slot from within the fill content.

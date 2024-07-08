@@ -15,6 +15,10 @@ HTML_ATTRS_DEFAULTS_KEY = "defaults"
 HTML_ATTRS_ATTRS_KEY = "attrs"
 
 
+def _default(val: Any, default_val: Any) -> Any:
+    return val if val is not None else default_val
+
+
 class HtmlAttrsNode(Node):
     def __init__(
         self,
@@ -57,8 +61,9 @@ class HtmlAttrsNode(Node):
         attrs_and_defaults_from_kwargs = process_aggregate_kwargs(attrs_and_defaults_from_kwargs)
 
         # NOTE: We want to allow to use `html_attrs` even without `attrs` or `defaults` params
-        attrs = attrs_and_defaults_from_kwargs.get(HTML_ATTRS_ATTRS_KEY, {})
-        default_attrs = attrs_and_defaults_from_kwargs.get(HTML_ATTRS_DEFAULTS_KEY, {})
+        # Or when they are None
+        attrs = _default(attrs_and_defaults_from_kwargs.get(HTML_ATTRS_ATTRS_KEY, None), {})
+        default_attrs = _default(attrs_and_defaults_from_kwargs.get(HTML_ATTRS_DEFAULTS_KEY, None), {})
 
         final_attrs = {**default_attrs, **attrs}
         final_attrs = append_attributes(*final_attrs.items(), *append_attrs)
