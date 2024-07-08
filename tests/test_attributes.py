@@ -131,10 +131,13 @@ class HtmlAttrsTests(BaseTestCase):
 
         template = Template(self.template_str)
 
-        with self.assertRaisesMessage(
-            TemplateSyntaxError, "Tag 'html_attrs' received unexpected positional arguments"
-        ):
+        try:
             template.render(Context({"class_var": "padding-top-8"}))
+        except RuntimeError as err:
+            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
+            self.assertIn("Tag 'html_attrs' received unexpected positional arguments", str(err.__cause__))
+        else:
+            self.fail("Expected call to fail")
 
     def test_tag_kwargs(self):
         @component.register("test")
@@ -233,8 +236,14 @@ class HtmlAttrsTests(BaseTestCase):
                 return {"attrs": attrs}
 
         template = Template(self.template_str)
-        with self.assertRaisesMessage(TemplateSyntaxError, "Received argument 'attrs' both as a regular input"):
+
+        try:
             template.render(Context({"class_var": "padding-top-8"}))
+        except RuntimeError as err:
+            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
+            self.assertIn("Received argument 'attrs' both as a regular input", str(err.__cause__))
+        else:
+            self.fail("Expected call to fail")
 
     def test_tag_raises_on_aggregate_and_positional_args_for_defaults(self):
         @component.register("test")
@@ -250,11 +259,14 @@ class HtmlAttrsTests(BaseTestCase):
                 return {"attrs": attrs}
 
         template = Template(self.template_str)
-        with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Received argument 'defaults' both as a regular input",
-        ):
+
+        try:
             template.render(Context({"class_var": "padding-top-8"}))
+        except RuntimeError as err:
+            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
+            self.assertIn("Received argument 'defaults' both as a regular input", str(err.__cause__))
+        else:
+            self.fail("Expected call to fail")
 
     def test_tag_no_attrs(self):
         @component.register("test")

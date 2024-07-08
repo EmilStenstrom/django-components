@@ -481,6 +481,45 @@ class ProvideTemplateTagTest(BaseTestCase):
             """,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_in_provide(self):
+        @component.register("injectee")
+        class InjectComponent(component.Component):
+            template: types.django_html = """
+                <div> injected: {{ var|safe }} </div>
+            """
+
+            def get_context_data(self):
+                var = self.inject("my_provide", "default")
+                return {"var": var}
+
+        @component.register("parent")
+        class ParentComponent(component.Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% provide "my_provide" key="hi" another=123 %}
+                    {% slot "content" default %}{% endslot %}
+                {% endprovide %}
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "parent" %}
+                {% component "injectee" %}{% endcomponent %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                injected: DepInject(key='hi', another=123)
+            </div>
+            """,
+        )
+
 
 class InjectTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
@@ -530,8 +569,13 @@ class InjectTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
-        with self.assertRaises(KeyError):
+
+        try:
             template.render(Context({}))
+        except RuntimeError as err:
+            self.assertIsInstance(err.__cause__, KeyError)
+        else:
+            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_missing_key_ok_with_default(self):
@@ -581,8 +625,13 @@ class InjectTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
-        with self.assertRaises(KeyError):
+
+        try:
             template.render(Context({}))
+        except RuntimeError as err:
+            self.assertIsInstance(err.__cause__, KeyError)
+        else:
+            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_raises_on_called_outside_get_context_data(self):
