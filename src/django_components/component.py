@@ -337,7 +337,21 @@ class Component(View, metaclass=ComponentMeta):
 
         return comp._render(context, args, kwargs, slots, escape_slots_content)
 
+    # This is the internal entrypoint for the render function
     def _render(
+        self,
+        context: Union[Dict[str, Any], Context] = None,
+        args: Optional[Union[List, Tuple]] = None,
+        kwargs: Optional[Dict[str, Any]] = None,
+        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        escape_slots_content: bool = True,
+    ) -> str:
+        try:
+            return self._render_impl(context, args, kwargs, slots, escape_slots_content)
+        except Exception as err:
+            raise RuntimeError(f"An error occured while rendering component '{self.name}'") from err
+
+    def _render_impl(
         self,
         context: Union[Dict[str, Any], Context] = None,
         args: Optional[Union[List, Tuple]] = None,
