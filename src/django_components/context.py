@@ -100,7 +100,7 @@ def get_injected_context_var(
     # Otherwise raise error
     raise KeyError(
         f"Component '{component_name}' tried to inject a variable '{key}' before it was provided."
-        f"To fix this, make sure that at least one ancestor of component '{component_name}' has"
+        f" To fix this, make sure that at least one ancestor of component '{component_name}' has"
         f" the variable '{key}' in their 'provide' attribute."
     )
 
