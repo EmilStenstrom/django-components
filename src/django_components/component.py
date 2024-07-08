@@ -10,7 +10,7 @@ from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
-from django.utils.html import escape
+from django.utils.html import conditional_escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
@@ -441,13 +441,13 @@ class Component(View, metaclass=ComponentMeta):
         for slot_name, content in slots_data.items():
             if isinstance(content, (str, SafeString)):
                 content_func = _nodelist_to_slot_render_func(
-                    NodeList([TextNode(escape(content) if escape_content else content)])
+                    NodeList([TextNode(conditional_escape(content) if escape_content else content)])
                 )
             else:
 
                 def content_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotRenderedContent:
                     rendered = content(ctx, kwargs, slot_ref)
-                    return escape(rendered) if escape_content else rendered
+                    return conditional_escape(rendered) if escape_content else rendered
 
             slot_fills[slot_name] = FillContent(
                 content_func=content_func,
