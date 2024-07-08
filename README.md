@@ -16,7 +16,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
 ```
 
-Read on to learn about the details!
+[See the example project](./sampleproject) or read on to learn about the details!
 
 ## Table of Contents
 
@@ -117,6 +117,21 @@ INSTALLED_APPS = [
 
 If you are on an older version of django-components, your alternatives are a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command, or b) defining a subclass of StaticFilesConfig.
 Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).
+
+Note that `safer_staticfiles` excludes the `.py` and `.html` files for [collectstatic command](https://docs.djangoproject.com/en/5.0/ref/contrib/staticfiles/#collectstatic):
+
+```sh
+python manage.py collectstatic
+```
+
+but it is ignored on the [development server](https://docs.djangoproject.com/en/5.0/ref/django-admin/#runserver):
+
+```sh
+python manage.py runserver
+```
+
+For a step-by-step guide on deploying production server with static files,
+[see the demo project](./sampleproject/README.md).
 
 ## Installation
 
