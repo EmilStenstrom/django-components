@@ -390,10 +390,10 @@ class Component(View, metaclass=ComponentMeta):
                 context.template = template
                 context.template_name = template.name
 
-            # Set `Template._is_component_nested` based on whether we're currently INSIDE
+            # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE
             # the `{% extends %}` tag.
             # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
-            template._is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
+            template._dc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
 
             # Support passing slots explicitly to `render` method
             if slots:
@@ -562,7 +562,7 @@ class ComponentNode(Node):
 
 def _monkeypatch_template(template: Template) -> None:
     # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
-    # based on our custom `Template._is_component_nested`.
+    # based on our custom `Template._dc_is_component_nested`.
     #
     # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
     #
@@ -577,19 +577,23 @@ def _monkeypatch_template(template: Template) -> None:
     # doesn't require the source to be parsed multiple times. User can pass extra args/kwargs,
     # and can modify the rendering behavior by overriding the `_render` method.
     #
-    # NOTE 2: Instead of setting `Template._is_component_nested`, alternatively we could
+    # NOTE 2: Instead of setting `Template._dc_is_component_nested`, alternatively we could
     # have passed the value to `_monkeypatch_template` directly. However, we intentionally
     # did NOT do that, so the monkey-patched method is more robust, and can be e.g. copied
     # to other.
+    if hasattr(template, "_dc_patched"):
+        # Do not patch if done so already. This helps us avoid RecursionError
+        return
+
     def _template_render(self: Template, context: Context, *args: Any, **kwargs: Any) -> str:
         #  ---------------- OUR CHANGES START ----------------
         # We parametrized `isolated_context`, which was `True` in the original method.
-        if not hasattr(self, "_is_component_nested"):
+        if not hasattr(self, "_dc_is_component_nested"):
             isolated_context = True
         else:
             # MUST be `True` for templates that are NOT import with `{% extends %}` tag,
             # and `False` otherwise.
-            isolated_context = not self._is_component_nested
+            isolated_context = not self._dc_is_component_nested
         #  ---------------- OUR CHANGES END ----------------
 
         with context.render_context.push_state(self, isolated_context=isolated_context):
