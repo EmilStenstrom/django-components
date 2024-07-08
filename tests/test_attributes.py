@@ -233,6 +233,7 @@ class HtmlAttrsTests(BaseTestCase):
                 return {"attrs": attrs}
 
         template = Template(self.template_str)
+
         with self.assertRaisesMessage(TemplateSyntaxError, "Received argument 'attrs' both as a regular input"):
             template.render(Context({"class_var": "padding-top-8"}))
 
@@ -250,6 +251,7 @@ class HtmlAttrsTests(BaseTestCase):
                 return {"attrs": attrs}
 
         template = Template(self.template_str)
+
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Received argument 'defaults' both as a regular input",

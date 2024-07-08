@@ -1,4 +1,3 @@
-import textwrap
 from typing import Any, Dict, List, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
@@ -210,6 +209,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
+
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
@@ -284,6 +284,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
+
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
@@ -381,6 +382,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
+
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
 
@@ -398,6 +400,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 return Template(template_str)
 
         c = BadComponent("name")
+
         with self.assertRaises(TemplateSyntaxError):
             c.render(Context({}))
 
@@ -417,20 +420,16 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
-        with self.assertRaises(TemplateSyntaxError):
-            try:
-                template.render(Context({}))
-            except TemplateSyntaxError as e:
-                self.assertEqual(
-                    textwrap.dedent(
-                        """\
-                        Component 'test1' passed fill that refers to undefined slot: 'haeder'.
-                        Unfilled slot names are: ['footer', 'header'].
-                        Did you mean 'header'?"""
-                    ),
-                    str(e),
-                )
-                raise e
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            (
+                "Component 'test1' passed fill that refers to undefined slot: 'haeder'.\\n"
+                "Unfilled slot names are: ['footer', 'header'].\\n"
+                "Did you mean 'header'?"
+            ),
+        ):
+            template.render(Context({}))
 
     # NOTE: This is relevant only for the "isolated" mode
     @parametrize_context_behavior(["isolated"])
@@ -1144,15 +1143,16 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
                 {% include 'slotted_template.html' with context=None only %}
             """
 
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "broken_component" %}
+                {% fill "header" %}Custom header {% endfill %}
+                {% fill "main" %}Custom main{% endfill %}
+                {% fill "footer" %}Custom footer{% endfill %}
+            {% endcomponent %}
+        """
+
         with self.assertRaises(KeyError):
-            template_str: types.django_html = """
-                {% load component_tags %}
-                {% component "broken_component" %}
-                    {% fill "header" %}Custom header {% endfill %}
-                    {% fill "main" %}Custom main{% endfill %}
-                    {% fill "footer" %}Custom footer{% endfill %}
-                {% endcomponent %}
-            """
             Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])

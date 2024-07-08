@@ -10,7 +10,7 @@ from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
-from django.utils.html import escape
+from django.utils.html import conditional_escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
@@ -337,7 +337,21 @@ class Component(View, metaclass=ComponentMeta):
 
         return comp._render(context, args, kwargs, slots, escape_slots_content)
 
+    # This is the internal entrypoint for the render function
     def _render(
+        self,
+        context: Union[Dict[str, Any], Context] = None,
+        args: Optional[Union[List, Tuple]] = None,
+        kwargs: Optional[Dict[str, Any]] = None,
+        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        escape_slots_content: bool = True,
+    ) -> str:
+        try:
+            return self._render_impl(context, args, kwargs, slots, escape_slots_content)
+        except Exception as err:
+            raise type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
+
+    def _render_impl(
         self,
         context: Union[Dict[str, Any], Context] = None,
         args: Optional[Union[List, Tuple]] = None,
@@ -441,13 +455,13 @@ class Component(View, metaclass=ComponentMeta):
         for slot_name, content in slots_data.items():
             if isinstance(content, (str, SafeString)):
                 content_func = _nodelist_to_slot_render_func(
-                    NodeList([TextNode(escape(content) if escape_content else content)])
+                    NodeList([TextNode(conditional_escape(content) if escape_content else content)])
                 )
             else:
 
                 def content_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotRenderedContent:
                     rendered = content(ctx, kwargs, slot_ref)
-                    return escape(rendered) if escape_content else rendered
+                    return conditional_escape(rendered) if escape_content else rendered
 
             slot_fills[slot_name] = FillContent(
                 content_func=content_func,
