@@ -1,4 +1,3 @@
-import textwrap
 from typing import Any, Dict, List, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
@@ -211,12 +210,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        try:
+        with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_default_slot_is_fillable_by_implicit_fill_content(self):
@@ -290,12 +285,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        try:
+        with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_fill_tag_can_occur_within_component_nested_in_implicit_fill(self):
@@ -392,12 +383,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        try:
+        with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_template_cannot_have_multiple_default_slots(self):
@@ -414,12 +401,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
         c = BadComponent("name")
 
-        try:
+        with self.assertRaises(TemplateSyntaxError):
             c.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_name_fill_typo_gives_helpful_error_message(self):
@@ -438,21 +421,15 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        try:
-            template.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
-            self.assertEqual(
-                textwrap.dedent(
-                    """\
-                    Component 'test1' passed fill that refers to undefined slot: 'haeder'.
-                    Unfilled slot names are: ['footer', 'header'].
-                    Did you mean 'header'?"""
-                ),
-                str(err.__cause__),
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            (
+                "Component 'test1' passed fill that refers to undefined slot: 'haeder'.\\n"
+                "Unfilled slot names are: ['footer', 'header'].\\n"
+                "Did you mean 'header'?"
             )
-        else:
-            self.fail("Expected call to fail")
+        ):
+            template.render(Context({}))
 
     # NOTE: This is relevant only for the "isolated" mode
     @parametrize_context_behavior(["isolated"])
@@ -1175,12 +1152,8 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
             {% endcomponent %}
         """
 
-        try:
+        with self.assertRaises(KeyError):
             Template(template_str).render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, KeyError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_non_unique_fill_names_is_error(self):

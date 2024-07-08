@@ -349,7 +349,7 @@ class Component(View, metaclass=ComponentMeta):
         try:
             return self._render_impl(context, args, kwargs, slots, escape_slots_content)
         except Exception as err:
-            raise RuntimeError(f"An error occured while rendering component '{self.name}'") from err
+            raise type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
 
     def _render_impl(
         self,

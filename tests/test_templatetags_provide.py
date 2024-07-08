@@ -570,12 +570,8 @@ class InjectTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        try:
+        with self.assertRaises(KeyError):
             template.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, KeyError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_missing_key_ok_with_default(self):
@@ -626,12 +622,8 @@ class InjectTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        try:
+        with self.assertRaises(KeyError):
             template.render(Context({}))
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, KeyError)
-        else:
-            self.fail("Expected call to fail")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_raises_on_called_outside_get_context_data(self):

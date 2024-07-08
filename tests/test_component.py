@@ -423,12 +423,8 @@ class ComponentRenderTest(BaseTestCase):
                 {% endslot %}
             """
 
-        try:
+        with self.assertRaises(TemplateSyntaxError):
             SimpleComponent.render()
-        except RuntimeError as err:
-            self.assertIsInstance(err.__cause__, TemplateSyntaxError)
-        else:
-            self.fail("Expected call to fail")
 
         SimpleComponent.render(
             slots={"first": "FIRST_SLOT"},
