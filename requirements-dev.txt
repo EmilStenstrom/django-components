@@ -8,7 +8,7 @@ asgiref==3.7.2
     # via django
 black==24.4.2
     # via -r requirements-dev.in
-cachetools==5.3.2
+cachetools==5.3.3
     # via tox
 cfgv==3.4.0
     # via pre-commit
@@ -22,7 +22,7 @@ distlib==0.3.8
     # via virtualenv
 django==5.0.6
     # via -r requirements-dev.in
-filelock==3.13.1
+filelock==3.15.4
     # via
     #   tox
     #   virtualenv
@@ -48,7 +48,7 @@ mypy-extensions==1.0.0
     #   mypy
 nodeenv==1.8.0
     # via pre-commit
-packaging==23.2
+packaging==24.1
     # via
     #   black
     #   pyproject-api
@@ -56,7 +56,7 @@ packaging==23.2
     #   tox
 pathspec==0.12.1
     # via black
-platformdirs==4.1.0
+platformdirs==4.2.2
     # via
     #   black
     #   tox
@@ -71,7 +71,7 @@ pycodestyle==2.12.0
     # via flake8
 pyflakes==3.2.0
     # via flake8
-pyproject-api==1.6.1
+pyproject-api==1.7.1
     # via tox
 pytest==8.2.2
     # via -r requirements-dev.in
@@ -79,11 +79,11 @@ pyyaml==6.0.1
     # via pre-commit
 sqlparse==0.5.0
     # via django
-tox==4.15.1
+tox==4.16.0
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via mypy
-virtualenv==20.25.0
+virtualenv==20.26.3
     # via
     #   pre-commit
     #   tox
