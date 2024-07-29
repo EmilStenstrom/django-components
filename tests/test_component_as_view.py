@@ -6,7 +6,7 @@ from django.template import Context, Template
 from django.test import Client
 from django.urls import path
 
-from django_components import component
+import django_components as dc
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -30,8 +30,8 @@ class CustomClient(Client):
 
 class TestComponentAsView(BaseTestCase):
     def test_render_component_from_template(self):
-        @component.register("testcomponent")
-        class MockComponentRequest(component.Component):
+        @dc.register("testcomponent")
+        class MockComponentRequest(dc.Component):
             template = """
                 <form method="post">
                     {% csrf_token %}
@@ -64,7 +64,7 @@ class TestComponentAsView(BaseTestCase):
         )
 
     def test_get_request(self):
-        class MockComponentRequest(component.Component):
+        class MockComponentRequest(dc.Component):
             template = """
                 <form method="post">
                     {% csrf_token %}
@@ -88,7 +88,7 @@ class TestComponentAsView(BaseTestCase):
         )
 
     def test_post_request(self):
-        class MockComponentRequest(component.Component):
+        class MockComponentRequest(dc.Component):
             template = """
                 <form method="post">
                     {% csrf_token %}
@@ -114,7 +114,7 @@ class TestComponentAsView(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_replace_slot_in_view(self):
-        class MockComponentSlot(component.Component):
+        class MockComponentSlot(dc.Component):
             template = """
                 {% load component_tags %}
                 <div>
@@ -143,7 +143,7 @@ class TestComponentAsView(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_replace_slot_in_view_with_insecure_content(self):
-        class MockInsecureComponentSlot(component.Component):
+        class MockInsecureComponentSlot(dc.Component):
             template = """
                 {% load component_tags %}
                 <div>
@@ -165,7 +165,7 @@ class TestComponentAsView(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_replace_context_in_view(self):
-        class TestComponent(component.Component):
+        class TestComponent(dc.Component):
             template = """
                 {% load component_tags %}
                 <div>
@@ -186,7 +186,7 @@ class TestComponentAsView(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_replace_context_in_view_with_insecure_content(self):
-        class MockInsecureComponentContext(component.Component):
+        class MockInsecureComponentContext(dc.Component):
             template = """
                 {% load component_tags %}
                 <div>

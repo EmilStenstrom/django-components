@@ -1,6 +1,6 @@
 from django.template import Context, Template
 
-from django_components import component, types
+import django_components as dc
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -12,9 +12,8 @@ setup_test_config()
 # COMPONENTS
 #########################
 
-
-class SimpleComponent(component.Component):
-    template: types.django_html = """
+class SimpleComponent(dc.Component):
+    template: dc.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
 
@@ -26,8 +25,8 @@ class SimpleComponent(component.Component):
         return "Variable: < strong > {} < / strong >".format(variable_value)
 
 
-class VariableDisplay(component.Component):
-    template: types.django_html = """
+class VariableDisplay(dc.Component):
+    template: dc.django_html = """
         {% load component_tags %}
         <h1>Shadowing variable = {{ shadowing_variable }}</h1>
         <h1>Uniquely named variable = {{ unique_variable }}</h1>
@@ -42,8 +41,8 @@ class VariableDisplay(component.Component):
         return context
 
 
-class IncrementerComponent(component.Component):
-    template: types.django_html = """
+class IncrementerComponent(dc.Component):
+    template: dc.django_html = """
         {% load component_tags %}
         <p class="incrementer">value={{ value }};calls={{ calls }}</p>
         {% slot 'content' %}{% endslot %}
@@ -68,8 +67,8 @@ class IncrementerComponent(component.Component):
 
 
 class ContextTests(BaseTestCase):
-    class ParentComponent(component.Component):
-        template: types.django_html = """
+    class ParentComponent(dc.Component):
+        template: dc.django_html = """
             {% load component_tags %}
             <div>
                 <h1>Parent content</h1>
@@ -90,14 +89,14 @@ class ContextTests(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        component.registry.register(name="variable_display", component=VariableDisplay)
-        component.registry.register(name="parent_component", component=self.ParentComponent)
+        dc.registry.register(name="variable_display", component=VariableDisplay)
+        dc.registry.register(name="parent_component", component=self.ParentComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_parent_with_unfilled_slots_and_component_tag(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_component' %}{% endcomponent %}
         """
@@ -116,7 +115,7 @@ class ContextTests(BaseTestCase):
     def test_nested_component_instances_have_unique_context_with_unfilled_slots_and_component_tag(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component_dependencies %}
             {% component name='parent_component' %}{% endcomponent %}
@@ -133,7 +132,7 @@ class ContextTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_parent_with_filled_slots(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_component' %}
                 {% fill 'content' %}
@@ -155,7 +154,7 @@ class ContextTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_instances_have_unique_context_with_filled_slots(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component_dependencies %}
             {% component 'parent_component' %}
@@ -179,7 +178,7 @@ class ContextTests(BaseTestCase):
     def test_nested_component_context_shadows_outer_context_with_unfilled_slots_and_component_tag(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component_dependencies %}
             {% component name='parent_component' %}{% endcomponent %}
@@ -199,7 +198,7 @@ class ContextTests(BaseTestCase):
     def test_nested_component_context_shadows_outer_context_with_filled_slots(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_component' %}
                 {% fill 'content' %}
@@ -221,8 +220,8 @@ class ContextTests(BaseTestCase):
 
 
 class ParentArgsTests(BaseTestCase):
-    class ParentComponentWithArgs(component.Component):
-        template: types.django_html = """
+    class ParentComponentWithArgs(dc.Component):
+        template: dc.django_html = """
             {% load component_tags %}
             <div>
                 <h1>Parent content</h1>
@@ -243,13 +242,13 @@ class ParentArgsTests(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        component.registry.register(name="incrementer", component=IncrementerComponent)
-        component.registry.register(name="parent_with_args", component=self.ParentComponentWithArgs)
-        component.registry.register(name="variable_display", component=VariableDisplay)
+        dc.registry.register(name="incrementer", component=IncrementerComponent)
+        dc.registry.register(name="parent_with_args", component=self.ParentComponentWithArgs)
+        dc.registry.register(name="variable_display", component=VariableDisplay)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_parent_args_can_be_drawn_from_context(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value=parent_value %}
             {% endcomponent %}
@@ -275,7 +274,7 @@ class ParentArgsTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_parent_args_available_outside_slots(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value='passed_in' %}{%endcomponent %}
         """
@@ -296,7 +295,7 @@ class ParentArgsTests(BaseTestCase):
     def test_parent_args_available_in_slots(self, context_behavior_data):
         first_val, second_val = context_behavior_data
 
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'parent_with_args' parent_value='passed_in' %}
                 {% fill 'content' %}
@@ -326,11 +325,11 @@ class ParentArgsTests(BaseTestCase):
 class ContextCalledOnceTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        component.registry.register(name="incrementer", component=IncrementerComponent)
+        dc.registry.register(name="incrementer", component=IncrementerComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_simple_component(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component name='incrementer' %}{% endcomponent %}
         """
@@ -343,7 +342,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_simple_component_and_arg(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component name='incrementer' value='2' %}{% endcomponent %}
         """
@@ -354,7 +353,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_component(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component 'incrementer' %}{% endcomponent %}
         """
@@ -365,7 +364,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_component_and_arg(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component 'incrementer' value='3' %}{% endcomponent %}
         """
@@ -376,7 +375,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_slot(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component 'incrementer' %}
                 {% fill 'content' %}
@@ -395,7 +394,7 @@ class ContextCalledOnceTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_slot_and_arg(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component 'incrementer' value='3' %}
                 {% fill 'content' %}
@@ -416,7 +415,7 @@ class ContextCalledOnceTests(BaseTestCase):
 class ComponentsCanAccessOuterContext(BaseTestCase):
     def setUp(self):
         super().setUp()
-        component.registry.register(name="simple_component", component=SimpleComponent)
+        dc.registry.register(name="simple_component", component=SimpleComponent)
 
     # NOTE: Second arg in tuple is expected value.
     @parametrize_context_behavior(
@@ -426,7 +425,7 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
         ]
     )
     def test_simple_component_can_use_outer_context(self, context_behavior_data):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' %}{% endcomponent %}
         """
@@ -443,11 +442,11 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
 class IsolatedContextTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        component.registry.register(name="simple_component", component=SimpleComponent)
+        dc.registry.register(name="simple_component", component=SimpleComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_simple_component_can_pass_outer_context_in_args(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' variable only %}{% endcomponent %}
         """
@@ -457,7 +456,7 @@ class IsolatedContextTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_simple_component_cannot_use_outer_context(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' only %}{% endcomponent %}
         """
@@ -469,13 +468,13 @@ class IsolatedContextTests(BaseTestCase):
 class IsolatedContextSettingTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        component.registry.register(name="simple_component", component=SimpleComponent)
+        dc.registry.register(name="simple_component", component=SimpleComponent)
 
     @parametrize_context_behavior(["isolated"])
     def test_component_tag_includes_variable_with_isolated_context_from_settings(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' variable %}{% endcomponent %}
         """
@@ -487,7 +486,7 @@ class IsolatedContextSettingTests(BaseTestCase):
     def test_component_tag_excludes_variable_with_isolated_context_from_settings(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' %}{% endcomponent %}
         """
@@ -499,7 +498,7 @@ class IsolatedContextSettingTests(BaseTestCase):
     def test_component_includes_variable_with_isolated_context_from_settings(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' variable %}
             {% endcomponent %}
@@ -512,7 +511,7 @@ class IsolatedContextSettingTests(BaseTestCase):
     def test_component_excludes_variable_with_isolated_context_from_settings(
         self,
     ):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'simple_component' %}
             {% endcomponent %}
@@ -523,8 +522,8 @@ class IsolatedContextSettingTests(BaseTestCase):
 
 
 class OuterContextPropertyTests(BaseTestCase):
-    class OuterContextComponent(component.Component):
-        template: types.django_html = """
+    class OuterContextComponent(dc.Component):
+        template: dc.django_html = """
             Variable: <strong>{{ variable }}</strong>
         """
 
@@ -533,11 +532,11 @@ class OuterContextPropertyTests(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        component.registry.register(name="outer_context_component", component=self.OuterContextComponent)
+        dc.registry.register(name="outer_context_component", component=self.OuterContextComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_outer_context_property_with_component(self):
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'outer_context_component' only %}{% endcomponent %}
         """
@@ -547,8 +546,8 @@ class OuterContextPropertyTests(BaseTestCase):
 
 
 class ContextVarsIsFilledTests(BaseTestCase):
-    class IsFilledVarsComponent(component.Component):
-        template: types.django_html = """
+    class IsFilledVarsComponent(dc.Component):
+        template: dc.django_html = """
             {% load component_tags %}
             <div class="frontmatter-component">
                 {% slot "title" default %}{% endslot %}
@@ -560,8 +559,8 @@ class ContextVarsIsFilledTests(BaseTestCase):
             </div>
         """
 
-    class ComponentWithConditionalSlots(component.Component):
-        template: types.django_html = """
+    class ComponentWithConditionalSlots(dc.Component):
+        template: dc.django_html = """
             {# Example from django-components/issues/98 #}
             {% load component_tags %}
             <div class="frontmatter-component">
@@ -575,8 +574,8 @@ class ContextVarsIsFilledTests(BaseTestCase):
             </div>
         """
 
-    class ComponentWithComplexConditionalSlots(component.Component):
-        template: types.django_html = """
+    class ComponentWithComplexConditionalSlots(dc.Component):
+        template: dc.django_html = """
             {# Example from django-components/issues/98 #}
             {% load component_tags %}
             <div class="frontmatter-component">
@@ -591,8 +590,8 @@ class ContextVarsIsFilledTests(BaseTestCase):
             </div>
         """
 
-    class ComponentWithNegatedConditionalSlot(component.Component):
-        template: types.django_html = """
+    class ComponentWithNegatedConditionalSlot(dc.Component):
+        template: dc.django_html = """
             {# Example from django-components/issues/98 #}
             {% load component_tags %}
             <div class="frontmatter-component">
@@ -607,21 +606,21 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        component.registry.register("is_filled_vars", self.IsFilledVarsComponent)
-        component.registry.register("conditional_slots", self.ComponentWithConditionalSlots)
-        component.registry.register(
+        dc.registry.register("is_filled_vars", self.IsFilledVarsComponent)
+        dc.registry.register("conditional_slots", self.ComponentWithConditionalSlots)
+        dc.registry.register(
             "complex_conditional_slots",
             self.ComponentWithComplexConditionalSlots,
         )
-        component.registry.register("negated_conditional_slot", self.ComponentWithNegatedConditionalSlot)
+        dc.registry.register("negated_conditional_slot", self.ComponentWithNegatedConditionalSlot)
 
     def tearDown(self) -> None:
         super().tearDown()
-        component.registry.clear()
+        dc.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_is_filled_vars(self):
-        template: types.django_html = """
+        template: dc.django_html = """
             {% load component_tags %}
             {% component "is_filled_vars" %}
                 {% fill "title" %}{% endfill %}
@@ -643,7 +642,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_is_filled_vars_default(self):
-        template: types.django_html = """
+        template: dc.django_html = """
             {% load component_tags %}
             {% component "is_filled_vars" %}
                 bla bla
@@ -664,7 +663,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_simple_component_with_conditional_slot(self):
-        template: types.django_html = """
+        template: dc.django_html = """
             {% load component_tags %}
             {% component "conditional_slots" %}{% endcomponent %}
         """
@@ -680,7 +679,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_with_filled_conditional_slot(self):
-        template: types.django_html = """
+        template: dc.django_html = """
             {% load component_tags %}
             {% component "conditional_slots" %}
             {% fill "subtitle" %} My subtitle {% endfill %}
@@ -701,7 +700,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_elif_of_complex_conditional_slots(self):
-        template: types.django_html = """
+        template: dc.django_html = """
             {% load component_tags %}
             {% component "complex_conditional_slots" %}
                 {% fill "alt_subtitle" %} A different subtitle {% endfill %}
@@ -722,7 +721,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_else_of_complex_conditional_slots(self):
-        template: types.django_html = """
+        template: dc.django_html = """
            {% load component_tags %}
            {% component "complex_conditional_slots" %}
            {% endcomponent %}
@@ -740,7 +739,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_with_negated_conditional_slot(self):
-        template: types.django_html = """
+        template: dc.django_html = """
             {% load component_tags %}
             {% component "negated_conditional_slot" %}
                 {# Whoops! Forgot to fill a slot! #}

@@ -4,7 +4,7 @@ from unittest import TestCase, mock
 
 from django.conf import settings
 
-from django_components import component, component_registry
+import django_components as dc
 from django_components.autodiscover import _filepath_to_python_module, autodiscover, import_libraries
 
 from .django_test_setup import setup_test_config
@@ -15,14 +15,14 @@ from .django_test_setup import setup_test_config
 class _TestCase(TestCase):
     def tearDown(self) -> None:
         super().tearDown()
-        component.registry.clear()
+        dc.registry.clear()
 
 
 class TestAutodiscover(_TestCase):
     def test_autodiscover(self):
         setup_test_config({"autodiscover": False})
 
-        all_components = component.registry.all().copy()
+        all_components = dc.registry.all().copy()
         self.assertNotIn("single_file_component", all_components)
         self.assertNotIn("multi_file_component", all_components)
         self.assertNotIn("relative_file_component", all_components)
@@ -30,7 +30,7 @@ class TestAutodiscover(_TestCase):
 
         try:
             modules = autodiscover(map_module=lambda p: "tests." + p)
-        except component_registry.AlreadyRegistered:
+        except dc.AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
         self.assertIn("tests.components.single_file", modules)
@@ -38,7 +38,7 @@ class TestAutodiscover(_TestCase):
         self.assertIn("tests.components.relative_file_pathobj.relative_file_pathobj", modules)
         self.assertIn("tests.components.relative_file.relative_file", modules)
 
-        all_components = component.registry.all().copy()
+        all_components = dc.registry.all().copy()
         self.assertIn("single_file_component", all_components)
         self.assertIn("multi_file_component", all_components)
         self.assertIn("relative_file_component", all_components)
@@ -56,8 +56,8 @@ class TestImportLibraries(_TestCase):
         settings.COMPONENTS["libraries"] = ["tests.components.single_file", "tests.components.multi_file.multi_file"]
 
         # Ensure we start with a clean state
-        component.registry.clear()
-        all_components = component.registry.all().copy()
+        dc.registry.clear()
+        all_components = dc.registry.all().copy()
         self.assertNotIn("single_file_component", all_components)
         self.assertNotIn("multi_file_component", all_components)
 
@@ -69,13 +69,13 @@ class TestImportLibraries(_TestCase):
 
         try:
             modules = import_libraries()
-        except component_registry.AlreadyRegistered:
+        except dc.AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
         self.assertIn("tests.components.single_file", modules)
         self.assertIn("tests.components.multi_file.multi_file", modules)
 
-        all_components = component.registry.all().copy()
+        all_components = dc.registry.all().copy()
         self.assertIn("single_file_component", all_components)
         self.assertIn("multi_file_component", all_components)
 
@@ -91,8 +91,8 @@ class TestImportLibraries(_TestCase):
         settings.COMPONENTS["libraries"] = ["components.single_file", "components.multi_file.multi_file"]
 
         # Ensure we start with a clean state
-        component.registry.clear()
-        all_components = component.registry.all().copy()
+        dc.registry.clear()
+        all_components = dc.registry.all().copy()
         self.assertNotIn("single_file_component", all_components)
         self.assertNotIn("multi_file_component", all_components)
 
@@ -104,13 +104,13 @@ class TestImportLibraries(_TestCase):
 
         try:
             modules = import_libraries(map_module=lambda p: "tests." + p)
-        except component_registry.AlreadyRegistered:
+        except dc.AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
         self.assertIn("tests.components.single_file", modules)
         self.assertIn("tests.components.multi_file.multi_file", modules)
 
-        all_components = component.registry.all().copy()
+        all_components = dc.registry.all().copy()
         self.assertIn("single_file_component", all_components)
         self.assertIn("multi_file_component", all_components)
 

@@ -293,10 +293,10 @@ Inside this file we create a Component by inheriting from the Component class an
 
 ```python
 # In a file called [project root]/components/calendar/calendar.py
-from django_components import component
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir
     # will be automatically found. To customize which template to use based on context
     # you can override method `get_template_name` instead of specifying `template_name`.
@@ -324,26 +324,25 @@ Components can also be defined in a single file, which is useful for small compo
 
 ```python
 # In a file called [project root]/components/calendar.py
-from django_components import component
-from django_components import types as t
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     def get_context_data(self, date):
         return {
             "date": date,
         }
 
-    template: t.django_html = """
+    template: dc.django_html = """
         <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
     """
 
-    css: t.css = """
+    css: dc.css = """
         .calendar-component { width: 200px; background: pink; }
         .calendar-component span { font-weight: bold; }
     """
 
-    js: t.js = """
+    js: dc.js = """
         (function(){
             if (document.querySelector(".calendar-component")) {
                 document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
@@ -365,10 +364,10 @@ Note, in the above example, that the `t.django_html`, `t.css`, and `t.js` types 
 If you're a Pycharm user (or any other editor from Jetbrains), you can have coding assistance as well:
 
 ```python
-from django_components import component
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     def get_context_data(self, date):
         return {
             "date": date,
@@ -395,7 +394,7 @@ class Calendar(component.Component):
     """
 ```
 
-You don't need to use `t.django_html`, `t.css`, `t.js` and `from django_components import types as t` since Pycharm uses [language injections](https://www.jetbrains.com/help/pycharm/using-language-injections.html). 
+You don't need to use `dc.django_html`, `dc.css`, `dc.js` since Pycharm uses [language injections](https://www.jetbrains.com/help/pycharm/using-language-injections.html). 
 You only need to write the comments `# language=<lang>` above the variables. 
 
 ## Use components in templates
@@ -452,7 +451,7 @@ Components can be rendered outside of Django templates, calling them as regular 
 The component class defines `render` and `render_to_response` class methods. These methods accept positional args, kwargs, and slots, offering the same flexibility as the `{% component %}` tag:
 
 ```py
-class SimpleComponent(component.Component):
+class SimpleComponent(dc.Component):
     template = """
         {% load component_tags %}
         hello: {{ hello }}
@@ -565,7 +564,7 @@ class MyResponse(HttpResponse):
       self.headers = ...
       self.status = ...
 
-class SimpleComponent(component.Component):
+class SimpleComponent(dc.Component):
    response_class = MyResponse
    template: types.django_html = "HELLO"
 
@@ -585,10 +584,10 @@ Here's an example of a calendar component defined as a view:
 
 ```python
 # In a file called [project root]/components/calendar.py
-from django_components import component
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
 
     template = """
         <div class="calendar-component">
@@ -642,13 +641,13 @@ If you're planning on passing an HTML string, check Django's use of [`format_htm
 
 ## Autodiscovery
 
-Every component that you want to use in the template with the `{% component %}` tag needs to be registered with the ComponentRegistry. Normally, we use the `@component.register` decorator for that:
+Every component that you want to use in the template with the `{% component %}` tag needs to be registered with the ComponentRegistry. Normally, we use the `@dc.register` decorator for that:
 
 ```py
-from django_components import component
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     ...
 ```
 
@@ -679,7 +678,7 @@ Autodiscovery occurs when Django is loaded, during the `ready` hook of the `apps
 If you are using autodiscovery, keep a few points in mind:
 
 - Avoid defining any logic on the module-level inside the `components` dir, that you would not want to run anyway.
-- Components inside the auto-imported files still need to be registered with `@component.register()`
+- Components inside the auto-imported files still need to be registered with `@dc.register()`
 - Auto-imported component files must be valid Python modules, they must use suffix `.py`, and module name should follow [PEP-8](https://peps.python.org/pep-0008/#package-and-module-names).
 
 Autodiscovery can be disabled in the [settings](#disable-autodiscovery).
@@ -1033,8 +1032,8 @@ _Added in version 0.76_:
 Consider a component with slot(s). This component may do some processing on the inputs, and then use the processed variable in the slot's default template:
 
 ```py
-@component.register("my_comp")
-class MyComp(component.Component):
+@dc.register("my_comp")
+class MyComp(dc.Component):
 	template = """
 		<div>
 			{% slot "content" default %}
@@ -1062,8 +1061,8 @@ Using scoped slots consists of two steps:
 To pass the data to the `slot` tag, simply pass them as keyword attributes (`key=value`):
 
 ```py
-@component.register("my_comp")
-class MyComp(component.Component):
+@dc.register("my_comp")
+class MyComp(dc.Component):
 	template = """
 		<div>
 			{% slot "content" default input=input %}
@@ -1153,8 +1152,8 @@ so are still valid:
 These can then be accessed inside `get_context_data` so:
 
 ```py
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     # Since # . @ - are not valid identifiers, we have to
     # use `**kwargs` so the method can accept these args.
     def get_context_data(self, **kwargs):
@@ -1178,8 +1177,8 @@ In such cases, we may want to define some HTML attributes statically, and other 
 But for that, we need to define this dictionary on Python side:
 
 ```py
-@component.register("my_comp")
-class MyComp(component.Component):
+@dc.register("my_comp")
+class MyComp(dc.Component):
     template = """
         {% component "other" attrs=attrs %}
         {% endcomponent %}
@@ -1206,8 +1205,8 @@ we prefix the key with the name of the dict and `:`. So key `class` of input `at
 `attrs:class`. And our example becomes:
 
 ```py
-@component.register("my_comp")
-class MyComp(component.Component):
+@dc.register("my_comp")
+class MyComp(dc.Component):
     template = """
         {% component "other"
             attrs:class="pa-4 flex"
@@ -1499,8 +1498,8 @@ Then:
 ### Full example for `html_attrs`
 
 ```py
-@component.register("my_comp")
-class MyComp(component.Component):
+@dc.register("my_comp")
+class MyComp(dc.Component):
     template: t.django_html = """
         <div
             {% html_attrs attrs
@@ -1521,8 +1520,8 @@ class MyComp(component.Component):
             "class_from_var": "extra-class"
         }
 
-@component.register("parent")
-class Parent(component.Component):
+@dc.register("parent")
+class Parent(dc.Component):
     template: t.django_html = """
         {% component "my_comp"
             date=date
@@ -1690,7 +1689,7 @@ For a component to be able to "inject" some data, the component (`{% component %
 In the example from previous section, we've defined two kwargs: `key="hi" another=123`. That means that if we now inject `"my_data"`, we get an object with 2 attributes - `key` and `another`.
 
 ```py
-class ChildComponent(component.Component):
+class ChildComponent(dc.Component):
     def get_context_data(self):
         my_data = self.inject("my_data")
         print(my_data.key)     # hi
@@ -1705,7 +1704,7 @@ with given key is found, `inject` raises a `KeyError`.
 To avoid the error, you can pass a second argument to `inject` to which will act as a default value, similar to `dict.get(key, default)`:
 
 ```py
-class ChildComponent(component.Component):
+class ChildComponent(dc.Component):
     def get_context_data(self):
         my_data = self.inject("invalid_key", DEFAULT_DATA)
         assert my_data == DEFAUKT_DATA
@@ -1721,8 +1720,8 @@ have all the keys that were passed to the `provide` tag.
 ### Full example
 
 ```py
-@component.register("child")
-class ChildComponent(component.Component):
+@dc.register("child")
+class ChildComponent(dc.Component):
     template = """
         <div> {{ my_data.key }} </div>
         <div> {{ my_data.another }} </div>
@@ -1780,10 +1779,10 @@ files with a component, you set them as `template_name`, `Media.js` and `Media.c
 
 ```py
 # In a file [project root]/components/calendar/calendar.py
-from django_components import component
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     template_name = "template.html"
 
     class Media:
@@ -1799,10 +1798,10 @@ Assuming that `STATICFILES_DIRS` contains path `[project root]/components`, we c
 
 ```py
 # In a file [project root]/components/calendar/calendar.py
-from django_components import component
+import django_components as dc
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     template_name = "calendar/template.html"
 
     class Media:
@@ -1817,7 +1816,7 @@ NOTE: In case of conflict, the preference goes to resolving the files relative t
 Each component can have only a single template. However, you can define as many JS or CSS files as you want using a list.
 
 ```py
-class MyComponent(component.Component):
+class MyComponent(dc.Component):
     class Media:
         js = ["path/to/script1.js", "path/to/script2.js"]
         css = ["path/to/style1.css", "path/to/style2.css"]
@@ -1833,7 +1832,7 @@ See the corresponding [Django Documentation](https://docs.djangoproject.com/en/5
 Again, you can set either a single file or a list of files per media type:
 
 ```py
-class MyComponent(component.Component):
+class MyComponent(dc.Component):
     class Media:
         css = {
             "all": "path/to/style1.css",
@@ -1842,7 +1841,7 @@ class MyComponent(component.Component):
 ```
 
 ```py
-class MyComponent(component.Component):
+class MyComponent(dc.Component):
     class Media:
         css = {
             "all": ["path/to/style1.css", "path/to/style2.css"],
@@ -1867,7 +1866,7 @@ from pathlib import Path
 
 from django.utils.safestring import mark_safe
 
-class SimpleComponent(component.Component):
+class SimpleComponent(dc.Component):
     class Media:
         css = [
             mark_safe('<link href="/static/calendar/style.css" rel="stylesheet" />'),
@@ -1906,8 +1905,8 @@ class LazyJsPath:
             f'<script type="module" src="{full_path}"></script>'
         )
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     template_name = "calendar/template.html"
 
     def get_context_data(self, date):
@@ -1935,7 +1934,7 @@ To change how the tags are constructed, you can override the [`Media.render_js` 
 
 ```py
 from django.forms.widgets import Media
-from django_components import component
+import django_components as dc
 
 class MyMedia(Media):
     # Same as original Media.render_js, except
@@ -1952,8 +1951,8 @@ class MyMedia(Media):
                 )
         return tags
 
-@component.register("calendar")
-class Calendar(component.Component):
+@dc.register("calendar")
+class Calendar(dc.Component):
     template_name = "calendar/template.html"
 
     class Media:
@@ -2021,16 +2020,16 @@ COMPONENTS = {
 Where `mysite/components/forms.py` may look like this:
 
 ```py
-@component.register("form_simple")
-class FormSimple(component.Component):
+@dc.register("form_simple")
+class FormSimple(dc.Component):
     template = """
         <form>
             ...
         </form>
     """
 
-@component.register("form_other")
-class FormOther(component.Component):
+@dc.register("form_other")
+class FormOther(dc.Component):
     template = """
         <form>
             ...
@@ -2101,7 +2100,7 @@ COMPONENTS = {
 Given this template:
 
 ```py
-class RootComp(component.Component):
+class RootComp(dc.Component):
     template = """
         {% with cheese="feta" %}
             {% component 'my_comp' %}
@@ -2138,7 +2137,7 @@ all the data defined in the outer layers, like the `{% with %}` tag.
 Given this template:
 
 ```py
-class RootComp(component.Component):
+class RootComp(dc.Component):
     template = """
         {% with cheese="feta" %}
             {% component 'my_comp' %}

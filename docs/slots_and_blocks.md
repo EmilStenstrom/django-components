@@ -15,12 +15,14 @@
 
         And components that make use of `abc.html` via `include` or `extends`:
         ```py
-        @component.register("my_comp_extends")
-        class MyCompWithExtends(component.Component):
+        import django_components as dc
+
+        @dc.register("my_comp_extends")
+        class MyCompWithExtends(dc.Component):
             template = """{% extends "abc.html" %}"""
 
-        @component.register("my_comp_include")
-        class MyCompWithInclude(component.Component):
+        @dc.register("my_comp_include")
+        class MyCompWithInclude(dc.Component):
             template = """{% include "abc.html" %}"""
         ```
 
@@ -61,8 +63,8 @@
     and component `my_comp`:
 
     ```py
-    @component.register("my_comp")
-    class MyComp(component.Component):
+    @dc.register("my_comp")
+    class MyComp(dc.Component):
     	template_name = "abc.html"
     ```
 
@@ -108,8 +110,8 @@
         `abc.html` will render `OVERRIDEN`:
 
         ````py
-        @component.register("my_comp")
-        class MyComp(component.Component):
+        @dc.register("my_comp")
+        class MyComp(dc.Component):
         template_name = """
         {% extends "abc.html" %}
 
@@ -125,8 +127,8 @@
         new `slots` inside these "overriding" blocks:
 
         ```py
-        @component.register("my_comp")
-        class MyComp(component.Component):
+        @dc.register("my_comp")
+        class MyComp(dc.Component):
         	template_name = """
         		{% extends "abc.html" %}
 

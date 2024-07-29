@@ -2,11 +2,11 @@ from typing import Any, Dict
 
 from django.http import HttpResponse
 
-from django_components import component
+import django_components as dc
 
 
-@component.register("multi_file_component")
-class MultFileComponent(component.Component):
+@dc.register("multi_file_component")
+class MultFileComponent(dc.Component):
     template_name = "multi_file/multi_file.html"
 
     def post(self, request, *args, **kwargs) -> HttpResponse:

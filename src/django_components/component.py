@@ -15,16 +15,7 @@ from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
 from django_components.component_media import ComponentMediaInput, MediaMeta
-
-# Global registry var and register() function moved to separate module.
-# Defining them here made little sense, since 1) component_tags.py and component.py
-# rely on them equally, and 2) it made it difficult to avoid circularity in the
-# way the two modules depend on one another.
-from django_components.component_registry import AlreadyRegistered as AlreadyRegistered  # NOQA
-from django_components.component_registry import ComponentRegistry as ComponentRegistry  # NOQA
-from django_components.component_registry import NotRegistered as NotRegistered  # NOQA
-from django_components.component_registry import register as register  # NOQA
-from django_components.component_registry import registry  # NOQA
+from django_components.component_registry import registry
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
@@ -49,6 +40,13 @@ from django_components.slots import (
 )
 from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
+
+# TODO_DEPRECATE_V1 - REMOVE IN V1, users should use top-level import instead
+from django_components.component_registry import AlreadyRegistered as AlreadyRegistered  # NOQA
+from django_components.component_registry import ComponentRegistry as ComponentRegistry  # NOQA
+from django_components.component_registry import NotRegistered as NotRegistered  # NOQA
+from django_components.component_registry import register as register  # NOQA
+from django_components.component_registry import registry as registry  # NOQA
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
@@ -202,8 +200,10 @@ class Component(View, metaclass=ComponentMeta):
 
         And given this definition of "my_comp" component:
         ```py
-        @component.register("my_comp")
-        class MyComp(component.Component):
+        import django_components as dc
+
+        @dc.register("my_comp")
+        class MyComp(dc.Component):
             template = "hi {{ data.hello }}!"
             def get_context_data(self):
                 data = self.inject("provider")

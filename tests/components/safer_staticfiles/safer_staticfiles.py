@@ -1,11 +1,11 @@
 from typing import Any, Dict
 
-from django_components import component
+import django_components as dc
 
 
 # Used for testing the safer_staticfiles app in `test_safer_staticfiles.py`
-@component.register("safer_staticfiles_component")
-class RelativeFileWithPathObjComponent(component.Component):
+@dc.register("safer_staticfiles_component")
+class RelativeFileWithPathObjComponent(dc.Component):
     template_name = "safer_staticfiles.html"
 
     class Media:
