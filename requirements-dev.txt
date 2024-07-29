@@ -20,7 +20,7 @@ colorama==0.4.6
     # via tox
 distlib==0.3.8
     # via virtualenv
-django==5.0.6
+django==5.0.7
     # via -r requirements-dev.in
 filelock==3.15.4
     # via
@@ -40,7 +40,7 @@ isort==5.13.2
     # via -r requirements-dev.in
 mccabe==0.7.0
     # via flake8
-mypy==1.10.1
+mypy==1.11.0
     # via -r requirements-dev.in
 mypy-extensions==1.0.0
     # via
@@ -73,7 +73,7 @@ pyflakes==3.2.0
     # via flake8
 pyproject-api==1.7.1
     # via tox
-pytest==8.2.2
+pytest==8.3.2
     # via -r requirements-dev.in
 pyyaml==6.0.1
     # via pre-commit
