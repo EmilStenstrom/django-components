@@ -48,6 +48,7 @@ from django_components.component_registry import ComponentRegistry as ComponentR
 from django_components.component_registry import NotRegistered as NotRegistered  # NOQA
 from django_components.component_registry import register as register  # NOQA
 from django_components.component_registry import registry as registry  # NOQA
+
 # isort: on
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
