@@ -88,3 +88,29 @@ class ParserComponentTest(BaseTestCase):
             abc
             """,
         )
+
+
+class AggregateKwargsTest(BaseTestCase):
+    def test_aggregate_kwargs(self):
+        processed = process_aggregate_kwargs({
+          "attrs:@click.stop": "dispatch('click_event')",
+          "attrs:x-data": "{hello: 'world'}",
+          "attrs:class": "class_var",
+          "my_dict:one": 2,
+          "three": "four",
+          ":placeholder": "No text",
+        })
+
+        self.assertDictEqual(
+            processed,
+            {
+                "attrs": {
+                    "@click.stop": "dispatch('click_event')",
+                    "x-data": "{hello: 'world'}",
+                    "class": "class_var",
+                },
+                "my_dict": {"one": 2},
+                "three": "four",
+                ":placeholder": "No text",
+            }
+        )
