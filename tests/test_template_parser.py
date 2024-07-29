@@ -3,6 +3,7 @@ from django.template.base import Parser
 
 from django_components import component, types
 from django_components.component import safe_resolve_dict, safe_resolve_list
+from django_components.template_parser import process_aggregate_kwargs
 from django_components.templatetags.component_tags import _parse_component_with_args
 
 from .django_test_setup import setup_test_config
@@ -87,4 +88,32 @@ class ParserComponentTest(BaseTestCase):
             True
             abc
             """,
+        )
+
+
+class AggregateKwargsTest(BaseTestCase):
+    def test_aggregate_kwargs(self):
+        processed = process_aggregate_kwargs(
+            {
+                "attrs:@click.stop": "dispatch('click_event')",
+                "attrs:x-data": "{hello: 'world'}",
+                "attrs:class": "class_var",
+                "my_dict:one": 2,
+                "three": "four",
+                ":placeholder": "No text",
+            }
+        )
+
+        self.assertDictEqual(
+            processed,
+            {
+                "attrs": {
+                    "@click.stop": "dispatch('click_event')",
+                    "x-data": "{hello: 'world'}",
+                    "class": "class_var",
+                },
+                "my_dict": {"one": 2},
+                "three": "four",
+                ":placeholder": "No text",
+            },
         )

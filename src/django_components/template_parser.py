@@ -261,7 +261,9 @@ def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:
     processed_kwargs = {}
     nested_kwargs: Dict[str, Dict[str, Any]] = {}
     for key, val in kwargs.items():
-        if ":" not in key:
+        # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
+        # This syntax is used by Vue and AlpineJS.
+        if ":" not in key or key.startswith(":"):
             processed_kwargs[key] = val
             continue
 
