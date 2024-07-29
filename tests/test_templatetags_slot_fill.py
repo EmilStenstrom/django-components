@@ -515,15 +515,13 @@ class SlottedTemplateRegressionTests(BaseTestCase):
 
 
 class SlotDefaultTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.clear()
         component.registry.register("test", SlottedComponent)
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -975,12 +973,11 @@ class DuplicateSlotTest(BaseTestCase):
             </div>
         """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        component.registry.register(name="duplicate_slot", component=cls.DuplicateSlotComponent)
-        component.registry.register(name="duplicate_slot_nested", component=cls.DuplicateSlotNestedComponent)
-        component.registry.register(name="calendar", component=cls.CalendarComponent)
+    def setUp(self):
+        super().setUp()
+        component.registry.register(name="duplicate_slot", component=self.DuplicateSlotComponent)
+        component.registry.register(name="duplicate_slot_nested", component=self.DuplicateSlotNestedComponent)
+        component.registry.register(name="calendar", component=self.CalendarComponent)
 
     # NOTE: Second arg is the input for the "name" component kwarg
     @parametrize_context_behavior(
@@ -1114,14 +1111,12 @@ class DuplicateSlotTest(BaseTestCase):
 
 
 class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register("test", SlottedComponent)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])

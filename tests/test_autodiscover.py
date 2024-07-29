@@ -10,15 +10,11 @@ from django_components.autodiscover import _filepath_to_python_module, autodisco
 from .django_test_setup import setup_test_config
 
 
+# NOTE: This is different from BaseTestCase in testutils.py, because here we need
+# TestCase instead of SimpleTestCase.
 class _TestCase(TestCase):
-    @classmethod
-    def setUpClass(self) -> None:
-        component.registry.clear()
-        return super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         component.registry.clear()
 
 

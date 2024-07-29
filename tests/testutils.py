@@ -20,14 +20,8 @@ middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash
 
 
 class BaseTestCase(SimpleTestCase):
-    @classmethod
-    def setUpClass(self) -> None:
-        registry.clear()
-        return super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         registry.clear()
 
 

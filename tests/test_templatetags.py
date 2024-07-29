@@ -24,19 +24,16 @@ class SlottedComponent(component.Component):
 class TemplateInstrumentationTest(BaseTestCase):
     saved_render_method: Callable  # Assigned during setup.
 
-    @classmethod
-    def setUpClass(cls):
+    def tearDown(self):
+        Template._render = self.saved_render_method
+
+    def setUp(self):
         """Emulate Django test instrumentation for TestCase (see setup_test_environment)"""
         from django.test.utils import instrumented_test_render
 
-        cls.saved_render_method = Template._render
+        self.saved_render_method = Template._render
         Template._render = instrumented_test_render
 
-    @classmethod
-    def tearDownClass(cls):
-        Template._render = cls.saved_render_method
-
-    def setUp(self):
         component.registry.clear()
         component.registry.register("test_component", SlottedComponent)
 
@@ -99,9 +96,8 @@ class BlockCompatTests(BaseTestCase):
         component.registry.clear()
         super().setUp()
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])

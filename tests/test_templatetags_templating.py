@@ -176,15 +176,13 @@ class ConditionalSlotTests(BaseTestCase):
         def get_context_data(self, branch=None):
             return {"branch": branch}
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.clear()
-        component.registry.register("test", cls.ConditionalComponent)
+        component.registry.register("test", self.ConditionalComponent)
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -622,17 +620,15 @@ class ComponentNestingTests(BaseTestCase):
         def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
             return {"items": items}
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        component.registry.register("dashboard", cls.DashboardComponent)
-        component.registry.register("calendar", cls.CalendarComponent)
-        component.registry.register("complex_child", cls.ComplexChildComponent)
-        component.registry.register("complex_parent", cls.ComplexParentComponent)
+    def setUp(self) -> None:
+        super().setUp()
+        component.registry.register("dashboard", self.DashboardComponent)
+        component.registry.register("calendar", self.CalendarComponent)
+        component.registry.register("complex_child", self.ComplexChildComponent)
+        component.registry.register("complex_parent", self.ComplexParentComponent)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         component.registry.clear()
 
     # NOTE: Second arg in tuple are expected names in nested fills. In "django" mode,

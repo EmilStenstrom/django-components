@@ -354,14 +354,12 @@ class AggregateInputTests(BaseTestCase):
 
 
 class ComponentTemplateSyntaxErrorTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register("test", SlottedComponent)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])

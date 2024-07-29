@@ -54,11 +54,10 @@ class ComponentTest(BaseTestCase):
                 context["unique_variable"] = new_variable
             return context
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        component.registry.register(name="parent_component", component=cls.ParentComponent)
-        component.registry.register(name="variable_display", component=cls.VariableDisplay)
+    def setUp(self):
+        super().setUp()
+        component.registry.register(name="parent_component", component=self.ParentComponent)
+        component.registry.register(name="variable_display", component=self.VariableDisplay)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_empty_component(self):
