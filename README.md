@@ -48,6 +48,10 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 🚨📢 **Version 0.83** Autodiscovery module resolution changed. Following undocumented behavior was removed:
 - Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
+    - To migrate from:
+        -  `[app]/components.py` - Define each module in `COMPONENTS.libraries` setting,
+        or import each module inside the `AppConfig.ready()` hook in respective `apps.py` files.
+        - `SETTINGS_MODULE` - Define component dirs using `STATICFILES_DIRS`
 - Previously, autodiscovery handled relative files in `STATICFILES_DIRS`. To align with Django, `STATICFILES_DIRS` now must be full paths ([Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS)).
 
 🚨📢 **Version 0.81** Aligned the `render_to_response` method with the (now public) `render` method of `Component` class. Moreover, slots passed to these can now be rendered also as functions.
@@ -647,8 +651,6 @@ from django_components import autodiscover
 
 autodiscover()
 ```
-
-Note, though, that if a module was previously imported, it's body will NOT be executed upon calling `autodiscover`.
 
 ## Using slots in templates
 
@@ -2001,8 +2003,6 @@ from django_components import import_libraries
 
 import_libraries()
 ```
-
-Note, though, that if a module was previously imported, it's body will NOT be executed upon calling `import_libraries`.
 
 ### Disable autodiscovery
 
