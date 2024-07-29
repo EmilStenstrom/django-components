@@ -4,6 +4,7 @@ from django.template.base import Parser
 from django_components import component, types
 from django_components.component import safe_resolve_dict, safe_resolve_list
 from django_components.templatetags.component_tags import _parse_component_with_args
+from django_components.template_parser import process_aggregate_kwargs
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
