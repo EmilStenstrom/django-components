@@ -15,7 +15,14 @@ from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
 from django_components.component_media import ComponentMediaInput, MediaMeta
-from django_components.component_registry import registry
+
+# TODO_DEPRECATE_V1 - REMOVE IN V1, users should use top-level import instead
+from django_components.component_registry import AlreadyRegistered as AlreadyRegistered  # NOQA
+from django_components.component_registry import ComponentRegistry as ComponentRegistry  # NOQA
+from django_components.component_registry import NotRegistered as NotRegistered  # NOQA
+from django_components.component_registry import register as register  # NOQA
+from django_components.component_registry import registry  # NOQA
+from django_components.component_registry import registry as registry
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
@@ -40,13 +47,6 @@ from django_components.slots import (
 )
 from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
-
-# TODO_DEPRECATE_V1 - REMOVE IN V1, users should use top-level import instead
-from django_components.component_registry import AlreadyRegistered as AlreadyRegistered  # NOQA
-from django_components.component_registry import ComponentRegistry as ComponentRegistry  # NOQA
-from django_components.component_registry import NotRegistered as NotRegistered  # NOQA
-from django_components.component_registry import register as register  # NOQA
-from django_components.component_registry import registry as registry  # NOQA
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 

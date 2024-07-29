@@ -12,6 +12,7 @@ setup_test_config()
 # COMPONENTS
 #########################
 
+
 class SimpleComponent(dc.Component):
     template: dc.django_html = """
         Variable: <strong>{{ variable }}</strong>
