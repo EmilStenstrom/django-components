@@ -46,7 +46,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
-🚨📢 **Version 0.83** Autodiscovery module resolution changed. Following undocumented behavior was removed:
+🚨📢 **Version 0.85** Autodiscovery module resolution changed. Following undocumented behavior was removed:
 - Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
     - To migrate from:
         -  `[app]/components.py` - Define each module in `COMPONENTS.libraries` setting,
