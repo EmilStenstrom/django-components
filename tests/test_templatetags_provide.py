@@ -482,9 +482,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_in_provide(self):
-        @component.register("injectee")
-        class InjectComponent(component.Component):
-            template: types.django_html = """
+        @dc.register("injectee")
+        class InjectComponent(dc.Component):
+            template: dc.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -492,16 +492,16 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        @component.register("parent")
-        class ParentComponent(component.Component):
-            template: types.django_html = """
+        @dc.register("parent")
+        class ParentComponent(dc.Component):
+            template: dc.django_html = """
                 {% load component_tags %}
                 {% provide "my_provide" key="hi" another=123 %}
                     {% slot "content" default %}{% endslot %}
                 {% endprovide %}
             """
 
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component "parent" %}
                 {% component "injectee" %}{% endcomponent %}

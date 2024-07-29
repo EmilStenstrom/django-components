@@ -1137,7 +1137,7 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
                 {% include 'slotted_template.html' with context=None only %}
             """
 
-        template_str: types.django_html = """
+        template_str: dc.django_html = """
             {% load component_tags %}
             {% component "broken_component" %}
                 {% fill "header" %}Custom header {% endfill %}
