@@ -2,13 +2,12 @@ from typing import Any, Dict, List, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 
-# isort: off
-from .django_test_setup import *  # NOQA
+from django_components import component, types
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-# isort: on
-
-from django_components import component, types
+setup_test_config()
 
 
 class SlottedComponent(component.Component):
@@ -516,15 +515,13 @@ class SlottedTemplateRegressionTests(BaseTestCase):
 
 
 class SlotDefaultTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.clear()
         component.registry.register("test", SlottedComponent)
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -976,12 +973,11 @@ class DuplicateSlotTest(BaseTestCase):
             </div>
         """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        component.registry.register(name="duplicate_slot", component=cls.DuplicateSlotComponent)
-        component.registry.register(name="duplicate_slot_nested", component=cls.DuplicateSlotNestedComponent)
-        component.registry.register(name="calendar", component=cls.CalendarComponent)
+    def setUp(self):
+        super().setUp()
+        component.registry.register(name="duplicate_slot", component=self.DuplicateSlotComponent)
+        component.registry.register(name="duplicate_slot_nested", component=self.DuplicateSlotNestedComponent)
+        component.registry.register(name="calendar", component=self.CalendarComponent)
 
     # NOTE: Second arg is the input for the "name" component kwarg
     @parametrize_context_behavior(
@@ -1115,14 +1111,12 @@ class DuplicateSlotTest(BaseTestCase):
 
 
 class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register("test", SlottedComponent)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self):
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])

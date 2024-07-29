@@ -2,8 +2,11 @@ from django.template import Context, Template
 
 from django_components import component, types
 
-from .django_test_setup import *  # NOQA
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
+
+setup_test_config()
+
 
 #########################
 # COMPONENTS
@@ -85,11 +88,10 @@ class ContextTests(BaseTestCase):
         def get_context_data(self):
             return {"shadowing_variable": "NOT SHADOWED"}
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register(name="variable_display", component=VariableDisplay)
-        component.registry.register(name="parent_component", component=cls.ParentComponent)
+        component.registry.register(name="parent_component", component=self.ParentComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_parent_with_unfilled_slots_and_component_tag(
@@ -239,11 +241,10 @@ class ParentArgsTests(BaseTestCase):
         def get_context_data(self, parent_value):
             return {"inner_parent_value": parent_value}
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register(name="incrementer", component=IncrementerComponent)
-        component.registry.register(name="parent_with_args", component=cls.ParentComponentWithArgs)
+        component.registry.register(name="parent_with_args", component=self.ParentComponentWithArgs)
         component.registry.register(name="variable_display", component=VariableDisplay)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -323,9 +324,8 @@ class ParentArgsTests(BaseTestCase):
 
 
 class ContextCalledOnceTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register(name="incrementer", component=IncrementerComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -414,9 +414,8 @@ class ContextCalledOnceTests(BaseTestCase):
 
 
 class ComponentsCanAccessOuterContext(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
     # NOTE: Second arg in tuple is expected value.
@@ -442,9 +441,8 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
 
 
 class IsolatedContextTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -469,9 +467,8 @@ class IsolatedContextTests(BaseTestCase):
 
 
 class IsolatedContextSettingTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register(name="simple_component", component=SimpleComponent)
 
     @parametrize_context_behavior(["isolated"])
@@ -534,10 +531,9 @@ class OuterContextPropertyTests(BaseTestCase):
         def get_context_data(self):
             return self.outer_context.flatten()
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        component.registry.register(name="outer_context_component", component=cls.OuterContextComponent)
+    def setUp(self):
+        super().setUp()
+        component.registry.register(name="outer_context_component", component=self.OuterContextComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_outer_context_property_with_component(self):
@@ -609,20 +605,18 @@ class ContextVarsIsFilledTests(BaseTestCase):
             </div>
         """
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        component.registry.register("is_filled_vars", cls.IsFilledVarsComponent)
-        component.registry.register("conditional_slots", cls.ComponentWithConditionalSlots)
+    def setUp(self) -> None:
+        super().setUp()
+        component.registry.register("is_filled_vars", self.IsFilledVarsComponent)
+        component.registry.register("conditional_slots", self.ComponentWithConditionalSlots)
         component.registry.register(
             "complex_conditional_slots",
-            cls.ComponentWithComplexConditionalSlots,
+            self.ComponentWithComplexConditionalSlots,
         )
-        component.registry.register("negated_conditional_slot", cls.ComponentWithNegatedConditionalSlot)
+        component.registry.register("negated_conditional_slot", self.ComponentWithNegatedConditionalSlot)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])

@@ -1,186 +1,164 @@
-from pathlib import Path
-from unittest import mock
-from unittest.mock import MagicMock, patch
+import os
+import sys
+from unittest import TestCase, mock
 
-from django.template.engine import Engine
-from django.urls import include, path
+from django.conf import settings
 
-# isort: off
-from .django_test_setup import settings
-from .testutils import BaseTestCase
+from django_components import component, component_registry
+from django_components.autodiscover import _filepath_to_python_module, autodiscover, import_libraries
 
-# isort: on
-
-from django_components import _filepath_to_python_module, autodiscover, component, component_registry
-from django_components.template_loader import Loader
-
-urlpatterns = [
-    path("", include("tests.components.urls")),
-]
+from .django_test_setup import setup_test_config
 
 
-class TestAutodiscover(BaseTestCase):
-    def setUp(self):
-        settings.SETTINGS_MODULE = "tests.test_autodiscover"  # noqa
-
+# NOTE: This is different from BaseTestCase in testutils.py, because here we need
+# TestCase instead of SimpleTestCase.
+class _TestCase(TestCase):
     def tearDown(self) -> None:
-        del settings.SETTINGS_MODULE  # noqa
+        super().tearDown()
+        component.registry.clear()
 
-    # TODO: As part of this test, check that `autoimport()` imports the components
-    # from the `tests/components` dir?
-    def test_autodiscover_with_components_as_views(self):
-        all_components_before = component_registry.registry.all().copy()
+
+class TestAutodiscover(_TestCase):
+    def test_autodiscover(self):
+        setup_test_config({"autodiscover": False})
+
+        all_components = component.registry.all().copy()
+        self.assertNotIn("single_file_component", all_components)
+        self.assertNotIn("multi_file_component", all_components)
+        self.assertNotIn("relative_file_component", all_components)
+        self.assertNotIn("relative_file_pathobj_component", all_components)
 
         try:
-            autodiscover()
-        except component.AlreadyRegistered:
+            modules = autodiscover(map_module=lambda p: "tests." + p)
+        except component_registry.AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
-        all_components_after = component_registry.registry.all().copy()
-        imported_components_count = len(all_components_after) - len(all_components_before)
-        self.assertEqual(imported_components_count, 3)
+        self.assertIn("tests.components.single_file", modules)
+        self.assertIn("tests.components.multi_file.multi_file", modules)
+        self.assertIn("tests.components.relative_file_pathobj.relative_file_pathobj", modules)
+        self.assertIn("tests.components.relative_file.relative_file", modules)
+
+        all_components = component.registry.all().copy()
+        self.assertIn("single_file_component", all_components)
+        self.assertIn("multi_file_component", all_components)
+        self.assertIn("relative_file_component", all_components)
+        self.assertIn("relative_file_pathobj_component", all_components)
 
 
-class TestLoaderSettingsModule(BaseTestCase):
-    def tearDown(self) -> None:
-        del settings.SETTINGS_MODULE  # noqa
-
-    def test_get_dirs(self):
-        settings.SETTINGS_MODULE = "tests.test_autodiscover"  # noqa
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = loader.get_dirs()
-        self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    Path(__file__).parent.resolve() / "components",
-                ]
-            ),
+class TestImportLibraries(_TestCase):
+    def test_import_libraries(self):
+        # Prepare settings
+        setup_test_config(
+            {
+                "autodiscover": False,
+            }
         )
+        settings.COMPONENTS["libraries"] = ["tests.components.single_file", "tests.components.multi_file.multi_file"]
 
-    def test_complex_settings_module(self):
-        settings.SETTINGS_MODULE = "tests.test_structures.test_structure_1.config.settings"  # noqa
+        # Ensure we start with a clean state
+        component.registry.clear()
+        all_components = component.registry.all().copy()
+        self.assertNotIn("single_file_component", all_components)
+        self.assertNotIn("multi_file_component", all_components)
 
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = loader.get_dirs()
-        self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
-                ]
-            ),
+        # Ensure that the modules are executed again after import
+        if "tests.components.single_file" in sys.modules:
+            del sys.modules["tests.components.single_file"]
+        if "tests.components.multi_file.multi_file" in sys.modules:
+            del sys.modules["tests.components.multi_file.multi_file"]
+
+        try:
+            modules = import_libraries()
+        except component_registry.AlreadyRegistered:
+            self.fail("Autodiscover should not raise AlreadyRegistered exception")
+
+        self.assertIn("tests.components.single_file", modules)
+        self.assertIn("tests.components.multi_file.multi_file", modules)
+
+        all_components = component.registry.all().copy()
+        self.assertIn("single_file_component", all_components)
+        self.assertIn("multi_file_component", all_components)
+
+        settings.COMPONENTS["libraries"] = []
+
+    def test_import_libraries_map_modules(self):
+        # Prepare settings
+        setup_test_config(
+            {
+                "autodiscover": False,
+            }
         )
+        settings.COMPONENTS["libraries"] = ["components.single_file", "components.multi_file.multi_file"]
 
-    def test_complex_settings_module_2(self):
-        settings.SETTINGS_MODULE = "tests.test_structures.test_structure_2.project.settings.production"  # noqa
+        # Ensure we start with a clean state
+        component.registry.clear()
+        all_components = component.registry.all().copy()
+        self.assertNotIn("single_file_component", all_components)
+        self.assertNotIn("multi_file_component", all_components)
 
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = loader.get_dirs()
-        self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    Path(__file__).parent.resolve()
-                    / "test_structures"
-                    / "test_structure_2"
-                    / "project"
-                    / "components",
-                ]
-            ),
-        )
+        # Ensure that the modules are executed again after import
+        if "tests.components.single_file" in sys.modules:
+            del sys.modules["tests.components.single_file"]
+        if "tests.components.multi_file.multi_file" in sys.modules:
+            del sys.modules["tests.components.multi_file.multi_file"]
 
-    def test_complex_settings_module_3(self):
-        settings.SETTINGS_MODULE = "tests.test_structures.test_structure_3.project.settings.production"  # noqa
+        try:
+            modules = import_libraries(map_module=lambda p: "tests." + p)
+        except component_registry.AlreadyRegistered:
+            self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = loader.get_dirs()
-        expected = [
-            Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "components",
-            Path(__file__).parent.resolve() / "test_structures" / "test_structure_3" / "project" / "components",
-        ]
-        self.assertEqual(
-            sorted(dirs),
-            sorted(expected),
-        )
+        self.assertIn("tests.components.single_file", modules)
+        self.assertIn("tests.components.multi_file.multi_file", modules)
+
+        all_components = component.registry.all().copy()
+        self.assertIn("single_file_component", all_components)
+        self.assertIn("multi_file_component", all_components)
+
+        settings.COMPONENTS["libraries"] = []
 
 
-class TestBaseDir(BaseTestCase):
-    def setUp(self):
-        settings.BASE_DIR = Path(__file__).parent.resolve() / "test_structures" / "test_structure_1"  # noqa
-        settings.SETTINGS_MODULE = "tests_fake.test_autodiscover_fake"  # noqa
-
-    def tearDown(self) -> None:
-        del settings.BASE_DIR  # noqa
-        del settings.SETTINGS_MODULE  # noqa
-
-    def test_base_dir(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = loader.get_dirs()
-        expected = [
-            Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
-        ]
-        self.assertEqual(sorted(dirs), sorted(expected))
-
-
-class TestStaticFilesDirs(BaseTestCase):
-    def setUp(self):
-        settings.STATICFILES_DIRS = [
-            "components",
-            ("with_alias", "components"),
-            ("too_many", "items", "components"),
-            ("with_not_str_alias", 3),
-        ]  # noqa
-
-    def tearDown(self) -> None:
-        del settings.STATICFILES_DIRS  # noqa
-
-    @patch("django_components.template_loader.logger.warning")
-    def test_static_files_dirs(self, mock_warning: MagicMock):
-        mock_warning.reset_mock()
-        current_engine = Engine.get_default()
-        Loader(current_engine).get_dirs()
-
-        warn_inputs = [warn.args[0] for warn in mock_warning.call_args_list]
-        assert "Got <class 'tuple'> : ('too_many', 'items', 'components')" in warn_inputs[0]
-        assert "Got <class 'int'> : 3" in warn_inputs[1]
-
-
-class TestFilepathToPythonModule(BaseTestCase):
+class TestFilepathToPythonModule(_TestCase):
     def test_prepares_path(self):
+        base_path = str(settings.BASE_DIR)
+
+        the_path = os.path.join(base_path, "tests.py")
         self.assertEqual(
-            _filepath_to_python_module(Path("tests.py")),
+            _filepath_to_python_module(the_path),
             "tests",
         )
+
+        the_path = os.path.join(base_path, "tests/components/relative_file/relative_file.py")
         self.assertEqual(
-            _filepath_to_python_module(Path("tests/components/relative_file/relative_file.py")),
+            _filepath_to_python_module(the_path),
             "tests.components.relative_file.relative_file",
         )
 
     def test_handles_nonlinux_paths(self):
+        base_path = str(settings.BASE_DIR).replace("/", "//")
+
         with mock.patch("os.path.sep", new="//"):
+            the_path = os.path.join(base_path, "tests.py")
             self.assertEqual(
-                _filepath_to_python_module(Path("tests.py")),
+                _filepath_to_python_module(the_path),
                 "tests",
             )
 
+            the_path = os.path.join(base_path, "tests//components//relative_file//relative_file.py")
             self.assertEqual(
-                _filepath_to_python_module(Path("tests//components//relative_file//relative_file.py")),
+                _filepath_to_python_module(the_path),
                 "tests.components.relative_file.relative_file",
             )
 
+        base_path = str(settings.BASE_DIR).replace("//", "\\")
         with mock.patch("os.path.sep", new="\\"):
+            the_path = os.path.join(base_path, "tests.py")
             self.assertEqual(
-                _filepath_to_python_module(Path("tests.py")),
+                _filepath_to_python_module(the_path),
                 "tests",
             )
 
+            the_path = os.path.join(base_path, "tests\\components\\relative_file\\relative_file.py")
             self.assertEqual(
-                _filepath_to_python_module(Path("tests\\components\\relative_file\\relative_file.py")),
+                _filepath_to_python_module(the_path),
                 "tests.components.relative_file.relative_file",
             )

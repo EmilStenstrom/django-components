@@ -7,19 +7,19 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 
-from .django_test_setup import *  # NOQA
+from .django_test_setup import setup_test_config
+
+setup_test_config()
 
 
 class CreateComponentCommandTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.temp_dir = tempfile.mkdtemp()
+    def setUp(self):
+        super().setUp()
+        self.temp_dir = tempfile.mkdtemp()
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        rmtree(cls.temp_dir)
+    def tearDown(self):
+        super().tearDown()
+        rmtree(self.temp_dir)
 
     def test_default_file_names(self):
         component_name = "defaultcomponent"

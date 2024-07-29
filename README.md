@@ -46,6 +46,14 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+🚨📢 **Version 0.85** Autodiscovery module resolution changed. Following undocumented behavior was removed:
+- Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
+    - To migrate from:
+        -  `[app]/components.py` - Define each module in `COMPONENTS.libraries` setting,
+        or import each module inside the `AppConfig.ready()` hook in respective `apps.py` files.
+        - `SETTINGS_MODULE` - Define component dirs using `STATICFILES_DIRS`
+- Previously, autodiscovery handled relative files in `STATICFILES_DIRS`. To align with Django, `STATICFILES_DIRS` now must be full paths ([Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS)).
+
 🚨📢 **Version 0.81** Aligned the `render_to_response` method with the (now public) `render` method of `Component` class. Moreover, slots passed to these can now be rendered also as functions.
 
 - BREAKING CHANGE: The order of arguments to `render_to_response` has changed.
@@ -135,51 +143,62 @@ For a step-by-step guide on deploying production server with static files,
 
 ## Installation
 
-Install the app into your environment:
+1. Install the app into your environment:
 
-> `pip install django_components`
+   > `pip install django_components`
 
-Then add the app into INSTALLED_APPS in settings.py
+2. Then add the app into `INSTALLED_APPS` in settings.py
 
-```python
-INSTALLED_APPS = [
-    ...,
-    'django_components',
-]
-```
+   ```python
+   INSTALLED_APPS = [
+      ...,
+      'django_components',
+   ]
+   ```
 
-Modify `TEMPLATES` section of settings.py as follows:
-- *Remove `'APP_DIRS': True,`*
-- add `loaders` to `OPTIONS` list and set it to following value:
+3. Ensure that `BASE_DIR` setting is defined in settings.py:
 
-```python
-TEMPLATES = [
-    {
-        ...,
-        'OPTIONS': {
-            'context_processors': [
-                ...
-            ],
-            'loaders':[(
-                'django.template.loaders.cached.Loader', [
-                    'django.template.loaders.filesystem.Loader',
-                    'django.template.loaders.app_directories.Loader',
-                    'django_components.template_loader.Loader',
-                ]
-            )],
-        },
-    },
-]
-```
+   ```py
+   BASE_DIR = Path(__file__).resolve().parent.parent
+   ```
 
-Modify STATICFILES_DIRS (or add it if you don't have it) so django can find your static JS and CSS files:
+4. Modify `TEMPLATES` section of settings.py as follows:
+   - *Remove `'APP_DIRS': True,`*
+   - Add `loaders` to `OPTIONS` list and set it to following value:
 
-```python
-STATICFILES_DIRS = [
-    ...,
-    os.path.join(BASE_DIR, "components"),
-]
-```
+   ```python
+   TEMPLATES = [
+      {
+         ...,
+         'OPTIONS': {
+               'context_processors': [
+                  ...
+               ],
+               'loaders':[(
+                  'django.template.loaders.cached.Loader', [
+                     'django.template.loaders.filesystem.Loader',
+                     'django.template.loaders.app_directories.Loader',
+                     'django_components.template_loader.Loader',
+                  ]
+               )],
+         },
+      },
+   ]
+   ```
+
+5. Modify `STATICFILES_DIRS` (or add it if you don't have it) so django can find your static JS and CSS files:
+
+   ```python
+   STATICFILES_DIRS = [
+      ...,
+      os.path.join(BASE_DIR, "components"),
+   ]
+   ```
+
+   If `STATICFILES_DIRS` is omitted or empty, django-components will by default look for
+   `{BASE_DIR}/components`
+
+   NOTE: The paths in `STATICFILES_DIRS` must be full paths. [See Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-dirs).
 
 ### Optional
 
@@ -623,7 +642,37 @@ If you're planning on passing an HTML string, check Django's use of [`format_htm
 
 ## Autodiscovery
 
-By default, the Python files in the `components` app are auto-imported in order to auto-register the components (e.g. `components/button/button.py`).
+Every component that you want to use in the template with the `{% component %}` tag needs to be registered with the ComponentRegistry. Normally, we use the `@component.register` decorator for that:
+
+```py
+from django_components import component
+
+@component.register("calendar")
+class Calendar(component.Component):
+    ...
+```
+
+But for the component to be registered, the code needs to be executed - the file needs to be imported as a module.
+
+One way to do that is by importing all your components in `apps.py`:
+
+```py
+from django.apps import AppConfig
+
+class MyAppConfig(AppConfig):
+    name = "my_app"
+
+    def ready(self) -> None:
+        from components.card.card import Card
+        from components.list.list import List
+        from components.menu.menu import Menu
+        from components.button.button import Button
+        ...
+```
+
+However, there's a simpler way!
+
+By default, the Python files in the `STATICFILES_DIRS` directories are auto-imported in order to auto-register the components.
 
 Autodiscovery occurs when Django is loaded, during the `ready` hook of the `apps.py` file.
 
@@ -633,7 +682,17 @@ If you are using autodiscovery, keep a few points in mind:
 - Components inside the auto-imported files still need to be registered with `@component.register()`
 - Auto-imported component files must be valid Python modules, they must use suffix `.py`, and module name should follow [PEP-8](https://peps.python.org/pep-0008/#package-and-module-names).
 
-Autodiscovery can be disabled via in the [settings](#disable-autodiscovery).
+Autodiscovery can be disabled in the [settings](#disable-autodiscovery).
+
+### Manually trigger autodiscovery
+
+Autodiscovery can be also triggered manually as a function call. This is useful if you want to run autodiscovery at a custom point of the lifecycle:
+
+```py
+from django_components import autodiscover
+
+autodiscover()
+```
 
 ## Using slots in templates
 
@@ -1957,6 +2016,34 @@ COMPONENTS = {
         "mysite.components.cards",
     ],
 }
+```
+
+Where `mysite/components/forms.py` may look like this:
+
+```py
+@component.register("form_simple")
+class FormSimple(component.Component):
+    template = """
+        <form>
+            ...
+        </form>
+    """
+
+@component.register("form_other")
+class FormOther(component.Component):
+    template = """
+        <form>
+            ...
+        </form>
+    """
+```
+
+In the rare cases when you need to manually trigger the import of libraries, you can use the `import_libraries` function:
+
+```py
+from django_components import import_libraries
+
+import_libraries()
 ```
 
 ### Disable autodiscovery

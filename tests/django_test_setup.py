@@ -1,8 +1,16 @@
+from pathlib import Path
+from typing import Dict, Optional
+
 import django
 from django.conf import settings
 
-if not settings.configured:
+
+def setup_test_config(components: Optional[Dict] = None):
+    if settings.configured:
+        return
+
     settings.configure(
+        BASE_DIR=Path(__file__).resolve().parent,
         INSTALLED_APPS=("django_components",),
         TEMPLATES=[
             {
@@ -13,7 +21,10 @@ if not settings.configured:
                 ],
             }
         ],
-        COMPONENTS={"template_cache_size": 128},
+        COMPONENTS={
+            "template_cache_size": 128,
+            **(components or {}),
+        },
         MIDDLEWARE=["django_components.middleware.ComponentDependencyMiddleware"],
         DATABASES={
             "default": {

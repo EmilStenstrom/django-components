@@ -1,7 +1,7 @@
 import contextlib
 import functools
 import sys
-from typing import Any, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from unittest.mock import Mock
 
 from django.template import Context, Node
@@ -9,8 +9,8 @@ from django.template.loader import engines
 from django.template.response import TemplateResponse
 from django.test import SimpleTestCase, override_settings
 
-from django_components import autodiscover
 from django_components.app_settings import ContextBehavior
+from django_components.autodiscover import autodiscover
 from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
 
@@ -20,14 +20,8 @@ middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash
 
 
 class BaseTestCase(SimpleTestCase):
-    @classmethod
-    def setUpClass(self) -> None:
-        registry.clear()
-        return super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         registry.clear()
 
 
@@ -89,7 +83,7 @@ ContextBehStr = Union[ContextBehavior, str]
 ContextBehParam = Union[ContextBehStr, Tuple[ContextBehStr, Any]]
 
 
-def parametrize_context_behavior(cases: List[ContextBehParam]):
+def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optional[Dict] = None):
     """
     Use this decorator to run a test function with django_component's
     context_behavior settings set to given values.
@@ -157,7 +151,17 @@ def parametrize_context_behavior(cases: List[ContextBehParam]):
                 else:
                     context_beh, fixture = case
 
-                with override_settings(COMPONENTS={"context_behavior": context_beh}):
+                # Set `COMPONENTS={"context_behavior": context_beh}`, but do so carefully,
+                # so we override only that single setting, and so that we operate on copies
+                # to avoid spilling settings across the test cases
+                merged_settings = {} if not settings else settings.copy()
+                if "COMPONENTS" in merged_settings:
+                    merged_settings["COMPONENTS"] = merged_settings["COMPONENTS"].copy()
+                else:
+                    merged_settings["COMPONENTS"] = {}
+                merged_settings["COMPONENTS"]["context_behavior"] = context_beh
+
+                with override_settings(**merged_settings):
                     # Call the test function with the fixture as an argument
                     try:
                         if case_has_data:

@@ -2,15 +2,12 @@ import textwrap
 
 from django.template import Context, Template, TemplateSyntaxError
 
-# isort: off
-from .django_test_setup import *  # NOQA
+from django_components import component, component_registry, types
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-# isort: on
-
-import django_components
-import django_components.component_registry
-from django_components import component, types
+setup_test_config()
 
 
 class SlottedComponent(component.Component):
@@ -77,7 +74,7 @@ class ComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaises(django_components.component_registry.NotRegistered):
+        with self.assertRaises(component_registry.NotRegistered):
             template.render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -164,7 +161,7 @@ class ComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaises(django_components.component_registry.NotRegistered):
+        with self.assertRaises(component_registry.NotRegistered):
             template.render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -357,14 +354,12 @@ class AggregateInputTests(BaseTestCase):
 
 
 class ComponentTemplateSyntaxErrorTests(BaseTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
         component.registry.register("test", SlottedComponent)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
+    def tearDown(self) -> None:
+        super().tearDown()
         component.registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])

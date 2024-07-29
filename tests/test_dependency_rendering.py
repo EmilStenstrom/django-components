@@ -7,8 +7,10 @@ from django.test import override_settings
 from django_components import component, types
 from django_components.middleware import ComponentDependencyMiddleware
 
-from .django_test_setup import *  # NOQA
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, create_and_process_template_response
+
+setup_test_config()
 
 
 class SimpleComponent(component.Component):

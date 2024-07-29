@@ -6,13 +6,12 @@ from django.template import Context, Template
 from django.test import Client
 from django.urls import path
 
-# isort: off
-from .django_test_setup import *  # noqa
+from django_components import component
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-# isort: on
-
-from django_components import component
+setup_test_config()
 
 
 class CustomClient(Client):

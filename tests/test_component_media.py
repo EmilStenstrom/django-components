@@ -9,13 +9,12 @@ from django.test import override_settings
 from django.utils.html import format_html, html_safe
 from django.utils.safestring import mark_safe
 
-# isort: off
-from .django_test_setup import *  # NOQA
+from django_components import component, types
+
+from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, autodiscover_with_cleanup
 
-# isort: on
-
-from django_components import component, types
+setup_test_config()
 
 
 class InlineComponentTest(BaseTestCase):
@@ -750,11 +749,10 @@ class MediaRelativePathTests(BaseTestCase):
                 context["unique_variable"] = new_variable
             return context
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        component.registry.register(name="parent_component", component=cls.ParentComponent)
-        component.registry.register(name="variable_display", component=cls.VariableDisplay)
+    def setUp(self):
+        super().setUp()
+        component.registry.register(name="parent_component", component=self.ParentComponent)
+        component.registry.register(name="variable_display", component=self.VariableDisplay)
 
     # Settings required for autodiscover to work
     @override_settings(
@@ -769,7 +767,7 @@ class MediaRelativePathTests(BaseTestCase):
             del sys.modules["tests.components.relative_file.relative_file"]
 
         # Fix the paths, since the "components" dir is nested
-        with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
             # Make sure that only relevant components are registered:
             comps_to_remove = [
                 comp_name
@@ -811,7 +809,7 @@ class MediaRelativePathTests(BaseTestCase):
             del sys.modules["tests.components.relative_file.relative_file"]
 
         # Fix the paths, since the "components" dir is nested
-        with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
             component.registry.unregister("relative_file_pathobj_component")
 
             template_str: types.django_html = """
@@ -851,7 +849,7 @@ class MediaRelativePathTests(BaseTestCase):
             del sys.modules["tests.components.relative_file_pathobj.relative_file_pathobj"]
 
         # Fix the paths, since the "components" dir is nested
-        with autodiscover_with_cleanup(map_import_paths=lambda p: f"tests.{p}"):
+        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
             # Mark the PathObj instances of 'relative_file_pathobj_component' so they won raise
             # error PathObj.__str__ is triggered.
             CompCls = component.registry.get("relative_file_pathobj_component")

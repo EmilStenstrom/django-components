@@ -1,15 +1,14 @@
 from django.template import Context, Template
 from django.template.base import Parser
 
-# isort: off
-from .django_test_setup import *  # NOQA
-from .testutils import BaseTestCase, parametrize_context_behavior
-
-# isort: on
-
 from django_components import component, types
 from django_components.component import safe_resolve_dict, safe_resolve_list
 from django_components.templatetags.component_tags import _parse_component_with_args
+
+from .django_test_setup import setup_test_config
+from .testutils import BaseTestCase, parametrize_context_behavior
+
+setup_test_config()
 
 
 class ParserTest(BaseTestCase):
