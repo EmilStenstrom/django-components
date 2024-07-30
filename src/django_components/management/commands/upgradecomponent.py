@@ -33,34 +33,36 @@ class Command(BaseCommand):
                 for file in files:
                     if file.endswith((".html", ".py")):
                         file_path = os.path.join(root, file)
-                    with open(file_path, "r+", encoding="utf-8") as f:
-                        content = f.read()
-                        content_with_closed_components, step0_count = re.subn(
-                            r'({%\s*component\s*"(\w+?)"(.*?)%})(?!.*?{%\s*endcomponent\s*%})',
-                            r"\1{% endcomponent %}",
-                            content,
-                            flags=re.DOTALL,
-                        )
-                        updated_content, step1_count_opening = re.subn(
-                            r'{%\s*component_block\s*"(\w+?)"\s*(.*?)%}',
-                            r'{% component "\1" \2%}',
-                            content_with_closed_components,
-                            flags=re.DOTALL,
-                        )
-                        updated_content, step2_count_closing = re.subn(
-                            r'{%\s*endcomponent_block\s*"(\w+?)"\s*%}',
-                            r"{% endcomponent %}",
-                            updated_content,
-                            flags=re.DOTALL,
-                        )
-                        updated_content, step2_count_closing_no_name = re.subn(
-                            r"{%\s*endcomponent_block\s*%}", r"{% endcomponent %}", updated_content, flags=re.DOTALL
-                        )
-                        total_updates = (
-                            step0_count + step1_count_opening + step2_count_closing + step2_count_closing_no_name
-                        )
-                        if total_updates > 0:
-                            f.seek(0)
-                            f.write(updated_content)
-                            f.truncate()
-                            self.stdout.write(f"Updated {file_path}: {total_updates} changes made")
+                        with open(file_path, "r+", encoding="utf-8") as f:
+                            content = f.read()
+                            content_with_closed_components, step0_count = re.subn(
+                                r'({%\s*component\s*"(\w+?)"(.*?)%})(?!.*?{%\s*endcomponent\s*%})',
+                                r"\1{% endcomponent %}",
+                                content,
+                                flags=re.DOTALL,
+                            )
+                            updated_content, step1_count_opening = re.subn(
+                                r'{%\s*component_block\s*"(\w+?)"\s*(.*?)%}',
+                                r'{% component "\1" \2%}',
+                                content_with_closed_components,
+                                flags=re.DOTALL,
+                            )
+                            updated_content, step2_count_closing = re.subn(
+                                r'{%\s*endcomponent_block\s*"(\w+?)"\s*%}',
+                                r"{% endcomponent %}",
+                                updated_content,
+                                flags=re.DOTALL,
+                            )
+                            updated_content, step2_count_closing_no_name = re.subn(
+                                r"{%\s*endcomponent_block\s*%}", r"{% endcomponent %}", updated_content, flags=re.DOTALL
+                            )
+                            total_updates = (
+                                step0_count + step1_count_opening +
+                                step2_count_closing + step2_count_closing_no_name
+                            )
+                            if total_updates > 0:
+                                f.seek(0)
+                                f.write(updated_content)
+                                f.truncate()
+                                self.stdout.write(
+                                    f"Updated {file_path}: {total_updates} changes made")
