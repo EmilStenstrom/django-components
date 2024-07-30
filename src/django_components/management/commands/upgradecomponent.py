@@ -54,15 +54,16 @@ class Command(BaseCommand):
                                 flags=re.DOTALL,
                             )
                             updated_content, step2_count_closing_no_name = re.subn(
-                                r"{%\s*endcomponent_block\s*%}", r"{% endcomponent %}", updated_content, flags=re.DOTALL
+                                r"{%\s*endcomponent_block\s*%}",
+                                r"{% endcomponent %}",
+                                updated_content,
+                                flags=re.DOTALL,
                             )
                             total_updates = (
-                                step0_count + step1_count_opening +
-                                step2_count_closing + step2_count_closing_no_name
+                                step0_count + step1_count_opening + step2_count_closing + step2_count_closing_no_name
                             )
                             if total_updates > 0:
                                 f.seek(0)
                                 f.write(updated_content)
                                 f.truncate()
-                                self.stdout.write(
-                                    f"Updated {file_path}: {total_updates} changes made")
+                                self.stdout.write(f"Updated {file_path}: {total_updates} changes made")
