@@ -10,9 +10,7 @@ from django_components.component_registry import ComponentRegistry as ComponentR
 from django_components.component_registry import NotRegistered as NotRegistered
 from django_components.component_registry import register as register
 from django_components.component_registry import registry as registry
-from django_components.types import css as css
-from django_components.types import django_html as django_html
-from django_components.types import js as js
+from django_components import types as types
 
 if django.VERSION < (3, 2):
     default_app_config = "django_components.apps.ComponentsConfig"
