@@ -1,13 +1,6 @@
 import unittest
 
-from django_components import (
-    AlreadyRegistered,
-    Component,
-    ComponentRegistry,
-    NotRegistered,
-    registry,
-    register,
-)
+from django_components import AlreadyRegistered, Component, ComponentRegistry, NotRegistered, register, registry
 
 from .django_test_setup import setup_test_config
 

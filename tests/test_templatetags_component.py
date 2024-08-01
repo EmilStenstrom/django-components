@@ -2,7 +2,7 @@ import textwrap
 
 from django.template import Context, Template, TemplateSyntaxError
 
-from django_components import Component, NotRegistered, registry, register, types
+from django_components import Component, NotRegistered, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior

@@ -4,7 +4,7 @@ from typing import Callable
 
 from django.template import Context, Template
 
-from django_components import Component, registry, register, types
+from django_components import Component, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
