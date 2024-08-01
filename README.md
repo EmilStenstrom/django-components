@@ -82,7 +82,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 **Version 0.67** CHANGED the default way how context variables are resolved in slots. See the [documentation](https://github.com/EmilStenstrom/django-components/tree/0.67#isolate-components-slots) for more details.
 
-🚨📢 **Version 0.5** CHANGES THE SYNTAX for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of components to the new syntax automatically.
+🚨📢 **Version 0.5** CHANGES THE SYNTAX for components. `component_block` is now `component`, and `component` blocks need an ending `endcomponent` tag. The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use --path argument to point to each dir) of templates that use components to the new syntax automatically.
 
 This change is done to simplify the API in anticipation of a 1.0 release of django_components. After 1.0 we intend to be stricter with big changes like this in point releases.
 
