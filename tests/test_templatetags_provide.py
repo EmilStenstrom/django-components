@@ -1,6 +1,6 @@
 from django.template import Context, Template, TemplateSyntaxError
 
-import django_components as dc
+from django_components import Component, register, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -11,9 +11,9 @@ setup_test_config()
 class ProvideTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_basic(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -21,7 +21,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -40,9 +40,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_access_keys_in_python(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> key: {{ key }} </div>
                 <div> another: {{ another }} </div>
             """
@@ -54,7 +54,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                     "another": my_provide.another,
                 }
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -74,9 +74,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_access_keys_in_django(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> key: {{ my_provide.key }} </div>
                 <div> another: {{ my_provide.another }} </div>
             """
@@ -87,7 +87,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                     "my_provide": my_provide,
                 }
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -107,9 +107,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_does_not_leak(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -117,7 +117,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
             {% endprovide %}
@@ -138,9 +138,9 @@ class ProvideTemplateTagTest(BaseTestCase):
     def test_provide_empty(self):
         """Check provide tag with no kwargs"""
 
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -148,7 +148,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" %}
                 {% component "injectee" %}
@@ -172,16 +172,16 @@ class ProvideTemplateTagTest(BaseTestCase):
     def test_provide_no_inject(self):
         """Check that nothing breaks if we do NOT inject even if some data is provided"""
 
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div></div>
             """
 
             def get_context_data(self):
                 return {}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -203,9 +203,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_key_single_quotes(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -213,7 +213,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide 'my_provide' key="hi" another=123 %}
                 {% component "injectee" %}
@@ -235,9 +235,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_no_key_raises(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -245,7 +245,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide key="hi" another=123 %}
                 {% component "injectee" %}
@@ -259,9 +259,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_key_must_be_string_literal(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -269,7 +269,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide my_var key="hi" another=123 %}
                 {% component "injectee" %}
@@ -283,9 +283,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_key_must_be_identifier(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -293,7 +293,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "%heya%" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -308,9 +308,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_aggregate_dics(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -318,7 +318,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" var1:key="hi" var1:another=123 var2:x="y" %}
                 {% component "injectee" %}
@@ -339,9 +339,9 @@ class ProvideTemplateTagTest(BaseTestCase):
     def test_provide_does_not_expose_kwargs_to_context(self):
         """Check that `provide` tag doesn't assign the keys to the context like `with` tag does"""
 
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -349,7 +349,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             var_out: {{ var }}
             key_out: {{ key }}
@@ -375,9 +375,9 @@ class ProvideTemplateTagTest(BaseTestCase):
     def test_provide_nested_in_provide_same_key(self):
         """Check that inner `provide` with same key overshadows outer `provide`"""
 
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -385,7 +385,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 lost=0 %}
                 {% provide "my_provide" key="hi1" another=1231 new=3 %}
@@ -415,9 +415,9 @@ class ProvideTemplateTagTest(BaseTestCase):
     def test_provide_nested_in_provide_different_key(self):
         """Check that `provide` tag with different keys don't affect each other"""
 
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> first_provide: {{ first_provide|safe }} </div>
                 <div> second_provide: {{ second_provide|safe }} </div>
             """
@@ -430,7 +430,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                     "second_provide": second_provide,
                 }
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "first_provide" key="hi" another=123 lost=0 %}
                 {% provide "second_provide" key="hi1" another=1231 new=3 %}
@@ -452,9 +452,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_in_include(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -462,7 +462,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% include "inject.html" %}
@@ -482,9 +482,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_in_provide(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -492,16 +492,16 @@ class ProvideTemplateTagTest(BaseTestCase):
                 var = self.inject("my_provide", "default")
                 return {"var": var}
 
-        @dc.register("parent")
-        class ParentComponent(dc.Component):
-            template: dc.django_html = """
+        @register("parent")
+        class ParentComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 {% provide "my_provide" key="hi" another=123 %}
                     {% slot "content" default %}{% endslot %}
                 {% endprovide %}
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "parent" %}
                 {% component "injectee" %}{% endcomponent %}
@@ -523,9 +523,9 @@ class ProvideTemplateTagTest(BaseTestCase):
 class InjectTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_basic(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -533,7 +533,7 @@ class InjectTest(BaseTestCase):
                 var = self.inject("my_provide")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -552,9 +552,9 @@ class InjectTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_missing_key_raises_without_default(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -562,7 +562,7 @@ class InjectTest(BaseTestCase):
                 var = self.inject("abc")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "injectee" %}
             {% endcomponent %}
@@ -574,9 +574,9 @@ class InjectTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_missing_key_ok_with_default(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -584,7 +584,7 @@ class InjectTest(BaseTestCase):
                 var = self.inject("abc", "default")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "injectee" %}
             {% endcomponent %}
@@ -600,9 +600,9 @@ class InjectTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_empty_string(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -610,7 +610,7 @@ class InjectTest(BaseTestCase):
                 var = self.inject("")
                 return {"var": var}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% provide "my_provide" key="hi" another=123 %}
                 {% component "injectee" %}
@@ -626,9 +626,9 @@ class InjectTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_raises_on_called_outside_get_context_data(self):
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 

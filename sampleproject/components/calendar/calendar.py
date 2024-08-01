@@ -1,8 +1,8 @@
-import django_components as dc
+from django_components import Component, register
 
 
-@dc.register("calendar")
-class Calendar(dc.Component):
+@register("calendar")
+class Calendar(Component):
     # Note that Django will look for templates inside `[your apps]/components` dir and
     # `[project root]/components` dir. To customize which template to use based on context
     # you can override def get_template_name() instead of specifying the below variable.
@@ -25,8 +25,8 @@ class Calendar(dc.Component):
         js = "calendar/calendar.js"
 
 
-@dc.register("calendar_relative")
-class CalendarRelative(dc.Component):
+@register("calendar_relative")
+class CalendarRelative(Component):
     # Note that Django will look for templates inside `[your apps]/components` dir and
     # `[project root]/components` dir. To customize which template to use based on context
     # you can override def get_template_name() instead of specifying the below variable.

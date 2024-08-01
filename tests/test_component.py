@@ -9,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
 from django.template import Context, Template, TemplateSyntaxError
 
-import django_components as dc
+from django_components import Component, registry, types
 from django_components.slots import SlotRef
 
 from .django_test_setup import setup_test_config
@@ -19,8 +19,8 @@ setup_test_config({"autodiscover": False})
 
 
 class ComponentTest(BaseTestCase):
-    class ParentComponent(dc.Component):
-        template: dc.django_html = """
+    class ParentComponent(Component):
+        template: types.django_html = """
             {% load component_tags %}
             <div>
                 <h1>Parent content</h1>
@@ -39,8 +39,8 @@ class ComponentTest(BaseTestCase):
         def get_context_data(self):
             return {"shadowing_variable": "NOT SHADOWED"}
 
-    class VariableDisplay(dc.Component):
-        template: dc.django_html = """
+    class VariableDisplay(Component):
+        template: types.django_html = """
             {% load component_tags %}
             <h1>Shadowing variable = {{ shadowing_variable }}</h1>
             <h1>Uniquely named variable = {{ unique_variable }}</h1>
@@ -56,12 +56,12 @@ class ComponentTest(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        dc.registry.register(name="parent_component", component=self.ParentComponent)
-        dc.registry.register(name="variable_display", component=self.VariableDisplay)
+        registry.register(name="parent_component", component=self.ParentComponent)
+        registry.register(name="variable_display", component=self.VariableDisplay)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_empty_component(self):
-        class EmptyComponent(dc.Component):
+        class EmptyComponent(Component):
             pass
 
         with self.assertRaises(ImproperlyConfigured):
@@ -69,8 +69,8 @@ class ComponentTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_string_static_inlined(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
             """
 
@@ -93,9 +93,9 @@ class ComponentTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_string_dynamic(self):
-        class SimpleComponent(dc.Component):
+        class SimpleComponent(Component):
             def get_template_string(self, context):
-                content: dc.django_html = """
+                content: types.django_html = """
                     Variable: <strong>{{ variable }}</strong>
                 """
                 return content
@@ -119,7 +119,7 @@ class ComponentTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_name_static(self):
-        class SimpleComponent(dc.Component):
+        class SimpleComponent(Component):
             template_name = "simple_template.html"
 
             def get_context_data(self, variable=None):
@@ -141,7 +141,7 @@ class ComponentTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_name_dynamic(self):
-        class SvgComponent(dc.Component):
+        class SvgComponent(Component):
             def get_context_data(self, name, css_class="", title="", **attrs):
                 return {
                     "name": name,
@@ -168,7 +168,7 @@ class ComponentTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_allows_to_override_get_template(self):
-        class TestComponent(dc.Component):
+        class TestComponent(Component):
             def get_context_data(self, variable, **attrs):
                 return {
                     "variable": variable,
@@ -190,8 +190,8 @@ class ComponentTest(BaseTestCase):
 class ComponentRenderTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_minimal(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 the_arg2: {{ the_arg2 }}
                 args: {{ args|safe }}
@@ -230,8 +230,8 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_full(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 the_arg: {{ the_arg }}
                 the_arg2: {{ the_arg2 }}
@@ -283,8 +283,8 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_to_response_full(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 the_arg: {{ the_arg }}
                 the_arg2: {{ the_arg2 }}
@@ -342,9 +342,9 @@ class ComponentRenderTest(BaseTestCase):
             def __init__(self, content: str) -> None:
                 self.content = bytes(content, "utf-8")
 
-        class SimpleComponent(dc.Component):
+        class SimpleComponent(Component):
             response_class = MyResponse
-            template: dc.django_html = "HELLO"
+            template: types.django_html = "HELLO"
 
         rendered = SimpleComponent.render_to_response()
         self.assertIsInstance(rendered, MyResponse)
@@ -358,8 +358,8 @@ class ComponentRenderTest(BaseTestCase):
     def test_render_slot_as_func(self, context_behavior_data):
         is_isolated = context_behavior_data
 
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 {% slot "first" required data1="abc" data2:hello="world" data2:one=123 %}
                     SLOT_DEFAULT
@@ -414,8 +414,8 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_raises_on_missing_slot(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 {% slot "first" required %}
                 {% endslot %}
@@ -430,8 +430,8 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_include(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 {% include 'slotted_template.html' %}
             """
@@ -450,8 +450,8 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_extends(self):
-        class SimpleComponent(dc.Component):
-            template: dc.django_html = """
+        class SimpleComponent(Component):
+            template: types.django_html = """
                 {% extends 'block.html' %}
                 {% block body %}
                     OVERRIDEN
@@ -478,7 +478,7 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_can_access_instance(self):
-        class TestComponent(dc.Component):
+        class TestComponent(Component):
             template = "Variable: <strong>{{ id }}</strong>"
 
             def get_context_data(self, **attrs):
@@ -494,7 +494,7 @@ class ComponentRenderTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_to_response_can_access_instance(self):
-        class TestComponent(dc.Component):
+        class TestComponent(Component):
             template = "Variable: <strong>{{ id }}</strong>"
 
             def get_context_data(self, **attrs):

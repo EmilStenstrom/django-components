@@ -125,10 +125,10 @@ class Command(BaseCommand):
                 with open(os.path.join(component_path, f"{name}.py"), "w") as f:
                     py_content = dedent(
                         f"""
-                        import django_components as dc
+                        from django_components import Component, register
 
-                        @dc.register("{name}")
-                        class {name.capitalize()}(dc.Component):
+                        @register("{name}")
+                        class {name.capitalize()}(Component):
                             template_name = "{name}/{template_filename}"
 
                             def get_context_data(self, value):

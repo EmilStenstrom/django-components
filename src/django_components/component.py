@@ -203,10 +203,10 @@ class Component(View, metaclass=ComponentMeta):
 
         And given this definition of "my_comp" component:
         ```py
-        import django_components as dc
+        from django_components import Component, register
 
-        @dc.register("my_comp")
-        class MyComp(dc.Component):
+        @register("my_comp")
+        class MyComp(Component):
             template = "hi {{ data.hello }}!"
             def get_context_data(self):
                 data = self.inject("provider")

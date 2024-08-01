@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 
-import django_components as dc
+from django_components import Component, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -10,8 +10,8 @@ from .testutils import BaseTestCase, parametrize_context_behavior
 setup_test_config()
 
 
-class SlottedComponent(dc.Component):
-    template: dc.django_html = """
+class SlottedComponent(Component):
+    template: types.django_html = """
         {% load component_tags %}
         <custom-template>
             <header>{% slot "header" %}Default header{% endslot %}</header>
@@ -33,15 +33,15 @@ class SlottedComponentWithContext(SlottedComponent):
 
 class ComponentSlottedTemplateTagTest(BaseTestCase):
     def setUp(self):
-        # NOTE: dc.registry is global, so need to clear before each test
-        dc.registry.clear()
+        # NOTE: registry is global, so need to clear before each test
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_basic(self):
-        dc.registry.register(name="test1", component=SlottedComponent)
+        registry.register(name="test1", component=SlottedComponent)
 
-        @dc.register("test2")
-        class SimpleComponent(dc.Component):
+        @register("test2")
+        class SimpleComponent(Component):
             template = """Variable: <strong>{{ variable }}</strong>"""
 
             def get_context_data(self, variable, variable2="default"):
@@ -54,7 +54,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 css = "style.css"
                 js = "script.js"
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test1" %}
                 {% fill "header" %}
@@ -82,9 +82,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     # NOTE: Second arg is the expected output of `{{ variable }}`
     @parametrize_context_behavior([("django", "test456"), ("isolated", "")])
     def test_slotted_template_with_context_var(self, context_behavior_data):
-        dc.registry.register(name="test1", component=SlottedComponentWithContext)
+        registry.register(name="test1", component=SlottedComponentWithContext)
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% with my_first_variable="test123" %}
                 {% component "test1" variable="test456" %}
@@ -113,9 +113,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_no_slots_filled(self):
-        dc.registry.register(name="test", component=SlottedComponent)
+        registry.register(name="test", component=SlottedComponent)
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}{% endcomponent %}
         """
@@ -135,13 +135,13 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_without_slots(self):
-        @dc.register("test")
-        class SlottedComponentNoSlots(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class SlottedComponentNoSlots(Component):
+            template: types.django_html = """
                 <custom-template></custom-template>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}{% endcomponent %}
         """
@@ -152,13 +152,13 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_without_slots_and_single_quotes(self):
-        @dc.register("test")
-        class SlottedComponentNoSlots(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class SlottedComponentNoSlots(Component):
+            template: types.django_html = """
                 <custom-template></custom-template>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% endcomponent %}
         """
@@ -169,8 +169,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_variable_fill_name(self):
-        dc.registry.register(name="test", component=SlottedComponent)
-        template_str: dc.django_html = """
+        registry.register(name="test", component=SlottedComponent)
+        template_str: types.django_html = """
             {% load component_tags %}
             {% with slotname="header" %}
                 {% component 'test' %}
@@ -191,8 +191,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_missing_required_slot_raises_error(self):
-        class Component(dc.Component):
-            template: dc.django_html = """
+        class Comp(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div class="header-box">
                     <h1>{% slot "title" required %}{% endslot %}</h1>
@@ -200,9 +200,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 </div>
             """
 
-        dc.registry.register("test", Component)
+        registry.register("test", Comp)
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
             {% endcomponent %}
@@ -214,16 +214,16 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_default_slot_is_fillable_by_implicit_fill_content(self):
-        @dc.register("test_comp")
-        class ComponentWithDefaultSlot(dc.Component):
-            template: dc.django_html = """
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <main>{% slot "main" default %}Easy to override{% endslot %}</main>
                 </div>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               <p>This fills the 'main' slot.</p>
@@ -241,16 +241,16 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_default_slot_is_fillable_by_explicit_fill_content(self):
-        @dc.register("test_comp")
-        class ComponentWithDefaultSlot(dc.Component):
-            template: dc.django_html = """
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <main>{% slot "main" default %}Easy to override{% endslot %}</main>
                 </div>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
@@ -267,9 +267,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_error_raised_when_default_and_required_slot_not_filled(self):
-        @dc.register("test_comp")
-        class ComponentWithDefaultAndRequiredSlot(dc.Component):
-            template: dc.django_html = """
+        @register("test_comp")
+        class ComponentWithDefaultAndRequiredSlot(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <header>{% slot "header" %}Your Header Here{% endslot %}</header>
@@ -277,7 +277,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 </div>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
             {% endcomponent %}
@@ -289,18 +289,18 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_fill_tag_can_occur_within_component_nested_in_implicit_fill(self):
-        dc.registry.register("slotted", SlottedComponent)
+        registry.register("slotted", SlottedComponent)
 
-        @dc.register("test_comp")
-        class ComponentWithDefaultSlot(dc.Component):
-            template: dc.django_html = """
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <main>{% slot "main" default %}Easy to override{% endslot %}</main>
                 </div>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               {% component "slotted" %}
@@ -327,9 +327,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_error_from_mixed_implicit_and_explicit_fill_content(self):
-        @dc.register("test_comp")
-        class ComponentWithDefaultSlot(dc.Component):
-            template: dc.django_html = """
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <main>{% slot "main" default %}Easy to override{% endslot %}</main>
@@ -337,7 +337,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
             """
 
         with self.assertRaises(TemplateSyntaxError):
-            template_str: dc.django_html = """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component 'test_comp' %}
                   {% fill "main" %}Main content{% endfill %}
@@ -348,16 +348,16 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_comments_permitted_inside_implicit_fill_content(self):
-        @dc.register("test_comp")
-        class ComponentWithDefaultSlot(dc.Component):
-            template: dc.django_html = """
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <main>{% slot "main" default %}Easy to override{% endslot %}</main>
                 </div>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               <p>Main Content</p>
@@ -372,8 +372,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_without_default_slot_refuses_implicit_fill(self):
-        dc.registry.register("test_comp", SlottedComponent)
-        template_str: dc.django_html = """
+        registry.register("test_comp", SlottedComponent)
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
               <p>This shouldn't work because the included component doesn't mark
@@ -387,9 +387,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_template_cannot_have_multiple_default_slots(self):
-        class BadComponent(dc.Component):
+        class BadComponent(Component):
             def get_template(self, context, template_name: Optional[str] = None) -> Template:
-                template_str: dc.django_html = """
+                template_str: types.django_html = """
                     {% load django_components %}
                     <div>
                         {% slot "icon" %} {% endslot default %}
@@ -405,9 +405,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_name_fill_typo_gives_helpful_error_message(self):
-        dc.registry.register(name="test1", component=SlottedComponent)
+        registry.register(name="test1", component=SlottedComponent)
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test1" %}
                 {% fill "haeder" %}
@@ -433,8 +433,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     # NOTE: This is relevant only for the "isolated" mode
     @parametrize_context_behavior(["isolated"])
     def test_slots_of_top_level_comps_can_access_full_outer_ctx(self):
-        class SlottedComponent(dc.Component):
-            template: dc.django_html = """
+        class SlottedComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     <main>{% slot "main" default %}Easy to override{% endslot %}</main>
@@ -446,9 +446,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                     "name": name,
                 }
 
-        dc.registry.register("test", SlottedComponent)
+        registry.register("test", SlottedComponent)
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             <body>
                 {% component "test" %}
@@ -478,14 +478,14 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
 class SlottedTemplateRegressionTests(BaseTestCase):
     def setUp(self):
-        # NOTE: dc.registry is global, so need to clear before each test
-        dc.registry.clear()
+        # NOTE: registry is global, so need to clear before each test
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_that_uses_missing_variable(self):
-        @dc.register("test")
-        class SlottedComponentWithMissingVariable(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class SlottedComponentWithMissingVariable(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <custom-template>
                     {{ missing_context_variable }}
@@ -495,7 +495,7 @@ class SlottedTemplateRegressionTests(BaseTestCase):
                 </custom-template>
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% endcomponent %}
         """
@@ -517,16 +517,16 @@ class SlottedTemplateRegressionTests(BaseTestCase):
 class SlotDefaultTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        dc.registry.clear()
-        dc.registry.register("test", SlottedComponent)
+        registry.clear()
+        registry.register("test", SlottedComponent)
 
     def tearDown(self):
         super().tearDown()
-        dc.registry.clear()
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_basic(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" default="header" %}Before: {{ header }}{% endfill %}
@@ -550,7 +550,7 @@ class SlotDefaultTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_multiple_calls(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" default="header" %}
@@ -575,7 +575,7 @@ class SlotDefaultTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_under_if_and_forloop(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" default="header" %}
@@ -605,7 +605,7 @@ class SlotDefaultTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_fills(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" default="header1" %}
@@ -654,9 +654,9 @@ class SlotDefaultTests(BaseTestCase):
 class ScopedSlotTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
@@ -669,7 +669,7 @@ class ScopedSlotTest(BaseTestCase):
                     "var123": 456,
                 }
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "my_slot" data="slot_data_in_fill" %}
@@ -689,9 +689,9 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_with_flags(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" default abc=abc var123=var123 required %}Default text{% endslot %}
@@ -704,7 +704,7 @@ class ScopedSlotTest(BaseTestCase):
                     "var123": 456,
                 }
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "my_slot" data="slot_data_in_fill" %}
@@ -724,9 +724,9 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_with_slot_default(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
@@ -739,7 +739,7 @@ class ScopedSlotTest(BaseTestCase):
                     "var123": 456,
                 }
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "my_slot" data="slot_data_in_fill" default="slot_var" %}
@@ -761,9 +761,9 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_raises_on_slot_data_and_slot_default_same_var(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
@@ -776,7 +776,7 @@ class ScopedSlotTest(BaseTestCase):
                     "var123": 456,
                 }
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "my_slot" data="slot_var" default="slot_var" %}
@@ -792,9 +792,9 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_fill_without_data(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
@@ -807,7 +807,7 @@ class ScopedSlotTest(BaseTestCase):
                     "var123": 456,
                 }
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "my_slot" %}
@@ -821,16 +821,16 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_fill_without_slot_data(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" %}Default text{% endslot %}
                 </div>
             """
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "my_slot" data="data" %}
@@ -844,9 +844,9 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_no_fill(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
@@ -859,7 +859,7 @@ class ScopedSlotTest(BaseTestCase):
                     "var123": 456,
                 }
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
             {% endcomponent %}
@@ -870,9 +870,9 @@ class ScopedSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_fills(self):
-        @dc.register("test")
-        class TestComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     {% slot "my_slot" abc=abc input=input %}Default text{% endslot %}
@@ -885,7 +885,7 @@ class ScopedSlotTest(BaseTestCase):
                     "input": input,
                 }
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" input=1 %}
                 {% fill "my_slot" data="data1" %}
@@ -917,8 +917,8 @@ class ScopedSlotTest(BaseTestCase):
 
 
 class DuplicateSlotTest(BaseTestCase):
-    class DuplicateSlotComponent(dc.Component):
-        template: dc.django_html = """
+    class DuplicateSlotComponent(Component):
+        template: types.django_html = """
             {% load component_tags %}
             <header>{% slot "header" %}Default header{% endslot %}</header>
              {# Slot name 'header' used twice. #}
@@ -931,8 +931,8 @@ class DuplicateSlotTest(BaseTestCase):
                 "name": name,
             }
 
-    class DuplicateSlotNestedComponent(dc.Component):
-        template: dc.django_html = """
+    class DuplicateSlotNestedComponent(Component):
+        template: types.django_html = """
             {% load component_tags %}
             {% slot "header" %}START{% endslot %}
             <div class="dashboard-component">
@@ -956,10 +956,10 @@ class DuplicateSlotTest(BaseTestCase):
                 "items": items,
             }
 
-    class CalendarComponent(dc.Component):
+    class CalendarComponent(Component):
         """Nested in ComponentWithNestedComponent"""
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             <div class="calendar-component">
             <h1>
@@ -975,9 +975,9 @@ class DuplicateSlotTest(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        dc.registry.register(name="duplicate_slot", component=self.DuplicateSlotComponent)
-        dc.registry.register(name="duplicate_slot_nested", component=self.DuplicateSlotNestedComponent)
-        dc.registry.register(name="calendar", component=self.CalendarComponent)
+        registry.register(name="duplicate_slot", component=self.DuplicateSlotComponent)
+        registry.register(name="duplicate_slot_nested", component=self.DuplicateSlotNestedComponent)
+        registry.register(name="calendar", component=self.CalendarComponent)
 
     # NOTE: Second arg is the input for the "name" component kwarg
     @parametrize_context_behavior(
@@ -989,7 +989,7 @@ class DuplicateSlotTest(BaseTestCase):
         ]
     )
     def test_duplicate_slots(self, context_behavior_data):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot" name=comp_input %}
                 {% fill "header" %}
@@ -1014,7 +1014,7 @@ class DuplicateSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_duplicate_slots_fallback(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot" %}
             {% endcomponent %}
@@ -1034,7 +1034,7 @@ class DuplicateSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_duplicate_slots_nested(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot_nested" items=items %}
                 {% fill "header" %}
@@ -1074,7 +1074,7 @@ class DuplicateSlotTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_duplicate_slots_nested_fallback(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "duplicate_slot_nested" items=items %}
             {% endcomponent %}
@@ -1113,16 +1113,16 @@ class DuplicateSlotTest(BaseTestCase):
 class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        dc.registry.register("test", SlottedComponent)
+        registry.register("test", SlottedComponent)
 
     def tearDown(self):
         super().tearDown()
-        dc.registry.clear()
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_fill_with_no_parent_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            template_str: dc.django_html = """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% fill "header" %}contents{% endfill %}
             """
@@ -1130,14 +1130,14 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_isolated_slot_is_error(self):
-        @dc.register("broken_component")
-        class BrokenComponent(dc.Component):
-            template: dc.django_html = """
+        @register("broken_component")
+        class BrokenComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 {% include 'slotted_template.html' with context=None only %}
             """
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "broken_component" %}
                 {% fill "header" %}Custom header {% endfill %}
@@ -1152,7 +1152,7 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_non_unique_fill_names_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            template_str: dc.django_html = """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
                     {% fill "header" %}Custom header {% endfill %}
@@ -1164,7 +1164,7 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_non_unique_fill_names_is_error_via_vars(self):
         with self.assertRaises(TemplateSyntaxError):
-            template_str: dc.django_html = """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% with var1="header" var2="header" %}
                     {% component "test" %}
@@ -1180,8 +1180,8 @@ class SlotBehaviorTests(BaseTestCase):
     # NOTE: This is standalone function instead of setUp, so we can configure
     # Django settings per test with `@override_settings`
     def make_template(self) -> Template:
-        class SlottedComponent(dc.Component):
-            template: dc.django_html = """
+        class SlottedComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <custom-template>
                     <header>{% slot "header" %}Default header{% endslot %}</header>
@@ -1195,9 +1195,9 @@ class SlotBehaviorTests(BaseTestCase):
                     "name": name,
                 }
 
-        dc.registry.register("test", SlottedComponent)
+        registry.register("test", SlottedComponent)
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" name='Igor' %}
                 {% fill "header" %}

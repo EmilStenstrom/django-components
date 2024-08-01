@@ -34,7 +34,7 @@ class MediaMeta(MediaDefiningClass):
 
     1. As plain strings
         ```py
-        class MyComponent(dc.Component):
+        class MyComponent(Component):
             class Media:
                 js = "path/to/script.js"
                 css = "path/to/style.css"
@@ -42,7 +42,7 @@ class MediaMeta(MediaDefiningClass):
 
     2. As lists
         ```py
-        class MyComponent(dc.Component):
+        class MyComponent(Component):
             class Media:
                 js = ["path/to/script1.js", "path/to/script2.js"]
                 css = ["path/to/style1.css", "path/to/style2.css"]
@@ -50,7 +50,7 @@ class MediaMeta(MediaDefiningClass):
 
     3. [CSS ONLY] Dicts of strings
         ```py
-        class MyComponent(dc.Component):
+        class MyComponent(Component):
             class Media:
                 css = {
                     "all": "path/to/style1.css",
@@ -60,7 +60,7 @@ class MediaMeta(MediaDefiningClass):
 
     4. [CSS ONLY] Dicts of lists
         ```py
-        class MyComponent(dc.Component):
+        class MyComponent(Component):
             class Media:
                 css = {
                     "all": ["path/to/style1.css"],
@@ -74,7 +74,7 @@ class MediaMeta(MediaDefiningClass):
     and `my_comp.py` looks like this:
 
     ```py
-    class MyComponent(dc.Component):
+    class MyComponent(Component):
         class Media:
             js = "script.js"
     ```
@@ -90,7 +90,7 @@ class MediaMeta(MediaDefiningClass):
         # do something
         return path
 
-    class MyComponent(dc.Component):
+    class MyComponent(Component):
         class Media:
             js = b"script.js"
             css = lazy_eval_css
@@ -106,7 +106,7 @@ class MediaMeta(MediaDefiningClass):
         def render_js(self):
             ...
 
-    class MyComponent(dc.Component):
+    class MyComponent(Component):
         media_class = MyMedia
         def get_context_data(self):
             assert isinstance(self.media, MyMedia)

@@ -4,7 +4,7 @@ from typing import Callable
 
 from django.template import Context, Template
 
-import django_components as dc
+from django_components import Component, registry, register, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -12,7 +12,7 @@ from .testutils import BaseTestCase, parametrize_context_behavior
 setup_test_config()
 
 
-class SlottedComponent(dc.Component):
+class SlottedComponent(Component):
     template_name = "slotted_template.html"
 
 
@@ -34,11 +34,11 @@ class TemplateInstrumentationTest(BaseTestCase):
         self.saved_render_method = Template._render
         Template._render = instrumented_test_render
 
-        dc.registry.clear()
-        dc.registry.register("test_component", SlottedComponent)
+        registry.clear()
+        registry.register("test_component", SlottedComponent)
 
-        @dc.register("inner_component")
-        class SimpleComponent(dc.Component):
+        @register("inner_component")
+        class SimpleComponent(Component):
             template_name = "simple_template.html"
 
             def get_context_data(self, variable, variable2="default"):
@@ -67,7 +67,7 @@ class TemplateInstrumentationTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_shown_as_used(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_component' %}{% endcomponent %}
         """
@@ -77,7 +77,7 @@ class TemplateInstrumentationTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_templates_all_shown_as_used(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_component' %}
               {% fill "header" %}
@@ -93,24 +93,24 @@ class TemplateInstrumentationTest(BaseTestCase):
 
 class BlockCompatTests(BaseTestCase):
     def setUp(self):
-        dc.registry.clear()
+        registry.clear()
         super().setUp()
 
     def tearDown(self):
         super().tearDown()
-        dc.registry.clear()
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slots_inside_extends(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("slot_inside_extends")
-        class SlotInsideExtendsComponent(dc.Component):
-            template: dc.django_html = """
+        @register("slot_inside_extends")
+        class SlotInsideExtendsComponent(Component):
+            template: types.django_html = """
                 {% extends "block_in_slot_in_component.html" %}
             """
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_extends" %}
                 {% fill "body" %}
@@ -135,15 +135,15 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slots_inside_include(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("slot_inside_include")
-        class SlotInsideIncludeComponent(dc.Component):
-            template: dc.django_html = """
+        @register("slot_inside_include")
+        class SlotInsideIncludeComponent(Component):
+            template: types.django_html = """
                 {% include "block_in_slot_in_component.html" %}
             """
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_include" %}
                 {% fill "body" %}
@@ -168,8 +168,8 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_inside_block(self):
-        dc.registry.register("slotted_component", SlottedComponent)
-        template: dc.django_html = """
+        registry.register("slotted_component", SlottedComponent)
+        template: types.django_html = """
             {% extends "block.html" %}
             {% load component_tags %}
             {% block body %}
@@ -203,9 +203,9 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_block_inside_component(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% extends "block_in_component.html" %}
             {% load component_tags %}
             {% block body %}
@@ -233,13 +233,13 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_block_inside_component_parent(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("block_in_component_parent")
-        class BlockInCompParent(dc.Component):
+        @register("block_in_component_parent")
+        class BlockInCompParent(Component):
             template_name = "block_in_component_parent.html"
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "block_in_component_parent" %}{% endcomponent %}
         """
@@ -266,13 +266,13 @@ class BlockCompatTests(BaseTestCase):
         Assert that when we call a component with `{% component %}`, that
         the `{% block %}` will NOT affect the inner component.
         """
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("block_inside_slot_v1")
-        class BlockInSlotInComponent(dc.Component):
+        @register("block_inside_slot_v1")
+        class BlockInSlotInComponent(Component):
             template_name = "block_in_slot_in_component.html"
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "block_inside_slot_v1" %}
                 {% fill "body" %}
@@ -301,15 +301,15 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_default_block_default(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("slot_inside_block")
-        class _SlotInsideBlockComponent(dc.Component):
-            template: dc.django_html = """
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
+            template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
             """
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}{% endcomponent %}
         """
@@ -333,19 +333,19 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_default_block_override(self):
-        dc.registry.clear()
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.clear()
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("slot_inside_block")
-        class _SlotInsideBlockComponent(dc.Component):
-            template: dc.django_html = """
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
+            template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
                 {% block inner %}
                     INNER BLOCK OVERRIDEN
                 {% endblock %}
             """
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}{% endcomponent %}
         """
@@ -369,15 +369,15 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["isolated", "django"])
     def test_slot_inside_block__slot_overriden_block_default(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("slot_inside_block")
-        class _SlotInsideBlockComponent(dc.Component):
-            template: dc.django_html = """
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
+            template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
             """
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}
                 {% fill "body" %}
@@ -405,11 +405,11 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_overriden_block_overriden(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("slot_inside_block")
-        class _SlotInsideBlockComponent(dc.Component):
-            template: dc.django_html = """
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
+            template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
                 {% block inner %}
                     {% load component_tags %}
@@ -420,7 +420,7 @@ class BlockCompatTests(BaseTestCase):
 
         # NOTE: The "body" fill will NOT show up, because we override the `inner` block
         # with a different slot. But the "new_slot" WILL show up.
-        template: dc.django_html = """
+        template: types.django_html = """
             {% load component_tags %}
             {% component "slot_inside_block" %}
                 {% fill "body" %}
@@ -451,11 +451,11 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_inside_block(self):
-        dc.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @dc.register("injectee")
-        class InjectComponent(dc.Component):
-            template: dc.django_html = """
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """
 
@@ -463,7 +463,7 @@ class BlockCompatTests(BaseTestCase):
                 var = self.inject("block_provide")
                 return {"var": var}
 
-        template: dc.django_html = """
+        template: types.django_html = """
             {% extends "block_in_component_provide.html" %}
             {% load component_tags %}
             {% block body %}

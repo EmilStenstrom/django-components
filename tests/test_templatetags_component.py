@@ -2,7 +2,7 @@ import textwrap
 
 from django.template import Context, Template, TemplateSyntaxError
 
-import django_components as dc
+from django_components import Component, NotRegistered, registry, register, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -10,12 +10,12 @@ from .testutils import BaseTestCase, parametrize_context_behavior
 setup_test_config()
 
 
-class SlottedComponent(dc.Component):
+class SlottedComponent(Component):
     template_name = "slotted_template.html"
 
 
-class SlottedComponentWithContext(dc.Component):
-    template: dc.django_html = """
+class SlottedComponentWithContext(Component):
+    template: types.django_html = """
         {% load component_tags %}
         <custom-template>
             <header>{% slot "header" %}Default header{% endslot %}</header>
@@ -34,7 +34,7 @@ class SlottedComponentWithContext(dc.Component):
 
 
 class ComponentTemplateTagTest(BaseTestCase):
-    class SimpleComponent(dc.Component):
+    class SimpleComponent(Component):
         template_name = "simple_template.html"
 
         def get_context_data(self, variable, variable2="default"):
@@ -48,14 +48,14 @@ class ComponentTemplateTagTest(BaseTestCase):
             js = "script.js"
 
     def setUp(self):
-        # NOTE: dc.registry is global, so need to clear before each test
-        dc.registry.clear()
+        # NOTE: registry is global, so need to clear before each test
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_single_component(self):
-        dc.registry.register(name="test", component=self.SimpleComponent)
+        registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% component name="test" variable="variable" %}{% endcomponent %}
         """
@@ -68,20 +68,20 @@ class ComponentTemplateTagTest(BaseTestCase):
     def test_call_with_invalid_name(self):
         # Note: No tag registered
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% component name="test" variable="variable" %}{% endcomponent %}
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaises(dc.NotRegistered):
+        with self.assertRaises(NotRegistered):
             template.render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_called_with_positional_name(self):
-        dc.registry.register(name="test", component=self.SimpleComponent)
+        registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% component "test" variable="variable" %}{% endcomponent %}
         """
@@ -92,9 +92,9 @@ class ComponentTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_call_component_with_two_variables(self):
-        @dc.register("test")
-        class IffedComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class IffedComponent(Component):
+            template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
                 {% if variable2 != "default" %}
                     Variable2: <strong>{{ variable2 }}</strong>
@@ -111,7 +111,7 @@ class ComponentTemplateTagTest(BaseTestCase):
                 css = "style.css"
                 js = "script.js"
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% component name="test" variable="variable" variable2="hej" %}{% endcomponent %}
         """
@@ -123,9 +123,9 @@ class ComponentTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_called_with_singlequoted_name(self):
-        dc.registry.register(name="test", component=self.SimpleComponent)
+        registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% component 'test' variable="variable" %}{% endcomponent %}
         """
@@ -136,9 +136,9 @@ class ComponentTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_called_with_variable_as_name(self):
-        dc.registry.register(name="test", component=self.SimpleComponent)
+        registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% with component_name="test" %}
                 {% component component_name variable="variable" %}{% endcomponent %}
@@ -151,9 +151,9 @@ class ComponentTemplateTagTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_called_with_invalid_variable_as_name(self):
-        dc.registry.register(name="test", component=self.SimpleComponent)
+        registry.register(name="test", component=self.SimpleComponent)
 
-        simple_tag_template: dc.django_html = """
+        simple_tag_template: types.django_html = """
             {% load component_tags %}
             {% with component_name="BLAHONGA" %}
                 {% component component_name variable="variable" %}{% endcomponent %}
@@ -161,14 +161,14 @@ class ComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaises(dc.NotRegistered):
+        with self.assertRaises(NotRegistered):
             template.render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_accepts_provided_and_default_parameters(self):
-        @dc.register("test")
-        class ComponentWithProvidedAndDefaultParameters(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class ComponentWithProvidedAndDefaultParameters(Component):
+            template: types.django_html = """
                 Provided variable: <strong>{{ variable }}</strong>
                 Default: <p>{{ default_param }}</p>
             """
@@ -176,7 +176,7 @@ class ComponentTemplateTagTest(BaseTestCase):
             def get_context_data(self, variable, default_param="default text"):
                 return {"variable": variable, "default_param": default_param}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" variable="provided value" %}
             {% endcomponent %}
@@ -191,14 +191,14 @@ class ComponentTemplateTagTest(BaseTestCase):
 
 class MultiComponentTests(BaseTestCase):
     def setUp(self):
-        dc.registry.clear()
+        registry.clear()
 
     def register_components(self):
-        dc.registry.register("first_component", SlottedComponent)
-        dc.registry.register("second_component", SlottedComponentWithContext)
+        registry.register("first_component", SlottedComponent)
+        registry.register("second_component", SlottedComponentWithContext)
 
     def make_template(self, first_slot: str = "", second_slot: str = "") -> Template:
-        template_str: dc.django_html = f"""
+        template_str: types.django_html = f"""
             {{% load component_tags %}}
             {{% component 'first_component' %}}
                 {first_slot}
@@ -266,8 +266,8 @@ class MultiComponentTests(BaseTestCase):
 
 class ComponentIsolationTests(BaseTestCase):
     def setUp(self):
-        class SlottedComponent(dc.Component):
-            template: dc.django_html = """
+        class SlottedComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <custom-template>
                     <header>{% slot "header" %}Default header{% endslot %}</header>
@@ -276,11 +276,11 @@ class ComponentIsolationTests(BaseTestCase):
                 </custom-template>
             """
 
-        dc.registry.register("test", SlottedComponent)
+        registry.register("test", SlottedComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_instances_of_component_do_not_share_slots(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {% fill "header" %}Override header{% endfill %}
@@ -322,9 +322,9 @@ class ComponentIsolationTests(BaseTestCase):
 class AggregateInputTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_agg_input_accessible_in_get_context_data(self):
-        @dc.register("test")
-        class AttrsComponent(dc.Component):
-            template: dc.django_html = """
+        @register("test")
+        class AttrsComponent(Component):
+            template: types.django_html = """
                 {% load component_tags %}
                 <div>
                     attrs: {{ attrs|safe }}
@@ -335,7 +335,7 @@ class AggregateInputTests(BaseTestCase):
             def get_context_data(self, *args, attrs, my_dict):
                 return {"attrs": attrs, "my_dict": my_dict}
 
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var my_dict:one=2 %}
             {% endcomponent %}
@@ -356,18 +356,18 @@ class AggregateInputTests(BaseTestCase):
 class ComponentTemplateSyntaxErrorTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        dc.registry.register("test", SlottedComponent)
+        registry.register("test", SlottedComponent)
 
     def tearDown(self) -> None:
         super().tearDown()
-        dc.registry.clear()
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_variable_outside_fill_tag_compiles_w_out_error(self):
         # As of v0.28 this is valid, provided the component registered under "test"
         # contains a slot tag marked as 'default'. This is verified outside
         # template compilation time.
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 {{ anything }}
@@ -380,7 +380,7 @@ class ComponentTemplateSyntaxErrorTests(BaseTestCase):
         # As of v0.28 this is valid, provided the component registered under "test"
         # contains a slot tag marked as 'default'. This is verified outside
         # template compilation time.
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
                 Text
@@ -391,7 +391,7 @@ class ComponentTemplateSyntaxErrorTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_nonfill_block_outside_fill_tag_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            template_str: dc.django_html = """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
                     {% if True %}
@@ -404,7 +404,7 @@ class ComponentTemplateSyntaxErrorTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_unclosed_component_is_error(self):
         with self.assertRaises(TemplateSyntaxError):
-            template_str: dc.django_html = """
+            template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
                 {% fill "header" %}{% endfill %}

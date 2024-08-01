@@ -3,14 +3,14 @@ from time import perf_counter
 from django.template import Context, Template
 from django.test import override_settings
 
-import django_components as dc
+from django_components import Component, registry, types
 from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from tests.django_test_setup import *  # NOQA
 from tests.testutils import BaseTestCase, create_and_process_template_response
 
 
-class SlottedComponent(dc.Component):
-    template: dc.django_html = """
+class SlottedComponent(Component):
+    template: types.django_html = """
         {% load component_tags %}
         <custom-template>
             <header>{% slot "header" %}Default header{% endslot %}</header>
@@ -20,8 +20,8 @@ class SlottedComponent(dc.Component):
     """
 
 
-class SimpleComponent(dc.Component):
-    template: dc.django_html = """
+class SimpleComponent(Component):
+    template: types.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
 
@@ -36,7 +36,7 @@ class SimpleComponent(dc.Component):
         js = ["script.js"]
 
 
-class BreadcrumbComponent(dc.Component):
+class BreadcrumbComponent(Component):
     template_name = "mdn_component_template.html"
 
     LINKS = [
@@ -77,10 +77,10 @@ EXPECTED_JS = """<script src="test.js"></script>"""
 @override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
 class RenderBenchmarks(BaseTestCase):
     def setUp(self):
-        dc.registry.clear()
-        dc.registry.register("test_component", SlottedComponent)
-        dc.registry.register("inner_component", SimpleComponent)
-        dc.registry.register("breadcrumb_component", BreadcrumbComponent)
+        registry.clear()
+        registry.register("test_component", SlottedComponent)
+        registry.register("inner_component", SimpleComponent)
+        registry.register("breadcrumb_component", BreadcrumbComponent)
 
     @staticmethod
     def timed_loop(func, iterations=1000):
@@ -93,7 +93,7 @@ class RenderBenchmarks(BaseTestCase):
         return total_elapsed * 1000 / iterations
 
     def test_render_time_for_small_component(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_component' %}
                 {% slot "header" %}
@@ -106,7 +106,7 @@ class RenderBenchmarks(BaseTestCase):
         print(f"{self.timed_loop(lambda: template.render(Context({})))} ms per iteration")
 
     def test_middleware_time_with_dependency_for_small_page(self):
-        template_str: dc.django_html = """
+        template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'test_component' %}
                 {% slot "header" %}
