@@ -26,6 +26,7 @@ validation:
 
 theme:
   name: "material"
+  custom_dir: docs/overrides
   features:
     - content.action.edit
     - content.action.view
