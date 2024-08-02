@@ -175,10 +175,10 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
 def do_component(parser: Parser, token: Token) -> ComponentNode:
     """
     To give the component access to the template context:
-        {% component "name" positional_arg keyword_arg=value ... %}
+        ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... %}```
 
     To render the component in an isolated context:
-        {% component "name" positional_arg keyword_arg=value ... only %}
+        ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... only %}```
 
     Positional and keyword arguments can be literals or template variables.
     The component name must be a single- or double-quotes string and must
@@ -265,7 +265,7 @@ def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     will result in `class="my-class extra-class".
 
     Example:
-    ```django
+    ```htmldjango
     {% html_attrs attrs defaults:class="default-class" class="extra-class" data-id="123" %}
     ```
     """

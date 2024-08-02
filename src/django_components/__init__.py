@@ -1,3 +1,5 @@
+"""Main package for Django Components."""
+
 import django
 
 from django_components.autodiscover import autodiscover as autodiscover  # NOQA

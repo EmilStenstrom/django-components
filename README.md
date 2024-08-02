@@ -1,10 +1,26 @@
-# <img src="logo/logo-black-on-white.svg" alt="django-components" style="max-width: 100%; background: white; color: black;">
-<a href="https://github.com/EmilStenstrom/django-components/actions?query=workflow%3A%22Run+tests%22"><img align="right" src="https://github.com/EmilStenstrom/django-components/workflows/Run%20tests/badge.svg" alt="Show test status"></a>
-<a href="https://pepy.tech/project/django-components"><img align="right" src="https://pepy.tech/badge/django-components" alt="Show download stats"></a>
+# <img src="https://raw.githubusercontent.com/EmilStenstrom/django-components/master/logo/logo-black-on-white.svg" alt="django-components" style="max-width: 100%; background: white; color: black;">
 
-A way to create simple reusable template components in Django.
+[![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://EmilStenstrom.github.io/django-components/latest/license/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
 
-It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Components look like this:
+[**Docs (Work in progress)**](https://EmilStenstrom.github.io/django-components/latest/)
+
+Create simple reusable template components in Django
+
+## Features
+
+<!-- FIXME Links -->
+
+- ✨ **Reusable components**: Create components that can be reused in different parts of your project, or even in different projects.
+- 📁 **Single file components**: Keep your Python, CSS, Javascript and HTML in one place (if you wish)
+- 🎰 **Slots**: Define slots in your components to make them more flexible.
+- 💻 **CLI**: A command line interface to help you create new components.
+- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](https://emilstenstrom.github.io/django-components/latest/user_guide/requirements_compatibility).
+- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](https://emilstenstrom.github.io/django-components/latest/user_guide/creating_using_components/middleware).
+
+
+## Summary
+
+It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Use components like this:
 
 ```htmldjango
 {% component "calendar" date="2015-06-19" %}{% endcomponent %}
@@ -23,7 +39,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Release notes](#release-notes)
 - [Security notes 🚨](#security-notes-)
 - [Installation](#installation)
-- [Compatiblity](#compatiblity)
+- [Compatibility](#compatibility)
 - [Create your first component](#create-your-first-component)
 - [Using single-file components](#using-single-file-components)
 - [Use components in templates](#use-components-in-templates)
@@ -47,6 +63,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 ## Release notes
 
 🚨📢 **Version 0.85** Autodiscovery module resolution changed. Following undocumented behavior was removed:
+
 - Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
     - To migrate from:
         -  `[app]/components.py` - Define each module in `COMPONENTS.libraries` setting,
@@ -66,6 +83,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 
 🚨📢 **Version 0.77** CHANGED the syntax for accessing default slot content.
+
 - Previously, the syntax was
 `{% fill "my_slot" as "alias" %}` and `{{ alias.default }}`.
 - Now, the syntax is
@@ -222,7 +240,7 @@ TEMPLATES = [
 
 Read on to find out how to build your first component!
 
-## Compatiblity
+## Compatibility
 
 Django-components supports all supported combinations versions of [Django](https://docs.djangoproject.com/en/dev/faq/install/#what-python-version-can-i-use-with-django) and [Python](https://devguide.python.org/versions/#versions).
 
@@ -254,9 +272,9 @@ A component in django-components is the combination of four things: CSS, Javascr
 
 Start by creating empty files in the structure above.
 
-First you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
+First, you need a CSS file. Be sure to prefix all rules with a unique class so they don't clash with other rules.
 
-```css
+```css title="[project root]/components/calendar/style.css"
 /* In a file called [project root]/components/calendar/style.css */
 .calendar-component {
   width: 200px;
@@ -269,7 +287,7 @@ First you need a CSS file. Be sure to prefix all rules with a unique class so th
 
 Then you need a javascript file that specifies how you interact with this component. You are free to use any javascript framework you want. A good way to make sure this component doesn't clash with other components is to define all code inside an anonymous function that calls itself. This makes all variables defined only be defined inside this component and not affect other components.
 
-```js
+```js title="[project root]/components/calendar/script.js"
 /* In a file called [project root]/components/calendar/script.js */
 (function () {
   if (document.querySelector(".calendar-component")) {
@@ -282,7 +300,7 @@ Then you need a javascript file that specifies how you interact with this compon
 
 Now you need a Django template for your component. Feel free to define more variables like `date` in this example. When creating an instance of this component we will send in the values for these variables. The template will be rendered with whatever template backend you've specified in your Django settings file.
 
-```htmldjango
+```htmldjango title="[project root]/components/calendar/calendar.html"
 {# In a file called [project root]/components/calendar/template.html #}
 <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
@@ -291,7 +309,7 @@ Finally, we use django-components to tie this together. Start by creating a file
 
 Inside this file we create a Component by inheriting from the Component class and specifying the context method. We also register the global component registry so that we easily can render it anywhere in our templates.
 
-```python
+```python  title="[project root]/components/calendar/calendar.py"
 # In a file called [project root]/components/calendar/calendar.py
 from django_components import component
 
@@ -322,7 +340,7 @@ And voilá!! We've created our first component.
 
 Components can also be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:
 
-```python
+```python title="[project root]/components/calendar.py"
 # In a file called [project root]/components/calendar.py
 from django_components import component
 from django_components import types as t
