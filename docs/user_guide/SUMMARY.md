@@ -14,3 +14,6 @@
   * [Settings](integration/settings.md)
   * [CLI Commands](integration/commands.md)
   * [Logging and Debugging](integration/logging_debugging.md)
+* Advanced topics
+  * [Slot rendering](advanced/slot_rendering.md)
+  * [Slots and Blocks](advanced/slots_and_blocks.md)
