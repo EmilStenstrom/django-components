@@ -1,8 +1,6 @@
-* [Home](index.md)
-  * [Changelog](changelog.md)
-  * [Code of Conduct](code_of_conduct.md)
+* [README](README.md)
+  * [Changelog](CHANGELOG.md)
+  * [Code of Conduct](CODE_OF_CONDUCT.md)
   * [License](license.md)
-* [Usage](user_guide/)
-* [Developer Guide](dev_guide/index.md)
 * Reference
   * [API Reference](reference/)

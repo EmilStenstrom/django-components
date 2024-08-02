@@ -377,7 +377,7 @@ And voilá!! We've created our first component.
 
 Components can also be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:
 
-```python
+```python title="[project root]/components/calendar.py"
 # In a file called [project root]/components/calendar.py
 from django_components import Component, register, types
 

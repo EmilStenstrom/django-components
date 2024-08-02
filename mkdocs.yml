@@ -84,7 +84,7 @@ markdown_extensions:
   def_list: {}
   tables: {}
   md_in_html: {}
-  mdx_truly_sane_lists: {}
+#  mdx_truly_sane_lists: {}
   pymdownx.magiclink:
     repo_url_shorthand: true
     user: EmilStenstrom
