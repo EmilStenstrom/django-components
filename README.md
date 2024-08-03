@@ -29,6 +29,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Using single-file components](#using-single-file-components)
 - [Use components in templates](#use-components-in-templates)
 - [Use components outside of templates](#use-components-outside-of-templates)
+- [Registering components](#registering-components)
 - [Use components as views](#use-components-as-views)
 - [Autodiscovery](#autodiscovery)
 - [Using slots in templates](#using-slots-in-templates)
@@ -642,6 +643,126 @@ urlpatterns = [
 Note: slots content are automatically escaped by default to prevent XSS attacks. To disable escaping, set `escape_slots_content=False` in the `render_to_response` method. If you do so, you should make sure that any content you pass to the slots is safe, especially if it comes from user input.
 
 If you're planning on passing an HTML string, check Django's use of [`format_html`](https://docs.djangoproject.com/en/5.0/ref/utils/#django.utils.html.format_html) and [`mark_safe`](https://docs.djangoproject.com/en/5.0/ref/utils/#django.utils.safestring.mark_safe).
+
+## Registering components
+
+In previous examples you could repeatedly see us using `@register()` to "register"
+the components. In this section we dive deeper into what it actually means and how you can
+manage (add or remove) components.
+
+As a reminder, we may have a component like this:
+
+```python
+from django_components import Component, register
+
+@register("calendar")
+class Calendar(Component):
+    template_name = "template.html"
+
+    # This component takes one parameter, a date string to show in the template
+    def get_context_data(self, date):
+        return {
+            "date": date,
+        }
+```
+
+which we then render in the template as:
+
+```django
+{% component "calendar" date="1970-01-01" %}
+{% endcomponent %}
+```
+
+As you can see, `@register` links up the component class
+with the `{% component %}` template tag. So when the template tag comes across
+a component called `"calendar"`, it can look up it's class and instantiate it.
+
+### What is ComponentRegistry
+
+The `@register` decorator is a shortcut for working with the `ComponentRegistry`.
+
+`ComponentRegistry` manages which components can be used in the template tags.
+
+Each `ComponentRegistry` instance is associated with an instance
+of Django's `Library`. And Libraries are inserted into Django template
+using the `{% load %}` tags.
+
+The `@register` decorator accepts an optional kwarg `registry`, which specifies, the `ComponentRegistry` to register components into.
+If omitted, the default `ComponentRegistry` instance defined in django_components is used.
+
+```py
+my_registry = ComponentRegistry()
+
+@register(registry=my_registry)
+class MyComponent(Component):
+    ...
+```
+
+The default `ComponentRegistry` is associated with the `Library` that
+you load when you call `{% load component_tags %}` inside your template, or when you
+add `django_components.templatetags.component_tags` to the template builtins.
+
+So when you register or unregister a component to/from a component registry,
+then behind the scenes the registry automatically adds/removes the component's
+template tags to/from the Library, so you can call the component from within the templates
+such as `{% component "my_comp" %}`.
+
+### Working with ComponentRegistry
+
+The default `ComponentRegistry` instance can be imported as:
+
+```py
+from django_components import registry
+```
+
+You can use the registry to manually add/remove/get components:
+
+```py
+from django_components import registry
+
+# Register components
+registry.register("button", ButtonComponent)
+registry.register("card", CardComponent)
+
+# Get all or single
+registry.all()  # {"button": ButtonComponent, "card": CardComponent}
+registry.get("card")  # CardComponent
+
+# Unregister single component
+registry.unregister("card")
+
+# Unregister all components
+registry.clear()
+```
+
+### Registering components to custom ComponentRegistry
+
+In rare cases, you may want to manage your own instance of `ComponentRegistry`,
+or register components onto a different `Library` instance than the default one.
+
+The `Library` instance can be set at instantiation of `ComponentRegistry`. If omitted,
+then the default Library instance from django_components is used.
+
+```py
+from django.template import Library
+
+my_library = Library(...)
+my_registry = ComponentRegistry(library=my_library)
+```
+
+When you have defined your own `ComponentRegistry`, you can either register the components
+with `my_registry.register()`, or pass the registry to the `@component.register()` decorator
+via the `registry` kwarg:
+
+```py
+from path.to.my.registry import my_registry
+
+@register("my_component", registry=my_registry)
+class MyComponent(Component):
+    ...
+```
+
+NOTE: The Library instance can be accessed under `library` attribute of `ComponentRegistry`.
 
 ## Autodiscovery
 
