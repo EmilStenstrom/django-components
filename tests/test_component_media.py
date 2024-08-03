@@ -9,7 +9,7 @@ from django.test import override_settings
 from django.utils.html import format_html, html_safe
 from django.utils.safestring import mark_safe
 
-from django_components import component, types
+from django_components import Component, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, autodiscover_with_cleanup
@@ -19,7 +19,7 @@ setup_test_config()
 
 class InlineComponentTest(BaseTestCase):
     def test_html(self):
-        class InlineHTMLComponent(component.Component):
+        class InlineHTMLComponent(Component):
             template = "<div class='inline'>Hello Inline</div>"
 
         comp = InlineHTMLComponent("inline_html_component")
@@ -29,7 +29,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_and_css(self):
-        class HTMLCSSComponent(component.Component):
+        class HTMLCSSComponent(Component):
             template = "<div class='html-css-only'>Content</div>"
             css = ".html-css-only { color: blue; }"
 
@@ -44,7 +44,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_and_js(self):
-        class HTMLJSComponent(component.Component):
+        class HTMLJSComponent(Component):
             template = "<div class='html-js-only'>Content</div>"
             js = "console.log('HTML and JS only');"
 
@@ -59,7 +59,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_inline_and_css_js_files(self):
-        class HTMLStringFileCSSJSComponent(component.Component):
+        class HTMLStringFileCSSJSComponent(Component):
             template = "<div class='html-string-file'>Content</div>"
 
             class Media:
@@ -80,7 +80,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_js_inline_and_css_file(self):
-        class HTMLStringFileCSSJSComponent(component.Component):
+        class HTMLStringFileCSSJSComponent(Component):
             template = "<div class='html-string-file'>Content</div>"
             js = "console.log('HTML and JS only');"
 
@@ -101,7 +101,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_css_inline_and_js_file(self):
-        class HTMLStringFileCSSJSComponent(component.Component):
+        class HTMLStringFileCSSJSComponent(Component):
             template = "<div class='html-string-file'>Content</div>"
             css = ".html-string-file { color: blue; }"
 
@@ -121,7 +121,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_variable(self):
-        class VariableHTMLComponent(component.Component):
+        class VariableHTMLComponent(Component):
             def get_template(self, context):
                 return Template("<div class='variable-html'>{{ variable }}</div>")
 
@@ -133,7 +133,7 @@ class InlineComponentTest(BaseTestCase):
         )
 
     def test_html_variable_filtered(self):
-        class FilteredComponent(component.Component):
+        class FilteredComponent(Component):
             template: types.django_html = """
                 Var1: <strong>{{ var1 }}</strong>
                 Var2 (uppercased): <strong>{{ var2|upper }}</strong>
@@ -157,7 +157,7 @@ class InlineComponentTest(BaseTestCase):
 
 class ComponentMediaTests(BaseTestCase):
     def test_css_and_js(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
             """
@@ -176,7 +176,7 @@ class ComponentMediaTests(BaseTestCase):
         )
 
     def test_css_only(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
             """
@@ -194,7 +194,7 @@ class ComponentMediaTests(BaseTestCase):
         )
 
     def test_js_only(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
             """
@@ -212,7 +212,7 @@ class ComponentMediaTests(BaseTestCase):
         )
 
     def test_empty_media(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
             """
@@ -225,7 +225,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertHTMLEqual(comp.render_dependencies(), "")
 
     def test_missing_media(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             template: types.django_html = """
                 Variable: <strong>{{ variable }}</strong>
             """
@@ -235,7 +235,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertHTMLEqual(comp.render_dependencies(), "")
 
     def test_css_js_as_lists(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = ["path/to/style.css", "path/to/style2.css"]
                 js = ["path/to/script.js"]
@@ -251,7 +251,7 @@ class ComponentMediaTests(BaseTestCase):
         )
 
     def test_css_js_as_string(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = "path/to/style.css"
                 js = "path/to/script.js"
@@ -266,7 +266,7 @@ class ComponentMediaTests(BaseTestCase):
         )
 
     def test_css_as_dict(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = {
                     "all": "path/to/style.css",
@@ -295,7 +295,7 @@ class ComponentMediaTests(BaseTestCase):
                     tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
                 return tags
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             media_class = MyMedia
 
             class Media:
@@ -320,7 +320,7 @@ class ComponentMediaTests(BaseTestCase):
                         tags.append(f'<my_link href="{path}" media="{medium}" rel="stylesheet" />')
                 return tags
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             media_class = MyMedia
 
             class Media:
@@ -376,7 +376,7 @@ class MediaPathAsObjectTests(BaseTestCase):
             def __str__(self):
                 return format_html('<script type="module" src="{}"></script>', static(self.static_path))
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = {
                     "all": [
@@ -424,7 +424,7 @@ class MediaPathAsObjectTests(BaseTestCase):
             def __fspath__(self):
                 return self.path
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = {
                     "all": [
@@ -466,7 +466,7 @@ class MediaPathAsObjectTests(BaseTestCase):
         class MyStr(str):
             pass
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = {
                     "all": [
@@ -506,7 +506,7 @@ class MediaPathAsObjectTests(BaseTestCase):
         class MyBytes(bytes):
             pass
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = {
                     "all": [
@@ -538,7 +538,7 @@ class MediaPathAsObjectTests(BaseTestCase):
         )
 
     def test_function(self):
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = [
                     lambda: mark_safe('<link hi href="calendar/style.css" rel="stylesheet" />'),  # Literal
@@ -573,7 +573,7 @@ class MediaPathAsObjectTests(BaseTestCase):
     def test_works_with_static(self):
         """Test that all the different ways of defining media files works with Django's staticfiles"""
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             class Media:
                 css = [
                     mark_safe(f'<link hi href="{static("calendar/style.css")}" rel="stylesheet" />'),  # Literal
@@ -636,7 +636,7 @@ class MediaStaticfilesTests(BaseTestCase):
                     tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
                 return tags
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             media_class = MyMedia
 
             class Media:
@@ -693,7 +693,7 @@ class MediaStaticfilesTests(BaseTestCase):
                     tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
                 return tags
 
-        class SimpleComponent(component.Component):
+        class SimpleComponent(Component):
             media_class = MyMedia
 
             class Media:
@@ -714,7 +714,7 @@ class MediaStaticfilesTests(BaseTestCase):
 
 
 class MediaRelativePathTests(BaseTestCase):
-    class ParentComponent(component.Component):
+    class ParentComponent(Component):
         template: types.django_html = """
             {% load component_tags %}
             <div>
@@ -734,7 +734,7 @@ class MediaRelativePathTests(BaseTestCase):
         def get_context_data(self):
             return {"shadowing_variable": "NOT SHADOWED"}
 
-    class VariableDisplay(component.Component):
+    class VariableDisplay(Component):
         template: types.django_html = """
             {% load component_tags %}
             <h1>Shadowing variable = {{ shadowing_variable }}</h1>
@@ -751,8 +751,8 @@ class MediaRelativePathTests(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        component.registry.register(name="parent_component", component=self.ParentComponent)
-        component.registry.register(name="variable_display", component=self.VariableDisplay)
+        registry.register(name="parent_component", component=self.ParentComponent)
+        registry.register(name="variable_display", component=self.VariableDisplay)
 
     # Settings required for autodiscover to work
     @override_settings(
@@ -771,11 +771,11 @@ class MediaRelativePathTests(BaseTestCase):
             # Make sure that only relevant components are registered:
             comps_to_remove = [
                 comp_name
-                for comp_name in component.registry.all()
+                for comp_name in registry.all()
                 if comp_name not in ["relative_file_component", "parent_component", "variable_display"]
             ]
             for comp_name in comps_to_remove:
-                component.registry.unregister(comp_name)
+                registry.unregister(comp_name)
 
             template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
@@ -810,7 +810,7 @@ class MediaRelativePathTests(BaseTestCase):
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
-            component.registry.unregister("relative_file_pathobj_component")
+            registry.unregister("relative_file_pathobj_component")
 
             template_str: types.django_html = """
                 {% load component_tags %}{% component_dependencies %}
@@ -852,7 +852,7 @@ class MediaRelativePathTests(BaseTestCase):
         with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
             # Mark the PathObj instances of 'relative_file_pathobj_component' so they won raise
             # error PathObj.__str__ is triggered.
-            CompCls = component.registry.get("relative_file_pathobj_component")
+            CompCls = registry.get("relative_file_pathobj_component")
             CompCls.Media.js[0].throw_on_calling_str = False  # type: ignore
             CompCls.Media.css["all"][0].throw_on_calling_str = False  # type: ignore
 

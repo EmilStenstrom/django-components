@@ -4,7 +4,7 @@ from typing import Callable
 
 from django.template import Context, Template
 
-from django_components import component, types
+from django_components import Component, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -12,7 +12,7 @@ from .testutils import BaseTestCase, parametrize_context_behavior
 setup_test_config()
 
 
-class SlottedComponent(component.Component):
+class SlottedComponent(Component):
     template_name = "slotted_template.html"
 
 
@@ -34,11 +34,11 @@ class TemplateInstrumentationTest(BaseTestCase):
         self.saved_render_method = Template._render
         Template._render = instrumented_test_render
 
-        component.registry.clear()
-        component.registry.register("test_component", SlottedComponent)
+        registry.clear()
+        registry.register("test_component", SlottedComponent)
 
-        @component.register("inner_component")
-        class SimpleComponent(component.Component):
+        @register("inner_component")
+        class SimpleComponent(Component):
             template_name = "simple_template.html"
 
             def get_context_data(self, variable, variable2="default"):
@@ -93,19 +93,19 @@ class TemplateInstrumentationTest(BaseTestCase):
 
 class BlockCompatTests(BaseTestCase):
     def setUp(self):
-        component.registry.clear()
+        registry.clear()
         super().setUp()
 
     def tearDown(self):
         super().tearDown()
-        component.registry.clear()
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slots_inside_extends(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("slot_inside_extends")
-        class SlotInsideExtendsComponent(component.Component):
+        @register("slot_inside_extends")
+        class SlotInsideExtendsComponent(Component):
             template: types.django_html = """
                 {% extends "block_in_slot_in_component.html" %}
             """
@@ -135,10 +135,10 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slots_inside_include(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("slot_inside_include")
-        class SlotInsideIncludeComponent(component.Component):
+        @register("slot_inside_include")
+        class SlotInsideIncludeComponent(Component):
             template: types.django_html = """
                 {% include "block_in_slot_in_component.html" %}
             """
@@ -168,7 +168,7 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_inside_block(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
         template: types.django_html = """
             {% extends "block.html" %}
             {% load component_tags %}
@@ -203,7 +203,7 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_block_inside_component(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
         template: types.django_html = """
             {% extends "block_in_component.html" %}
@@ -233,10 +233,10 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_block_inside_component_parent(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("block_in_component_parent")
-        class BlockInCompParent(component.Component):
+        @register("block_in_component_parent")
+        class BlockInCompParent(Component):
             template_name = "block_in_component_parent.html"
 
         template: types.django_html = """
@@ -266,10 +266,10 @@ class BlockCompatTests(BaseTestCase):
         Assert that when we call a component with `{% component %}`, that
         the `{% block %}` will NOT affect the inner component.
         """
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("block_inside_slot_v1")
-        class BlockInSlotInComponent(component.Component):
+        @register("block_inside_slot_v1")
+        class BlockInSlotInComponent(Component):
             template_name = "block_in_slot_in_component.html"
 
         template: types.django_html = """
@@ -301,10 +301,10 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_default_block_default(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("slot_inside_block")
-        class _SlotInsideBlockComponent(component.Component):
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
             template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
             """
@@ -333,11 +333,11 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_default_block_override(self):
-        component.registry.clear()
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.clear()
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("slot_inside_block")
-        class _SlotInsideBlockComponent(component.Component):
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
             template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
                 {% block inner %}
@@ -369,10 +369,10 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["isolated", "django"])
     def test_slot_inside_block__slot_overriden_block_default(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("slot_inside_block")
-        class _SlotInsideBlockComponent(component.Component):
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
             template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
             """
@@ -405,10 +405,10 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_inside_block__slot_overriden_block_overriden(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("slot_inside_block")
-        class _SlotInsideBlockComponent(component.Component):
+        @register("slot_inside_block")
+        class _SlotInsideBlockComponent(Component):
             template: types.django_html = """
                 {% extends "slot_inside_block.html" %}
                 {% block inner %}
@@ -451,10 +451,10 @@ class BlockCompatTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_inside_block(self):
-        component.registry.register("slotted_component", SlottedComponent)
+        registry.register("slotted_component", SlottedComponent)
 
-        @component.register("injectee")
-        class InjectComponent(component.Component):
+        @register("injectee")
+        class InjectComponent(Component):
             template: types.django_html = """
                 <div> injected: {{ var|safe }} </div>
             """

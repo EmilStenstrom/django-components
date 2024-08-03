@@ -1,7 +1,7 @@
 from django.template import Context, Template
 from django.template.base import Parser
 
-from django_components import component, types
+from django_components import Component, registry, types
 from django_components.component import safe_resolve_dict, safe_resolve_list
 from django_components.template_parser import process_aggregate_kwargs
 from django_components.templatetags.component_tags import _parse_component_with_args
@@ -56,7 +56,7 @@ class ParserTest(BaseTestCase):
 
 
 class ParserComponentTest(BaseTestCase):
-    class SimpleComponent(component.Component):
+    class SimpleComponent(Component):
         template: types.django_html = """
             {{ date }}
             {{ id }}
@@ -72,7 +72,7 @@ class ParserComponentTest(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_special_chars_accessible_via_kwargs(self):
-        component.registry.register("test", self.SimpleComponent)
+        registry.register("test", self.SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}

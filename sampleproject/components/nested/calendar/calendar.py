@@ -1,8 +1,8 @@
-from django_components import component
+from django_components import Component, register
 
 
-@component.register("calendar_nested")
-class CalendarNested(component.Component):
+@register("calendar_nested")
+class CalendarNested(Component):
     # Note that Django will look for templates inside `[your apps]/components` dir and
     # `[project root]/components` dir. To customize which template to use based on context
     # you can override def get_template_name() instead of specifying the below variable.

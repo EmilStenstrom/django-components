@@ -1,8 +1,8 @@
-from django_components import component
+from django_components import Component, register
 
 
-@component.register("todo")
-class Calendar(component.Component):
+@register("todo")
+class Calendar(Component):
     # Note that Django will look for templates inside `[your apps]/components` dir and
     # `[project root]/components` dir. To customize which template to use based on context
     # you can override def get_template_name() instead of specifying the below variable.

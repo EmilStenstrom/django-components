@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from django.template import Context, Template
 
-from django_components import component, types
+from django_components import Component, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -12,7 +12,7 @@ from .testutils import BaseTestCase, parametrize_context_behavior
 setup_test_config()
 
 
-class SlottedComponent(component.Component):
+class SlottedComponent(Component):
     template: types.django_html = """
         {% load component_tags %}
         <custom-template>
@@ -34,7 +34,7 @@ class SlottedComponentWithContext(SlottedComponent):
 
 
 class NestedSlotTests(BaseTestCase):
-    class NestedComponent(component.Component):
+    class NestedComponent(Component):
         template: types.django_html = """
             {% load component_tags %}
             {% slot 'outer' %}
@@ -44,8 +44,8 @@ class NestedSlotTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_default_slot_contents_render_correctly(self):
-        component.registry.clear()
-        component.registry.register("test", self.NestedComponent)
+        registry.clear()
+        registry.register("test", self.NestedComponent)
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% endcomponent %}
@@ -56,8 +56,8 @@ class NestedSlotTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inner_slot_overriden(self):
-        component.registry.clear()
-        component.registry.register("test", self.NestedComponent)
+        registry.clear()
+        registry.register("test", self.NestedComponent)
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
@@ -70,8 +70,8 @@ class NestedSlotTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_outer_slot_overriden(self):
-        component.registry.clear()
-        component.registry.register("test", self.NestedComponent)
+        registry.clear()
+        registry.register("test", self.NestedComponent)
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}{% fill 'outer' %}<p>Override</p>{% endfill %}{% endcomponent %}
@@ -82,8 +82,8 @@ class NestedSlotTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_both_overriden_and_inner_removed(self):
-        component.registry.clear()
-        component.registry.register("test", self.NestedComponent)
+        registry.clear()
+        registry.register("test", self.NestedComponent)
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
@@ -100,7 +100,7 @@ class NestedSlotTests(BaseTestCase):
     # remain top-level context.
     @parametrize_context_behavior([("django", "Joe2"), ("isolated", "Jannete")])
     def test_fill_inside_fill_with_same_name(self, context_behavior_data):
-        class SlottedComponent(component.Component):
+        class SlottedComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <custom-template>
@@ -115,8 +115,8 @@ class NestedSlotTests(BaseTestCase):
                     "name": name,
                 }
 
-        component.registry.clear()
-        component.registry.register("test", SlottedComponent)
+        registry.clear()
+        registry.register("test", SlottedComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}
@@ -163,7 +163,7 @@ class NestedSlotTests(BaseTestCase):
 # NOTE: This test group are kept for backward compatibility, as the same logic
 # as provided by {% if %} tags was previously provided by this library.
 class ConditionalSlotTests(BaseTestCase):
-    class ConditionalComponent(component.Component):
+    class ConditionalComponent(Component):
         template: types.django_html = """
             {% load component_tags %}
             {% if branch == 'a' %}
@@ -178,12 +178,12 @@ class ConditionalSlotTests(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        component.registry.clear()
-        component.registry.register("test", self.ConditionalComponent)
+        registry.clear()
+        registry.register("test", self.ConditionalComponent)
 
     def tearDown(self):
         super().tearDown()
-        component.registry.clear()
+        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_no_content_if_branches_are_false(self):
@@ -245,7 +245,7 @@ class ConditionalSlotTests(BaseTestCase):
 class SlotIterationTest(BaseTestCase):
     """Tests a behaviour of {% fill .. %} tag which is inside a template {% for .. %} loop."""
 
-    class ComponentSimpleSlotInALoop(component.Component):
+    class ComponentSimpleSlotInALoop(Component):
         template: types.django_html = """
             {% load component_tags %}
             {% for object in objects %}
@@ -261,7 +261,7 @@ class SlotIterationTest(BaseTestCase):
             }
 
     def setUp(self):
-        component.registry.clear()
+        registry.clear()
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
     @parametrize_context_behavior(
@@ -271,7 +271,7 @@ class SlotIterationTest(BaseTestCase):
         ]
     )
     def test_inner_slot_iteration_basic(self, context_behavior_data):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         template_str: types.django_html = """
             {% load component_tags %}
@@ -296,7 +296,7 @@ class SlotIterationTest(BaseTestCase):
         ]
     )
     def test_inner_slot_iteration_with_variable_from_outer_scope(self, context_behavior_data):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         template_str: types.django_html = """
             {% load component_tags %}
@@ -328,7 +328,7 @@ class SlotIterationTest(BaseTestCase):
         ]
     )
     def test_inner_slot_iteration_nested(self, context_behavior_data):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
@@ -375,7 +375,7 @@ class SlotIterationTest(BaseTestCase):
         ]
     )
     def test_inner_slot_iteration_nested_with_outer_scope_variable(self, context_behavior_data):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
@@ -417,7 +417,7 @@ class SlotIterationTest(BaseTestCase):
         ]
     )
     def test_inner_slot_iteration_nested_with_slot_default(self, context_behavior_data):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
@@ -469,7 +469,7 @@ class SlotIterationTest(BaseTestCase):
         self,
         context_behavior_data,
     ):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
@@ -506,7 +506,7 @@ class SlotIterationTest(BaseTestCase):
     def test_inner_slot_iteration_nested_with_slot_default_and_outer_scope_variable__isolated_2(
         self,
     ):
-        component.registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
+        registry.register("slot_in_a_loop", self.ComponentSimpleSlotInALoop)
 
         objects = [
             {"inner": ["ITER1_OBJ1", "ITER1_OBJ2"]},
@@ -559,7 +559,7 @@ class SlotIterationTest(BaseTestCase):
 
 
 class ComponentNestingTests(BaseTestCase):
-    class CalendarComponent(component.Component):
+    class CalendarComponent(Component):
         """Nested in ComponentWithNestedComponent"""
 
         template: types.django_html = """
@@ -576,7 +576,7 @@ class ComponentNestingTests(BaseTestCase):
             </div>
         """
 
-    class DashboardComponent(component.Component):
+    class DashboardComponent(Component):
         template: types.django_html = """
             {% load component_tags %}
             <div class="dashboard-component">
@@ -594,7 +594,7 @@ class ComponentNestingTests(BaseTestCase):
             </div>
         """
 
-    class ComplexChildComponent(component.Component):
+    class ComplexChildComponent(Component):
         template: types.django_html = """
             {% load component_tags %}
             <div>
@@ -604,7 +604,7 @@ class ComponentNestingTests(BaseTestCase):
             </div>
         """
 
-    class ComplexParentComponent(component.Component):
+    class ComplexParentComponent(Component):
         template: types.django_html = """
             {% load component_tags %}
             ITEMS: {{ items|safe }}
@@ -622,14 +622,14 @@ class ComponentNestingTests(BaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        component.registry.register("dashboard", self.DashboardComponent)
-        component.registry.register("calendar", self.CalendarComponent)
-        component.registry.register("complex_child", self.ComplexChildComponent)
-        component.registry.register("complex_parent", self.ComplexParentComponent)
+        registry.register("dashboard", self.DashboardComponent)
+        registry.register("calendar", self.CalendarComponent)
+        registry.register("complex_child", self.ComplexChildComponent)
+        registry.register("complex_parent", self.ComplexParentComponent)
 
     def tearDown(self) -> None:
         super().tearDown()
-        component.registry.clear()
+        registry.clear()
 
     # NOTE: Second arg in tuple are expected names in nested fills. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should
@@ -638,7 +638,7 @@ class ComponentNestingTests(BaseTestCase):
     def test_component_inside_slot(self, context_behavior_data):
         first_name, second_name = context_behavior_data
 
-        class SlottedComponent(component.Component):
+        class SlottedComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <custom-template>
@@ -653,7 +653,7 @@ class ComponentNestingTests(BaseTestCase):
                     "name": name,
                 }
 
-        component.registry.register("test", SlottedComponent)
+        registry.register("test", SlottedComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}

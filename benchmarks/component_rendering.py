@@ -3,13 +3,13 @@ from time import perf_counter
 from django.template import Context, Template
 from django.test import override_settings
 
-from django_components import component, types
+from django_components import Component, registry, types
 from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from tests.django_test_setup import *  # NOQA
 from tests.testutils import BaseTestCase, create_and_process_template_response
 
 
-class SlottedComponent(component.Component):
+class SlottedComponent(Component):
     template: types.django_html = """
         {% load component_tags %}
         <custom-template>
@@ -20,7 +20,7 @@ class SlottedComponent(component.Component):
     """
 
 
-class SimpleComponent(component.Component):
+class SimpleComponent(Component):
     template: types.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
@@ -36,7 +36,7 @@ class SimpleComponent(component.Component):
         js = ["script.js"]
 
 
-class BreadcrumbComponent(component.Component):
+class BreadcrumbComponent(Component):
     template_name = "mdn_component_template.html"
 
     LINKS = [
@@ -77,10 +77,10 @@ EXPECTED_JS = """<script src="test.js"></script>"""
 @override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
 class RenderBenchmarks(BaseTestCase):
     def setUp(self):
-        component.registry.clear()
-        component.registry.register("test_component", SlottedComponent)
-        component.registry.register("inner_component", SimpleComponent)
-        component.registry.register("breadcrumb_component", BreadcrumbComponent)
+        registry.clear()
+        registry.register("test_component", SlottedComponent)
+        registry.register("inner_component", SimpleComponent)
+        registry.register("breadcrumb_component", BreadcrumbComponent)
 
     @staticmethod
     def timed_loop(func, iterations=1000):

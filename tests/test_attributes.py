@@ -1,7 +1,7 @@
 from django.template import Context, Template, TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components import component, types
+from django_components import Component, register, types
 from django_components.attributes import append_attributes, attributes_to_string
 
 from .django_test_setup import setup_test_config
@@ -84,8 +84,8 @@ class HtmlAttrsTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_tag_positional_args(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs attrs defaults class="added_class" class="another-class" data-id=123 %}>
@@ -112,8 +112,8 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertNotIn("override-me", rendered)
 
     def test_tag_raises_on_extra_positional_args(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs attrs defaults class %}>
@@ -136,8 +136,8 @@ class HtmlAttrsTests(BaseTestCase):
             template.render(Context({"class_var": "padding-top-8"}))
 
     def test_tag_kwargs(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs attrs=attrs defaults=defaults class="added_class" class="another-class" data-id=123 %}>
@@ -164,8 +164,8 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertNotIn("override-me", rendered)
 
     def test_tag_kwargs_2(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs class="added_class" class="another-class" data-id=123 defaults=defaults attrs=attrs %}>
@@ -192,8 +192,8 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertNotIn("override-me", rendered)
 
     def test_tag_aggregate_args(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs attrs:class="from_agg_key" attrs:type="submit" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
@@ -219,8 +219,8 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertNotIn("override-me", rendered)
 
     def test_tag_raises_on_aggregate_and_positional_args_for_attrs(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs attrs attrs:class="from_agg_key" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
@@ -237,8 +237,8 @@ class HtmlAttrsTests(BaseTestCase):
             template.render(Context({"class_var": "padding-top-8"}))
 
     def test_tag_raises_on_aggregate_and_positional_args_for_defaults(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs defaults=defaults attrs:class="from_agg_key" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
@@ -258,8 +258,8 @@ class HtmlAttrsTests(BaseTestCase):
             template.render(Context({"class_var": "padding-top-8"}))
 
     def test_tag_no_attrs(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
@@ -282,8 +282,8 @@ class HtmlAttrsTests(BaseTestCase):
         )
 
     def test_tag_no_defaults(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs attrs class="added_class" class="another-class" data-id=123 %}>
@@ -312,8 +312,8 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertNotIn("override-me", rendered)
 
     def test_tag_no_attrs_no_defaults(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs class="added_class" class="another-class" data-id=123 %}>
@@ -337,8 +337,8 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertNotIn("override-me", rendered)
 
     def test_tag_empty(self):
-        @component.register("test")
-        class AttrsComponent(component.Component):
+        @register("test")
+        class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
                 <div {% html_attrs %}>

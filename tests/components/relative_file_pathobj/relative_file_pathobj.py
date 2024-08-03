@@ -3,7 +3,7 @@ from typing import Any, Dict
 from django.templatetags.static import static
 from django.utils.html import format_html, html_safe
 
-from django_components import component
+from django_components import Component, register
 
 
 # Format as mentioned in https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
@@ -21,8 +21,8 @@ class PathObj:
         return format_html('<script type="module" src="{}"></script>', static(self.static_path))
 
 
-@component.register("relative_file_pathobj_component")
-class RelativeFileWithPathObjComponent(component.Component):
+@register("relative_file_pathobj_component")
+class RelativeFileWithPathObjComponent(Component):
     template_name = "relative_file_pathobj.html"
 
     class Media:

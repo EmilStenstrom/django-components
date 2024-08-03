@@ -4,7 +4,7 @@ from django.http import HttpResponseNotModified
 from django.template import Template
 from django.test import override_settings
 
-from django_components import component, types
+from django_components import Component, registry, types
 from django_components.middleware import ComponentDependencyMiddleware
 
 from .django_test_setup import setup_test_config
@@ -13,7 +13,7 @@ from .testutils import BaseTestCase, create_and_process_template_response
 setup_test_config()
 
 
-class SimpleComponent(component.Component):
+class SimpleComponent(Component):
     template: types.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
@@ -29,7 +29,7 @@ class SimpleComponent(component.Component):
         js = "script.js"
 
 
-class SimpleComponentAlternate(component.Component):
+class SimpleComponentAlternate(Component):
     template: types.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
@@ -42,7 +42,7 @@ class SimpleComponentAlternate(component.Component):
         js = "script2.js"
 
 
-class SimpleComponentWithSharedDependency(component.Component):
+class SimpleComponentWithSharedDependency(Component):
     template: types.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
@@ -55,7 +55,7 @@ class SimpleComponentWithSharedDependency(component.Component):
         js = ["script.js", "script2.js"]
 
 
-class MultistyleComponent(component.Component):
+class MultistyleComponent(Component):
     template: types.django_html = """
         Variable: <strong>{{ variable }}</strong>
     """
@@ -68,11 +68,11 @@ class MultistyleComponent(component.Component):
 @override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
 class ComponentMediaRenderingTests(BaseTestCase):
     def setUp(self):
-        # NOTE: component.registry is global, so need to clear before each test
-        component.registry.clear()
+        # NOTE: registry is global, so need to clear before each test
+        registry.clear()
 
     def test_no_dependencies_when_no_components_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -87,7 +87,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_no_js_dependencies_when_no_components_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_js_dependencies %}
@@ -97,7 +97,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=0)
 
     def test_no_css_dependencies_when_no_components_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies %}
@@ -111,7 +111,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_preload_dependencies_render_when_no_components_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies preload='test' %}
@@ -126,7 +126,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_preload_css_dependencies_render_when_no_components_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies preload='test' %}
@@ -140,7 +140,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_single_component_dependencies_render_when_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -156,7 +156,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=1)
 
     def test_single_component_with_dash_or_slash_in_name(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -172,7 +172,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=1)
 
     def test_preload_dependencies_render_once_when_used(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies preload='test' %}
@@ -188,7 +188,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="script.js">', rendered, count=1)
 
     def test_placeholder_removed_when_single_component_rendered(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -199,7 +199,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertNotIn("_RENDERED", rendered)
 
     def test_placeholder_removed_when_preload_rendered(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies preload='test' %}
@@ -209,7 +209,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertNotIn("_RENDERED", rendered)
 
     def test_single_component_css_dependencies(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies %}
@@ -224,7 +224,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_single_component_js_dependencies(self):
-        component.registry.register(name="test", component=SimpleComponent)
+        registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_js_dependencies %}
@@ -237,7 +237,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_all_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
     ):
-        component.registry.register(name="test", component=MultistyleComponent)
+        registry.register(name="test", component=MultistyleComponent)
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
             {% component 'test' %}{% endcomponent %}
@@ -260,7 +260,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_all_js_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
     ):
-        component.registry.register(name="test", component=MultistyleComponent)
+        registry.register(name="test", component=MultistyleComponent)
         template_str: types.django_html = """
             {% load component_tags %}{% component_js_dependencies %}
             {% component 'test' %}{% endcomponent %}
@@ -283,7 +283,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
     def test_all_css_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
     ):
-        component.registry.register(name="test", component=MultistyleComponent)
+        registry.register(name="test", component=MultistyleComponent)
         template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies %}
             {% component 'test' %}{% endcomponent %}
@@ -304,8 +304,8 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_no_dependencies_with_multiple_unused_components(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="test1", component=SimpleComponent)
+        registry.register(name="test2", component=SimpleComponentAlternate)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -326,8 +326,8 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_correct_css_dependencies_with_multiple_components(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="test1", component=SimpleComponent)
+        registry.register(name="test2", component=SimpleComponentAlternate)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies %}
@@ -347,8 +347,8 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_correct_js_dependencies_with_multiple_components(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="test1", component=SimpleComponent)
+        registry.register(name="test2", component=SimpleComponentAlternate)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_js_dependencies %}
@@ -360,8 +360,8 @@ class ComponentMediaRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="script2.js">', rendered, count=0)
 
     def test_correct_dependencies_with_multiple_components(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="test1", component=SimpleComponent)
+        registry.register(name="test2", component=SimpleComponentAlternate)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -383,9 +383,9 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_shared_dependencies_rendered_once(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponentAlternate)
-        component.registry.register(name="test3", component=SimpleComponentWithSharedDependency)
+        registry.register(name="test1", component=SimpleComponent)
+        registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="test3", component=SimpleComponentWithSharedDependency)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -409,9 +409,9 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
 
     def test_placeholder_removed_when_multiple_component_rendered(self):
-        component.registry.register(name="test1", component=SimpleComponent)
-        component.registry.register(name="test2", component=SimpleComponentAlternate)
-        component.registry.register(name="test3", component=SimpleComponentWithSharedDependency)
+        registry.register(name="test1", component=SimpleComponent)
+        registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="test3", component=SimpleComponentWithSharedDependency)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
@@ -438,7 +438,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
             "test_component",
         ]
         for component_name in component_names:
-            component.registry.register(name=component_name, component=SimpleComponent)
+            registry.register(name=component_name, component=SimpleComponent)
             template_str: types.django_html = f"""
                 {{% load component_tags %}}
                 {{% component_js_dependencies %}}

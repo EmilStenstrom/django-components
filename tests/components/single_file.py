@@ -2,11 +2,11 @@ from typing import Any, Dict
 
 from django.http import HttpResponse
 
-from django_components import component, types
+from django_components import Component, register, types
 
 
-@component.register("single_file_component")
-class SingleFileComponent(component.Component):
+@register("single_file_component")
+class SingleFileComponent(Component):
     template: types.django_html = """
         <form method="post">
             {% csrf_token %}

@@ -2,11 +2,11 @@ from typing import Any, Dict
 
 from django.http import HttpResponse
 
-from django_components import component
+from django_components import Component, register
 
 
-@component.register("relative_file_component")
-class RelativeFileComponent(component.Component):
+@register("relative_file_component")
+class RelativeFileComponent(Component):
     template_name = "relative_file.html"
 
     class Media:
