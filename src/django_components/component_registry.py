@@ -2,8 +2,6 @@ from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Se
 
 from django.template import Library
 
-from django_components.tag_formatter import get_component_tag_formatter
-
 if TYPE_CHECKING:
     from django_components.component import Component
 
@@ -111,7 +109,7 @@ class ComponentRegistry:
         if existing_component and existing_component.cls._class_hash != component._class_hash:
             raise AlreadyRegistered('The component "%s" has already been registered' % name)
 
-        used_tags = self._register_to_library(name)
+        used_tags = ["component"]
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
@@ -230,24 +228,6 @@ class ComponentRegistry:
         self._registry = {}
         self._tags = {}
 
-    def _register_to_library(self, comp_name: str) -> List[str]:
-        from django_components.templatetags.component_tags import (
-            create_block_component_tag,
-            create_inline_component_tag,
-        )
-
-        formatter = get_component_tag_formatter()
-
-        # register the inline tag
-        inline_tag = formatter.safe_format_inline_tag(comp_name)
-        self.library.tag(inline_tag, create_inline_component_tag)
-
-        # register the block tag
-        block_tag = formatter.safe_format_block_start_tag(comp_name)
-        self.library.tag(block_tag, create_block_component_tag)
-
-        used_tags = [inline_tag, block_tag]
-        return used_tags
 
 
 # This variable represents the global component registry
