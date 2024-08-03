@@ -229,7 +229,6 @@ class ComponentRegistry:
         self._tags = {}
 
 
-
 # This variable represents the global component registry
 registry: ComponentRegistry = ComponentRegistry()
 """

@@ -73,10 +73,13 @@ class ComponentRegistryTest(unittest.TestCase):
         self.registry.register(name="testcomponent", component=MockComponent)
         self.registry.register(name="testcomponent2", component=MockComponent)
 
-        self.assertDictEqual(self.registry._tags, {
-            "component": {"testcomponent", "testcomponent2"},
-            "#component": {"testcomponent", "testcomponent2"},
-        })
+        self.assertDictEqual(
+            self.registry._tags,
+            {
+                "component": {"testcomponent", "testcomponent2"},
+                "#component": {"testcomponent", "testcomponent2"},
+            },
+        )
 
         self.assertIn("component", self.registry.library.tags)
         self.assertIn("#component", self.registry.library.tags)
@@ -84,10 +87,13 @@ class ComponentRegistryTest(unittest.TestCase):
         # Unregister only one of the components. The tags should remain
         self.registry.unregister(name="testcomponent")
 
-        self.assertDictEqual(self.registry._tags, {
-            "component": {"testcomponent2"},
-            "#component": {"testcomponent2"},
-        })
+        self.assertDictEqual(
+            self.registry._tags,
+            {
+                "component": {"testcomponent2"},
+                "#component": {"testcomponent2"},
+            },
+        )
 
         self.assertIn("component", self.registry.library.tags)
         self.assertIn("#component", self.registry.library.tags)
