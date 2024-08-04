@@ -79,7 +79,7 @@ class ComponentRegistryTest(unittest.TestCase):
             self.registry._tags,
             {
                 "component": {"testcomponent", "testcomponent2"},
-            }
+            },
         )
 
         self.assertIn("component", self.registry.library.tags)
@@ -91,7 +91,7 @@ class ComponentRegistryTest(unittest.TestCase):
             self.registry._tags,
             {
                 "component": {"testcomponent2"},
-            }
+            },
         )
 
         self.assertIn("component", self.registry.library.tags)
