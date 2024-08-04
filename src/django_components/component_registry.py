@@ -78,7 +78,7 @@ class ComponentRegistry:
         """
         The template tag library with which the component registry is associated.
         """
-        # Use the default library if none was passed
+        # Lazily use the default library if none was passed
         if self._library is not None:
             lib = self._library
         else:
@@ -156,8 +156,10 @@ class ComponentRegistry:
             if is_tag_empty:
                 del self._tags[tag]
 
+            is_protected = tag in {"component", "#component"}
+
             # Unregister the tag from library if this was the last component using this tag
-            if is_tag_empty and tag in self.library.tags:
+            if is_tag_empty and tag in self.library.tags and not is_protected:
                 del self.library.tags[tag]
 
         del self._registry[name]

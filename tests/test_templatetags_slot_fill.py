@@ -32,10 +32,6 @@ class SlottedComponentWithContext(SlottedComponent):
 
 
 class ComponentSlottedTemplateTagTest(BaseTestCase):
-    def setUp(self):
-        # NOTE: registry is global, so need to clear before each test
-        registry.clear()
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_basic(self):
         registry.register(name="test1", component=SlottedComponent)
@@ -477,10 +473,6 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
 
 
 class SlottedTemplateRegressionTests(BaseTestCase):
-    def setUp(self):
-        # NOTE: registry is global, so need to clear before each test
-        registry.clear()
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_that_uses_missing_variable(self):
         @register("test")
@@ -517,12 +509,7 @@ class SlottedTemplateRegressionTests(BaseTestCase):
 class SlotDefaultTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        registry.clear()
         registry.register("test", SlottedComponent)
-
-    def tearDown(self):
-        super().tearDown()
-        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_basic(self):
@@ -1114,10 +1101,6 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
     def setUp(self):
         super().setUp()
         registry.register("test", SlottedComponent)
-
-    def tearDown(self):
-        super().tearDown()
-        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_fill_with_no_parent_is_error(self):

@@ -25,6 +25,7 @@ class TemplateInstrumentationTest(BaseTestCase):
     saved_render_method: Callable  # Assigned during setup.
 
     def tearDown(self):
+        super().tearDown()
         Template._render = self.saved_render_method
 
     def setUp(self):
@@ -92,14 +93,6 @@ class TemplateInstrumentationTest(BaseTestCase):
 
 
 class BlockCompatTests(BaseTestCase):
-    def setUp(self):
-        registry.clear()
-        super().setUp()
-
-    def tearDown(self):
-        super().tearDown()
-        registry.clear()
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_slots_inside_extends(self):
         registry.register("slotted_component", SlottedComponent)

@@ -24,6 +24,7 @@ class MockComponentView(Component):
 
 class ComponentRegistryTest(unittest.TestCase):
     def setUp(self):
+        super().setUp()
         self.registry = ComponentRegistry()
 
     def test_register_class_decorator(self):
@@ -33,9 +34,10 @@ class ComponentRegistryTest(unittest.TestCase):
 
         self.assertEqual(registry.get("decorated_component"), TestComponent)
 
-    def test_register_class_decorator_custom_registry(self):
-        registry.clear()
+        # Cleanup
+        registry.unregister("decorated_component")
 
+    def test_register_class_decorator_custom_registry(self):
         my_lib = Library()
         my_reg = ComponentRegistry(library=my_lib)
 
@@ -66,8 +68,8 @@ class ComponentRegistryTest(unittest.TestCase):
 
     def test_unregisters_only_unused_tags(self):
         self.assertDictEqual(self.registry._tags, {})
-        self.assertNotIn("component", self.registry.library.tags)
-        self.assertNotIn("#component", self.registry.library.tags)
+        # NOTE: We preserve the default component tags
+        self.assertIn("component", self.registry.library.tags)
 
         # Register two components that use the same tag
         self.registry.register(name="testcomponent", component=MockComponent)
@@ -77,12 +79,10 @@ class ComponentRegistryTest(unittest.TestCase):
             self.registry._tags,
             {
                 "component": {"testcomponent", "testcomponent2"},
-                "#component": {"testcomponent", "testcomponent2"},
-            },
+            }
         )
 
         self.assertIn("component", self.registry.library.tags)
-        self.assertIn("#component", self.registry.library.tags)
 
         # Unregister only one of the components. The tags should remain
         self.registry.unregister(name="testcomponent")
@@ -91,19 +91,16 @@ class ComponentRegistryTest(unittest.TestCase):
             self.registry._tags,
             {
                 "component": {"testcomponent2"},
-                "#component": {"testcomponent2"},
-            },
+            }
         )
 
         self.assertIn("component", self.registry.library.tags)
-        self.assertIn("#component", self.registry.library.tags)
 
         # Unregister the second components. The tags should be removed
         self.registry.unregister(name="testcomponent2")
 
         self.assertDictEqual(self.registry._tags, {})
-        self.assertNotIn("component", self.registry.library.tags)
-        self.assertNotIn("#component", self.registry.library.tags)
+        self.assertIn("component", self.registry.library.tags)
 
     def test_prevent_registering_different_components_with_the_same_name(self):
         self.registry.register(name="testcomponent", component=MockComponent)

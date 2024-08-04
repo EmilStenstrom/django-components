@@ -73,14 +73,11 @@ class AppendAttributesTest(BaseTestCase):
 
 
 class HtmlAttrsTests(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-
-        self.template_str: types.django_html = """
-            {% load component_tags %}
-            {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var %}
-            {% endcomponent %}
-        """  # noqa: E501
+    template_str: types.django_html = """
+        {% load component_tags %}
+        {% component "test" attrs:@click.stop="dispatch('click_event')" attrs:x-data="{hello: 'world'}" attrs:class=class_var %}
+        {% endcomponent %}
+    """  # noqa: E501
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_tag_positional_args(self):

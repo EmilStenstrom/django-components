@@ -47,10 +47,6 @@ class ComponentTemplateTagTest(BaseTestCase):
             css = "style.css"
             js = "script.js"
 
-    def setUp(self):
-        # NOTE: registry is global, so need to clear before each test
-        registry.clear()
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_single_component(self):
         registry.register(name="test", component=self.SimpleComponent)
@@ -190,9 +186,6 @@ class ComponentTemplateTagTest(BaseTestCase):
 
 
 class MultiComponentTests(BaseTestCase):
-    def setUp(self):
-        registry.clear()
-
     def register_components(self):
         registry.register("first_component", SlottedComponent)
         registry.register("second_component", SlottedComponentWithContext)
@@ -265,18 +258,19 @@ class MultiComponentTests(BaseTestCase):
 
 
 class ComponentIsolationTests(BaseTestCase):
-    def setUp(self):
-        class SlottedComponent(Component):
-            template: types.django_html = """
-                {% load component_tags %}
-                <custom-template>
-                    <header>{% slot "header" %}Default header{% endslot %}</header>
-                    <main>{% slot "main" %}Default main{% endslot %}</main>
-                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
-                </custom-template>
-            """
+    class SlottedComponent(Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            <custom-template>
+                <header>{% slot "header" %}Default header{% endslot %}</header>
+                <main>{% slot "main" %}Default main{% endslot %}</main>
+                <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+            </custom-template>
+        """
 
-        registry.register("test", SlottedComponent)
+    def setUp(self):
+        super().setUp()
+        registry.register("test", self.SlottedComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_instances_of_component_do_not_share_slots(self):
@@ -357,10 +351,6 @@ class ComponentTemplateSyntaxErrorTests(BaseTestCase):
     def setUp(self):
         super().setUp()
         registry.register("test", SlottedComponent)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_variable_outside_fill_tag_compiles_w_out_error(self):
