@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Se
 
 from django.template import Library
 
+from django_components.tag_formatter import get_component_tag_formatter
+
 if TYPE_CHECKING:
     from django_components.component import Component
 
@@ -25,6 +27,10 @@ class AlreadyRegistered(Exception):
 
 
 class NotRegistered(Exception):
+    pass
+
+
+class TagProtectedError(Exception):
     pass
 
 
@@ -137,14 +143,7 @@ class ComponentRegistry:
         if existing_component and existing_component.cls._class_hash != component._class_hash:
             raise AlreadyRegistered('The component "%s" has already been registered' % name)
 
-        block_tag = "component"
-        inline_tag = "#component"
-
-        entry = ComponentRegistryEntry(
-            cls=component,
-            block_tag=block_tag,
-            inline_tag=inline_tag,
-        )
+        entry = self._register_to_library(name, component)
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
@@ -268,6 +267,41 @@ class ComponentRegistry:
         self._registry = {}
         self._tags = {}
 
+    def _register_to_library(
+        self,
+        comp_name: str,
+        component: Type["Component"],
+    ) -> ComponentRegistryEntry:
+        # Lazily import to avoid circular dependencies
+        from django_components.templatetags.component_tags import (
+            do_component_tag_inline,
+            do_component_tag_block,
+        )
+
+        formatter = get_component_tag_formatter()
+
+        # TODO - Allow None here?
+        # register the inline tag
+        inline_tag = formatter.safe_format_inline_tag(comp_name)
+
+        if is_tag_protected(self.library, inline_tag):
+            raise TagProtectedError('Cannot register inline tag "%s", this tag name is protected' % inline_tag)
+        else:
+            self.library.tag(inline_tag, do_component_tag_inline)
+
+        # TODO - Allow None here?
+        # register the block tag
+        block_tag = formatter.safe_format_block_start_tag(comp_name)
+        if is_tag_protected(self.library, block_tag):
+            raise TagProtectedError('Cannot register block tag "%s", this tag name is protected' % block_tag)
+        else:
+            self.library.tag(block_tag, do_component_tag_block)
+
+        return ComponentRegistryEntry(
+            cls=component,
+            block_tag=block_tag,
+            inline_tag=inline_tag,
+        )
 
 # This variable represents the global component registry
 registry: ComponentRegistry = ComponentRegistry()
