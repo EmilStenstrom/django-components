@@ -6,7 +6,7 @@
 #
 asgiref==3.7.2
     # via django
-black==24.4.2
+black==24.8.0
     # via -r requirements-dev.in
 cachetools==5.3.3
     # via tox
@@ -26,7 +26,7 @@ filelock==3.15.4
     # via
     #   tox
     #   virtualenv
-flake8==7.1.0
+flake8==7.1.1
     # via
     #   -r requirements-dev.in
     #   flake8-pyproject
@@ -40,7 +40,7 @@ isort==5.13.2
     # via -r requirements-dev.in
 mccabe==0.7.0
     # via flake8
-mypy==1.11.0
+mypy==1.11.1
     # via -r requirements-dev.in
 mypy-extensions==1.0.0
     # via
