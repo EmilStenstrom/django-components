@@ -12,13 +12,16 @@ _TComp = TypeVar("_TComp", bound=Type["Component"])
 
 PROTECTED_TAGS = [
     "component",
+    "#component",
     "component_dependencies",
     "component_css_dependencies",
     "component_js_dependencies",
     "fill",
+    "#fill",
     "html_attrs",
     "provide",
     "slot",
+    "#slot",
 ]
 
 
