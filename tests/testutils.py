@@ -20,13 +20,6 @@ middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash
 
 
 class BaseTestCase(SimpleTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        # Ensure that the module that defines the template tags is executed again after import
-        if "django_components.templatetags.component_tags" in sys.modules:
-            del sys.modules["django_components.templatetags.component_tags"]
-        registry._library = None
-
     def tearDown(self) -> None:
         super().tearDown()
         registry.clear()
