@@ -147,7 +147,7 @@ def do_slot_inline(parser: Parser, token: Token) -> SlotNode:
     return _do_slot(parser, token, is_inline=True)
 
 
-def do_fill(parser: Parser, token: Token) -> FillNode:
+def _do_fill(parser: Parser, token: Token, is_inline: bool) -> FillNode:
     """
     Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
@@ -166,6 +166,7 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     trace_msg("PARSE", "FILL", str(slot_name_fexp), fill_id)
 
     nodelist = parser.parse(parse_until=["endfill"])
+    nodelist = _parse_tag_body(parser, "endfill", is_inline)
     parser.delete_first_token()
 
     fill_node = FillNode(
@@ -180,7 +181,17 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     return fill_node
 
 
-@register.tag(name="component")
+@register.tag("fill")
+def do_fill_block(parser: Parser, token: Token) -> FillNode:
+    return _do_fill(parser, token, is_inline=False)
+
+
+# TODO - ADD TEST
+@register.tag("#fill")
+def do_fill_inline(parser: Parser, token: Token) -> FillNode:
+    return _do_fill(parser, token, is_inline=True)
+
+
 def do_component(parser: Parser, token: Token) -> ComponentNode:
     """
     To give the component access to the template context:
