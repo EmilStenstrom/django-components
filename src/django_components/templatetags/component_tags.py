@@ -112,8 +112,7 @@ def component_js_dependencies_tag(preload: str = "") -> SafeString:
         return mark_safe("\n".join(rendered_dependencies))
 
 
-@register.tag("slot")
-def do_slot(parser: Parser, token: Token) -> SlotNode:
+def _do_slot(parser: Parser, token: Token, is_inline: bool) -> SlotNode:
     # e.g. {% slot <name> ... %}
     tag_name, *args = token.split_contents()
     slot_name, is_default, is_required, slot_kwargs = _parse_slot_args(parser, args, tag_name)
@@ -122,7 +121,7 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
     slot_id = gen_id()
     trace_msg("PARSE", "SLOT", slot_name, slot_id)
 
-    nodelist = parser.parse(parse_until=["endslot"])
+    nodelist = _parse_tag_body(parser, "endslot", is_inline)
     parser.delete_first_token()
     slot_node = SlotNode(
         slot_name,
@@ -137,7 +136,17 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
     return slot_node
 
 
-@register.tag("fill")
+@register.tag("slot")
+def do_slot_block(parser: Parser, token: Token) -> SlotNode:
+    return _do_slot(parser, token, is_inline=False)
+
+
+# TODO - ADD TEST
+@register.tag("#slot")
+def do_slot_inline(parser: Parser, token: Token) -> SlotNode:
+    return _do_slot(parser, token, is_inline=True)
+
+
 def do_fill(parser: Parser, token: Token) -> FillNode:
     """
     Block tag whose contents 'fill' (are inserted into) an identically named
@@ -284,6 +293,15 @@ def _check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], boo
         return bits, True
 
     return bits, False
+
+
+def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
+    if inline:
+        body = NodeList()
+    else:
+        body = parser.parse(parse_until=[end_tag])
+        parser.delete_first_token()
+    return body
 
 
 def _parse_component_with_args(
