@@ -88,8 +88,7 @@ class TagFormatterABC(abc.ABC):
     def validate_tag(self, tag: str, tag_type: str) -> None:
         if not tag:
             raise ValueError(
-                f"{self.__class__.__name__} returned an invalid tag for {tag_type}: '{tag}'."
-                f" Tag cannot be empty"
+                f"{self.__class__.__name__} returned an invalid tag for {tag_type}: '{tag}'." f" Tag cannot be empty"
             )
 
         if not TAG_RE.match(tag):
@@ -168,9 +167,7 @@ class ComponentTagFormatter(TagFormatterABC):
         _, *comp_args = tokens
 
         if not comp_args:
-            raise TemplateSyntaxError(
-                "ComponentTagFormatter: Component tag did not receive tag name"
-            )
+            raise TemplateSyntaxError("ComponentTagFormatter: Component tag did not receive tag name")
 
         # First arg is a kwarg, not a positional arg. Hence look for the "name" kwarg
         # for component name.
@@ -244,24 +241,19 @@ class ShorthandTagFormatter(TagFormatterABC):
     def parse_block_start_tag(self, tokens: List[str]) -> Tuple[str, List[str]]:
         name = tokens.pop(0)
         if not name:
-            raise TemplateSyntaxError(
-                "ShorthandTagFormatter: '{name}' is not a valid component name"
-            )
+            raise TemplateSyntaxError("ShorthandTagFormatter: '{name}' is not a valid component name")
         return name, tokens
 
     def parse_inline_tag(self, tokens: List[str]) -> Tuple[str, List[str]]:
         name = tokens.pop(0)
         if not name.startswith("#"):
             raise TemplateSyntaxError(
-                "ShorthandTagFormatter: Component inline tag must start with hash (#),"
-                f" got '{tokens[0]}'"
+                "ShorthandTagFormatter: Component inline tag must start with hash (#)," f" got '{tokens[0]}'"
             )
 
         name = name[1:]
         if not name:
-            raise TemplateSyntaxError(
-                "ShorthandTagFormatter: '{name}' is not a valid component name"
-            )
+            raise TemplateSyntaxError("ShorthandTagFormatter: '{name}' is not a valid component name")
 
         return name, tokens
 

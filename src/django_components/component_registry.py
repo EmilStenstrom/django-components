@@ -276,10 +276,7 @@ class ComponentRegistry:
         component: Type["Component"],
     ) -> ComponentRegistryEntry:
         # Lazily import to avoid circular dependencies
-        from django_components.templatetags.component_tags import (
-            do_component_tag_inline,
-            do_component_tag_block,
-        )
+        from django_components.templatetags.component_tags import do_component_tag_block, do_component_tag_inline
 
         formatter = get_component_tag_formatter()
 
@@ -305,6 +302,7 @@ class ComponentRegistry:
             block_tag=block_tag,
             inline_tag=inline_tag,
         )
+
 
 # This variable represents the global component registry
 registry: ComponentRegistry = ComponentRegistry()

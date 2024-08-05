@@ -550,4 +550,3 @@ def _get_positional_param(
         return param
 
     raise TemplateSyntaxError(f"Param '{param_name}' not found in '{tag_name}' tag")
-
