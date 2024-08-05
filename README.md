@@ -745,6 +745,7 @@ then the default Library instance from django_components is used.
 
 ```py
 from django.template import Library
+from django_components import ComponentRegistry
 
 my_library = Library(...)
 my_registry = ComponentRegistry(library=my_library)
