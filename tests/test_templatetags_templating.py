@@ -178,12 +178,7 @@ class ConditionalSlotTests(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        registry.clear()
         registry.register("test", self.ConditionalComponent)
-
-    def tearDown(self):
-        super().tearDown()
-        registry.clear()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_no_content_if_branches_are_false(self):
@@ -259,9 +254,6 @@ class SlotIterationTest(BaseTestCase):
             return {
                 "objects": objects,
             }
-
-    def setUp(self):
-        registry.clear()
 
     # NOTE: Second arg in tuple is expected result. In isolated mode, loops should NOT leak.
     @parametrize_context_behavior(
@@ -626,10 +618,6 @@ class ComponentNestingTests(BaseTestCase):
         registry.register("calendar", self.CalendarComponent)
         registry.register("complex_child", self.ComplexChildComponent)
         registry.register("complex_parent", self.ComplexParentComponent)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        registry.clear()
 
     # NOTE: Second arg in tuple are expected names in nested fills. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should

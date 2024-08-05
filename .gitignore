@@ -64,7 +64,6 @@ target/
 # lock file is not needed for development
 # as project supports variety of Django versions
 poetry.lock
-pyproject.toml
 
 # PyCharm
 .idea/
