@@ -16,7 +16,7 @@ class NotRegistered(Exception):
     pass
 
 
-# Why is `tags` a list?
+# Why do we store the tags with the component?
 #
 # Each component may be associated with two template tags - One for "block"
 # and one for "inline" usage. E.g. in the following snippets, the template
@@ -25,14 +25,24 @@ class NotRegistered(Exception):
 # `{% component "abc" %}{% endcomponent %}`
 # `{% #component "abc" %}`
 #
-# While `endcomponent` also looks like a template tag, we don't have to register
-# it, because it simply marks the end of body.
+# (NOTE: While `endcomponent` also looks like a template tag, we don't have to register
+# it, because it simply marks the end of body.)
 #
-# Moreover, with the component tag formatter (configurable tags per component class),
+# With the component tag formatter (configurable tags per component class),
 # each component may have a unique set of template tags.
+#
+# For user's convenience, we automatically add/remove the tags from Django's tag Library,
+# when a component is (un)registered.
+#
+# Thus we need to remember which component used which template tags.
 class ComponentRegistryEntry(NamedTuple):
     cls: Type["Component"]
-    tags: List[str]
+    block_tag: str
+    inline_tag: str
+
+    @property
+    def tags(self) -> List[str]:
+        return [self.block_tag, self.inline_tag]
 
 
 class ComponentRegistry:
@@ -109,16 +119,21 @@ class ComponentRegistry:
         if existing_component and existing_component.cls._class_hash != component._class_hash:
             raise AlreadyRegistered('The component "%s" has already been registered' % name)
 
-        used_tags = ["component"]
+        block_tag = "component"
+        inline_tag = "#component"
+
+        self._registry[name] = entry = ComponentRegistryEntry(
+            cls=component,
+            block_tag=block_tag,
+            inline_tag=inline_tag,
+        )
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
-        for tag in used_tags:
+        for tag in entry.tags:
             if tag not in self._tags:
                 self._tags[tag] = set()
             self._tags[tag].add(name)
-
-        self._registry[name] = ComponentRegistryEntry(cls=component, tags=used_tags)
 
     def unregister(self, name: str) -> None:
         """
