@@ -8,12 +8,25 @@ if TYPE_CHECKING:
 _TComp = TypeVar("_TComp", bound=Type["Component"])
 
 
+PROTECTED_TAGS = [
+    "component",
+    "component_dependencies",
+    "component_css_dependencies",
+    "component_js_dependencies",
+    "fill",
+    "html_attrs",
+    "provide",
+    "slot",
+]
+
+
 class AlreadyRegistered(Exception):
     pass
 
 
 class NotRegistered(Exception):
     pass
+
 
 
 # Why do we store the tags with the component?
@@ -94,6 +107,12 @@ class ComponentRegistry:
         else:
             from django_components.templatetags.component_tags import register as tag_library
 
+            # For the default library, we want to protect our template tags from
+            # being overriden.
+            # On the other hand, if user provided their own Library instance,
+            # it is up to the user to use `mark_protected_tags` if they want
+            # to protect any tags.
+            mark_protected_tags(tag_library, PROTECTED_TAGS)
             lib = self._library = tag_library
         return lib
 
@@ -122,7 +141,7 @@ class ComponentRegistry:
         block_tag = "component"
         inline_tag = "#component"
 
-        self._registry[name] = entry = ComponentRegistryEntry(
+        entry = ComponentRegistryEntry(
             cls=component,
             block_tag=block_tag,
             inline_tag=inline_tag,
@@ -130,10 +149,12 @@ class ComponentRegistry:
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
-        for tag in entry.tags:
+        for tag in entry.tags:    
             if tag not in self._tags:
                 self._tags[tag] = set()
             self._tags[tag].add(name)
+
+        self._registry[name] = entry
 
     def unregister(self, name: str) -> None:
         """
@@ -171,10 +192,13 @@ class ComponentRegistry:
             if is_tag_empty:
                 del self._tags[tag]
 
-            is_protected = tag in {"component", "#component"}
+            # Do NOT unregister tag if it's protected
+            is_protected = is_tag_protected(self.library, tag)
+            if is_protected:
+                continue
 
             # Unregister the tag from library if this was the last component using this tag
-            if is_tag_empty and tag in self.library.tags and not is_protected:
+            if is_tag_empty and tag in self.library.tags:
                 del self.library.tags[tag]
 
         del self._registry[name]
@@ -303,3 +327,13 @@ def register(name: str, registry: Optional[ComponentRegistry] = None) -> Callabl
         return component
 
     return decorator
+
+
+def mark_protected_tags(lib: Library, tags: List[str]) -> None:
+    # By marking the library as default,
+    lib._protected_tags = [*tags]
+
+
+def is_tag_protected(lib: Library, tag: str) -> bool:
+    protected_tags = getattr(lib, "_protected_tags", [])
+    return tag in protected_tags

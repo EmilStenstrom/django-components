@@ -78,6 +78,7 @@ class ComponentRegistryTest(unittest.TestCase):
         self.assertDictEqual(
             self.registry._tags,
             {
+                "#component": {"testcomponent", "testcomponent2"},
                 "component": {"testcomponent", "testcomponent2"},
             },
         )
@@ -90,6 +91,7 @@ class ComponentRegistryTest(unittest.TestCase):
         self.assertDictEqual(
             self.registry._tags,
             {
+                "#component": {"testcomponent2"},
                 "component": {"testcomponent2"},
             },
         )
