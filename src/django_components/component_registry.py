@@ -28,7 +28,6 @@ class NotRegistered(Exception):
     pass
 
 
-
 # Why do we store the tags with the component?
 #
 # Each component may be associated with two template tags - One for "block"
@@ -149,7 +148,7 @@ class ComponentRegistry:
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
-        for tag in entry.tags:    
+        for tag in entry.tags:
             if tag not in self._tags:
                 self._tags[tag] = set()
             self._tags[tag].add(name)
