@@ -615,10 +615,6 @@ class ContextVarsIsFilledTests(BaseTestCase):
         )
         registry.register("negated_conditional_slot", self.ComponentWithNegatedConditionalSlot)
 
-    def tearDown(self) -> None:
-        super().tearDown()
-        registry.clear()
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_is_filled_vars(self):
         template: types.django_html = """

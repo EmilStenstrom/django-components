@@ -67,10 +67,6 @@ class MultistyleComponent(Component):
 
 @override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
 class ComponentMediaRenderingTests(BaseTestCase):
-    def setUp(self):
-        # NOTE: registry is global, so need to clear before each test
-        registry.clear()
-
     def test_no_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
 
