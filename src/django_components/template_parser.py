@@ -25,6 +25,9 @@ from django.utils.regex_helper import _lazy_re_compile
 # This is a copy of the original FilterExpression. The only difference is to allow variable names to have extra special
 # characters: - : . @ #
 ######################################################################################################################
+
+VAR_CHARS = r"\w\-\:\@\.\#"
+
 filter_raw_string = r"""
 ^(?P<constant>{constant})|
 ^(?P<var>[{var_chars}]+|{num})|
@@ -41,7 +44,7 @@ filter_raw_string = r"""
     num=r"[-+\.]?\d[\d\.e]*",
     # The following is the only difference from the original FilterExpression. We allow variable names to have extra
     # special characters: - : . @ #
-    var_chars=r"\w\-\:\@\.\#",
+    var_chars=VAR_CHARS,
     filter_sep=re.escape(FILTER_SEPARATOR),
     arg_sep=re.escape(FILTER_ARGUMENT_SEPARATOR),
 )
@@ -102,7 +105,7 @@ class ComponentsFilterExpression(FilterExpression):
 ######################################################################################################################
 
 # Regex for token keyword arguments
-kwarg_re = _lazy_re_compile(r"(?:([\w\-\:\@\.\#]+)=)?(.+)")
+kwarg_re = _lazy_re_compile(r"(?:([{var_chars}]+)=)?(.+)".format(var_chars=VAR_CHARS))
 
 
 def token_kwargs(bits: List[str], parser: Parser) -> Dict[str, FilterExpression]:

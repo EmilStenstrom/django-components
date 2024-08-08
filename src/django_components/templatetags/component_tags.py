@@ -19,13 +19,16 @@ from django_components.middleware import (
 )
 from django_components.provide import ProvideNode
 from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
+from django_components.tag_formatter import TagFormatterABC, get_component_tag_formatter
 from django_components.template_parser import parse_bits
-from django_components.utils import gen_id
+from django_components.utils import gen_id, is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:
     from django_components.component import Component
 
 
+# NOTE: Variable name `register` is required by Django to recognize this as a template tag library
+# See https://docs.djangoproject.com/en/dev/howto/custom-template-tags
 register = django.template.Library()
 
 
@@ -112,8 +115,7 @@ def component_js_dependencies_tag(preload: str = "") -> SafeString:
         return mark_safe("\n".join(rendered_dependencies))
 
 
-@register.tag("slot")
-def do_slot(parser: Parser, token: Token) -> SlotNode:
+def _do_slot(parser: Parser, token: Token, is_inline: bool) -> SlotNode:
     # e.g. {% slot <name> ... %}
     tag_name, *args = token.split_contents()
     slot_name, is_default, is_required, slot_kwargs = _parse_slot_args(parser, args, tag_name)
@@ -122,7 +124,7 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
     slot_id = gen_id()
     trace_msg("PARSE", "SLOT", slot_name, slot_id)
 
-    nodelist = parser.parse(parse_until=["endslot"])
+    nodelist = _parse_tag_body(parser, "endslot", is_inline)
     parser.delete_first_token()
     slot_node = SlotNode(
         slot_name,
@@ -137,8 +139,18 @@ def do_slot(parser: Parser, token: Token) -> SlotNode:
     return slot_node
 
 
-@register.tag("fill")
-def do_fill(parser: Parser, token: Token) -> FillNode:
+@register.tag("slot")
+def do_slot_block(parser: Parser, token: Token) -> SlotNode:
+    return _do_slot(parser, token, is_inline=False)
+
+
+# TODO - ADD TEST
+@register.tag("#slot")
+def do_slot_inline(parser: Parser, token: Token) -> SlotNode:
+    return _do_slot(parser, token, is_inline=True)
+
+
+def _do_fill(parser: Parser, token: Token, is_inline: bool) -> FillNode:
     """
     Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
@@ -157,6 +169,7 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     trace_msg("PARSE", "FILL", str(slot_name_fexp), fill_id)
 
     nodelist = parser.parse(parse_until=["endfill"])
+    nodelist = _parse_tag_body(parser, "endfill", is_inline)
     parser.delete_first_token()
 
     fill_node = FillNode(
@@ -171,8 +184,18 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     return fill_node
 
 
-@register.tag(name="component")
-def do_component(parser: Parser, token: Token) -> ComponentNode:
+@register.tag("fill")
+def do_fill_block(parser: Parser, token: Token) -> FillNode:
+    return _do_fill(parser, token, is_inline=False)
+
+
+# TODO - ADD TEST
+@register.tag("#fill")
+def do_fill_inline(parser: Parser, token: Token) -> FillNode:
+    return _do_fill(parser, token, is_inline=True)
+
+
+def _do_component(parser: Parser, token: Token, is_inline: bool) -> ComponentNode:
     """
     To give the component access to the template context:
         {% component "name" positional_arg keyword_arg=value ... %}
@@ -185,18 +208,21 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     be either the first positional argument or, if there are no positional
     arguments, passed as 'name'.
     """
+    formatter = get_component_tag_formatter()
 
     bits = token.split_contents()
     bits, isolated_context = _check_for_isolated_context_keyword(bits)
-    component_name, context_args, context_kwargs = _parse_component_with_args(parser, bits, "component")
+    component_name, context_args, context_kwargs = _parse_component_with_args(formatter, parser, bits, is_inline)
 
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
     component_id = gen_id()
     trace_msg("PARSE", "COMP", component_name, component_id)
 
-    body: NodeList = parser.parse(parse_until=["endcomponent"])
-    parser.delete_first_token()
+    # If this is a block tag, expect the closing tag
+    end_tag = formatter.safe_format_block_end_tag(component_name)
+    body = _parse_tag_body(parser, end_tag, is_inline)
+
     fill_nodes = parse_slot_fill_nodes_from_component_nodelist(body, ComponentNode)
 
     # Tag all fill nodes as children of this particular component instance
@@ -205,7 +231,7 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
         node.component_id = component_id
 
     component_node = ComponentNode(
-        FilterExpression(component_name, parser),
+        component_name,
         context_args,
         context_kwargs,
         isolated_context=isolated_context,
@@ -215,6 +241,15 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
 
     trace_msg("PARSE", "COMP", component_name, component_id, "...Done!")
     return component_node
+
+
+def do_component_tag_block(parser: Parser, token: Token) -> ComponentNode:
+    return _do_component(parser, token, is_inline=False)
+
+
+# TODO - ADD TEST
+def do_component_tag_inline(parser: Parser, token: Token) -> ComponentNode:
+    return _do_component(parser, token, is_inline=True)
 
 
 @register.tag("provide")
@@ -286,13 +321,32 @@ def _check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], boo
     return bits, False
 
 
+def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
+    if inline:
+        body = NodeList()
+    else:
+        body = parser.parse(parse_until=[end_tag])
+        parser.delete_first_token()
+    return body
+
+
 def _parse_component_with_args(
-    parser: Parser, bits: List[str], tag_name: str
+    formatter: TagFormatterABC,
+    parser: Parser,
+    bits: List[str],
+    is_inline: bool,
 ) -> Tuple[str, List[FilterExpression], Mapping[str, FilterExpression]]:
+    if is_inline:
+        component_name, bits = formatter.parse_inline_tag(bits)
+        tag_name = formatter.safe_format_inline_tag(component_name)
+    else:
+        component_name, bits = formatter.parse_block_start_tag(bits)
+        tag_name = formatter.safe_format_block_start_tag(component_name)
+
     tag_args, tag_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
-        params=["tag_name", "name"],
+        params=[],
         name=tag_name,
     )
 
@@ -303,17 +357,7 @@ def _parse_component_with_args(
             raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
         tag_kwargs[key] = val
 
-    if tag_name != tag_args[0].token:
-        raise RuntimeError(f"Internal error: Expected tag_name to be {tag_name}, but it was {tag_args[0].token}")
-
-    component_name = _get_positional_param(tag_name, "name", 1, tag_args, tag_kwargs).token
-    if len(tag_args) > 1:
-        # Positional args given. Skip tag and component name and take the rest
-        context_args = tag_args[2:]
-    else:  # No positional args
-        context_args = []
-
-    return component_name, context_args, tag_kwargs
+    return component_name, tag_args, tag_kwargs
 
 
 def _parse_html_attrs_args(
@@ -365,7 +409,7 @@ def _parse_slot_args(
         )
 
     slot_name, *options = bits
-    if not is_wrapped_in_quotes(slot_name):
+    if not is_str_wrapped_in_quotes(slot_name):
         raise TemplateSyntaxError(f"'{tag_name}' name must be a string 'literal'.")
 
     slot_name = resolve_string(slot_name, parser)
@@ -434,7 +478,7 @@ def _parse_fill_args(
     slot_data_var_fexp: Optional[FilterExpression] = None
     if SLOT_DATA_ATTR in tag_kwargs:
         slot_data_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
-        if not is_wrapped_in_quotes(slot_data_var_fexp.token):
+        if not is_str_wrapped_in_quotes(slot_data_var_fexp.token):
             raise TemplateSyntaxError(
                 f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, got '{slot_data_var_fexp}'"
             )
@@ -442,7 +486,7 @@ def _parse_fill_args(
     slot_default_var_fexp: Optional[FilterExpression] = None
     if SLOT_DEFAULT_ATTR in tag_kwargs:
         slot_default_var_fexp = tag_kwargs.pop(SLOT_DEFAULT_ATTR)
-        if not is_wrapped_in_quotes(slot_default_var_fexp.token):
+        if not is_str_wrapped_in_quotes(slot_default_var_fexp.token):
             raise TemplateSyntaxError(
                 f"Value of '{SLOT_DEFAULT_ATTR}' in '{tag_name}' tag must be a string literal,"
                 f" got '{slot_default_var_fexp}'"
@@ -472,7 +516,7 @@ def _parse_provide_args(
         raise TemplateSyntaxError("'provide' tag does not match pattern {% provide <key> [key=val, ...] %}. ")
 
     provide_key, *options = bits
-    if not is_wrapped_in_quotes(provide_key):
+    if not is_str_wrapped_in_quotes(provide_key):
         raise TemplateSyntaxError(f"'{tag_name}' key must be a string 'literal'.")
 
     provide_key = resolve_string(provide_key, parser)
@@ -506,7 +550,3 @@ def _get_positional_param(
         return param
 
     raise TemplateSyntaxError(f"Param '{param_name}' not found in '{tag_name}' tag")
-
-
-def is_wrapped_in_quotes(s: str) -> bool:
-    return s.startswith(('"', "'")) and s[0] == s[-1]
