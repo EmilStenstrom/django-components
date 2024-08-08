@@ -479,7 +479,7 @@ class ComponentNode(Node):
 
     def __init__(
         self,
-        name: str,
+        name_fexp: FilterExpression,
         context_args: List[FilterExpression],
         context_kwargs: Mapping[str, FilterExpression],
         isolated_context: bool = False,
@@ -487,7 +487,7 @@ class ComponentNode(Node):
         component_id: Optional[str] = None,
     ) -> None:
         self.component_id = component_id or gen_id()
-        self.name = name
+        self.name_fexp = name_fexp
         self.context_args = context_args or []
         self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
@@ -496,14 +496,15 @@ class ComponentNode(Node):
 
     def __repr__(self) -> str:
         return "<ComponentNode: {}. Contents: {!r}>".format(
-            self.name,
+            self.name_fexp,
             getattr(self, "nodelist", None),  # 'nodelist' attribute only assigned later.
         )
 
     def render(self, context: Context) -> str:
-        trace_msg("RENDR", "COMP", self.name, self.component_id)
+        trace_msg("RENDR", "COMP", self.name_fexp, self.component_id)
 
-        component_cls: Type[Component] = registry.get(self.name)
+        resolved_component_name = self.name_fexp.resolve(context)
+        component_cls: Type[Component] = registry.get(resolved_component_name)
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -533,8 +534,8 @@ class ComponentNode(Node):
                         f"Detected duplicate fill tag name '{resolved_name}'."
                     )
 
-                resolved_slot_default_var = fill_node.resolve_slot_default(context, self.name)
-                resolved_slot_data_var = fill_node.resolve_slot_data(context, self.name)
+                resolved_slot_default_var = fill_node.resolve_slot_default(context, resolved_component_name)
+                resolved_slot_data_var = fill_node.resolve_slot_data(context, resolved_component_name)
                 fill_content[resolved_name] = FillContent(
                     content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
                     slot_default_var=resolved_slot_default_var,
@@ -542,7 +543,7 @@ class ComponentNode(Node):
                 )
 
         component: Component = component_cls(
-            registered_name=self.name,
+            registered_name=resolved_component_name,
             outer_context=context,
             fill_content=fill_content,
             component_id=self.component_id,
@@ -558,7 +559,7 @@ class ComponentNode(Node):
             kwargs=resolved_context_kwargs,
         )
 
-        trace_msg("RENDR", "COMP", self.name, self.component_id, "...Done!")
+        trace_msg("RENDR", "COMP", self.name_fexp, self.component_id, "...Done!")
         return output
 
 

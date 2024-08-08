@@ -1,12 +1,7 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Type, Union
+from typing import Dict, List
 
 from django.conf import settings
-
-if TYPE_CHECKING:
-    from django_components.tag_formatter import TagFormatterABC
-
-DEFAULT_COMPONENT_TAG_FORMATTER = "django_components.tag_formatter.ComponentTagFormatter"
 
 
 class ContextBehavior(str, Enum):
@@ -119,11 +114,6 @@ class AppSettings:
         except ValueError:
             valid_values = [behavior.value for behavior in ContextBehavior]
             raise ValueError(f"Invalid context behavior: {raw_value}. Valid options are {valid_values}")
-
-    # TODO - ADD TEST
-    @property
-    def TAG_FORMATTER(self) -> Union[str, Type["TagFormatterABC"]]:
-        return self.settings.get("tag_formatter", DEFAULT_COMPONENT_TAG_FORMATTER)
 
 
 app_settings = AppSettings()

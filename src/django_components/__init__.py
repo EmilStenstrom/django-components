@@ -3,23 +3,14 @@ import django
 
 # Public API
 # isort: off
-from django_components.autodiscover import (
-    autodiscover as autodiscover,
-    import_libraries as import_libraries,
-)
+from django_components.autodiscover import autodiscover as autodiscover
+from django_components.autodiscover import import_libraries as import_libraries
 from django_components.component import Component as Component
-from django_components.component_registry import (
-    AlreadyRegistered as AlreadyRegistered,
-    ComponentRegistry as ComponentRegistry,
-    NotRegistered as NotRegistered,
-    register as register,
-    registry as registry,
-)
-from django_components.tag_formatter import (
-    ComponentTagFormatter as ComponentTagFormatter,
-    ShorthandTagFormatter as ShorthandTagFormatter,
-    TagFormatterABC as TagFormatterABC,
-)
+from django_components.component_registry import AlreadyRegistered as AlreadyRegistered
+from django_components.component_registry import ComponentRegistry as ComponentRegistry
+from django_components.component_registry import NotRegistered as NotRegistered
+from django_components.component_registry import register as register
+from django_components.component_registry import registry as registry
 import django_components.types as types
 
 # isort: on
