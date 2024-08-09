@@ -1,7 +1,8 @@
+from typing import List
 from django.template import Context, Template
 
 from django_components import Component, register, types
-from django_components.tag_formatter import ShorthandComponentFormatter
+from django_components.tag_formatter import ShorthandComponentFormatter, TagResult
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -23,6 +24,28 @@ class MultiwordBlockEndTagFormatter(ShorthandComponentFormatter):
 class MultiwordInlineTagFormatter(ShorthandComponentFormatter):
     def start_inline_tag(self, name):
         return f"#{name} comp"
+
+
+class SeparateInlineAndBlockTagFormatter(ShorthandComponentFormatter):
+    def start_block_tag(self, name: str) -> str:
+        return super().start_block_tag(name) + "_block"
+
+    def start_inline_tag(self, name: str) -> str:
+        return super().start_inline_tag(name) + "_inline"
+    
+    def parse(self, tokens: List[str]) -> TagResult:
+        result = super().parse(tokens)
+
+        # Drop the suffix
+        component_name = result.component_name.split("_")[0]
+
+        new_result = TagResult(component_name, [*result.tokens])
+
+        if tokens[0].endswith("_inline"):
+            # Append slash so the tag is parsed as inlined
+            new_result.tokens.append("/")
+
+        return new_result
 
 
 # Create a TagFormatter class to validate the public interface
@@ -430,5 +453,46 @@ class ComponentTagTests(BaseTestCase):
                 OVERRIDEN!
             </div>
             hello2
+            """,
+        )
+
+    @parametrize_context_behavior(
+        cases=["django", "isolated"],
+        settings={
+            "COMPONENTS": {
+                "tag_formatter": SeparateInlineAndBlockTagFormatter(),
+            },
+        },
+    )
+    def test_formatter_different_inline_and_block_tags(self):
+        @register("simple")
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "content" default %} SLOT_DEFAULT {% endslot %}
+                </div>
+            """
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% simple_inline %}
+
+            {% simple_block %}
+                OVERRIDEN!
+            {% endsimple %}
+        """
+        )
+        rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                SLOT_DEFAULT
+            </div>
+            <div>
+                OVERRIDEN!
+            </div>
             """,
         )

@@ -147,7 +147,7 @@ class ComponentFormatter(SimpleTagFormatter):
 
     def parse(self, tokens: List[str]) -> TagResult:
         result = super().parse(tokens)
-        args = result.tokens
+        args = [*result.tokens]
 
         if not args:
             raise TemplateSyntaxError(f"{self.__class__.__name__}: Component tag did not receive tag name")
@@ -215,6 +215,7 @@ class ShorthandComponentFormatter(TagFormatterABC):
         return f"end{name}"
 
     def parse(self, tokens: List[str]) -> TagResult:
+        tokens = [*tokens]
         name = tokens.pop(0)
         return TagResult(name, tokens)
 
