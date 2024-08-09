@@ -2,13 +2,8 @@ from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, Optional, Set, Typ
 
 from django.template import Library
 
+from django_components.library import Tags, is_tag_protected, mark_protected_tags, register_tags_from_formatter
 from django_components.tag_formatter import get_tag_formatter
-from django_components.library import (
-    Tags,
-    is_tag_protected,
-    mark_protected_tags,
-    register_tags_from_formatter,
-)
 
 if TYPE_CHECKING:
     from django_components.component import Component

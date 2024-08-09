@@ -158,7 +158,7 @@ class ProtectedTagsTest(unittest.TestCase):
                     pass
 
         @register("sth_else")
-        class TestComponent(Component):
+        class TestComponent2(Component):
             pass
 
         # Cleanup

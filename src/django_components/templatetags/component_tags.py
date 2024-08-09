@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Dict, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Tuple, Union
 
 import django.template
 from django.template.base import FilterExpression, NodeList, Parser, Token
@@ -20,7 +20,7 @@ from django_components.middleware import (
 from django_components.provide import ProvideNode
 from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
 from django_components.tag_formatter import get_tag_formatter
-from django_components.template_parser import parse_bits, is_aggregate_key, process_aggregate_kwargs
+from django_components.template_parser import is_aggregate_key, parse_bits, process_aggregate_kwargs
 from django_components.utils import gen_id, is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:
@@ -315,10 +315,7 @@ def html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     return HtmlAttrsNode(
         attributes=tag.kwargs.get("attrs"),
         defaults=tag.kwargs.get("defaults"),
-        kwargs=[
-            (key, val) for key, val in tag.kwarg_pairs
-            if key != "attrs" and key != "defaults"
-        ],
+        kwargs=[(key, val) for key, val in tag.kwarg_pairs if key != "attrs" and key != "defaults"],
     )
 
 
@@ -365,7 +362,7 @@ def _parse_tag(
     else:
         # If no end tag was given, we assume that the tag is inline-only
         is_inline = not end_tag
-    
+
     parsed_flags = {flag: False for flag in (flags or [])}
     bits_without_flags: List[str] = []
     seen_kwargs: Set[str] = set()

@@ -1,6 +1,6 @@
 """Module for interfacing with Django's Library (`django.template.library`)"""
 
-from typing import Callable, List, Optional, NamedTuple
+from typing import Callable, List, NamedTuple, Optional
 
 from django.template.base import Node, Parser, Token
 from django.template.library import Library

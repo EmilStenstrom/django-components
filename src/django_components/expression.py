@@ -8,6 +8,7 @@ class AggregateFilterExpression:
     def __init__(self, dict: Dict[str, FilterExpression]) -> None:
         self.dict = dict
 
+
 Expression = Union[FilterExpression, AggregateFilterExpression]
 
 
@@ -28,20 +29,14 @@ def resolve_expression_as_identifier(
 
 
 def safe_resolve_list(args: List[Expression], context: Context) -> List:
-    return [
-        safe_resolve(arg, context)
-        for arg in args
-    ]
+    return [safe_resolve(arg, context) for arg in args]
 
 
 def safe_resolve_dict(
     kwargs: Union[Mapping[str, Expression], Dict[str, Expression]],
     context: Context,
 ) -> Dict:
-    return {
-        key: safe_resolve(kwarg, context)
-        for key, kwarg in kwargs.items()
-    }
+    return {key: safe_resolve(kwarg, context) for key, kwarg in kwargs.items()}
 
 
 def safe_resolve(context_item: Expression, context: Context) -> Any:
@@ -66,4 +61,3 @@ def is_aggregate_key(key: str) -> bool:
     # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
     # This syntax is used by Vue and AlpineJS.
     return ":" in key and not key.startswith(":")
-

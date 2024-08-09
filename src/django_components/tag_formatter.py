@@ -15,6 +15,7 @@ TAG_RE = re.compile(r"^[{chars}]+$".format(chars=VAR_CHARS))
 
 class TagResult(NamedTuple):
     """The return value from `TagFormatter.parse()`"""
+
     component_name: str
     """Component name extracted from the template tag"""
     tokens: List[str]
@@ -182,8 +183,7 @@ class ComponentFormatter(SimpleTagFormatter):
 
                 if comp_name:
                     raise TemplateSyntaxError(
-                        f"ComponentFormatter: 'name' kwarg for component '{comp_name}'"
-                        " was defined more than once."
+                        f"ComponentFormatter: 'name' kwarg for component '{comp_name}'" " was defined more than once."
                     )
 
                 # NOTE: We intentionally do NOT add to `final_args` here
@@ -249,6 +249,7 @@ def get_tag_formatter() -> InternalTagFormatter:
         tag_formatter = formatter_cls_or_str
 
     return InternalTagFormatter(tag_formatter)
+
 
 # Default formatters
 component_formatter = ComponentFormatter("component")

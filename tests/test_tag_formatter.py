@@ -32,7 +32,7 @@ class SeparateInlineAndBlockTagFormatter(ShorthandComponentFormatter):
 
     def start_inline_tag(self, name: str) -> str:
         return super().start_inline_tag(name) + "_inline"
-    
+
     def parse(self, tokens: List[str]) -> TagResult:
         result = super().parse(tokens)
 
