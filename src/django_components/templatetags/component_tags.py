@@ -10,7 +10,7 @@ from django_components.attributes import HtmlAttrsNode
 from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
-from django_components.expression import resolve_string
+from django_components.expression import AggregateFilterExpression, Expression, resolve_string
 from django_components.logger import trace_msg
 from django_components.middleware import (
     CSS_DEPENDENCY_PLACEHOLDER,
@@ -445,6 +445,24 @@ def _parse_tag(
         params=[] if isinstance(params, bool) else params,
         name=tag_name,
     )
+
+    # Post-process args/kwargs - Mark special cases like aggregate dicts
+    # or dynamic expressions
+    pre_aggregate_kwargs: Dict[str, FilterExpression] = {}
+    kwarg_pairs: List[Tuple[str, Expression]] = []
+    for key, val in raw_kwarg_pairs:
+        # NOTE: If a tag allows mutliple kwargs, and we provide a same aggregate key
+        # multiple times (e.g. `attr:class="hidden" and `attr:class="another"`), then
+        # we take only the last instance.
+        if is_aggregate_key(key):
+            pre_aggregate_kwargs[key] = val
+        else:
+            kwarg_pairs.append((key, val))
+    aggregate_kwargs: Dict[str, Dict[str, FilterExpression]] = process_aggregate_kwargs(pre_aggregate_kwargs)
+
+    for key, agg_dict in aggregate_kwargs.items():
+        entry = (key, AggregateFilterExpression(agg_dict))
+        kwarg_pairs.append(entry)
 
     # Allow only as many positional args as given
     if params != True and len(args) > len(params):  # noqa F712
