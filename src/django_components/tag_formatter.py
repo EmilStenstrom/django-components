@@ -14,6 +14,7 @@ TAG_RE = re.compile(r"^[{chars}]+$".format(chars=VAR_CHARS))
 
 
 class TagResult(NamedTuple):
+    """The return value from `TagFormatter.parse()`"""
     component_name: str
     """Component name extracted from the template tag"""
     tokens: List[str]
@@ -31,7 +32,7 @@ class TagFormatterABC(abc.ABC):
 
     @abc.abstractmethod
     def start_tag(self, name: str) -> str:
-        """Formats the start tag for of a component."""
+        """Formats the start tag of a component."""
         ...
 
     @abc.abstractmethod
@@ -43,8 +44,8 @@ class TagFormatterABC(abc.ABC):
     def parse(self, tokens: List[str]) -> TagResult:
         """
         Given the tokens (words) of a component start tag, this function extracts
-        the component name from the tokens list, and returns a tuple of
-        `(component_name, component_input)`.
+        the component name from the tokens list, and returns `TagResult`, which
+        is a tuple of `(component_name, remaining_tokens)`.
 
         Example:
 
@@ -111,6 +112,23 @@ class InternalTagFormatter:
 
 
 class SimpleTagFormatter(TagFormatterABC):
+    """
+    Tag formatter, which uses the component name as start tag, and `end<component_name>`
+    as an end tag.
+
+    Example as block:
+    ```django
+    {% button href="..." %}
+        Click me!
+    {% endbutton %}
+    ```
+
+    Example as inlined tag:
+    ```django
+    {% button href="..." / %}
+    ```
+    """
+
     def __init__(self, tag: str):
         self.tag = tag
 
