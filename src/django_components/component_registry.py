@@ -1,23 +1,19 @@
-from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Type, TypeVar
+from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, Optional, Set, Type, TypeVar
 
 from django.template import Library
+
+from django_components.tag_formatter import get_tag_formatter
+from django_components.library import (
+    Tags,
+    is_tag_protected,
+    mark_protected_tags,
+    register_tags_from_formatter,
+)
 
 if TYPE_CHECKING:
     from django_components.component import Component
 
 _TComp = TypeVar("_TComp", bound=Type["Component"])
-
-
-PROTECTED_TAGS = [
-    "component",
-    "component_dependencies",
-    "component_css_dependencies",
-    "component_js_dependencies",
-    "fill",
-    "html_attrs",
-    "provide",
-    "slot",
-]
 
 
 class AlreadyRegistered(Exception):
@@ -49,12 +45,7 @@ class NotRegistered(Exception):
 # Thus we need to remember which component used which template tags.
 class ComponentRegistryEntry(NamedTuple):
     cls: Type["Component"]
-    block_tag: str
-    inline_tag: str
-
-    @property
-    def tags(self) -> List[str]:
-        return [self.block_tag, self.inline_tag]
+    tags: Tags
 
 
 class ComponentRegistry:
@@ -111,7 +102,7 @@ class ComponentRegistry:
             # On the other hand, if user provided their own Library instance,
             # it is up to the user to use `mark_protected_tags` if they want
             # to protect any tags.
-            mark_protected_tags(tag_library, PROTECTED_TAGS)
+            mark_protected_tags(tag_library)
             lib = self._library = tag_library
         return lib
 
@@ -137,18 +128,11 @@ class ComponentRegistry:
         if existing_component and existing_component.cls._class_hash != component._class_hash:
             raise AlreadyRegistered('The component "%s" has already been registered' % name)
 
-        block_tag = "component"
-        inline_tag = "#component"
-
-        entry = ComponentRegistryEntry(
-            cls=component,
-            block_tag=block_tag,
-            inline_tag=inline_tag,
-        )
+        entry = self._register_to_library(name, component)
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
-        for tag in entry.tags:
+        for tag in set(entry.tags):
             if tag not in self._tags:
                 self._tags[tag] = set()
             self._tags[tag].add(name)
@@ -182,7 +166,7 @@ class ComponentRegistry:
         entry = self._registry[name]
 
         # Unregister the tag from library if this was the last component using this tag
-        for tag in entry.tags:
+        for tag in set(entry.tags):
             # Unlink component from tag
             self._tags[tag].remove(name)
 
@@ -268,6 +252,19 @@ class ComponentRegistry:
         self._registry = {}
         self._tags = {}
 
+    def _register_to_library(
+        self,
+        comp_name: str,
+        component: Type["Component"],
+    ) -> ComponentRegistryEntry:
+        # Lazily import to avoid circular dependencies
+        from django_components.templatetags.component_tags import component as do_component
+
+        formatter = get_tag_formatter()
+        tags = register_tags_from_formatter(self.library, do_component, formatter, comp_name)
+
+        return ComponentRegistryEntry(cls=component, tags=tags)
+
 
 # This variable represents the global component registry
 registry: ComponentRegistry = ComponentRegistry()
@@ -326,13 +323,3 @@ def register(name: str, registry: Optional[ComponentRegistry] = None) -> Callabl
         return component
 
     return decorator
-
-
-def mark_protected_tags(lib: Library, tags: List[str]) -> None:
-    # By marking the library as default,
-    lib._protected_tags = [*tags]
-
-
-def is_tag_protected(lib: Library, tag: str) -> bool:
-    protected_tags = getattr(lib, "_protected_tags", [])
-    return tag in protected_tags

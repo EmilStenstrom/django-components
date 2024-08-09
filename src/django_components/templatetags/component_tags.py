@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
 
 import django.template
 from django.template.base import FilterExpression, NodeList, Parser, Token
@@ -19,13 +19,16 @@ from django_components.middleware import (
 )
 from django_components.provide import ProvideNode
 from django_components.slots import FillNode, SlotNode, parse_slot_fill_nodes_from_component_nodelist
-from django_components.template_parser import parse_bits
-from django_components.utils import gen_id
+from django_components.tag_formatter import get_tag_formatter
+from django_components.template_parser import parse_bits, is_aggregate_key, process_aggregate_kwargs
+from django_components.utils import gen_id, is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:
     from django_components.component import Component
 
 
+# NOTE: Variable name `register` is required by Django to recognize this as a template tag library
+# See https://docs.djangoproject.com/en/dev/howto/custom-template-tags
 register = django.template.Library()
 
 
@@ -35,7 +38,7 @@ SLOT_DATA_ATTR = "data"
 SLOT_DEFAULT_ATTR = "default"
 
 
-def get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
+def _get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
     """Returns a list unique components from the registry."""
 
     unique_component_classes = set(registry.all().values())
@@ -47,7 +50,7 @@ def get_components_from_registry(registry: ComponentRegistry) -> List["Component
     return components
 
 
-def get_components_from_preload_str(preload_str: str) -> List["Component"]:
+def _get_components_from_preload_str(preload_str: str) -> List["Component"]:
     """Returns a list of unique components from a comma-separated str"""
 
     components = []
@@ -62,83 +65,89 @@ def get_components_from_preload_str(preload_str: str) -> List["Component"]:
 
 
 @register.simple_tag(name="component_dependencies")
-def component_dependencies_tag(preload: str = "") -> SafeString:
+def component_dependencies(preload: str = "") -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
 
     if is_dependency_middleware_active():
         preloaded_dependencies = []
-        for component in get_components_from_preload_str(preload):
+        for component in _get_components_from_preload_str(preload):
             preloaded_dependencies.append(RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name))
         return mark_safe("\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER)
     else:
         rendered_dependencies = []
-        for component in get_components_from_registry(component_registry):
+        for component in _get_components_from_registry(component_registry):
             rendered_dependencies.append(component.render_dependencies())
 
         return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_css_dependencies")
-def component_css_dependencies_tag(preload: str = "") -> SafeString:
+def component_css_dependencies(preload: str = "") -> SafeString:
     """Marks location where CSS link tags should be rendered."""
 
     if is_dependency_middleware_active():
         preloaded_dependencies = []
-        for component in get_components_from_preload_str(preload):
+        for component in _get_components_from_preload_str(preload):
             preloaded_dependencies.append(RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name))
         return mark_safe("\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER)
     else:
         rendered_dependencies = []
-        for component in get_components_from_registry(component_registry):
+        for component in _get_components_from_registry(component_registry):
             rendered_dependencies.append(component.render_css_dependencies())
 
         return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.simple_tag(name="component_js_dependencies")
-def component_js_dependencies_tag(preload: str = "") -> SafeString:
+def component_js_dependencies(preload: str = "") -> SafeString:
     """Marks location where JS script tags should be rendered."""
 
     if is_dependency_middleware_active():
         preloaded_dependencies = []
-        for component in get_components_from_preload_str(preload):
+        for component in _get_components_from_preload_str(preload):
             preloaded_dependencies.append(RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name))
         return mark_safe("\n".join(preloaded_dependencies) + JS_DEPENDENCY_PLACEHOLDER)
     else:
         rendered_dependencies = []
-        for component in get_components_from_registry(component_registry):
+        for component in _get_components_from_registry(component_registry):
             rendered_dependencies.append(component.render_js_dependencies())
 
         return mark_safe("\n".join(rendered_dependencies))
 
 
 @register.tag("slot")
-def do_slot(parser: Parser, token: Token) -> SlotNode:
-    # e.g. {% slot <name> ... %}
-    tag_name, *args = token.split_contents()
-    slot_name, is_default, is_required, slot_kwargs = _parse_slot_args(parser, args, tag_name)
-    # Use a unique ID to be able to tie the fill nodes with components and slots
-    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
-    slot_id = gen_id()
-    trace_msg("PARSE", "SLOT", slot_name, slot_id)
+def slot(parser: Parser, token: Token) -> SlotNode:
+    bits = token.split_contents()
+    tag = _parse_tag(
+        "slot",
+        parser,
+        bits,
+        params=["name"],
+        flags=[SLOT_DEFAULT_OPTION_KEYWORD, SLOT_REQUIRED_OPTION_KEYWORD],
+        keywordonly_kwargs=True,
+        repeatable_kwargs=False,
+        end_tag="endslot",
+    )
+    data = _parse_slot_args(parser, tag)
 
-    nodelist = parser.parse(parse_until=["endslot"])
-    parser.delete_first_token()
+    trace_msg("PARSE", "SLOT", data.name, tag.id)
+
+    body = tag.parse_body()
     slot_node = SlotNode(
-        slot_name,
-        nodelist,
-        is_required=is_required,
-        is_default=is_default,
-        node_id=slot_id,
-        slot_kwargs=slot_kwargs,
+        name=data.name,
+        nodelist=body,
+        is_required=tag.flags[SLOT_REQUIRED_OPTION_KEYWORD],
+        is_default=tag.flags[SLOT_DEFAULT_OPTION_KEYWORD],
+        node_id=tag.id,
+        slot_kwargs=tag.kwargs,
     )
 
-    trace_msg("PARSE", "SLOT", slot_name, slot_id, "...Done!")
+    trace_msg("PARSE", "SLOT", data.name, tag.id, "...Done!")
     return slot_node
 
 
 @register.tag("fill")
-def do_fill(parser: Parser, token: Token) -> FillNode:
+def fill(parser: Parser, token: Token) -> FillNode:
     """
     Block tag whose contents 'fill' (are inserted into) an identically named
     'slot'-block in the component template referred to by a parent component.
@@ -147,32 +156,34 @@ def do_fill(parser: Parser, token: Token) -> FillNode:
     This tag is available only within a {% component %}..{% endcomponent %} block.
     Runtime checks should prohibit other usages.
     """
-    # e.g. {% fill <name> %}
-    tag_name, *args = token.split_contents()
-    slot_name_fexp, slot_default_var_fexp, slot_data_var_fexp = _parse_fill_args(parser, args, tag_name)
+    bits = token.split_contents()
+    tag = _parse_tag(
+        "fill",
+        parser,
+        bits,
+        params=["name"],
+        keywordonly_kwargs=[SLOT_DATA_ATTR, SLOT_DEFAULT_ATTR],
+        repeatable_kwargs=False,
+        end_tag="endfill",
+    )
+    data = _parse_fill_args(parser, tag)
 
-    # Use a unique ID to be able to tie the fill nodes with components and slots
-    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
-    fill_id = gen_id()
-    trace_msg("PARSE", "FILL", str(slot_name_fexp), fill_id)
+    trace_msg("PARSE", "FILL", str(data.slot_name), tag.id)
 
-    nodelist = parser.parse(parse_until=["endfill"])
-    parser.delete_first_token()
-
+    body = tag.parse_body()
     fill_node = FillNode(
-        nodelist,
-        name_fexp=slot_name_fexp,
-        slot_default_var_fexp=slot_default_var_fexp,
-        slot_data_var_fexp=slot_data_var_fexp,
-        node_id=fill_id,
+        nodelist=body,
+        name_fexp=data.slot_name,
+        slot_default_var_fexp=data.slot_default_var,
+        slot_data_var_fexp=data.slot_data_var,
+        node_id=tag.id,
     )
 
-    trace_msg("PARSE", "FILL", str(slot_name_fexp), fill_id, "...Done!")
+    trace_msg("PARSE", "FILL", str(data.slot_name), tag.id, "...Done!")
     return fill_node
 
 
-@register.tag(name="component")
-def do_component(parser: Parser, token: Token) -> ComponentNode:
+def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
     """
     To give the component access to the template context:
         {% component "name" positional_arg keyword_arg=value ... %}
@@ -185,64 +196,83 @@ def do_component(parser: Parser, token: Token) -> ComponentNode:
     be either the first positional argument or, if there are no positional
     arguments, passed as 'name'.
     """
-
     bits = token.split_contents()
-    bits, isolated_context = _check_for_isolated_context_keyword(bits)
-    component_name, context_args, context_kwargs = _parse_component_with_args(parser, bits, "component")
 
-    # Use a unique ID to be able to tie the fill nodes with components and slots
-    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
-    component_id = gen_id()
-    trace_msg("PARSE", "COMP", component_name, component_id)
+    # Let the TagFormatter pre-process the tokens
+    formatter = get_tag_formatter()
+    result = formatter.parse([*bits])
+    end_tag = formatter.end_tag(result.component_name)
 
-    body: NodeList = parser.parse(parse_until=["endcomponent"])
-    parser.delete_first_token()
+    # NOTE: The tokens returned from TagFormatter.parse do NOT include the tag itself
+    bits = [bits[0], *result.tokens]
+
+    tag = _parse_tag(
+        tag_name,
+        parser,
+        bits,
+        params=True,  # Allow many args
+        flags=["only"],
+        keywordonly_kwargs=True,
+        repeatable_kwargs=False,
+        end_tag=end_tag,
+    )
+    data = _parse_component_args(parser, tag)
+
+    trace_msg("PARSE", "COMP", result.component_name, tag.id)
+
+    body = tag.parse_body()
     fill_nodes = parse_slot_fill_nodes_from_component_nodelist(body, ComponentNode)
 
     # Tag all fill nodes as children of this particular component instance
     for node in fill_nodes:
-        trace_msg("ASSOC", "FILL", node.name_fexp, node.node_id, component_id=component_id)
-        node.component_id = component_id
+        trace_msg("ASSOC", "FILL", node.name_fexp, node.node_id, component_id=tag.id)
+        node.component_id = tag.id
 
     component_node = ComponentNode(
-        FilterExpression(component_name, parser),
-        context_args,
-        context_kwargs,
-        isolated_context=isolated_context,
+        name=result.component_name,
+        context_args=tag.args,
+        context_kwargs=tag.kwargs,
+        isolated_context=data.isolated_context,
         fill_nodes=fill_nodes,
-        component_id=component_id,
+        component_id=tag.id,
     )
 
-    trace_msg("PARSE", "COMP", component_name, component_id, "...Done!")
+    trace_msg("PARSE", "COMP", result.component_name, tag.id, "...Done!")
     return component_node
 
 
 @register.tag("provide")
-def do_provide(parser: Parser, token: Token) -> SlotNode:
+def provide(parser: Parser, token: Token) -> ProvideNode:
     # e.g. {% provide <name> key=val key2=val2 %}
-    tag_name, *args = token.split_contents()
-    provide_key, kwargs = _parse_provide_args(parser, args, tag_name)
+    bits = token.split_contents()
+    tag = _parse_tag(
+        "provide",
+        parser,
+        bits,
+        params=["name"],
+        flags=[],
+        keywordonly_kwargs=True,
+        repeatable_kwargs=False,
+        end_tag="endprovide",
+    )
+    data = _parse_provide_args(parser, tag)
 
-    # Use a unique ID to be able to tie the fill nodes with components and slots
-    # NOTE: MUST be called BEFORE `parser.parse()` to ensure predictable numbering
-    slot_id = gen_id()
-    trace_msg("PARSE", "PROVIDE", provide_key, slot_id)
+    trace_msg("PARSE", "PROVIDE", data.key, tag.id)
 
-    nodelist = parser.parse(parse_until=["endprovide"])
-    parser.delete_first_token()
+    body = tag.parse_body()
     slot_node = ProvideNode(
-        provide_key,
-        nodelist,
-        node_id=slot_id,
-        provide_kwargs=kwargs,
+        name=data.key,
+        nodelist=body,
+        node_id=tag.id,
+        provide_kwargs=tag.kwargs,
     )
 
-    trace_msg("PARSE", "PROVIDE", provide_key, slot_id, "...Done!")
+    trace_msg("PARSE", "PROVIDE", data.key, tag.id, "...Done!")
     return slot_node
 
 
 @register.tag("html_attrs")
-def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
+def html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     """
     This tag takes:
     - Optional dictionary of attributes (`attrs`)
@@ -270,243 +300,303 @@ def do_html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     ```
     """
     bits = token.split_contents()
-    attributes, default_attrs, append_attrs = _parse_html_attrs_args(parser, bits, "html_attrs")
-    return HtmlAttrsNode(attributes, default_attrs, append_attrs)
+
+    tag = _parse_tag(
+        "html_attrs",
+        parser,
+        bits,
+        params=["attrs", "defaults"],
+        optional_params=["attrs", "defaults"],
+        flags=[],
+        keywordonly_kwargs=True,
+        repeatable_kwargs=True,
+    )
+
+    return HtmlAttrsNode(
+        attributes=tag.kwargs.get("attrs"),
+        defaults=tag.kwargs.get("defaults"),
+        kwargs=[
+            (key, val) for key, val in tag.kwarg_pairs
+            if key != "attrs" and key != "defaults"
+        ],
+    )
 
 
-def _check_for_isolated_context_keyword(bits: List[str]) -> Tuple[List[str], bool]:
-    """Return True and strip the last word if token ends with 'only' keyword or if CONTEXT_BEHAVIOR is 'isolated'."""
+class ParsedTag(NamedTuple):
+    id: str
+    name: str
+    bits: List[str]
+    flags: Dict[str, bool]
+    args: List[FilterExpression]
+    named_args: Dict[str, FilterExpression]
+    kwargs: Dict[str, Expression]
+    kwarg_pairs: List[Tuple[str, Expression]]
+    is_inline: bool
+    parse_body: Callable[[], NodeList]
 
-    if bits[-1] == "only":
-        return bits[:-1], True
 
-    if app_settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
-        return bits, True
+def _parse_tag(
+    tag: str,
+    parser: Parser,
+    bits: List[str],
+    params: Union[List[str], bool] = False,
+    flags: Optional[List[str]] = None,
+    end_tag: Optional[str] = None,
+    optional_params: Optional[List[str]] = None,
+    keywordonly_kwargs: Optional[Union[bool, List[str]]] = False,
+    repeatable_kwargs: Optional[Union[bool, List[str]]] = False,
+) -> ParsedTag:
+    # Use a unique ID to be able to tie the fill nodes with components and slots
+    # NOTE: MUST be called BEFORE `parse_body()` to ensure predictable numbering
+    tag_id = gen_id()
 
-    return bits, False
+    params = params or []
 
+    # e.g. {% slot <name> ... %}
+    tag_name, *bits = bits
+    if tag_name != tag:
+        raise TemplateSyntaxError(f"Start tag parser received tag '{tag_name}', expected '{tag}'")
 
-def _parse_component_with_args(
-    parser: Parser, bits: List[str], tag_name: str
-) -> Tuple[str, List[FilterExpression], Mapping[str, FilterExpression]]:
-    tag_args, tag_kwarg_pairs = parse_bits(
+    # Decide if the template tag is inline or block and strip the trailing slash
+    last_token = bits[-1] if len(bits) else None
+    if last_token == "/":
+        bits.pop()
+        is_inline = True
+    else:
+        # If no end tag was given, we assume that the tag is inline-only
+        is_inline = not end_tag
+    
+    parsed_flags = {flag: False for flag in (flags or [])}
+    bits_without_flags: List[str] = []
+    seen_kwargs: Set[str] = set()
+    seen_agg_keys: Set[str] = set()
+
+    def mark_kwarg_key(key: str, is_agg_key: bool) -> None:
+        if (is_agg_key and key in seen_kwargs) or (not is_agg_key and key in seen_agg_keys):
+            raise TemplateSyntaxError(
+                f"Received argument '{key}' both as a regular input ({key}=...)"
+                f" and as an aggregate dict ('{key}:key=...'). Must be only one of the two"
+            )
+        if is_agg_key:
+            seen_agg_keys.add(key)
+        else:
+            seen_kwargs.add(key)
+
+    for bit in bits:
+        # Extract flags, which are like keywords but without the value part
+        if bit in parsed_flags:
+            parsed_flags[bit] = True
+            continue
+        else:
+            bits_without_flags.append(bit)
+
+        # Record which kwargs we've seen, to detect if kwargs were passed in
+        # as both aggregate and regular kwargs
+        if "=" in bit:
+            key = bit.split("=")[0]
+
+            # Also pick up on aggregate keys like `attr:key=val`
+            if is_aggregate_key(key):
+                key = key.split(":")[0]
+                mark_kwarg_key(key, True)
+            else:
+                mark_kwarg_key(key, False)
+
+    bits = bits_without_flags
+
+    # To support optional args, we need to convert these to kwargs, so `parse_bits`
+    # can handle them. So we assign the keys to matched positional args,
+    # and then move the kwarg AFTER the pos args.
+    #
+    # TODO: This following section should live in `parse_bits`, but I don't want to
+    # modify it much to maintain some sort of compatibility with Django's version of
+    # `parse_bits`.
+    # Ideally, Django's parser would be expanded to support our use cases.
+    if params != True:  # noqa F712
+        params_to_sort = [param for param in params if param not in seen_kwargs]
+        new_args = []
+        new_params = []
+        new_kwargs = []
+        for index, bit in enumerate(bits):
+            if "=" in bit or not len(params_to_sort):
+                # Pass all remaining bits (including current one) as kwargs
+                new_kwargs.extend(bits[index:])
+                break
+
+            param = params_to_sort.pop(0)
+            if optional_params and param in optional_params:
+                mark_kwarg_key(param, False)
+                new_kwargs.append(f"{param}={bit}")
+                continue
+            new_args.append(bit)
+            new_params.append(param)
+
+        bits = [*new_args, *new_kwargs]
+        params = [*new_params, *params_to_sort]
+
+        # Remove any remaining optional positional args if they were not given
+        if optional_params:
+            params = [param for param in params_to_sort if param not in optional_params]
+
+    # Parse args/kwargs that will be passed to the fill
+    args, raw_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
-        params=["tag_name", "name"],
+        params=[] if isinstance(params, bool) else params,
         name=tag_name,
     )
 
-    tag_kwargs = {}
-    for key, val in tag_kwarg_pairs:
-        if key in tag_kwargs:
-            # The keyword argument has already been supplied once
-            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
-        tag_kwargs[key] = val
+    # Allow only as many positional args as given
+    if params != True and len(args) > len(params):  # noqa F712
+        raise TemplateSyntaxError(f"Tag '{tag_name}' received unexpected positional arguments: {args[len(params):]}")
 
-    if tag_name != tag_args[0].token:
-        raise RuntimeError(f"Internal error: Expected tag_name to be {tag_name}, but it was {tag_args[0].token}")
+    # For convenience, allow to access named args by their name instead of index
+    if params != True:  # noqa F712
+        named_args = {param: args[index] for index, param in enumerate(params)}
+    else:
+        named_args = {}
 
-    component_name = _get_positional_param(tag_name, "name", 1, tag_args, tag_kwargs).token
-    if len(tag_args) > 1:
-        # Positional args given. Skip tag and component name and take the rest
-        context_args = tag_args[2:]
-    else:  # No positional args
-        context_args = []
+    # Validate kwargs
+    kwargs: Dict[str, Expression] = {}
+    extra_keywords: Set[str] = set()
+    for key, val in kwarg_pairs:
+        # Check if key allowed
+        if not keywordonly_kwargs:
+            is_key_allowed = False
+        else:
+            is_key_allowed = keywordonly_kwargs == True or key in keywordonly_kwargs  # noqa: E712
+        if not is_key_allowed:
+            extra_keywords.add(key)
 
-    return component_name, context_args, tag_kwargs
+        # Check for repeated keys
+        if key in kwargs:
+            if not repeatable_kwargs:
+                is_key_repeatable = False
+            else:
+                is_key_repeatable = repeatable_kwargs == True or key in repeatable_kwargs  # noqa: E712
+            if not is_key_repeatable:
+                # The keyword argument has already been supplied once
+                raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
+        # All ok
+        kwargs[key] = val
 
+    if len(extra_keywords):
+        extra_keys = ", ".join(extra_keywords)
+        raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
 
-def _parse_html_attrs_args(
-    parser: Parser, bits: List[str], tag_name: str
-) -> Tuple[Optional[FilterExpression], Optional[FilterExpression], List[Tuple[str, FilterExpression]]]:
-    tag_args, tag_kwarg_pairs = parse_bits(
-        parser=parser,
-        bits=bits,
-        params=["tag_name"],
+    return ParsedTag(
+        id=tag_id,
         name=tag_name,
+        bits=bits,
+        flags=parsed_flags,
+        args=args,
+        named_args=named_args,
+        kwargs=kwargs,
+        kwarg_pairs=kwarg_pairs,
+        # NOTE: We defer parsing of the body, so we have the chance to call the tracing
+        # loggers before the parsing. This is because, if the body contains any other
+        # tags, it will trigger their tag handlers. So the code called AFTER
+        # `parse_body()` is already after all the nested handlers have finished.
+        parse_body=lambda: _parse_tag_body(parser, end_tag, is_inline) if end_tag else NodeList(),
+        is_inline=is_inline,
     )
 
-    # NOTE: Unlike in the `component` tag, in this case we don't care about duplicates,
-    # as we're constructing the dict simply to find the `attrs` kwarg.
-    tag_kwargs = {key: val for key, val in tag_kwarg_pairs}
 
-    if tag_name != tag_args[0].token:
-        raise RuntimeError(f"Internal error: Expected tag_name to be {tag_name}, but it was {tag_args[0].token}")
+# Parse flags - Since `parse_bits` doesn't handle "shorthand" kwargs
+# (AKA `required` for `required=True`), we have to first get the flags out
+# of the way.
+def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
+    if inline:
+        body = NodeList()
+    else:
+        body = parser.parse(parse_until=[end_tag])
+        parser.delete_first_token()
+    return body
 
-    # Allow to optioanlly provide `attrs` as positional arg `{% html_attrs attrs %}`
-    try:
-        attrs = _get_positional_param(tag_name, "attrs", 1, tag_args, tag_kwargs)
-    except TemplateSyntaxError:
-        attrs = None
 
-    # Allow to optionally provide `defaults` as positional arg `{% html_attrs attrs defaults %}`
-    try:
-        defaults = _get_positional_param(tag_name, "defaults", 2, tag_args, tag_kwargs)
-    except TemplateSyntaxError:
-        defaults = None
+class ParsedComponentTag(NamedTuple):
+    isolated_context: bool
 
-    # Allow only up to 2 positional args - [0] == tag name, [1] == attrs, [2] == defaults
-    if len(tag_args) > 3:
-        raise TemplateSyntaxError(f"Tag '{tag_name}' received unexpected positional arguments: {tag_args[2:]}")
 
-    return attrs, defaults, tag_kwarg_pairs
+def _parse_component_args(
+    parser: Parser,
+    tag: ParsedTag,
+) -> ParsedComponentTag:
+    # Check for isolated context keyword
+    isolated_context = tag.flags["only"] or app_settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED
+
+    return ParsedComponentTag(isolated_context=isolated_context)
+
+
+class ParsedSlotTag(NamedTuple):
+    name: str
 
 
 def _parse_slot_args(
     parser: Parser,
-    bits: List[str],
-    tag_name: str,
-) -> Tuple[str, bool, bool, Dict[str, FilterExpression]]:
-    if not len(bits):
-        raise TemplateSyntaxError(
-            "'slot' tag does not match pattern "
-            "{% slot <name> ['default'] ['required'] [key=val, ...] %}. "
-            "Order of options is free."
-        )
-
-    slot_name, *options = bits
-    if not is_wrapped_in_quotes(slot_name):
-        raise TemplateSyntaxError(f"'{tag_name}' name must be a string 'literal'.")
+    tag: ParsedTag,
+) -> ParsedSlotTag:
+    slot_name = tag.named_args["name"].token
+    if not is_str_wrapped_in_quotes(slot_name):
+        raise TemplateSyntaxError(f"'{tag.name}' name must be a string 'literal', got {slot_name}.")
 
     slot_name = resolve_string(slot_name, parser)
 
-    # Parse flags - Since `parse_bits` doesn't handle "shorthand" kwargs
-    # (AKA `required` for `required=True`), we have to first get the flags out
-    # of the way.
-    def extract_value(lst: List[str], value: str) -> bool:
-        """Check if value exists in list, and if so, remove it from said list"""
-        try:
-            lst.remove(value)
-            return True
-        except ValueError:
-            return False
+    return ParsedSlotTag(name=slot_name)
 
-    is_default = extract_value(options, SLOT_DEFAULT_OPTION_KEYWORD)
-    is_required = extract_value(options, SLOT_REQUIRED_OPTION_KEYWORD)
 
-    # Parse kwargs that will be passed to the fill
-    _, tag_kwarg_pairs = parse_bits(
-        parser=parser,
-        bits=options,
-        params=[],
-        name=tag_name,
-    )
-    tag_kwargs: Dict[str, FilterExpression] = {}
-    for key, val in tag_kwarg_pairs:
-        if key in tag_kwargs:
-            # The keyword argument has already been supplied once
-            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
-        tag_kwargs[key] = val
-
-    return slot_name, is_default, is_required, tag_kwargs
+class ParsedFillTag(NamedTuple):
+    slot_name: FilterExpression
+    slot_default_var: Optional[FilterExpression]
+    slot_data_var: Optional[FilterExpression]
 
 
 def _parse_fill_args(
     parser: Parser,
-    bits: List[str],
-    tag_name: str,
-) -> Tuple[FilterExpression, Optional[FilterExpression], Optional[FilterExpression]]:
-    if not len(bits):
-        raise TemplateSyntaxError(
-            "'fill' tag does not match pattern "
-            f"{{% fill <name> [{SLOT_DATA_ATTR}=val] [{SLOT_DEFAULT_ATTR}=slot_var] %}} "
-        )
-
-    slot_name = bits.pop(0)
-    slot_name_fexp = parser.compile_filter(slot_name)
-
-    # Even tho we want to parse only single kwarg, we use the same logic for parsing
-    # as we use for other tags, for consistency.
-    _, tag_kwarg_pairs = parse_bits(
-        parser=parser,
-        bits=bits,
-        params=[],
-        name=tag_name,
-    )
-
-    tag_kwargs: Dict[str, FilterExpression] = {}
-    for key, val in tag_kwarg_pairs:
-        if key in tag_kwargs:
-            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
-        tag_kwargs[key] = val
+    tag: ParsedTag,
+) -> ParsedFillTag:
+    slot_name_fexp = tag.named_args["name"]
 
     # Extract known kwargs
-    slot_data_var_fexp: Optional[FilterExpression] = None
-    if SLOT_DATA_ATTR in tag_kwargs:
-        slot_data_var_fexp = tag_kwargs.pop(SLOT_DATA_ATTR)
-        if not is_wrapped_in_quotes(slot_data_var_fexp.token):
-            raise TemplateSyntaxError(
-                f"Value of '{SLOT_DATA_ATTR}' in '{tag_name}' tag must be a string literal, got '{slot_data_var_fexp}'"
-            )
+    slot_data_var_fexp: Optional[FilterExpression] = tag.kwargs.get(SLOT_DATA_ATTR)
+    if slot_data_var_fexp and not is_str_wrapped_in_quotes(slot_data_var_fexp.token):
+        raise TemplateSyntaxError(
+            f"Value of '{SLOT_DATA_ATTR}' in '{tag.name}' tag must be a string literal, got '{slot_data_var_fexp}'"
+        )
 
-    slot_default_var_fexp: Optional[FilterExpression] = None
-    if SLOT_DEFAULT_ATTR in tag_kwargs:
-        slot_default_var_fexp = tag_kwargs.pop(SLOT_DEFAULT_ATTR)
-        if not is_wrapped_in_quotes(slot_default_var_fexp.token):
-            raise TemplateSyntaxError(
-                f"Value of '{SLOT_DEFAULT_ATTR}' in '{tag_name}' tag must be a string literal,"
-                f" got '{slot_default_var_fexp}'"
-            )
+    slot_default_var_fexp: Optional[FilterExpression] = tag.kwargs.get(SLOT_DEFAULT_ATTR)
+    if slot_default_var_fexp and not is_str_wrapped_in_quotes(slot_default_var_fexp.token):
+        raise TemplateSyntaxError(
+            f"Value of '{SLOT_DEFAULT_ATTR}' in '{tag.name}' tag must be a string literal,"
+            f" got '{slot_default_var_fexp}'"
+        )
 
     # data and default cannot be bound to the same variable
     if slot_data_var_fexp and slot_default_var_fexp and slot_data_var_fexp.token == slot_default_var_fexp.token:
         raise TemplateSyntaxError(
-            f"'{tag_name}' received the same string for slot default ({SLOT_DEFAULT_ATTR}=...)"
+            f"'{tag.name}' received the same string for slot default ({SLOT_DEFAULT_ATTR}=...)"
             f" and slot data ({SLOT_DATA_ATTR}=...)"
         )
 
-    if len(tag_kwargs):
-        extra_keywords = tag_kwargs.keys()
-        extra_keys = ", ".join(extra_keywords)
-        raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
+    return ParsedFillTag(
+        slot_name=slot_name_fexp,
+        slot_default_var=slot_default_var_fexp,
+        slot_data_var=slot_data_var_fexp,
+    )
 
-    return slot_name_fexp, slot_default_var_fexp, slot_data_var_fexp
+
+class ParsedProvideTag(NamedTuple):
+    key: str
 
 
 def _parse_provide_args(
     parser: Parser,
-    bits: List[str],
-    tag_name: str,
-) -> Tuple[str, Dict[str, FilterExpression]]:
-    if not len(bits):
-        raise TemplateSyntaxError("'provide' tag does not match pattern {% provide <key> [key=val, ...] %}. ")
-
-    provide_key, *options = bits
-    if not is_wrapped_in_quotes(provide_key):
-        raise TemplateSyntaxError(f"'{tag_name}' key must be a string 'literal'.")
+    tag: ParsedTag,
+) -> ParsedProvideTag:
+    provide_key = tag.named_args["name"].token
+    if not is_str_wrapped_in_quotes(provide_key):
+        raise TemplateSyntaxError(f"'{tag.name}' key must be a string 'literal'.")
 
     provide_key = resolve_string(provide_key, parser)
 
-    # Parse kwargs that will be 'provided' under the given key
-    _, tag_kwarg_pairs = parse_bits(parser=parser, bits=options, params=[], name=tag_name)
-    tag_kwargs: Dict[str, FilterExpression] = {}
-    for key, val in tag_kwarg_pairs:
-        if key in tag_kwargs:
-            # The keyword argument has already been supplied once
-            raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
-        tag_kwargs[key] = val
-
-    return provide_key, tag_kwargs
-
-
-def _get_positional_param(
-    tag_name: str,
-    param_name: str,
-    param_index: int,
-    args: List[FilterExpression],
-    kwargs: Dict[str, FilterExpression],
-) -> FilterExpression:
-    # Param is given as positional arg, e.g. `{% tag param %}`
-    if len(args) > param_index:
-        param = args[param_index]
-        return param
-    # Check if param was given as kwarg, e.g. `{% tag param_name=param %}`
-    elif param_name in kwargs:
-        param = kwargs.pop(param_name)
-        return param
-
-    raise TemplateSyntaxError(f"Param '{param_name}' not found in '{tag_name}' tag")
-
-
-def is_wrapped_in_quotes(s: str) -> bool:
-    return s.startswith(('"', "'")) and s[0] == s[-1]
+    return ParsedProvideTag(key=provide_key)

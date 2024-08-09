@@ -42,5 +42,5 @@ def resolve_string(
     context: Optional[Mapping[str, Any]] = None,
 ) -> str:
     parser = parser or Parser([])
-    context = context or {}
+    context = Context(context or {})
     return parser.compile_filter(s).resolve(context)
