@@ -1,4 +1,5 @@
 from typing import List
+
 from django.template import Context, Template
 
 from django_components import Component, register, types
@@ -6,7 +7,6 @@ from django_components.tag_formatter import ShorthandComponentFormatter, TagResu
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
-
 
 setup_test_config({"autodiscover": False})
 
