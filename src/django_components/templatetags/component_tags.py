@@ -511,15 +511,12 @@ def _parse_tag(
         # NOTE: We defer parsing of the body, so we have the chance to call the tracing
         # loggers before the parsing. This is because, if the body contains any other
         # tags, it will trigger their tag handlers. So the code called AFTER
-        # `parse_body()` is already after all the nested handlers have finished.
+        # `parse_body()` is already after all the nested tags were processed.
         parse_body=lambda: _parse_tag_body(parser, end_tag, is_inline) if end_tag else NodeList(),
         is_inline=is_inline,
     )
 
 
-# Parse flags - Since `parse_bits` doesn't handle "shorthand" kwargs
-# (AKA `required` for `required=True`), we have to first get the flags out
-# of the way.
 def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
     if inline:
         body = NodeList()
