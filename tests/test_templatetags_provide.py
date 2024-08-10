@@ -39,6 +39,24 @@ class ProvideTemplateTagTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_provide_basic_self_closing(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            <div>
+                {% provide "my_provide" key="hi" another=123 / %}
+            </div>
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div></div>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_provide_access_keys_in_python(self):
         @register("injectee")
         class InjectComponent(Component):

@@ -63,6 +63,19 @@ class ComponentTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_single_component_self_closing(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component name="test" variable="variable" /%}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_raises_on_no_registered_components(self):
         # Note: No tag registered
 
