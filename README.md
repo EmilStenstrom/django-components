@@ -443,11 +443,15 @@ First load the `component_tags` tag library, then use the `component_[js/css]_de
     {% component_css_dependencies %}
 </head>
 <body>
-    {% component "calendar" date="2015-06-19" %}{% endcomponent %}
+    {% component "calendar" date="2015-06-19" / %}{% endcomponent %}
     {% component_js_dependencies %}
 </body>
 <html>
 ```
+
+> NOTE: Instead of writing `{% endcomponent %}` at the end, you can use a self-closing tag:
+>
+> `{% component "calendar" date="2015-06-19" / %}`
 
 The output from the above template will be:
 
@@ -490,7 +494,7 @@ class SimpleComponent(Component):
         hello: {{ hello }}
         foo: {{ foo }}
         kwargs: {{ kwargs|safe }}
-        slot_first: {% slot "first" required %}{% endslot %}
+        slot_first: {% slot "first" required / %}
     """
 
     def get_context_data(self, arg1, arg2, **kwargs):
@@ -626,7 +630,7 @@ class Calendar(Component):
     template = """
         <div class="calendar-component">
             <div class="header">
-                {% slot "header" %}{% endslot %}
+                {% slot "header" / %}
             </div>
             <div class="body">
                 Today's date is <span>{{ date }}</span>
@@ -1163,7 +1167,7 @@ To negate the meaning of `component_vars.is_filled`, simply treat it as boolean 
 ```htmldjango
 {% if not component_vars.is_filled.subtitle %}
 <div class="subtitle">
-    {% slot "subtitle" %}{% endslot %}
+    {% slot "subtitle" / %}
 </div>
 {% endif %}
 ```
@@ -1295,8 +1299,7 @@ so are still valid:
 
 ```django
 <body>
-    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True %}
-    {% endcomponent %}
+    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True / %}
 </body>
 ```
 
@@ -1331,8 +1334,7 @@ But for that, we need to define this dictionary on Python side:
 @register("my_comp")
 class MyComp(Component):
     template = """
-        {% component "other" attrs=attrs %}
-        {% endcomponent %}
+        {% component "other" attrs=attrs / %}
     """
 
     def get_context_data(self, some_id: str):
@@ -1363,8 +1365,7 @@ class MyComp(Component):
             attrs:class="pa-4 flex"
             attrs:data-some-id=some_id
             attrs:@click.stop="onClickHandler"
-        %}
-        {% endcomponent %}
+        / %}
     """
 
     def get_context_data(self, some_id: str):
@@ -1378,8 +1379,7 @@ Sweet! Now all the relevant HTML is inside the template, and we can move it to a
     attrs:class="pa-4 flex"
     attrs:data-some-id=some_id
     attrs:@click.stop="onClickHandler"
-%}
-{% endcomponent %}
+/ %}
 ```
 
 > Note: It is NOT possible to define nested dictionaries, so
@@ -1675,8 +1675,7 @@ class Parent(Component):
             attrs:class="pa-0 border-solid border-red"
             attrs:data-json=json_data
             attrs:@click="(e) => onClick(e, 'from_parent')"
-        %}
-        {% endcomponent %}
+        / %}
     """
 
     def get_context_data(self, date: Date):
@@ -1804,12 +1803,10 @@ First we use the `{% provide %}` tag to define the data we want to "provide" (ma
 
 ```django
 {% provide "my_data" key="hi" another=123 %}
-    {% component "child" %}  <--- Can access "my_data"
-    {% endcomponent %}
+    {% component "child" / %}  <--- Can access "my_data"
 {% endprovide %}
 
-{% component "child" %}  <--- Cannot access "my_data"
-{% endcomponent %}
+{% component "child" / %}  <--- Cannot access "my_data"
 ```
 
 Notice that the `provide` tag REQUIRES a name as a first argument. This is the _key_ by which we can then access the data passed to this tag.
@@ -1883,8 +1880,7 @@ class ChildComponent(Component):
 template_str = """
     {% load component_tags %}
     {% provide "my_data" key="hi" another=123 %}
-        {% component "child" %}
-        {% endcomponent %}
+        {% component "child" / %}
     {% endprovide %}
 """
 ```
