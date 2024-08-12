@@ -8,7 +8,7 @@ asgiref==3.8.1
     # via django
 black==24.8.0
     # via -r requirements-dev.in
-cachetools==5.3.3
+cachetools==5.4.0
     # via tox
 cfgv==3.4.0
     # via pre-commit
@@ -79,7 +79,7 @@ pyyaml==6.0.1
     # via pre-commit
 sqlparse==0.5.0
     # via django
-tox==4.16.0
+tox==4.17.1
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via mypy
