@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements-dev.in
 #
-asgiref==3.7.2
+asgiref==3.8.1
     # via django
 black==24.8.0
     # via -r requirements-dev.in
@@ -20,7 +20,7 @@ colorama==0.4.6
     # via tox
 distlib==0.3.8
     # via virtualenv
-django==5.0.8
+django==5.1
     # via -r requirements-dev.in
 filelock==3.15.4
     # via
