@@ -362,15 +362,11 @@ class Component(View, metaclass=ComponentMeta):
         slots: Optional[Mapping[SlotName, SlotContent]] = None,
         escape_slots_content: bool = True,
     ) -> str:
-        # Allow to provide no args/kwargs
-        args = args or []
-        kwargs = kwargs or {}
-
-        # Allow to provide no Context, so we can render component just with args + kwargs
-        context_was_given = True
-        if context is None:
-            context = Context()
-            context_was_given = False
+        # Allow to provide no args/kwargs/slots/context
+        args = args or []  # type: ignore[assignment]
+        kwargs = kwargs or {}  # type: ignore[assignment]
+        slots = slots or {}  # type: ignore[assignment]
+        context = context or Context()
 
         # Allow to provide a dict instead of Context
         # NOTE: This if/else is important to avoid nested Contexts,
@@ -387,9 +383,11 @@ class Component(View, metaclass=ComponentMeta):
         with context.update(context_data):
             template = self.get_template(context)
             _monkeypatch_template(template)
-            if not context_was_given:
+
+            if context.template is None:
                 # Associate the newly-created Context with a Template, otherwise we get
                 # an error when we try to use `{% include %}` tag inside the template?
+                # See https://github.com/EmilStenstrom/django-components/issues/580
                 context.template = template
                 context.template_name = template.name
 
