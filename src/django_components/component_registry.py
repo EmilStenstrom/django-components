@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, Optional, Set, Typ
 
 from django.template import Library
 
-from django_components.library import Tags, is_tag_protected, mark_protected_tags, register_tags_from_formatter
+from django_components.library import is_tag_protected, mark_protected_tags, register_tag_from_formatter
 from django_components.tag_formatter import get_tag_formatter
 
 if TYPE_CHECKING:
@@ -19,20 +19,10 @@ class NotRegistered(Exception):
     pass
 
 
-# Why do we store the tags with the component?
+# Why do we store the tags with the components?
 #
-# Each component may be associated with two template tags - One for "block"
-# and one for "inline" usage. E.g. in the following snippets, the template
-# tags are `component` and `#component`:
-#
-# `{% component "abc" %}{% endcomponent %}`
-# `{% #component "abc" %}`
-#
-# (NOTE: While `endcomponent` also looks like a template tag, we don't have to register
-# it, because it simply marks the end of body.)
-#
-# With the component tag formatter (configurable tags per component class),
-# each component may have a unique set of template tags.
+# With the addition of TagFormatter, each component class may have a unique
+# set of template tags.
 #
 # For user's convenience, we automatically add/remove the tags from Django's tag Library,
 # when a component is (un)registered.
@@ -40,7 +30,7 @@ class NotRegistered(Exception):
 # Thus we need to remember which component used which template tags.
 class ComponentRegistryEntry(NamedTuple):
     cls: Type["Component"]
-    tags: Tags
+    tag: str
 
 
 class ComponentRegistry:
@@ -127,10 +117,10 @@ class ComponentRegistry:
 
         # Keep track of which components use which tags, because multiple components may
         # use the same tag.
-        for tag in set(entry.tags):
-            if tag not in self._tags:
-                self._tags[tag] = set()
-            self._tags[tag].add(name)
+        tag = entry.tag
+        if tag not in self._tags:
+            self._tags[tag] = set()
+        self._tags[tag].add(name)
 
         self._registry[name] = entry
 
@@ -159,22 +149,20 @@ class ComponentRegistry:
         self.get(name)
 
         entry = self._registry[name]
+        tag = entry.tag
 
         # Unregister the tag from library if this was the last component using this tag
-        for tag in set(entry.tags):
-            # Unlink component from tag
-            self._tags[tag].remove(name)
+        # Unlink component from tag
+        self._tags[tag].remove(name)
 
-            # Cleanup
-            is_tag_empty = not len(self._tags[tag])
-            if is_tag_empty:
-                del self._tags[tag]
+        # Cleanup
+        is_tag_empty = not len(self._tags[tag])
+        if is_tag_empty:
+            del self._tags[tag]
 
-            # Do NOT unregister tag if it's protected
-            is_protected = is_tag_protected(self.library, tag)
-            if is_protected:
-                continue
-
+        # Only unregister a tag if it's NOT protected
+        is_protected = is_tag_protected(self.library, tag)
+        if not is_protected:
             # Unregister the tag from library if this was the last component using this tag
             if is_tag_empty and tag in self.library.tags:
                 del self.library.tags[tag]
@@ -256,9 +244,9 @@ class ComponentRegistry:
         from django_components.templatetags.component_tags import component as do_component
 
         formatter = get_tag_formatter()
-        tags = register_tags_from_formatter(self.library, do_component, formatter, comp_name)
+        tag = register_tag_from_formatter(self.library, do_component, formatter, comp_name)
 
-        return ComponentRegistryEntry(cls=component, tags=tags)
+        return ComponentRegistryEntry(cls=component, tag=tag)
 
 
 # This variable represents the global component registry

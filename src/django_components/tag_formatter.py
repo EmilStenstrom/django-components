@@ -23,14 +23,6 @@ class TagResult(NamedTuple):
 
 
 class TagFormatterABC(abc.ABC):
-    def start_block_tag(self, name: str) -> str:
-        """Formats the start tag of a block component."""
-        return self.start_tag(name)
-
-    def start_inline_tag(self, name: str) -> str:
-        """Formats the start tag of an inline component."""
-        return self.start_tag(name)
-
     @abc.abstractmethod
     def start_tag(self, name: str) -> str:
         """Formats the start tag of a component."""
@@ -77,14 +69,9 @@ class InternalTagFormatter:
     def __init__(self, tag_formatter: TagFormatterABC):
         self.tag_formatter = tag_formatter
 
-    def start_block_tag(self, name: str) -> str:
-        tag = self.tag_formatter.start_block_tag(name)
-        self._validate_tag(tag, "start_block_tag")
-        return tag
-
-    def start_inline_tag(self, name: str) -> str:
-        tag = self.tag_formatter.start_inline_tag(name)
-        self._validate_tag(tag, "start_inline_tag")
+    def start_tag(self, name: str) -> str:
+        tag = self.tag_formatter.start_tag(name)
+        self._validate_tag(tag, "start_tag")
         return tag
 
     def end_tag(self, name: str) -> str:
