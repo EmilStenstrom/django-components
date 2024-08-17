@@ -443,7 +443,7 @@ First load the `component_tags` tag library, then use the `component_[js/css]_de
     {% component_css_dependencies %}
 </head>
 <body>
-    {% component "calendar" date="2015-06-19" / %}{% endcomponent %}
+    {% component "calendar" date="2015-06-19" %}{% endcomponent %}
     {% component_js_dependencies %}
 </body>
 <html>
@@ -1946,7 +1946,40 @@ django_components provides following predefined TagFormatters:
 
 - **`ComponentFormatter` (`django_components.component_formatter`)**
 
+    Default
+
+    Uses the `component` and `endcomponent` tags, and the component name is gives as the first positional argument.
+
+    Example as block:
+    ```django
+    {% component "button" href="..." %}
+        {% fill "content" %}
+            ...
+        {% endfill %}
+    {% endcomponent %}
+    ```
+
+    Example as inlined tag:
+    ```django
+    {% component "button" href="..." / %}
+    ```
+
 - **`ShorthandComponentFormatter` (`django_components.shorthand_component_formatter`)**
+
+    Uses the component name as start tag, and `end<component_name>`
+    as an end tag.
+
+    Example as block:
+    ```django
+    {% button href="..." %}
+        Click me!
+    {% endbutton %}
+    ```
+
+    Example as inlined tag:
+    ```django
+    {% button href="..." / %}
+    ```
 
 ### Writing your own TagFormatter
 
