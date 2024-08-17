@@ -6,8 +6,8 @@ For tests focusing on the `component` tag, see `test_templatetags_component.py`
 from typing import Dict
 
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse
-from django.template import Context, Template, TemplateSyntaxError
+from django.http import HttpRequest, HttpResponse
+from django.template import Context, RequestContext, Template, TemplateSyntaxError
 
 from django_components import Component, registry, types
 from django_components.slots import SlotRef
@@ -437,6 +437,50 @@ class ComponentRenderTest(BaseTestCase):
             """
 
         rendered = SimpleComponent.render()
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
+
+    # See https://github.com/EmilStenstrom/django-components/issues/580
+    # And https://github.com/EmilStenstrom/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_render_with_include_and_context(self):
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% include 'slotted_template.html' %}
+            """
+
+        rendered = SimpleComponent.render(context=Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
+
+    # See https://github.com/EmilStenstrom/django-components/issues/580
+    # And https://github.com/EmilStenstrom/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_render_with_include_and_request_context(self):
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% include 'slotted_template.html' %}
+            """
+
+        rendered = SimpleComponent.render(context=RequestContext(HttpRequest()))
         self.assertHTMLEqual(
             rendered,
             """

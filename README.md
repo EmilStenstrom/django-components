@@ -145,7 +145,7 @@ You probably don't want this, as parts of your backend logic will be exposed, po
 As of _v0.27_, django-components ships with an additional installable app _django_components.**safer_staticfiles**_.
 It is a drop-in replacement for _django.contrib.staticfiles_.
 Its behavior is 100% identical except it ignores .py and .html files, meaning these will not end up on your static files server.
-To use it, add it to INSTALLED*APPS and remove \_django.contrib.staticfiles*.
+To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.
 
 ```python
 INSTALLED_APPS = [
