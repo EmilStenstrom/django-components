@@ -99,42 +99,10 @@ class InternalTagFormatter:
             )
 
 
-class SimpleTagFormatter(TagFormatterABC):
-    """
-    Tag formatter, which uses the component name as start tag, and `end<component_name>`
-    as an end tag.
-
-    Example as block:
-    ```django
-    {% button href="..." %}
-        Click me!
-    {% endbutton %}
-    ```
-
-    Example as inlined tag:
-    ```django
-    {% button href="..." / %}
-    ```
-    """
-
-    def __init__(self, tag: str):
-        self.tag = tag
-
-    def start_tag(self, name: str) -> str:
-        return self.tag
-
-    def end_tag(self, name: str) -> str:
-        return f"end{self.tag}"
-
-    def parse(self, tokens: List[str]) -> TagResult:
-        tag, *args = tokens
-        return TagResult(component_name="", tokens=args)
-
-
-class ComponentFormatter(SimpleTagFormatter):
+class ComponentFormatter(TagFormatterABC):
     """
     The original django_component's component tag formatter, it uses the `component`
-    tag name, whereas the component name is gives as a string as the second token.
+    and `endcomponent` tags, and the component name is gives as the first positional arg.
 
     Example as block:
     ```django
@@ -151,9 +119,17 @@ class ComponentFormatter(SimpleTagFormatter):
     ```
     """
 
+    def __init__(self, tag: str):
+        self.tag = tag
+
+    def start_tag(self, name: str) -> str:
+        return self.tag
+
+    def end_tag(self, name: str) -> str:
+        return f"end{self.tag}"
+
     def parse(self, tokens: List[str]) -> TagResult:
-        result = super().parse(tokens)
-        args = [*result.tokens]
+        tag, *args = tokens
 
         if not args:
             raise TemplateSyntaxError(f"{self.__class__.__name__}: Component tag did not receive tag name")
