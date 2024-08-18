@@ -49,7 +49,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
-**Version 0.89**
+**Version 0.90**
 - All tags (`component`, `slot`, `fill`, ...) now support "self-closing" or "inline" form, where you can omit the closing tag:
     ```django
     {# Before #}
