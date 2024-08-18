@@ -1,6 +1,7 @@
 import inspect
 import types
-from typing import Any, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
+from collections import deque
+from typing import Any, ClassVar, Deque, Dict, Generic, List, Mapping, NamedTuple, Optional, Tuple, Type, TypeVar, Union, cast
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
@@ -53,6 +54,17 @@ from django_components.component_registry import registry as registry  # NOQA
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
+# Define TypeVars for args and kwargs
+ArgsType = TypeVar('ArgsType', bound=tuple, contravariant=True)
+KwargsType = TypeVar('KwargsType', bound=Mapping[str, Any], contravariant=True)
+DataType = TypeVar('DataType', bound=Mapping[str, Any], covariant=True)
+SlotsType = TypeVar('SlotsType', bound=Mapping[SlotName, SlotContent])
+
+
+class GetContextData(Protocol, Generic[ArgsType, KwargsType, DataType]):
+    def __call__(self, *args: ArgsType, **kwargs: KwargsType) -> DataType:
+        ...
+
 
 class ComponentMeta(MediaMeta):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
@@ -64,7 +76,7 @@ class ComponentMeta(MediaMeta):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class Component(View, metaclass=ComponentMeta):
+class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metaclass=ComponentMeta):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     _class_hash: ClassVar[int]
@@ -124,8 +136,8 @@ class Component(View, metaclass=ComponentMeta):
     def name(self) -> str:
         return self.registered_name or self.__class__.__name__
 
-    def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-        return {}
+    def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
+        return cast(DataType, {})
 
     def get_template_name(self, context: Context) -> Optional[str]:
         return self.template_name
@@ -230,11 +242,11 @@ class Component(View, metaclass=ComponentMeta):
     @classmethod
     def render_to_response(
         cls,
-        context: Union[Dict[str, Any], Context] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        context: Optional[Union[Dict[str, Any], Context]] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -294,9 +306,9 @@ class Component(View, metaclass=ComponentMeta):
     def render(
         cls,
         context: Optional[Union[Dict[str, Any], Context]] = None,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
     ) -> str:
         """
@@ -343,10 +355,10 @@ class Component(View, metaclass=ComponentMeta):
     # This is the internal entrypoint for the render function
     def _render(
         self,
-        context: Union[Dict[str, Any], Context] = None,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        context: Optional[Union[Dict[str, Any], Context]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
     ) -> str:
         try:
@@ -356,12 +368,14 @@ class Component(View, metaclass=ComponentMeta):
 
     def _render_impl(
         self,
-        context: Union[Dict[str, Any], Context] = None,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        context: Optional[Union[Dict[str, Any], Context]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
     ) -> str:
+        has_slots = slots is not None
+
         # Allow to provide no args/kwargs/slots/context
         args = args or []  # type: ignore[assignment]
         kwargs = kwargs or {}  # type: ignore[assignment]
@@ -397,8 +411,11 @@ class Component(View, metaclass=ComponentMeta):
             template._dc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
 
             # Support passing slots explicitly to `render` method
-            if slots:
-                fill_content = self._fills_from_slots_data(slots, escape_slots_content)
+            if has_slots:
+                fill_content = self._fills_from_slots_data(
+                    slots,  # type: ignore[arg-type]
+                    escape_slots_content,
+                )
             else:
                 fill_content = self.fill_content
 
@@ -407,7 +424,7 @@ class Component(View, metaclass=ComponentMeta):
             if not context[_PARENT_COMP_CONTEXT_KEY]:
                 slot_context_data = self.outer_context.flatten()
 
-            slots, resolved_fills = resolve_slots(
+            _, resolved_fills = resolve_slots(
                 context,
                 template,
                 component_name=self.name,

@@ -186,6 +186,41 @@ class ComponentTest(BaseTestCase):
             """,
         )
 
+    def test_typed(self):
+        from typing import TypedDict, Tuple
+        TestCompArgs = Tuple[int, str]
+        class TestCompKwargs(TypedDict):
+            my: str
+            oh: int
+            my2: str
+
+        class TestCompData(TypedDict):
+            abc: int
+        class TestCompSlots(TypedDict):
+            abc: int
+        class TestComponent(Component[TestCompArgs, TestCompKwargs, TestCompData, TestCompSlots]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                }
+
+            def get_template(self, context):
+                template_str = "Variable: <strong>{{ variable }}</strong> {% slot 'my_slot' / %} "
+                return Template(template_str)
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=(123, "str"),
+            slots={"my_slot": "MY_SLOT"},
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong> MY_SLOT
+            """,
+        )
+
 
 class ComponentRenderTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
