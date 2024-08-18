@@ -61,9 +61,12 @@ DataType = TypeVar('DataType', bound=Mapping[str, Any], covariant=True)
 SlotsType = TypeVar('SlotsType', bound=Mapping[SlotName, SlotContent])
 
 
-class GetContextData(Protocol, Generic[ArgsType, KwargsType, DataType]):
-    def __call__(self, *args: ArgsType, **kwargs: KwargsType) -> DataType:
-        ...
+class RenderInput(NamedTuple, Generic[ArgsType, KwargsType, SlotsType]):
+    context: Context
+    args: ArgsType
+    kwargs: KwargsType
+    slots: SlotsType
+    escape_slots_content: bool
 
 
 class ComponentMeta(MediaMeta):
@@ -135,6 +138,16 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
     @property
     def name(self) -> str:
         return self.registered_name or self.__class__.__name__
+
+    @property
+    def input(self) -> Optional[RenderInput[ArgsType, KwargsType, SlotsType]]:
+        """
+        Input holds the data (like arg, kwargs, slots) that were passsed to
+        the current execution of the `render` method.
+        """
+        # NOTE: Input is managed as a stack, so if `render` is called within another `render`,
+        # the propertes below will return only the inner-most state.
+        return self._render_stack[-1] if len(self._render_stack) else None
 
     def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
         return cast(DataType, {})
@@ -232,12 +245,12 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
 
         As the `{{ data.hello }}` is taken from the "provider".
         """
-        if self._context is None:
+        if self.input is None:
             raise RuntimeError(
                 f"Method 'inject()' of component '{self.name}' was called outside of 'get_context_data()'"
             )
 
-        return get_injected_context_var(self.name, self._context, key, default)
+        return get_injected_context_var(self.name, self.input.context, key, default)
 
     @classmethod
     def render_to_response(
@@ -377,9 +390,9 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
         has_slots = slots is not None
 
         # Allow to provide no args/kwargs/slots/context
-        args = args or []  # type: ignore[assignment]
-        kwargs = kwargs or {}  # type: ignore[assignment]
-        slots = slots or {}  # type: ignore[assignment]
+        args = cast(ArgsType, args or ())
+        kwargs = cast(KwargsType, kwargs or {})
+        slots = cast(SlotsType, slots or {})
         context = context or Context()
 
         # Allow to provide a dict instead of Context
@@ -388,11 +401,18 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
         context = context if isinstance(context, Context) else Context(context)
         prepare_context(context, self.component_id)
 
-        # Temporarily populate _context so user can call `self.inject()` from
-        # within `get_context_data()`
-        self._context = context
+        # By adding the current input to the stack, we temporarily allow users
+        # to access the provided context, slots, etc. Also required so users can
+        # call `self.inject()` from within `get_context_data()`.
+        self._render_stack.append(RenderInput(
+            context=context,
+            slots=slots,
+            args=args,
+            kwargs=kwargs,
+            escape_slots_content=escape_slots_content,
+        ))
+
         context_data = self.get_context_data(*args, **kwargs)
-        self._context = None
 
         with context.update(context_data):
             template = self.get_template(context)
@@ -413,7 +433,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
             # Support passing slots explicitly to `render` method
             if has_slots:
                 fill_content = self._fills_from_slots_data(
-                    slots,  # type: ignore[arg-type]
+                    slots,
                     escape_slots_content,
                 )
             else:
@@ -460,6 +480,10 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
             output = RENDERED_COMMENT_TEMPLATE.format(name=self.name) + rendered_component
         else:
             output = rendered_component
+
+        # After rendering is done, remove the current state from the stack, which means
+        # properties like `self.context` will no longer return the current state.
+        self._render_stack.pop()
 
         return output
 

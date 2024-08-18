@@ -3,7 +3,7 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
-from typing import Dict
+from typing import Dict, TypedDict, Tuple
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
@@ -187,8 +187,8 @@ class ComponentTest(BaseTestCase):
         )
 
     def test_typed(self):
-        from typing import TypedDict, Tuple
         TestCompArgs = Tuple[int, str]
+
         class TestCompKwargs(TypedDict):
             my: str
             oh: int
@@ -196,8 +196,10 @@ class ComponentTest(BaseTestCase):
 
         class TestCompData(TypedDict):
             abc: int
+
         class TestCompSlots(TypedDict):
             abc: int
+
         class TestComponent(Component[TestCompArgs, TestCompKwargs, TestCompData, TestCompSlots]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 return {
@@ -205,6 +207,42 @@ class ComponentTest(BaseTestCase):
                 }
 
             def get_template(self, context):
+                template_str = "Variable: <strong>{{ variable }}</strong> {% slot 'my_slot' / %} "
+                return Template(template_str)
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=(123, "str"),
+            slots={"my_slot": "MY_SLOT"},
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong> MY_SLOT
+            """,
+        )
+
+    def test_input(self):
+        tester = self
+
+        class TestComponent(Component):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                tester.assertEqual(self.input.args, (123, "str"))
+                tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
+                tester.assertEqual(self.input.context, {})
+                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+
+                return {
+                    "variable": variable,
+                }
+
+            def get_template(self, context):
+                tester.assertEqual(self.input.args, (123, "str"))
+                tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
+                tester.assertEqual(self.input.context, {})
+                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+
                 template_str = "Variable: <strong>{{ variable }}</strong> {% slot 'my_slot' / %} "
                 return Template(template_str)
 
