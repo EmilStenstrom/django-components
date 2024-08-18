@@ -35,7 +35,9 @@ class SlottedComponentWithContext(Component):
 
 class ComponentTemplateTagTest(BaseTestCase):
     class SimpleComponent(Component):
-        template_name = "simple_template.html"
+        template: types.django_html = """
+            Variable: <strong>{{ variable }}</strong>
+        """
 
         def get_context_data(self, variable, variable2="default"):
             return {
@@ -61,8 +63,33 @@ class ComponentTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_call_with_invalid_name(self):
+    def test_single_component_self_closing(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component name="test" variable="variable" /%}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_no_registered_components(self):
         # Note: No tag registered
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component name="test" variable="variable" %}{% endcomponent %}
+        """
+
+        with self.assertRaisesMessage(TemplateSyntaxError, "Invalid block tag on line 3: 'component'"):
+            Template(simple_tag_template)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_call_with_invalid_name(self):
+        registry.register(name="test_one", component=self.SimpleComponent)
 
         simple_tag_template: types.django_html = """
             {% load component_tags %}
@@ -131,7 +158,7 @@ class ComponentTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_component_called_with_variable_as_name(self):
+    def test_raises_on_component_called_with_variable_as_name(self):
         registry.register(name="test", component=self.SimpleComponent)
 
         simple_tag_template: types.django_html = """
@@ -141,24 +168,11 @@ class ComponentTemplateTagTest(BaseTestCase):
             {% endwith %}
         """
 
-        template = Template(simple_tag_template)
-        rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
-
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_component_called_with_invalid_variable_as_name(self):
-        registry.register(name="test", component=self.SimpleComponent)
-
-        simple_tag_template: types.django_html = """
-            {% load component_tags %}
-            {% with component_name="BLAHONGA" %}
-                {% component component_name variable="variable" %}{% endcomponent %}
-            {% endwith %}
-        """
-
-        template = Template(simple_tag_template)
-        with self.assertRaises(NotRegistered):
-            template.render(Context({}))
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Component name must be a string 'literal', got: component_name",
+        ):
+            Template(simple_tag_template)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_accepts_provided_and_default_parameters(self):

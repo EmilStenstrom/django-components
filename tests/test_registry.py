@@ -1,12 +1,21 @@
 import unittest
 
 from django.template import Library
+from django.test import override_settings
 
-from django_components import AlreadyRegistered, Component, ComponentRegistry, NotRegistered, register, registry
+from django_components import (
+    AlreadyRegistered,
+    Component,
+    ComponentRegistry,
+    NotRegistered,
+    TagProtectedError,
+    register,
+    registry,
+)
 
 from .django_test_setup import setup_test_config
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class MockComponent(Component):
@@ -69,7 +78,7 @@ class ComponentRegistryTest(unittest.TestCase):
     def test_unregisters_only_unused_tags(self):
         self.assertDictEqual(self.registry._tags, {})
         # NOTE: We preserve the default component tags
-        self.assertIn("component", self.registry.library.tags)
+        self.assertNotIn("component", self.registry.library.tags)
 
         # Register two components that use the same tag
         self.registry.register(name="testcomponent", component=MockComponent)
@@ -78,7 +87,6 @@ class ComponentRegistryTest(unittest.TestCase):
         self.assertDictEqual(
             self.registry._tags,
             {
-                "#component": {"testcomponent", "testcomponent2"},
                 "component": {"testcomponent", "testcomponent2"},
             },
         )
@@ -91,7 +99,6 @@ class ComponentRegistryTest(unittest.TestCase):
         self.assertDictEqual(
             self.registry._tags,
             {
-                "#component": {"testcomponent2"},
                 "component": {"testcomponent2"},
             },
         )
@@ -102,7 +109,7 @@ class ComponentRegistryTest(unittest.TestCase):
         self.registry.unregister(name="testcomponent2")
 
         self.assertDictEqual(self.registry._tags, {})
-        self.assertIn("component", self.registry.library.tags)
+        self.assertNotIn("component", self.registry.library.tags)
 
     def test_prevent_registering_different_components_with_the_same_name(self):
         self.registry.register(name="testcomponent", component=MockComponent)
@@ -124,3 +131,35 @@ class ComponentRegistryTest(unittest.TestCase):
     def test_raises_on_failed_unregister(self):
         with self.assertRaises(NotRegistered):
             self.registry.unregister(name="testcomponent")
+
+
+class ProtectedTagsTest(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.registry = ComponentRegistry()
+
+    # NOTE: Use the `component_shorthand_formatter` formatter, so the components
+    # are registered under that tag
+    @override_settings(COMPONENTS={"tag_formatter": "django_components.component_shorthand_formatter"})
+    def test_raises_on_overriding_our_tags(self):
+        for tag in [
+            "component_dependencies",
+            "component_css_dependencies",
+            "component_js_dependencies",
+            "fill",
+            "html_attrs",
+            "provide",
+            "slot",
+        ]:
+            with self.assertRaises(TagProtectedError):
+
+                @register(tag)
+                class TestComponent(Component):
+                    pass
+
+        @register("sth_else")
+        class TestComponent2(Component):
+            pass
+
+        # Cleanup
+        registry.unregister("sth_else")

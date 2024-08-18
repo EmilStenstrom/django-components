@@ -37,6 +37,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Rendering HTML attributes](#rendering-html-attributes)
 - [Prop drilling and dependency injection (provide / inject)](#prop-drilling-and-dependency-injection-provide--inject)
 - [Component context and scope](#component-context-and-scope)
+- [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter)
 - [Defining HTML/JS/CSS files](#defining-htmljscss-files)
 - [Rendering JS/CSS dependencies](#rendering-jscss-dependencies)
 - [Available settings](#available-settings)
@@ -47,6 +48,34 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Development guides](#development-guides)
 
 ## Release notes
+
+**Version 0.90**
+- All tags (`component`, `slot`, `fill`, ...) now support "self-closing" or "inline" form, where you can omit the closing tag:
+    ```django
+    {# Before #}
+    {% component "button" %}{% endcomponent %}
+    {# After #}
+    {% component "button" / %}
+    ```
+- All tags now support the "dictionary key" or "aggregate" syntax (`kwarg:key=val`):
+    ```django
+    {% component "button" attrs:class="hidden" %}
+    ```
+- You can change how the components are written in the template with [TagFormatter](#customizing-component-tags-with-tagformatter).
+
+    The default is `django_components.component_formatter`:
+    ```django
+    {% component "button" href="..." disabled %}
+        Click me!
+    {% endcomponent %}
+    ```
+
+    While `django_components.shorthand_component_formatter` allows you to write components like so:
+
+    ```django
+    {% button href="..." disabled %}
+        Click me!
+    {% endbutton %}
 
 🚨📢 **Version 0.85** Autodiscovery module resolution changed. Following undocumented behavior was removed:
 
@@ -420,6 +449,10 @@ First load the `component_tags` tag library, then use the `component_[js/css]_de
 <html>
 ```
 
+> NOTE: Instead of writing `{% endcomponent %}` at the end, you can use a self-closing tag:
+>
+> `{% component "calendar" date="2015-06-19" / %}`
+
 The output from the above template will be:
 
 ```html
@@ -461,7 +494,7 @@ class SimpleComponent(Component):
         hello: {{ hello }}
         foo: {{ foo }}
         kwargs: {{ kwargs|safe }}
-        slot_first: {% slot "first" required %}{% endslot %}
+        slot_first: {% slot "first" required / %}
     """
 
     def get_context_data(self, arg1, arg2, **kwargs):
@@ -597,7 +630,7 @@ class Calendar(Component):
     template = """
         <div class="calendar-component">
             <div class="header">
-                {% slot "header" %}{% endslot %}
+                {% slot "header" / %}
             </div>
             <div class="body">
                 Today's date is <span>{{ date }}</span>
@@ -1134,7 +1167,7 @@ To negate the meaning of `component_vars.is_filled`, simply treat it as boolean 
 ```htmldjango
 {% if not component_vars.is_filled.subtitle %}
 <div class="subtitle">
-    {% slot "subtitle" %}{% endslot %}
+    {% slot "subtitle" / %}
 </div>
 {% endif %}
 ```
@@ -1266,8 +1299,7 @@ so are still valid:
 
 ```django
 <body>
-    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True %}
-    {% endcomponent %}
+    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True / %}
 </body>
 ```
 
@@ -1302,8 +1334,7 @@ But for that, we need to define this dictionary on Python side:
 @register("my_comp")
 class MyComp(Component):
     template = """
-        {% component "other" attrs=attrs %}
-        {% endcomponent %}
+        {% component "other" attrs=attrs / %}
     """
 
     def get_context_data(self, some_id: str):
@@ -1334,8 +1365,7 @@ class MyComp(Component):
             attrs:class="pa-4 flex"
             attrs:data-some-id=some_id
             attrs:@click.stop="onClickHandler"
-        %}
-        {% endcomponent %}
+        / %}
     """
 
     def get_context_data(self, some_id: str):
@@ -1349,8 +1379,7 @@ Sweet! Now all the relevant HTML is inside the template, and we can move it to a
     attrs:class="pa-4 flex"
     attrs:data-some-id=some_id
     attrs:@click.stop="onClickHandler"
-%}
-{% endcomponent %}
+/ %}
 ```
 
 > Note: It is NOT possible to define nested dictionaries, so
@@ -1646,8 +1675,7 @@ class Parent(Component):
             attrs:class="pa-0 border-solid border-red"
             attrs:data-json=json_data
             attrs:@click="(e) => onClick(e, 'from_parent')"
-        %}
-        {% endcomponent %}
+        / %}
     """
 
     def get_context_data(self, date: Date):
@@ -1775,12 +1803,10 @@ First we use the `{% provide %}` tag to define the data we want to "provide" (ma
 
 ```django
 {% provide "my_data" key="hi" another=123 %}
-    {% component "child" %}  <--- Can access "my_data"
-    {% endcomponent %}
+    {% component "child" / %}  <--- Can access "my_data"
 {% endprovide %}
 
-{% component "child" %}  <--- Cannot access "my_data"
-{% endcomponent %}
+{% component "child" / %}  <--- Cannot access "my_data"
 ```
 
 Notice that the `provide` tag REQUIRES a name as a first argument. This is the _key_ by which we can then access the data passed to this tag.
@@ -1854,8 +1880,7 @@ class ChildComponent(Component):
 template_str = """
     {% load component_tags %}
     {% provide "my_data" key="hi" another=123 %}
-        {% component "child" %}
-        {% endcomponent %}
+        {% component "child" / %}
     {% endprovide %}
 """
 ```
@@ -1873,7 +1898,7 @@ By default, context variables are passed down the template as in regular Django 
 
 With this in mind, the `{% component %}` tag behaves similarly to `{% include %}` tag - inside the component tag, you can access all variables that were defined outside of it.
 
-And just like with `{% include %}`, if you don't want a specific component template to have access to the parent context, add `only` to the end of the `{% component %}` tag:
+And just like with `{% include %}`, if you don't want a specific component template to have access to the parent context, add `only` to the `{% component %}` tag:
 
 ```htmldjango
 {% component "calendar" date="2015-06-19" only %}{% endcomponent %}
@@ -1884,6 +1909,155 @@ NOTE: `{% csrf_token %}` tags need access to the top-level context, and they wil
 If you find yourself using the `only` modifier often, you can set the [context_behavior](#context-behavior) option to `"isolated"`, which automatically applies the `only` modifier. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 Components can also access the outer context in their context methods like `get_context_data` by accessing the property `self.outer_context`.
+
+## Customizing component tags with TagFormatter
+
+_New in version 0.89_
+
+By default, components are rendered using the pair of `{% component %}` / `{% endcomponent %}` template tags:
+
+```django
+{% component "button" href="..." disabled %}
+Click me!
+{% endcomponent %}
+
+{# or #}
+
+{% component "button" href="..." disabled / %}
+```
+
+You can change this behaviour in the settings under the [`COMPONENTS.tag_formatter`](#tag-formatter-setting).
+
+For example, if you set the tag formatter to `django_components.shorthand_component_formatter`, the components will use their name as the template tags:
+
+```django
+{% button href="..." disabled %}
+  Click me!
+{% endbutton %}
+
+{# or #}
+
+{% button href="..." disabled / %}
+```
+
+### Available TagFormatters
+
+django_components provides following predefined TagFormatters:
+
+- **`ComponentFormatter` (`django_components.component_formatter`)**
+
+    Default
+
+    Uses the `component` and `endcomponent` tags, and the component name is gives as the first positional argument.
+
+    Example as block:
+    ```django
+    {% component "button" href="..." %}
+        {% fill "content" %}
+            ...
+        {% endfill %}
+    {% endcomponent %}
+    ```
+
+    Example as inlined tag:
+    ```django
+    {% component "button" href="..." / %}
+    ```
+
+- **`ShorthandComponentFormatter` (`django_components.shorthand_component_formatter`)**
+
+    Uses the component name as start tag, and `end<component_name>`
+    as an end tag.
+
+    Example as block:
+    ```django
+    {% button href="..." %}
+        Click me!
+    {% endbutton %}
+    ```
+
+    Example as inlined tag:
+    ```django
+    {% button href="..." / %}
+    ```
+
+### Writing your own TagFormatter
+
+#### Background
+
+First, let's discuss how TagFormatters work, and how components are rendered in django_components.
+
+When you render a component with `{% component %}` (or your own tag), the following happens:
+1. `component` must be registered as a Django's template tag
+2. Django triggers django_components's tag handler for tag `component`.
+3. The tag handler passes the tag contents for pre-processing to `TagFormatter.parse()`.
+
+    So if you render this:
+    ```django
+    {% component "button" href="..." disabled %}
+    {% endcomponent %}
+    ```
+
+    Then `TagFormatter.parse()` will receive a following input:
+    ```py
+    ["component", '"button"', 'href="..."', 'disabled']
+    ```
+4. `TagFormatter` extracts the component name and the remaining input.
+
+    So, given the above, `TagFormatter.parse()` returns the following:
+    ```py
+    TagResult(
+        component_name="button",
+        tokens=['href="..."', 'disabled']
+    )
+    ```
+5. The tag handler resumes, using the tokens returned from `TagFormatter`.
+
+    So, continuing the example, at this point the tag handler practically behaves as if you rendered:
+    ```django
+    {% component href="..." disabled %}
+    ```
+6. Tag handler looks up the component `button`, and passes the args, kwargs, and slots to it.
+
+#### TagFormatter
+
+`TagFormatter` handles following parts of the process above:
+- Generates start/end tags, given a component. This is what you then call from within your template as `{% component %}`.
+
+- When you `{% component %}`, tag formatter pre-processes the tag contents, so it can link back the custom template tag to the right component.
+
+To do so, subclass from `TagFormatterABC` and implement following method:
+- `start_tag`
+- `end_tag`
+- `parse`
+
+For example, this is the implementation of [`ShorthandComponentFormatter`](#available-tagformatters)
+
+```py
+class ShorthandComponentFormatter(TagFormatterABC):
+    # Given a component name, generate the start template tag
+    def start_tag(self, name: str) -> str:
+        return name  # e.g. 'button'
+
+    # Given a component name, generate the start template tag
+    def end_tag(self, name: str) -> str:
+        return f"end{name}"  # e.g. 'endbutton'
+
+    # Given a tag, e.g.
+    # `{% button href="..." disabled %}`
+    #
+    # The parser receives:
+    # `['button', 'href="..."', 'disabled']`
+    def parse(self, tokens: List[str]) -> TagResult:
+        tokens = [*tokens]
+        name = tokens.pop(0)
+        return TagResult(
+            name,  # e.g. 'button'
+            tokens  # e.g. ['href="..."', 'disabled']
+        )
+```
+
+That's it! And once your `TagFormatter` is ready, don't forget to update the settings!
 
 ## Defining HTML/JS/CSS files
 
@@ -2187,7 +2361,7 @@ COMPONENTS = {
 }
 ```
 
-### Context behavior
+### Context behavior setting
 
 > NOTE: `context_behavior` and `slot_context_behavior` options were merged in v0.70.
 >
@@ -2291,6 +2465,28 @@ Because variables `"my_var"` and `"cheese"` are searched only inside `RootCompon
 But since `"cheese"` is not defined there, it's empty.
 
 Notice that the variables defined with the `{% with %}` tag are ignored inside the `{% fill %}` tag with the `"isolated"` mode.
+
+### Tag formatter setting
+
+Set the [`TagFormatter`](#available-tagformatters) instance.
+
+Can be set either as direct reference, or as an import string;
+
+```py
+COMPONENTS = {
+    "tag_formatter": "django_components.component_formatter"
+}
+```
+
+Or
+
+```py
+from django_components import component_formatter
+
+COMPONENTS = {
+    "tag_formatter": component_formatter
+}
+```
 
 ## Logging and debugging
 

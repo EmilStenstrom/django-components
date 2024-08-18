@@ -16,10 +16,9 @@ from django_components.context import (
     _INJECT_CONTEXT_KEY_PREFIX,
     _ROOT_CTX_CONTEXT_KEY,
 )
-from django_components.expression import resolve_expression_as_identifier, safe_resolve_dict
+from django_components.expression import Expression, resolve_expression_as_identifier, safe_resolve_dict
 from django_components.logger import trace_msg
 from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
-from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
@@ -119,7 +118,7 @@ class SlotNode(Node):
         is_required: bool = False,
         is_default: bool = False,
         node_id: Optional[str] = None,
-        slot_kwargs: Optional[Dict[str, FilterExpression]] = None,
+        slot_kwargs: Optional[Dict[str, Expression]] = None,
     ):
         self.name = name
         self.nodelist = nodelist
@@ -173,7 +172,6 @@ class SlotNode(Node):
         # are made available through a variable name that was set on the `{% fill %}`
         # tag.
         slot_kwargs = safe_resolve_dict(self.slot_kwargs, context)
-        slot_kwargs = process_aggregate_kwargs(slot_kwargs)
         data_var = slot_fill.slot_data_var
         if data_var:
             if not data_var.isidentifier():

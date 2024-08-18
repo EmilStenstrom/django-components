@@ -5,69 +5,42 @@
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from django.template import Context, Node
-from django.template.base import FilterExpression
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.template_parser import process_aggregate_kwargs
+from django_components.expression import Expression, safe_resolve
 
 HTML_ATTRS_DEFAULTS_KEY = "defaults"
 HTML_ATTRS_ATTRS_KEY = "attrs"
 
 
-def _default(val: Any, default_val: Any) -> Any:
-    return val if val is not None else default_val
-
-
 class HtmlAttrsNode(Node):
     def __init__(
         self,
-        attributes: Optional[FilterExpression],
-        default_attrs: Optional[FilterExpression],
-        kwargs: List[Tuple[str, FilterExpression]],
+        attributes: Optional[Expression],
+        defaults: Optional[Expression],
+        kwargs: List[Tuple[str, Expression]],
     ):
         self.attributes = attributes
-        self.default_attrs = default_attrs
+        self.defaults = defaults
         self.kwargs = kwargs
 
     def render(self, context: Context) -> str:
         append_attrs: List[Tuple[str, Any]] = []
-        attrs_and_defaults_from_kwargs = {}
 
-        # Resolve kwargs, while also extracting attrs and defaults keys
+        # Resolve all data
         for key, value in self.kwargs:
-            resolved_value = value.resolve(context)
-            if key.startswith(f"{HTML_ATTRS_ATTRS_KEY}:") or key.startswith(f"{HTML_ATTRS_DEFAULTS_KEY}:"):
-                attrs_and_defaults_from_kwargs[key] = resolved_value
-                continue
-            # NOTE: These were already extracted into separate variables, so
-            # ignore them here.
-            elif key == HTML_ATTRS_ATTRS_KEY or key == HTML_ATTRS_DEFAULTS_KEY:
-                continue
-
+            resolved_value = safe_resolve(value, context)
             append_attrs.append((key, resolved_value))
 
-        # NOTE: Here we delegate validation to `process_aggregate_kwargs`, which should
-        # raise error if the dict includes both `attrs` and `attrs:` keys.
-        #
-        # So by assigning the `attrs` and `defaults` keys, users are forced to use only
-        # one approach or the other, but not both simultaneously.
-        if self.attributes:
-            attrs_and_defaults_from_kwargs[HTML_ATTRS_ATTRS_KEY] = self.attributes.resolve(context)
-        if self.default_attrs:
-            attrs_and_defaults_from_kwargs[HTML_ATTRS_DEFAULTS_KEY] = self.default_attrs.resolve(context)
+        defaults = safe_resolve(self.defaults, context) if self.defaults else {}
+        attrs = safe_resolve(self.attributes, context) if self.attributes else {}
 
-        # Turn `{"attrs:blabla": 1}` into `{"attrs": {"blabla": 1}}`
-        attrs_and_defaults_from_kwargs = process_aggregate_kwargs(attrs_and_defaults_from_kwargs)
-
-        # NOTE: We want to allow to use `html_attrs` even without `attrs` or `defaults` params
-        # Or when they are None
-        attrs = _default(attrs_and_defaults_from_kwargs.get(HTML_ATTRS_ATTRS_KEY, None), {})
-        default_attrs = _default(attrs_and_defaults_from_kwargs.get(HTML_ATTRS_DEFAULTS_KEY, None), {})
-
-        final_attrs = {**default_attrs, **attrs}
+        # Merge it
+        final_attrs = {**defaults, **attrs}
         final_attrs = append_attributes(*final_attrs.items(), *append_attrs)
 
+        # Render to HTML attributes
         return attributes_to_string(final_attrs)
 
 

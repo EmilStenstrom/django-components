@@ -25,6 +25,9 @@ from django.utils.regex_helper import _lazy_re_compile
 # This is a copy of the original FilterExpression. The only difference is to allow variable names to have extra special
 # characters: - : . @ #
 ######################################################################################################################
+
+VAR_CHARS = r"\w\-\:\@\.\#"
+
 filter_raw_string = r"""
 ^(?P<constant>{constant})|
 ^(?P<var>[{var_chars}]+|{num})|
@@ -41,7 +44,7 @@ filter_raw_string = r"""
     num=r"[-+\.]?\d[\d\.e]*",
     # The following is the only difference from the original FilterExpression. We allow variable names to have extra
     # special characters: - : . @ #
-    var_chars=r"\w\-\:\@\.\#",
+    var_chars=VAR_CHARS,
     filter_sep=re.escape(FILTER_SEPARATOR),
     arg_sep=re.escape(FILTER_ARGUMENT_SEPARATOR),
 )
@@ -102,7 +105,7 @@ class ComponentsFilterExpression(FilterExpression):
 ######################################################################################################################
 
 # Regex for token keyword arguments
-kwarg_re = _lazy_re_compile(r"(?:([\w\-\:\@\.\#]+)=)?(.+)")
+kwarg_re = _lazy_re_compile(r"(?:([{var_chars}]+)=)?(.+)".format(var_chars=VAR_CHARS))
 
 
 def token_kwargs(bits: List[str], parser: Parser) -> Dict[str, FilterExpression]:
@@ -261,9 +264,7 @@ def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:
     processed_kwargs = {}
     nested_kwargs: Dict[str, Dict[str, Any]] = {}
     for key, val in kwargs.items():
-        # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
-        # This syntax is used by Vue and AlpineJS.
-        if ":" not in key or key.startswith(":"):
+        if not is_aggregate_key(key):
             processed_kwargs[key] = val
             continue
 
@@ -283,3 +284,9 @@ def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:
         processed_kwargs[key] = val
 
     return processed_kwargs
+
+
+def is_aggregate_key(key: str) -> bool:
+    # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
+    # This syntax is used by Vue and AlpineJS.
+    return ":" in key and not key.startswith(":")

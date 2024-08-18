@@ -19,3 +19,7 @@ def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
         if predicate(elem):
             return len(lst) - 1 - r_idx
     return -1
+
+
+def is_str_wrapped_in_quotes(s: str) -> bool:
+    return s.startswith(('"', "'")) and s[0] == s[-1] and len(s) >= 2

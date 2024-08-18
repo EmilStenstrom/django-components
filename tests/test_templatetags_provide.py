@@ -5,7 +5,7 @@ from django_components import Component, register, types
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class ProvideTemplateTagTest(BaseTestCase):
@@ -35,6 +35,24 @@ class ProvideTemplateTagTest(BaseTestCase):
             rendered,
             """
             <div> injected: DepInject(key='hi', another=123) </div>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_provide_basic_self_closing(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            <div>
+                {% provide "my_provide" key="hi" another=123 / %}
+            </div>
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div></div>
             """,
         )
 

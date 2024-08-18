@@ -7,7 +7,7 @@ from django_components import Component, register, registry, types
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class SlottedComponent(Component):
@@ -71,6 +71,56 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 <header>Custom header</header>
                 <main>Variable: <strong>variable</strong></main>
                 <footer>Default footer</footer>
+            </custom-template>
+        """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slotted_template_basic_self_closing(self):
+        @register("test1")
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" / %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" / %}</footer>
+                </custom-template>
+            """
+
+        registry.register(name="test1", component=SlottedComponent)
+
+        @register("test2")
+        class SimpleComponent(Component):
+            template = """Variable: <strong>{{ variable }}</strong>"""
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test1" %}
+                {% fill "header" %}
+                    {% component "test2" variable="variable" / %}
+                {% endfill %}
+                {% fill "main" / %}
+                {% fill "footer" / %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        # NOTE: <main> is empty, because the fill is provided, even if empty
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header> Variable: <strong>variable</strong> </header>
+                <main></main>
+                <footer></footer>
             </custom-template>
         """,
         )
