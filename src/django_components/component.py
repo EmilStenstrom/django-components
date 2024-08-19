@@ -1,11 +1,11 @@
 import inspect
 import types
 from collections import deque
-from typing import Any, ClassVar, Deque, Dict, Generic, List, Mapping, NamedTuple, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import Any, ClassVar, Deque, Dict, Generic, List, Mapping, NamedTuple, Optional, Protocol, Tuple, Type, TypeVar, Union, cast
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.template.base import FilterExpression, Node, NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
@@ -69,6 +69,11 @@ class RenderInput(NamedTuple, Generic[ArgsType, KwargsType, SlotsType]):
     escape_slots_content: bool
 
 
+class ViewFn(Protocol):
+    def __call__(self, request: HttpRequest, *args: Any, **kwds: Any) -> Any:
+        ...
+
+
 class ComponentMeta(MediaMeta):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
         # NOTE: Skip template/media file resolution when then Component class ITSELF
@@ -79,7 +84,21 @@ class ComponentMeta(MediaMeta):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metaclass=ComponentMeta):
+class ComponentView(View):
+    """
+    Subclass of `django.views.View` where the `Component` instance is available
+    via `self.component`.
+    """
+    # NOTE: This attribute must be declared on the class for `View.as_view` to allow
+    # us to pass `component` kwarg.
+    component = cast("Component", None)
+
+    def __init__(self, component: "Component", **kwargs: Any) -> types.NoneType:
+        super().__init__(**kwargs)
+        self.component = component
+
+
+class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=ComponentMeta):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     _class_hash: ClassVar[int]
@@ -105,6 +124,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
     Media = ComponentMediaInput
     """Defines JS and CSS media files associated with this component."""
 
+    View = ComponentView
+
     def __init__(
         self,
         registered_name: Optional[str] = None,
@@ -112,12 +133,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
         outer_context: Optional[Context] = None,
         fill_content: Optional[Dict[str, FillContent]] = None,
     ):
-        self.registered_name: Optional[str] = registered_name
-        self.outer_context: Context = outer_context or Context()
-        self.fill_content = fill_content or {}
-        self.component_id = component_id or gen_id()
-        self._context: Optional[Context] = None
-
         # When user first instantiates the component class before calling
         # `render` or `render_to_response`, then we want to allow the render
         # function to make use of the instantiated object.
@@ -131,6 +146,12 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
         # See https://stackoverflow.com/a/76706399/9788634
         self.render_to_response = types.MethodType(self.__class__.render_to_response.__func__, self)  # type: ignore
         self.render = types.MethodType(self.__class__.render.__func__, self)  # type: ignore
+
+        self.registered_name: Optional[str] = registered_name
+        self.outer_context: Context = outer_context or Context()
+        self.fill_content = fill_content or {}
+        self.component_id = component_id or gen_id()
+        self._render_stack: Deque[RenderInput[ArgsType, KwargsType, SlotsType]] = deque()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls._class_hash = hash(inspect.getfile(cls) + cls.__name__)
@@ -251,6 +272,15 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], View, metacl
             )
 
         return get_injected_context_var(self.name, self.input.context, key, default)
+
+    @classmethod
+    def as_view(cls, **initkwargs: Any) -> ViewFn:
+        """
+        Shortcut for calling `Component.View.as_view` and passing component instance to it.
+        """
+        # Allow the View class to access this component via `self.component`
+        component = cls()
+        return component.View.as_view(**initkwargs, component=component)
 
     @classmethod
     def render_to_response(

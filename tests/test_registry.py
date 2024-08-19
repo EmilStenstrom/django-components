@@ -7,6 +7,7 @@ from django_components import (
     AlreadyRegistered,
     Component,
     ComponentRegistry,
+    ComponentView,
     NotRegistered,
     TagProtectedError,
     register,
@@ -27,8 +28,9 @@ class MockComponent2(Component):
 
 
 class MockComponentView(Component):
-    def get(self, request, *args, **kwargs):
-        pass
+    class View(ComponentView):
+        def get(self, request, *args, **kwargs):
+            pass
 
 
 class ComponentRegistryTest(unittest.TestCase):

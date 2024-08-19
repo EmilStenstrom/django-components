@@ -207,7 +207,11 @@ class ComponentTest(BaseTestCase):
                 }
 
             def get_template(self, context):
-                template_str = "Variable: <strong>{{ variable }}</strong> {% slot 'my_slot' / %} "
+                template_str: types.django_html = """
+                    {% load component_tags %}
+                    Variable: <strong>{{ variable }}</strong>
+                    {% slot 'my_slot' / %}
+                """
                 return Template(template_str)
 
         rendered = TestComponent.render(
@@ -230,7 +234,7 @@ class ComponentTest(BaseTestCase):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
-                tester.assertEqual(self.input.context, {})
+                tester.assertIsInstance(self.input.context, Context)
                 tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
 
                 return {
@@ -240,10 +244,14 @@ class ComponentTest(BaseTestCase):
             def get_template(self, context):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
-                tester.assertEqual(self.input.context, {})
+                tester.assertIsInstance(self.input.context, Context)
                 tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
 
-                template_str = "Variable: <strong>{{ variable }}</strong> {% slot 'my_slot' / %} "
+                template_str: types.django_html = """
+                    {% load component_tags %}
+                    Variable: <strong>{{ variable }}</strong>
+                    {% slot 'my_slot' / %}
+                """
                 return Template(template_str)
 
         rendered = TestComponent.render(
