@@ -87,7 +87,7 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
 
 
 class ViewFn(Protocol):
-    def __call__(self, request: HttpRequest, *args: Any, **kwds: Any) -> Any: ...
+    def __call__(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Any: ...  # noqa: E704
 
 
 class ComponentMeta(MediaMeta):
