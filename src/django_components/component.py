@@ -71,10 +71,10 @@ from django_components.component_registry import registry as registry  # NOQA
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
 # Define TypeVars for args and kwargs
-ArgsType = TypeVar('ArgsType', bound=tuple, contravariant=True)
-KwargsType = TypeVar('KwargsType', bound=Mapping[str, Any], contravariant=True)
-DataType = TypeVar('DataType', bound=Mapping[str, Any], covariant=True)
-SlotsType = TypeVar('SlotsType', bound=Mapping[SlotName, SlotContent])
+ArgsType = TypeVar("ArgsType", bound=tuple, contravariant=True)
+KwargsType = TypeVar("KwargsType", bound=Mapping[str, Any], contravariant=True)
+DataType = TypeVar("DataType", bound=Mapping[str, Any], covariant=True)
+SlotsType = TypeVar("SlotsType", bound=Mapping[SlotName, SlotContent])
 
 
 @dataclass(frozen=True)
@@ -87,8 +87,7 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
 
 
 class ViewFn(Protocol):
-    def __call__(self, request: HttpRequest, *args: Any, **kwds: Any) -> Any:
-        ...
+    def __call__(self, request: HttpRequest, *args: Any, **kwds: Any) -> Any: ...
 
 
 class ComponentMeta(MediaMeta):
@@ -106,6 +105,7 @@ class ComponentView(View):
     Subclass of `django.views.View` where the `Component` instance is available
     via `self.component`.
     """
+
     # NOTE: This attribute must be declared on the class for `View.as_view` to allow
     # us to pass `component` kwarg.
     component = cast("Component", None)
@@ -451,13 +451,15 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
         # call `self.inject()` from within `get_context_data()`.
-        self._render_stack.append(RenderInput(
-            context=context,
-            slots=slots,
-            args=args,
-            kwargs=kwargs,
-            escape_slots_content=escape_slots_content,
-        ))
+        self._render_stack.append(
+            RenderInput(
+                context=context,
+                slots=slots,
+                args=args,
+                kwargs=kwargs,
+                escape_slots_content=escape_slots_content,
+            )
+        )
 
         context_data = self.get_context_data(*args, **kwargs)
 

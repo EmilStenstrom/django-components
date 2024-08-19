@@ -3,7 +3,7 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
-from typing import Dict, TypedDict, Tuple, no_type_check
+from typing import Dict, Tuple, TypedDict, no_type_check
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
