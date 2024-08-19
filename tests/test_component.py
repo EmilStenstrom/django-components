@@ -3,7 +3,7 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
-from typing import Dict, TypedDict, Tuple
+from typing import Dict, TypedDict, Tuple, no_type_check
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
@@ -190,15 +190,14 @@ class ComponentTest(BaseTestCase):
         TestCompArgs = Tuple[int, str]
 
         class TestCompKwargs(TypedDict):
-            my: str
-            oh: int
-            my2: str
+            variable: str
+            another: int
 
         class TestCompData(TypedDict):
             abc: int
 
         class TestCompSlots(TypedDict):
-            abc: int
+            my_slot: str
 
         class TestComponent(Component[TestCompArgs, TestCompKwargs, TestCompData, TestCompSlots]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
@@ -231,6 +230,7 @@ class ComponentTest(BaseTestCase):
         tester = self
 
         class TestComponent(Component):
+            @no_type_check
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
@@ -241,6 +241,7 @@ class ComponentTest(BaseTestCase):
                     "variable": variable,
                 }
 
+            @no_type_check
             def get_template(self, context):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})

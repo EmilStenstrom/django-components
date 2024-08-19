@@ -15,7 +15,7 @@ class MultFileComponent(Component):
     class View(ComponentView):
         def get(self, request, *args, **kwargs):
             return self.component.render_to_response({"variable": "GET"})
-        
+
         def post(self, request, *args, **kwargs) -> HttpResponse:
             variable = request.POST.get("variable")
             return self.component.render_to_response({"variable": variable})

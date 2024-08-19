@@ -26,7 +26,6 @@ class Calendar(Component):
             return self.component.render_to_response(context)
 
 
-
 @register("calendar_relative")
 class CalendarRelative(Component):
     # Note that Django will look for templates inside `[your apps]/components` dir and
@@ -50,4 +49,3 @@ class CalendarRelative(Component):
                 "date": request.GET.get("date", ""),
             }
             return self.component.render_to_response(context)
-

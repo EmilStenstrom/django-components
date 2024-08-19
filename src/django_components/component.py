@@ -1,7 +1,23 @@
 import inspect
 import types
 from collections import deque
-from typing import Any, ClassVar, Deque, Dict, Generic, List, Mapping, NamedTuple, Optional, Protocol, Tuple, Type, TypeVar, Union, cast
+from dataclasses import dataclass
+from typing import (
+    Any,
+    ClassVar,
+    Deque,
+    Dict,
+    Generic,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
@@ -61,7 +77,8 @@ DataType = TypeVar('DataType', bound=Mapping[str, Any], covariant=True)
 SlotsType = TypeVar('SlotsType', bound=Mapping[SlotName, SlotContent])
 
 
-class RenderInput(NamedTuple, Generic[ArgsType, KwargsType, SlotsType]):
+@dataclass(frozen=True)
+class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
     context: Context
     args: ArgsType
     kwargs: KwargsType
@@ -93,7 +110,7 @@ class ComponentView(View):
     # us to pass `component` kwarg.
     component = cast("Component", None)
 
-    def __init__(self, component: "Component", **kwargs: Any) -> types.NoneType:
+    def __init__(self, component: "Component", **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.component = component
 
