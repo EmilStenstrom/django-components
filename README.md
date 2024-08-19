@@ -49,6 +49,32 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+🚨📢 **Version 0.91** 
+- BREAKING CHANGE: View methods like `get` or `post` are now defined on a nested `Component.View` class. Previously, they were directly on the `Component` class :
+
+    ```py
+    # Before - Component was a subclass of View
+    class MyComponent(Component):
+        def post(self, request, *args, **kwargs) -> HttpResponse:
+            variable = request.POST.get("variable")
+            return self.render_to_response(
+                kwargs={"variable": variable}
+            )
+    ```
+
+    ```py
+    # After - Component.View is a subclass of View
+    class MyComponent(Component):
+        class View(ComponentView):
+            def post(self, request, *args, **kwargs) -> HttpResponse:
+                variable = request.POST.get("variable")
+                return self.component.render_to_response(
+                    kwargs={"variable": variable}
+                )
+    ```
+- Inputs (args, kwargs, slots, context, ...) passed to `Component.render` can be accessed from within `get_context_data`, `get_template_string` and `get_template_name` via `self.input`.
+- Typing: `Component` class supports generics that specify types for `Component.render`
+
 **Version 0.90**
 - All tags (`component`, `slot`, `fill`, ...) now support "self-closing" or "inline" form, where you can omit the closing tag:
     ```django
@@ -588,6 +614,52 @@ MyComponent.render_to_response(
 )
 ```
 
+### Adding type hints with Generics
+
+The `Component` class optionally accepts type parameters
+that allow you to specify the types of args, kwargs, slots, and 
+data.
+
+```py
+from typing import NotRequired, Tuple, TypedDict
+
+# Tuple
+Args = Tuple[int, str]
+
+# Mapping
+class Kwargs(TypedDict):
+    variable: str
+    another: int
+    maybe_var: NotRequired[int]
+
+# Mapping
+class Data(TypedDict):
+    variable: str
+
+# Mapping
+class Slots(TypedDict):
+    my_slot: NotRequired[str]
+
+class Button(Component[Args, Kwargs, Data, Slots]):
+    def get_context_data(self, variable, another):
+        return {
+            "variable": variable,
+        }
+```
+
+When you then call `Component.render` or `Component.render_to_response`, you will get type hints:
+
+```py
+Button.render(
+    # Error: First arg must be `int`, got `float`
+    args=(1.25, "abc"),
+    # Error: Key "another" is missing
+    kwargs={
+        "variable": "text",
+    },
+)
+```
+
 ### Response class of `render_to_response`
 
 While `render` method returns a plain string, `render_to_response` wraps the rendered content in a "Response" class. By default, this is `django.http.HttpResponse`.
@@ -614,7 +686,9 @@ assert isinstance(response, MyResponse)
 
 _New in version 0.34_
 
-Components can now be used as views. To do this, `Component` subclasses Django's `View` class. This means that you can use all of the [methods](https://docs.djangoproject.com/en/5.0/ref/class-based-views/base/#view) of `View` in your component. For example, you can override `get` and `post` to handle GET and POST requests, respectively.
+_Note: Since 0.91, View methods are defined on a nested View class, instead of directly on Component_
+
+Components can now be used as views. To do this, define a nested `View` class that subclasses `django_components.ViewComponent`. `ViewComponent` is a subclass of Django's `View` class that can access the component instance via `self.component`. Inside `Component.View`, you can use all of the [methods](https://docs.djangoproject.com/en/5.0/ref/class-based-views/base/#view) of `View`. For example, you can override `get` and `post` to handle GET and POST requests, respectively.
 
 In addition, `Component` now has a [`render_to_response`](#inputs-of-render-and-render_to_response) method that renders the component template based on the provided context and slots' data and returns an `HttpResponse` object.
 
@@ -622,7 +696,7 @@ Here's an example of a calendar component defined as a view:
 
 ```python
 # In a file called [project root]/components/calendar.py
-from django_components import Component, register
+from django_components import Component, ComponentView, register
 
 @register("calendar")
 class Calendar(Component):
@@ -638,14 +712,19 @@ class Calendar(Component):
         </div>
     """
 
-    def get(self, request, *args, **kwargs):
-        context = {
-            "date": request.GET.get("date", "2020-06-06"),
-        }
-        slots = {
-            "header": "Calendar header",
-        }
-        return self.render_to_response(context=context, slots=slots)
+    class View(ComponentView):
+        def get(self, request, *args, **kwargs):
+            context = {
+                "date": request.GET.get("date", "2020-06-06"),
+            }
+            slots = {
+                "header": "Calendar header",
+            }
+            # Access this component as `self.component`
+            return self.component.render_to_response(
+                context=context,
+                slots=slots,
+            )
 ```
 
 Then, to use this component as a view, you should create a `urls.py` file in your components directory, and add a path to the component's view:
@@ -660,6 +739,9 @@ urlpatterns = [
 ]
 ```
 
+`Component.as_view()` is a shorthand for calling [`View.as_view()`](https://docs.djangoproject.com/en/5.1/ref/class-based-views/base/#django.views.generic.base.View.as_view) and passing the component
+instance as one of the arguments.
+
 Remember to add `__init__.py` to your components directory, so that Django can find the `urls.py` file.
 
 Finally, include the component's urls in your project's `urls.py` file:
@@ -673,7 +755,7 @@ urlpatterns = [
 ]
 ```
 
-Note: slots content are automatically escaped by default to prevent XSS attacks. To disable escaping, set `escape_slots_content=False` in the `render_to_response` method. If you do so, you should make sure that any content you pass to the slots is safe, especially if it comes from user input.
+Note: Slots content are automatically escaped by default to prevent XSS attacks. To disable escaping, set `escape_slots_content=False` in the `render_to_response` method. If you do so, you should make sure that any content you pass to the slots is safe, especially if it comes from user input.
 
 If you're planning on passing an HTML string, check Django's use of [`format_html`](https://docs.djangoproject.com/en/5.0/ref/utils/#django.utils.html.format_html) and [`mark_safe`](https://docs.djangoproject.com/en/5.0/ref/utils/#django.utils.safestring.mark_safe).
 
@@ -1388,6 +1470,38 @@ Sweet! Now all the relevant HTML is inside the template, and we can move it to a
 > ```py
 > {"attrs": {"my_key:two": 2}}
 > ```
+
+### Accessing data passed to the component
+
+When you call `Component.render` or `Component.render_to_response`, the inputs to these methods can be accessed from within the instance under `self.input`.
+
+This means that you can use `self.input` inside:
+- `get_context_data`
+- `get_template_name`
+- `get_template_string`
+
+`self.input` is defined only for the duration of `Component.render`, and returns `None` when called outside of this.
+
+`self.input` has the same fields as the input to `Component.render`:
+
+```py
+class TestComponent(Component):
+    def get_context_data(self, var1, var2, variable, another, **attrs):
+        assert self.input.args == (123, "str")
+        assert self.input.kwargs == {"variable": "test", "another": 1}
+        assert self.input.slots == {"my_slot": "MY_SLOT"}
+        assert isinstance(self.input.context, Context)
+
+        return {
+            "variable": variable,
+        }
+
+rendered = TestComponent.render(
+    kwargs={"variable": "test", "another": 1},
+    args=(123, "str"),
+    slots={"my_slot": "MY_SLOT"},
+)
+```
 
 ## Rendering HTML attributes
 
