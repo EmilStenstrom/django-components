@@ -110,7 +110,7 @@ class ComponentViewMeta(type):
             def handler(self, request: HttpRequest, *args: Any, **kwargs: Any):  # type: ignore[no-untyped-def]
                 component: "Component" = self.component
                 return getattr(component, method)(request, *args, **kwargs)
-            
+
             return handler
 
         # Add methods to the class
