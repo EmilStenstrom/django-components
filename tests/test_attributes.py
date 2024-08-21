@@ -360,3 +360,31 @@ class HtmlAttrsTests(BaseTestCase):
             """,
         )
         self.assertNotIn("override-me", rendered)
+
+    def test_tag_null_attrs_and_defaults(self):
+        @register("test")
+        class AttrsComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs attrs defaults %}>
+                    content
+                </div>
+            """
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "attrs": None,
+                    "defaults": None,
+                }
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div >
+                content
+            </div>
+            """,
+        )
+        self.assertNotIn("override-me", rendered)
