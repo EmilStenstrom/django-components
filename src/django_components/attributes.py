@@ -33,8 +33,8 @@ class HtmlAttrsNode(Node):
             resolved_value = safe_resolve(value, context)
             append_attrs.append((key, resolved_value))
 
-        defaults = safe_resolve(self.defaults, context) if self.defaults else {}
-        attrs = safe_resolve(self.attributes, context) if self.attributes else {}
+        defaults = safe_resolve(self.defaults, context) or {} if self.defaults else {}
+        attrs = safe_resolve(self.attributes, context) or {} if self.attributes else {}
 
         # Merge it
         final_attrs = {**defaults, **attrs}
