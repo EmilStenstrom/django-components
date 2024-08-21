@@ -1,4 +1,4 @@
-from django_components import Component, ComponentView, register
+from django_components import Component, register
 
 
 @register("calendar_nested")
@@ -14,13 +14,12 @@ class CalendarNested(Component):
             "date": date,
         }
 
+    def get(self, request, *args, **kwargs):
+        context = {
+            "date": request.GET.get("date", ""),
+        }
+        return self.render_to_response(context)
+
     class Media:
         css = "calendar.css"
         js = "calendar.js"
-
-    class View(ComponentView):
-        def get(self, request, *args, **kwargs):
-            context = {
-                "date": request.GET.get("date", ""),
-            }
-            return self.component.render_to_response(context)

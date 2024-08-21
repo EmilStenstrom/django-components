@@ -85,6 +85,30 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
+    def test_get_request_shortcut(self):
+        class MockComponentRequest(Component):
+            template = """
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="text" name="variable" value="{{ inner_var }}">
+                    <input type="submit">
+                </form>
+                """
+
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response(kwargs={"variable": "GET"})
+
+        client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
+        response = client.get("/test/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="text" name="variable" value="GET">',
+            response.content,
+        )
+
     def test_post_request(self):
         class MockComponentRequest(Component):
             template: types.django_html = """
@@ -111,6 +135,31 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
+    def test_post_request_shortcut(self):
+        class MockComponentRequest(Component):
+            template: types.django_html = """
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="text" name="variable" value="{{ inner_var }}">
+                    <input type="submit">
+                </form>
+                """
+
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
+
+            def post(self, request, *args, **kwargs) -> HttpResponse:
+                variable = request.POST.get("variable")
+                return self.render_to_response(kwargs={"variable": variable})
+
+        client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
+        response = client.post("/test/", {"variable": "POST"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="text" name="variable" value="POST">',
+            response.content,
+        )
+
     @parametrize_context_behavior(["django", "isolated"])
     def test_replace_slot_in_view(self):
         class MockComponentSlot(Component):
@@ -125,9 +174,8 @@ class TestComponentAsView(BaseTestCase):
                 </div>
                 """
 
-            class View(ComponentView):
-                def get(self, request, *args, **kwargs) -> HttpResponse:
-                    return self.component.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({"name": "Bob"}, {"second_slot": "Nice to meet you, Bob"})
 
         client = CustomClient(urlpatterns=[path("test_slot/", MockComponentSlot.as_view())])
         response = client.get("/test_slot/")
@@ -152,9 +200,8 @@ class TestComponentAsView(BaseTestCase):
                 </div>
                 """
 
-            class View(ComponentView):
-                def get(self, request, *args, **kwargs) -> HttpResponse:
-                    return self.component.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({}, {"test_slot": "<script>alert(1);</script>"})
 
         client = CustomClient(urlpatterns=[path("test_slot_insecure/", MockInsecureComponentSlot.as_view())])
         response = client.get("/test_slot_insecure/")
@@ -174,9 +221,8 @@ class TestComponentAsView(BaseTestCase):
                 </div>
                 """
 
-            class View(ComponentView):
-                def get(self, request, *args, **kwargs) -> HttpResponse:
-                    return self.component.render_to_response({"name": "Bob"})
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({"name": "Bob"})
 
         client = CustomClient(urlpatterns=[path("test_context_django/", TestComponent.as_view())])
         response = client.get("/test_context_django/")
@@ -196,9 +242,8 @@ class TestComponentAsView(BaseTestCase):
                 </div>
                 """
 
-            class View(ComponentView):
-                def get(self, request, *args, **kwargs) -> HttpResponse:
-                    return self.component.render_to_response({"variable": "<script>alert(1);</script>"})
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response({"variable": "<script>alert(1);</script>"})
 
         client = CustomClient(urlpatterns=[path("test_context_insecure/", MockInsecureComponentContext.as_view())])
         response = client.get("/test_context_insecure/")

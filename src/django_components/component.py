@@ -4,6 +4,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Deque,
     Dict,
@@ -100,7 +101,27 @@ class ComponentMeta(MediaMeta):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class ComponentView(View):
+# NOTE: We use metaclass to automatically define the HTTP methods as defined
+# in `View.http_method_names`.
+class ComponentViewMeta(type):
+    def __new__(cls, name: str, bases: Any, dct: Dict) -> Any:
+        # Default implementation shared by all HTTP methods
+        def create_handler(method: str) -> Callable:
+            def handler(self, request: HttpRequest, *args: Any, **kwargs: Any):  # type: ignore[no-untyped-def]
+                component: "Component" = self.component
+                return getattr(component, method)(request, *args, **kwargs)
+            
+            return handler
+
+        # Add methods to the class
+        for method_name in View.http_method_names:
+            if method_name not in dct:
+                dct[method_name] = create_handler(method_name)
+
+        return super().__new__(cls, name, bases, dct)
+
+
+class ComponentView(View, metaclass=ComponentViewMeta):
     """
     Subclass of `django.views.View` where the `Component` instance is available
     via `self.component`.
