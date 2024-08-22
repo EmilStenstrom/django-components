@@ -3,7 +3,7 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
-from typing import Dict
+from typing import Dict, Tuple, TypedDict, no_type_check
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
@@ -183,6 +183,88 @@ class ComponentTest(BaseTestCase):
             rendered,
             """
             Variable: <strong>test</strong>
+            """,
+        )
+
+    def test_typed(self):
+        TestCompArgs = Tuple[int, str]
+
+        class TestCompKwargs(TypedDict):
+            variable: str
+            another: int
+
+        class TestCompData(TypedDict):
+            abc: int
+
+        class TestCompSlots(TypedDict):
+            my_slot: str
+
+        class TestComponent(Component[TestCompArgs, TestCompKwargs, TestCompData, TestCompSlots]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                }
+
+            def get_template(self, context):
+                template_str: types.django_html = """
+                    {% load component_tags %}
+                    Variable: <strong>{{ variable }}</strong>
+                    {% slot 'my_slot' / %}
+                """
+                return Template(template_str)
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=(123, "str"),
+            slots={"my_slot": "MY_SLOT"},
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong> MY_SLOT
+            """,
+        )
+
+    def test_input(self):
+        tester = self
+
+        class TestComponent(Component):
+            @no_type_check
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                tester.assertEqual(self.input.args, (123, "str"))
+                tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
+                tester.assertIsInstance(self.input.context, Context)
+                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+
+                return {
+                    "variable": variable,
+                }
+
+            @no_type_check
+            def get_template(self, context):
+                tester.assertEqual(self.input.args, (123, "str"))
+                tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
+                tester.assertIsInstance(self.input.context, Context)
+                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+
+                template_str: types.django_html = """
+                    {% load component_tags %}
+                    Variable: <strong>{{ variable }}</strong>
+                    {% slot 'my_slot' / %}
+                """
+                return Template(template_str)
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=(123, "str"),
+            slots={"my_slot": "MY_SLOT"},
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong> MY_SLOT
             """,
         )
 

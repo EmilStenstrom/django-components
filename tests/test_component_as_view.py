@@ -6,12 +6,12 @@ from django.template import Context, Template
 from django.test import Client
 from django.urls import path
 
-from django_components import Component, register
+from django_components import Component, ComponentView, register, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class CustomClient(Client):
@@ -39,9 +39,6 @@ class TestComponentAsView(BaseTestCase):
                     <input type="submit">
                 </form>
                 """
-
-            def get(self, request, *args, **kwargs) -> HttpResponse:
-                return self.render_to_response({"variable": "GET"})
 
             def get_context_data(self, variable, *args, **kwargs) -> Dict[str, Any]:
                 return {"variable": variable}
@@ -73,11 +70,36 @@ class TestComponentAsView(BaseTestCase):
                 </form>
                 """
 
-            def get(self, request, *args, **kwargs) -> HttpResponse:
-                return self.render_to_response(kwargs={"variable": "GET"})
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
+
+            class View(ComponentView):
+                def get(self, request, *args, **kwargs) -> HttpResponse:
+                    return self.component.render_to_response(kwargs={"variable": "GET"})
+
+        client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
+        response = client.get("/test/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="text" name="variable" value="GET">',
+            response.content,
+        )
+
+    def test_get_request_shortcut(self):
+        class MockComponentRequest(Component):
+            template = """
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="text" name="variable" value="{{ inner_var }}">
+                    <input type="submit">
+                </form>
+                """
 
             def get_context_data(self, variable):
                 return {"inner_var": variable}
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response(kwargs={"variable": "GET"})
 
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.get("/test/")
@@ -89,7 +111,7 @@ class TestComponentAsView(BaseTestCase):
 
     def test_post_request(self):
         class MockComponentRequest(Component):
-            template = """
+            template: types.django_html = """
                 <form method="post">
                     {% csrf_token %}
                     <input type="text" name="variable" value="{{ inner_var }}">
@@ -97,12 +119,38 @@ class TestComponentAsView(BaseTestCase):
                 </form>
                 """
 
-            def post(self, request, *args, **kwargs) -> HttpResponse:
-                variable = request.POST.get("variable")
-                return self.render_to_response(kwargs={"variable": variable})
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
+
+            class View(ComponentView):
+                def post(self, request, *args, **kwargs) -> HttpResponse:
+                    variable = request.POST.get("variable")
+                    return self.component.render_to_response(kwargs={"variable": variable})
+
+        client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
+        response = client.post("/test/", {"variable": "POST"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="text" name="variable" value="POST">',
+            response.content,
+        )
+
+    def test_post_request_shortcut(self):
+        class MockComponentRequest(Component):
+            template: types.django_html = """
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="text" name="variable" value="{{ inner_var }}">
+                    <input type="submit">
+                </form>
+                """
 
             def get_context_data(self, variable):
                 return {"inner_var": variable}
+
+            def post(self, request, *args, **kwargs) -> HttpResponse:
+                variable = request.POST.get("variable")
+                return self.render_to_response(kwargs={"variable": variable})
 
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.post("/test/", {"variable": "POST"})

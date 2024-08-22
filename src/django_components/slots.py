@@ -2,7 +2,7 @@ import difflib
 import json
 import re
 from collections import deque
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Optional, Set, Tuple, Type, Union
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -86,7 +86,7 @@ class SlotFill(NamedTuple):
     escaped_name: str
     is_filled: bool
     content_func: SlotRenderFunc
-    context_data: Dict
+    context_data: Mapping
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
@@ -372,7 +372,7 @@ def resolve_slots(
     context: Context,
     template: Template,
     component_name: Optional[str],
-    context_data: Dict[str, Any],
+    context_data: Mapping[str, Any],
     fill_content: Dict[SlotName, FillContent],
 ) -> Tuple[Dict[SlotId, Slot], Dict[SlotId, SlotFill]]:
     """

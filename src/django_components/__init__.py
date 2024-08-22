@@ -7,7 +7,10 @@ from django_components.autodiscover import (
     autodiscover as autodiscover,
     import_libraries as import_libraries,
 )
-from django_components.component import Component as Component
+from django_components.component import (
+    Component as Component,
+    ComponentView as ComponentView,
+)
 from django_components.component_registry import (
     AlreadyRegistered as AlreadyRegistered,
     ComponentRegistry as ComponentRegistry,

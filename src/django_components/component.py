@@ -1,10 +1,28 @@
 import inspect
 import types
-from typing import Any, ClassVar, Dict, List, Mapping, Optional, Tuple, Type, Union
+from collections import deque
+from dataclasses import dataclass
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Deque,
+    Dict,
+    Generic,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.template.base import FilterExpression, Node, NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
@@ -53,6 +71,25 @@ from django_components.component_registry import registry as registry  # NOQA
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 
+# Define TypeVars for args and kwargs
+ArgsType = TypeVar("ArgsType", bound=tuple, contravariant=True)
+KwargsType = TypeVar("KwargsType", bound=Mapping[str, Any], contravariant=True)
+DataType = TypeVar("DataType", bound=Mapping[str, Any], covariant=True)
+SlotsType = TypeVar("SlotsType", bound=Mapping[SlotName, SlotContent])
+
+
+@dataclass(frozen=True)
+class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
+    context: Context
+    args: ArgsType
+    kwargs: KwargsType
+    slots: SlotsType
+    escape_slots_content: bool
+
+
+class ViewFn(Protocol):
+    def __call__(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Any: ...  # noqa: E704
+
 
 class ComponentMeta(MediaMeta):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
@@ -64,7 +101,42 @@ class ComponentMeta(MediaMeta):
         return super().__new__(mcs, name, bases, attrs)
 
 
-class Component(View, metaclass=ComponentMeta):
+# NOTE: We use metaclass to automatically define the HTTP methods as defined
+# in `View.http_method_names`.
+class ComponentViewMeta(type):
+    def __new__(cls, name: str, bases: Any, dct: Dict) -> Any:
+        # Default implementation shared by all HTTP methods
+        def create_handler(method: str) -> Callable:
+            def handler(self, request: HttpRequest, *args: Any, **kwargs: Any):  # type: ignore[no-untyped-def]
+                component: "Component" = self.component
+                return getattr(component, method)(request, *args, **kwargs)
+
+            return handler
+
+        # Add methods to the class
+        for method_name in View.http_method_names:
+            if method_name not in dct:
+                dct[method_name] = create_handler(method_name)
+
+        return super().__new__(cls, name, bases, dct)
+
+
+class ComponentView(View, metaclass=ComponentViewMeta):
+    """
+    Subclass of `django.views.View` where the `Component` instance is available
+    via `self.component`.
+    """
+
+    # NOTE: This attribute must be declared on the class for `View.as_view` to allow
+    # us to pass `component` kwarg.
+    component = cast("Component", None)
+
+    def __init__(self, component: "Component", **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.component = component
+
+
+class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=ComponentMeta):
     # Either template_name or template must be set on subclass OR subclass must implement get_template() with
     # non-null return.
     _class_hash: ClassVar[int]
@@ -90,6 +162,8 @@ class Component(View, metaclass=ComponentMeta):
     Media = ComponentMediaInput
     """Defines JS and CSS media files associated with this component."""
 
+    View = ComponentView
+
     def __init__(
         self,
         registered_name: Optional[str] = None,
@@ -97,12 +171,6 @@ class Component(View, metaclass=ComponentMeta):
         outer_context: Optional[Context] = None,
         fill_content: Optional[Dict[str, FillContent]] = None,
     ):
-        self.registered_name: Optional[str] = registered_name
-        self.outer_context: Context = outer_context or Context()
-        self.fill_content = fill_content or {}
-        self.component_id = component_id or gen_id()
-        self._context: Optional[Context] = None
-
         # When user first instantiates the component class before calling
         # `render` or `render_to_response`, then we want to allow the render
         # function to make use of the instantiated object.
@@ -117,6 +185,12 @@ class Component(View, metaclass=ComponentMeta):
         self.render_to_response = types.MethodType(self.__class__.render_to_response.__func__, self)  # type: ignore
         self.render = types.MethodType(self.__class__.render.__func__, self)  # type: ignore
 
+        self.registered_name: Optional[str] = registered_name
+        self.outer_context: Context = outer_context or Context()
+        self.fill_content = fill_content or {}
+        self.component_id = component_id or gen_id()
+        self._render_stack: Deque[RenderInput[ArgsType, KwargsType, SlotsType]] = deque()
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls._class_hash = hash(inspect.getfile(cls) + cls.__name__)
 
@@ -124,8 +198,18 @@ class Component(View, metaclass=ComponentMeta):
     def name(self) -> str:
         return self.registered_name or self.__class__.__name__
 
-    def get_context_data(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-        return {}
+    @property
+    def input(self) -> Optional[RenderInput[ArgsType, KwargsType, SlotsType]]:
+        """
+        Input holds the data (like arg, kwargs, slots) that were passsed to
+        the current execution of the `render` method.
+        """
+        # NOTE: Input is managed as a stack, so if `render` is called within another `render`,
+        # the propertes below will return only the inner-most state.
+        return self._render_stack[-1] if len(self._render_stack) else None
+
+    def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
+        return cast(DataType, {})
 
     def get_template_name(self, context: Context) -> Optional[str]:
         return self.template_name
@@ -220,21 +304,30 @@ class Component(View, metaclass=ComponentMeta):
 
         As the `{{ data.hello }}` is taken from the "provider".
         """
-        if self._context is None:
+        if self.input is None:
             raise RuntimeError(
                 f"Method 'inject()' of component '{self.name}' was called outside of 'get_context_data()'"
             )
 
-        return get_injected_context_var(self.name, self._context, key, default)
+        return get_injected_context_var(self.name, self.input.context, key, default)
+
+    @classmethod
+    def as_view(cls, **initkwargs: Any) -> ViewFn:
+        """
+        Shortcut for calling `Component.View.as_view` and passing component instance to it.
+        """
+        # Allow the View class to access this component via `self.component`
+        component = cls()
+        return component.View.as_view(**initkwargs, component=component)
 
     @classmethod
     def render_to_response(
         cls,
-        context: Union[Dict[str, Any], Context] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        context: Optional[Union[Dict[str, Any], Context]] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -294,9 +387,9 @@ class Component(View, metaclass=ComponentMeta):
     def render(
         cls,
         context: Optional[Union[Dict[str, Any], Context]] = None,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
     ) -> str:
         """
@@ -343,10 +436,10 @@ class Component(View, metaclass=ComponentMeta):
     # This is the internal entrypoint for the render function
     def _render(
         self,
-        context: Union[Dict[str, Any], Context] = None,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        context: Optional[Union[Dict[str, Any], Context]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
     ) -> str:
         try:
@@ -356,16 +449,18 @@ class Component(View, metaclass=ComponentMeta):
 
     def _render_impl(
         self,
-        context: Union[Dict[str, Any], Context] = None,
-        args: Optional[Union[List, Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        slots: Optional[Mapping[SlotName, SlotContent]] = None,
+        context: Optional[Union[Dict[str, Any], Context]] = None,
+        args: Optional[ArgsType] = None,
+        kwargs: Optional[KwargsType] = None,
+        slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
     ) -> str:
+        has_slots = slots is not None
+
         # Allow to provide no args/kwargs/slots/context
-        args = args or []  # type: ignore[assignment]
-        kwargs = kwargs or {}  # type: ignore[assignment]
-        slots = slots or {}  # type: ignore[assignment]
+        args = cast(ArgsType, args or ())
+        kwargs = cast(KwargsType, kwargs or {})
+        slots = cast(SlotsType, slots or {})
         context = context or Context()
 
         # Allow to provide a dict instead of Context
@@ -374,11 +469,20 @@ class Component(View, metaclass=ComponentMeta):
         context = context if isinstance(context, Context) else Context(context)
         prepare_context(context, self.component_id)
 
-        # Temporarily populate _context so user can call `self.inject()` from
-        # within `get_context_data()`
-        self._context = context
+        # By adding the current input to the stack, we temporarily allow users
+        # to access the provided context, slots, etc. Also required so users can
+        # call `self.inject()` from within `get_context_data()`.
+        self._render_stack.append(
+            RenderInput(
+                context=context,
+                slots=slots,
+                args=args,
+                kwargs=kwargs,
+                escape_slots_content=escape_slots_content,
+            )
+        )
+
         context_data = self.get_context_data(*args, **kwargs)
-        self._context = None
 
         with context.update(context_data):
             template = self.get_template(context)
@@ -397,8 +501,11 @@ class Component(View, metaclass=ComponentMeta):
             template._dc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
 
             # Support passing slots explicitly to `render` method
-            if slots:
-                fill_content = self._fills_from_slots_data(slots, escape_slots_content)
+            if has_slots:
+                fill_content = self._fills_from_slots_data(
+                    slots,
+                    escape_slots_content,
+                )
             else:
                 fill_content = self.fill_content
 
@@ -407,7 +514,7 @@ class Component(View, metaclass=ComponentMeta):
             if not context[_PARENT_COMP_CONTEXT_KEY]:
                 slot_context_data = self.outer_context.flatten()
 
-            slots, resolved_fills = resolve_slots(
+            _, resolved_fills = resolve_slots(
                 context,
                 template,
                 component_name=self.name,
@@ -443,6 +550,10 @@ class Component(View, metaclass=ComponentMeta):
             output = RENDERED_COMMENT_TEMPLATE.format(name=self.name) + rendered_component
         else:
             output = rendered_component
+
+        # After rendering is done, remove the current state from the stack, which means
+        # properties like `self.context` will no longer return the current state.
+        self._render_stack.pop()
 
         return output
 
