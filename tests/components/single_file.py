@@ -19,7 +19,7 @@ class SingleFileComponent(Component):
         variable = request.POST.get("variable")
         return self.render_to_response({"variable": variable})
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> HttpResponse:
         return self.render_to_response({"variable": "GET"})
 
     def get_context_data(self, variable, *args, **kwargs) -> Dict[str, Any]:

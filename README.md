@@ -49,12 +49,12 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
-🚨📢 **Version 0.91** 
-- BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`.
+🚨📢 **Version 0.92** 
+- BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
 
-- Inputs (args, kwargs, slots, context, ...) passed to `Component.render` can be accessed from within `get_context_data`, `get_template_string` and `get_template_name` via `self.input`.
+- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template_string` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](#accessing-data-passed-to-the-component))
 
-- Typing: `Component` class supports generics that specify types for `Component.render`
+- Typing: `Component` class supports generics that specify types for `Component.render` (See [Adding type hints with Generics](#adding-type-hints-with-generics))
 
 **Version 0.90**
 - All tags (`component`, `slot`, `fill`, ...) now support "self-closing" or "inline" form, where you can omit the closing tag:
@@ -667,7 +667,7 @@ assert isinstance(response, MyResponse)
 
 _New in version 0.34_
 
-_Note: Since 0.91, Component no longer subclasses View. To configure the View class, set the nested `Component.View` class_
+_Note: Since 0.92, Component no longer subclasses View. To configure the View class, set the nested `Component.View` class_
 
 Components can now be used as views:
 - Components define the `Component.as_view()` class method that can be used the same as [`View.as_view()`](https://docs.djangoproject.com/en/5.1/ref/class-based-views/base/#django.views.generic.base.View.as_view).
