@@ -5,14 +5,10 @@ from typing import Dict
 from django.template import Context, Template
 from django.template.base import Parser
 
-from django_components.expression import (
-    safe_resolve_dict,
-    safe_resolve_list,
-)
+from django_components.expression import safe_resolve_dict, safe_resolve_list
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
-
 
 setup_test_config({"autodiscover": False})
 

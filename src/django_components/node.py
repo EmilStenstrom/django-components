@@ -11,6 +11,7 @@ from django_components.utils import gen_id
 
 class BaseNode(Node):
     """Shared behavior for our subclasses of Django's `Node`"""
+
     def __init__(
         self,
         nodelist: Optional[NodeList] = None,

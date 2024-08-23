@@ -3,10 +3,10 @@ from django.template.base import Parser
 
 from django_components import Component, registry, types
 from django_components.expression import (
-    safe_resolve_dict,
-    safe_resolve_list,
     is_aggregate_key,
     process_aggregate_kwargs,
+    safe_resolve_dict,
+    safe_resolve_list,
 )
 from django_components.templatetags.component_tags import _parse_tag
 
