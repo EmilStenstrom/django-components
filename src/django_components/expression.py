@@ -1,11 +1,36 @@
+import re
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
 from django.template import Context, TemplateSyntaxError
 from django.template.base import FilterExpression, Parser
 
 Expression = Union[FilterExpression]
-RuntimeKwargsInput = Dict[str, Expression]
-RuntimeKwargPairsInput = List[Tuple[str, Expression]]
+RuntimeKwargsInput = Dict[str, Union[Expression, "Operator"]]
+RuntimeKwargPairsInput = List[Tuple[str, Union[Expression, "Operator"]]]
+
+
+class Operator(ABC):
+    """
+    Operator describes something that somehow changes the inputs
+    to template tags (the `{% %}`).
+
+    For example, a SpreadOperator inserts one or more kwargs at the
+    specified location.
+    """
+
+    @abstractmethod
+    def resolve(self, context: Context) -> Any: ...  # noqa E704
+
+
+class SpreadOperator(Operator):
+    """Operator that inserts one or more kwargs at the specified location."""
+
+    def __init__(self, expr: Expression) -> None:
+        self.expr = expr
+
+    def resolve(self, context: Context) -> Dict[str, Any]:
+        return self.expr.resolve(context)
 
 
 class RuntimeKwargs:
@@ -24,7 +49,12 @@ class RuntimeKwargPairs:
     def resolve(self, context: Context) -> List[Tuple[str, Any]]:
         resolved_kwarg_pairs: List[Tuple[str, Any]] = []
         for key, kwarg in self.kwarg_pairs:
-            resolved_kwarg_pairs.append((key, kwarg.resolve(context)))
+            if isinstance(kwarg, SpreadOperator):
+                spread_kwargs = kwarg.resolve(context)
+                for spread_key, spread_value in spread_kwargs.items():
+                    resolved_kwarg_pairs.append((spread_key, spread_value))
+            else:
+                resolved_kwarg_pairs.append((key, kwarg.resolve(context)))
 
         return resolved_kwarg_pairs
 
@@ -43,12 +73,19 @@ def safe_resolve_list(context: Context, args: List[Expression]) -> List:
 
 def safe_resolve_dict(
     context: Context,
-    kwargs: Dict[str, Expression],
+    kwargs: Dict[str, Union[Expression, "Operator"]],
 ) -> Dict[str, Any]:
     result = {}
 
     for key, kwarg in kwargs.items():
-        result[key] = kwarg.resolve(context)
+        # If we've come across a Spread Operator (...), we insert the kwargs from it here
+        if isinstance(kwarg, SpreadOperator):
+            spread_dict = kwarg.resolve(context)
+            if spread_dict is not None:
+                for spreadkey, spreadkwarg in spread_dict.items():
+                    result[spreadkey] = spreadkwarg
+        else:
+            result[key] = kwarg.resolve(context)
     return result
 
 
@@ -70,6 +107,24 @@ def is_aggregate_key(key: str) -> bool:
     # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
     # This syntax is used by Vue and AlpineJS.
     return ":" in key and not key.startswith(":")
+
+
+def is_spread_operator(value: Any) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+
+    return value.startswith("...")
+
+
+# A string that starts with `...1=`, `...29=`, etc
+ESCAPED_SPREAD_OPERATOR_RE = re.compile(r"^\.\.\.\d+=")
+
+
+def is_escaped_spread_operator(value: Any) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+
+    return bool(ESCAPED_SPREAD_OPERATOR_RE.match(value))
 
 
 def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:

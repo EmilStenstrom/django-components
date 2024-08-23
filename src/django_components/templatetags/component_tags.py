@@ -12,11 +12,16 @@ from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
 from django_components.expression import (
     Expression,
+    Operator,
     RuntimeKwargPairs,
+    RuntimeKwargPairsInput,
     RuntimeKwargs,
     RuntimeKwargsInput,
+    SpreadOperator,
     is_aggregate_key,
+    is_escaped_spread_operator,
     is_kwarg,
+    is_spread_operator,
     resolve_string,
 )
 from django_components.logger import trace_msg
@@ -389,6 +394,7 @@ def _parse_tag(
         else:
             seen_kwargs.add(key)
 
+    spread_count = 0
     for bit in bits:
         value = bit
         bit_is_kwarg = is_kwarg(bit)
@@ -409,6 +415,18 @@ def _parse_tag(
             # Extract flags, which are like keywords but without the value part
             if value in parsed_flags:
                 parsed_flags[value] = True
+                continue
+
+            # Extract spread operator (...dict)
+            elif is_spread_operator(value):
+                # Replace the leading `...` with `...=`, so the parser
+                # interprets it as a kwargs, and keeps it in the correct
+                # position.
+                # Since there can be multiple spread operators, we suffix
+                # them with an index, e.g. `...0=`
+                escaped_spread_bit = f"...{spread_count}={value[3:]}"
+                bits_without_flags.append(escaped_spread_bit)
+                spread_count += 1
                 continue
 
         bits_without_flags.append(bit)
@@ -450,12 +468,24 @@ def _parse_tag(
             params = [param for param in params_to_sort if param not in optional_params]
 
     # Parse args/kwargs that will be passed to the fill
-    args, kwarg_pairs = parse_bits(
+    args, raw_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
         params=[] if isinstance(params, bool) else params,
         name=tag_name,
     )
+
+    # Post-process args/kwargs - Mark special cases like aggregate dicts
+    # or dynamic expressions
+    kwarg_pairs: RuntimeKwargPairsInput = []
+    for key, val in raw_kwarg_pairs:
+        is_spread_op = is_escaped_spread_operator(key + "=")
+
+        if is_spread_op:
+            expr = parser.compile_filter(val.token)
+            kwarg_pairs.append((key, SpreadOperator(expr)))
+        else:
+            kwarg_pairs.append((key, val))
 
     # Allow only as many positional args as given
     if params != True and len(args) > len(params):  # noqa F712
@@ -471,6 +501,11 @@ def _parse_tag(
     kwargs: RuntimeKwargsInput = {}
     extra_keywords: Set[str] = set()
     for key, val in kwarg_pairs:
+        # Operators are resolved at render-time, so skip them
+        if isinstance(val, Operator):
+            kwargs[key] = val
+            continue
+
         # Check if key allowed
         if not keywordonly_kwargs:
             is_key_allowed = False
