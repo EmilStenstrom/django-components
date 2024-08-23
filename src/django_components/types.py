@@ -14,12 +14,12 @@ except ImportError:
         def __repr__(self) -> str:
             return f"Annotated[{self.type_}, {self.metadata[0]!r}, {self.metadata[1]!r}]"
 
-        def __getitem__(self, params: Any) -> "Annotated":  # type: ignore
+        def __getitem__(self, params: Any) -> "Annotated[Any, Any, Any]":  # type: ignore
             if not isinstance(params, tuple):
                 params = (params,)
             return Annotated(self.type_, *params, **self.metadata[1])  # type: ignore
 
-        def __class_getitem__(self, *params: Any) -> "Annotated":  # type: ignore
+        def __class_getitem__(self, *params: Any) -> "Annotated[Any, Any, Any]":  # type: ignore
             return Annotated(*params)  # type: ignore
 
 
