@@ -573,7 +573,11 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 )
             else:
 
-                def content_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
+                def content_func(  # type: ignore[misc]
+                    ctx: Context,
+                    kwargs: Dict[str, Any],
+                    slot_ref: SlotRef,
+                ) -> SlotResult:
                     rendered = content(ctx, kwargs, slot_ref)
                     return conditional_escape(rendered) if escape_content else rendered
 

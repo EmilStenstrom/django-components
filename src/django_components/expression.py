@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
 from django.template import Context, TemplateSyntaxError
 from django.template.base import FilterExpression, Parser
 
-Expression = FilterExpression
+Expression = Union[FilterExpression]
 RuntimeKwargsInput = Dict[str, Expression]
 RuntimeKwargPairsInput = List[Tuple[str, Expression]]
 

@@ -28,8 +28,8 @@ from django_components.middleware import (
 from django_components.provide import ProvideNode
 from django_components.slots import (
     SLOT_DATA_KWARG,
-    SLOT_DEFAULT_KWARG,
     SLOT_DEFAULT_KEYWORD,
+    SLOT_DEFAULT_KWARG,
     SLOT_REQUIRED_KEYWORD,
     FillNode,
     SlotNode,
@@ -410,7 +410,7 @@ def _parse_tag(
             if value in parsed_flags:
                 parsed_flags[value] = True
                 continue
-  
+
         bits_without_flags.append(bit)
 
     bits = bits_without_flags
@@ -456,7 +456,6 @@ def _parse_tag(
         params=[] if isinstance(params, bool) else params,
         name=tag_name,
     )
-
 
     # Allow only as many positional args as given
     if params != True and len(args) > len(params):  # noqa F712

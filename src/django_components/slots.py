@@ -635,4 +635,4 @@ def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
     def render_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         return nodelist.render(ctx)
 
-    return render_func
+    return render_func  # type: ignore[return-value]
