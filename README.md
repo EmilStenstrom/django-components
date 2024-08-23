@@ -1875,6 +1875,8 @@ class Calendar(Component):
 
 ### Spread operator
 
+_New in version 0.93_:
+
 Instead of passing keyword arguments one-by-one:
 
 ```django
