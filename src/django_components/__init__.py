@@ -19,6 +19,10 @@ from django_components.component_registry import (
     registry as registry,
 )
 from django_components.library import TagProtectedError as TagProtectedError
+from django_components.slots import (
+    SlotContent as SlotContent,
+    SlotFunc as SlotFunc,
+)
 from django_components.tag_formatter import (
     ComponentFormatter as ComponentFormatter,
     ShorthandComponentFormatter as ShorthandComponentFormatter,

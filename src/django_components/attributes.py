@@ -4,37 +4,46 @@
 
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from django.template import Context, Node
+from django.template import Context
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.expression import Expression, safe_resolve
+from django_components.expression import RuntimeKwargPairs, RuntimeKwargs
+from django_components.node import BaseNode
 
 HTML_ATTRS_DEFAULTS_KEY = "defaults"
 HTML_ATTRS_ATTRS_KEY = "attrs"
 
 
-class HtmlAttrsNode(Node):
+class HtmlAttrsNode(BaseNode):
     def __init__(
         self,
-        attributes: Optional[Expression],
-        defaults: Optional[Expression],
-        kwargs: List[Tuple[str, Expression]],
+        kwargs: RuntimeKwargs,
+        kwarg_pairs: RuntimeKwargPairs,
+        node_id: Optional[str] = None,
     ):
-        self.attributes = attributes
-        self.defaults = defaults
-        self.kwargs = kwargs
+        super().__init__(nodelist=None, args=None, kwargs=kwargs, node_id=node_id)
+        self.kwarg_pairs = kwarg_pairs
 
     def render(self, context: Context) -> str:
         append_attrs: List[Tuple[str, Any]] = []
 
         # Resolve all data
-        for key, value in self.kwargs:
-            resolved_value = safe_resolve(value, context)
-            append_attrs.append((key, resolved_value))
+        kwargs = self.kwargs.resolve(context)
+        attrs = kwargs.pop(HTML_ATTRS_ATTRS_KEY, None) or {}
+        defaults = kwargs.pop(HTML_ATTRS_DEFAULTS_KEY, None) or {}
 
-        defaults = safe_resolve(self.defaults, context) or {} if self.defaults else {}
-        attrs = safe_resolve(self.attributes, context) or {} if self.attributes else {}
+        kwarg_pairs = self.kwarg_pairs.resolve(context)
+
+        for key, value in kwarg_pairs:
+            if (
+                key in [HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY]
+                or key.startswith(f"{HTML_ATTRS_ATTRS_KEY}:")
+                or key.startswith(f"{HTML_ATTRS_DEFAULTS_KEY}:")
+            ):
+                continue
+
+            append_attrs.append((key, value))
 
         # Merge it
         final_attrs = {**defaults, **attrs}

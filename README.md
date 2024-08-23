@@ -537,7 +537,7 @@ Component.render(
     context: Mapping | django.template.Context | None = None,
     args: List[Any] | None = None,
     kwargs: Dict[str, Any] | None = None,
-    slots: Dict[str, str | SafeString | SlotRenderFunc] | None = None,
+    slots: Dict[str, str | SafeString | SlotFunc] | None = None,
     escape_slots_content: bool = True
 ) -> str:
 ```
@@ -550,7 +550,7 @@ Component.render(
 
 - _`slots`_ - Component slot fills. This is the same as pasing `{% fill %}` tags to the component.
   Accepts a dictionary of `{ slot_name: slot_content }` where `slot_content` can be a string
-  or [`SlotRenderFunc`](#slotrenderfunc).
+  or [`SlotFunc`](#slotfunc).
 
 - _`escape_slots_content`_ - Whether the content from `slots` should be escaped. `True` by default to prevent XSS attacks. If you disable escaping, you should make sure that any content you pass to the slots is safe, especially if it comes from user input.
 
@@ -559,7 +559,7 @@ Component.render(
   - NOTE: In "isolated" mode, context is NOT accessible, and data MUST be passed via
     component's args and kwargs.
 
-#### `SlotRenderFunc`
+#### `SlotFunc`
 
 When rendering components with slots in `render` or `render_to_response`, you can pass either a string or a function.
 
@@ -602,24 +602,30 @@ that allow you to specify the types of args, kwargs, slots, and
 data.
 
 ```py
-from typing import NotRequired, Tuple, TypedDict
+from typing import NotRequired, Tuple, TypedDict, SlotFunc
 
-# Tuple
+# Positional inputs - Tuple
 Args = Tuple[int, str]
 
-# Mapping
+# Kwargs inputs - Mapping
 class Kwargs(TypedDict):
     variable: str
     another: int
     maybe_var: NotRequired[int]
 
-# Mapping
+# Data returned from `get_context_data` - Mapping
 class Data(TypedDict):
     variable: str
 
-# Mapping
+# The data available to the `my_slot` scoped slot
+class MySlotData(TypedDict):
+    value: int
+
+# Slot functions - Mapping
 class Slots(TypedDict):
-    my_slot: NotRequired[str]
+    # Use SlotFunc for slot functions.
+    # The generic specifies the `data` dictionary
+    my_slot: NotRequired[SlotFunc[MySlotData]]
 
 class Button(Component[Args, Kwargs, Data, Slots]):
     def get_context_data(self, variable, another):

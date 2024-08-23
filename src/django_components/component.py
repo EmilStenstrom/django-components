@@ -23,7 +23,7 @@ from typing import (
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
 from django.http import HttpRequest, HttpResponse
-from django.template.base import FilterExpression, Node, NodeList, Template, TextNode
+from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
@@ -42,21 +42,23 @@ from django_components.context import (
     make_isolated_context_copy,
     prepare_context,
 )
-from django_components.expression import safe_resolve_dict, safe_resolve_list
+from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
 from django_components.logger import trace_msg
 from django_components.middleware import is_dependency_middleware_active
+from django_components.node import BaseNode
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
+    SLOT_DATA_KWARG,
+    SLOT_DEFAULT_KWARG,
     FillContent,
     FillNode,
     SlotContent,
     SlotName,
     SlotRef,
-    SlotRenderedContent,
+    SlotResult,
     _nodelist_to_slot_render_func,
     resolve_slots,
 )
-from django_components.template_parser import process_aggregate_kwargs
 from django_components.utils import gen_id
 
 # TODO_DEPRECATE_V1 - REMOVE IN V1, users should use top-level import instead
@@ -571,7 +573,11 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 )
             else:
 
-                def content_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotRenderedContent:
+                def content_func(  # type: ignore[misc]
+                    ctx: Context,
+                    kwargs: Dict[str, Any],
+                    slot_ref: SlotRef,
+                ) -> SlotResult:
                     rendered = content(ctx, kwargs, slot_ref)
                     return conditional_escape(rendered) if escape_content else rendered
 
@@ -583,25 +589,23 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         return slot_fills
 
 
-class ComponentNode(Node):
+class ComponentNode(BaseNode):
     """Django.template.Node subclass that renders a django-components component"""
 
     def __init__(
         self,
         name: str,
-        context_args: List[FilterExpression],
-        context_kwargs: Mapping[str, FilterExpression],
+        args: List[Expression],
+        kwargs: RuntimeKwargs,
         isolated_context: bool = False,
         fill_nodes: Optional[List[FillNode]] = None,
-        component_id: Optional[str] = None,
+        node_id: Optional[str] = None,
     ) -> None:
-        self.component_id = component_id or gen_id()
+        super().__init__(nodelist=NodeList(fill_nodes), args=args, kwargs=kwargs, node_id=node_id)
+
         self.name = name
-        self.context_args = context_args or []
-        self.context_kwargs = context_kwargs or {}
         self.isolated_context = isolated_context
         self.fill_nodes = fill_nodes or []
-        self.nodelist = NodeList(fill_nodes)
 
     def __repr__(self) -> str:
         return "<ComponentNode: {}. Contents: {!r}>".format(
@@ -610,16 +614,15 @@ class ComponentNode(Node):
         )
 
     def render(self, context: Context) -> str:
-        trace_msg("RENDR", "COMP", self.name, self.component_id)
+        trace_msg("RENDR", "COMP", self.name, self.node_id)
 
         component_cls: Type[Component] = registry.get(self.name)
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
         # to get values to insert into the context
-        resolved_context_args = safe_resolve_list(self.context_args, context)
-        resolved_context_kwargs = safe_resolve_dict(self.context_kwargs, context)
-        resolved_context_kwargs = process_aggregate_kwargs(resolved_context_kwargs)
+        args = safe_resolve_list(context, self.args)
+        kwargs = self.kwargs.resolve(context)
 
         is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
         if is_default_slot:
@@ -635,26 +638,25 @@ class ComponentNode(Node):
             for fill_node in self.fill_nodes:
                 # Note that outer component context is used to resolve variables in
                 # fill tag.
-                resolved_name = fill_node.name_fexp.resolve(context)
+                resolved_name = fill_node.name.resolve(context)
                 if resolved_name in fill_content:
                     raise TemplateSyntaxError(
                         f"Multiple fill tags cannot target the same slot name: "
                         f"Detected duplicate fill tag name '{resolved_name}'."
                     )
 
-                resolved_slot_default_var = fill_node.resolve_slot_default(context, self.name)
-                resolved_slot_data_var = fill_node.resolve_slot_data(context, self.name)
+                fill_kwargs = fill_node.resolve_kwargs(context, self.name)
                 fill_content[resolved_name] = FillContent(
                     content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
-                    slot_default_var=resolved_slot_default_var,
-                    slot_data_var=resolved_slot_data_var,
+                    slot_default_var=fill_kwargs[SLOT_DEFAULT_KWARG],
+                    slot_data_var=fill_kwargs[SLOT_DATA_KWARG],
                 )
 
         component: Component = component_cls(
             registered_name=self.name,
             outer_context=context,
             fill_content=fill_content,
-            component_id=self.component_id,
+            component_id=self.node_id,
         )
 
         # Prevent outer context from leaking into the template of the component
@@ -663,11 +665,11 @@ class ComponentNode(Node):
 
         output = component._render(
             context=context,
-            args=resolved_context_args,
-            kwargs=resolved_context_kwargs,
+            args=args,
+            kwargs=kwargs,
         )
 
-        trace_msg("RENDR", "COMP", self.name, self.component_id, "...Done!")
+        trace_msg("RENDR", "COMP", self.name, self.node_id, "...Done!")
         return output
 
 

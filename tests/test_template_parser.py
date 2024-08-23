@@ -2,8 +2,12 @@ from django.template import Context, Template
 from django.template.base import Parser
 
 from django_components import Component, registry, types
-from django_components.component import safe_resolve_dict, safe_resolve_list
-from django_components.template_parser import is_aggregate_key, process_aggregate_kwargs
+from django_components.expression import (
+    is_aggregate_key,
+    process_aggregate_kwargs,
+    safe_resolve_dict,
+    safe_resolve_list,
+)
 from django_components.templatetags.component_tags import _parse_tag
 
 from .django_test_setup import setup_test_config
@@ -18,9 +22,9 @@ class ParserTest(BaseTestCase):
         tag = _parse_tag("component", Parser(""), bits, params=["num", "var"], keywordonly_kwargs=True)
 
         ctx = {"myvar": {"a": "b"}, "val2": 1}
-        args = safe_resolve_list(tag.args, ctx)
-        named_args = safe_resolve_dict(tag.named_args, ctx)
-        kwargs = safe_resolve_dict(tag.kwargs, ctx)
+        args = safe_resolve_list(ctx, tag.args)
+        named_args = safe_resolve_dict(ctx, tag.named_args)
+        kwargs = tag.kwargs.resolve(ctx)
 
         self.assertListEqual(args, [42, {"a": "b"}])
         self.assertDictEqual(named_args, {"num": 42, "var": {"a": "b"}})
@@ -38,8 +42,8 @@ class ParserTest(BaseTestCase):
         tag = _parse_tag("component", Parser(""), bits, keywordonly_kwargs=True)
 
         ctx = Context({"date": 2024, "bzz": "fzz"})
-        args = safe_resolve_list(tag.args, ctx)
-        kwargs = safe_resolve_dict(tag.kwargs, ctx)
+        args = safe_resolve_list(ctx, tag.args)
+        kwargs = tag.kwargs.resolve(ctx)
 
         self.assertListEqual(args, [])
         self.assertDictEqual(

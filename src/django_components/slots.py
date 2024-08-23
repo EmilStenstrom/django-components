@@ -2,7 +2,8 @@ import difflib
 import json
 import re
 from collections import deque
-from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Optional, Set, Tuple, Type, Union
+from dataclasses import dataclass
+from typing import Any, Dict, Generic, List, Mapping, NamedTuple, Optional, Protocol, Set, Tuple, Type, TypeVar, Union
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -16,26 +17,38 @@ from django_components.context import (
     _INJECT_CONTEXT_KEY_PREFIX,
     _ROOT_CTX_CONTEXT_KEY,
 )
-from django_components.expression import Expression, resolve_expression_as_identifier, safe_resolve_dict
+from django_components.expression import RuntimeKwargs, is_identifier
 from django_components.logger import trace_msg
-from django_components.node import NodeTraverse, nodelist_has_content, walk_nodelist
-from django_components.utils import gen_id
+from django_components.node import BaseNode, NodeTraverse, nodelist_has_content, walk_nodelist
+
+TSlotData = TypeVar("TSlotData", bound=Mapping, contravariant=True)
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
+SLOT_DATA_KWARG = "data"
+SLOT_DEFAULT_KWARG = "default"
+SLOT_REQUIRED_KEYWORD = "required"
+SLOT_DEFAULT_KEYWORD = "default"
 
-SlotRenderedContent = Union[str, SafeString]
-SlotRenderFunc = Callable[[Context, Dict[str, Any], "SlotRef"], SlotRenderedContent]
 
-# Type aliases
+# Public types
+SlotResult = Union[str, SafeString]
 
+
+class SlotFunc(Protocol, Generic[TSlotData]):
+    def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult: ...  # noqa E704
+
+
+SlotContent = Union[SlotResult, SlotFunc[TSlotData]]
+
+# Internal type aliases
 SlotId = str
 SlotName = str
 SlotDefaultName = str
 SlotDataName = str
-SlotContent = Union[str, SafeString, SlotRenderFunc]
 
 
-class FillContent(NamedTuple):
+@dataclass(frozen=True)
+class FillContent(Generic[TSlotData]):
     """
     This represents content set with the `{% fill %}` tag, e.g.:
 
@@ -50,7 +63,7 @@ class FillContent(NamedTuple):
     ```
     """
 
-    content_func: SlotRenderFunc
+    content_func: SlotFunc[TSlotData]
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
@@ -75,7 +88,8 @@ class Slot(NamedTuple):
     nodelist: NodeList
 
 
-class SlotFill(NamedTuple):
+@dataclass(frozen=True)
+class SlotFill(Generic[TSlotData]):
     """
     SlotFill describes what WILL be rendered.
 
@@ -85,7 +99,7 @@ class SlotFill(NamedTuple):
     name: str
     escaped_name: str
     is_filled: bool
-    content_func: SlotRenderFunc
+    content_func: SlotFunc[TSlotData]
     context_data: Mapping
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
@@ -110,22 +124,21 @@ class SlotRef:
         return mark_safe(self._slot.nodelist.render(self._context))
 
 
-class SlotNode(Node):
+class SlotNode(BaseNode):
     def __init__(
         self,
         name: str,
         nodelist: NodeList,
+        node_id: Optional[str] = None,
+        kwargs: Optional[RuntimeKwargs] = None,
         is_required: bool = False,
         is_default: bool = False,
-        node_id: Optional[str] = None,
-        slot_kwargs: Optional[Dict[str, Expression]] = None,
     ):
+        super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
+
         self.name = name
-        self.nodelist = nodelist
         self.is_required = is_required
         self.is_default = is_default
-        self.node_id = node_id or gen_id()
-        self.slot_kwargs = slot_kwargs or {}
 
     @property
     def active_flags(self) -> List[str]:
@@ -171,14 +184,14 @@ class SlotNode(Node):
         # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
         # are made available through a variable name that was set on the `{% fill %}`
         # tag.
-        slot_kwargs = safe_resolve_dict(self.slot_kwargs, context)
+        kwargs = self.kwargs.resolve(context)
         data_var = slot_fill.slot_data_var
         if data_var:
             if not data_var.isidentifier():
                 raise TemplateSyntaxError(
                     f"Slot data alias in fill '{self.name}' must be a valid identifier. Got '{data_var}'"
                 )
-            extra_context[data_var] = slot_kwargs
+            extra_context[data_var] = kwargs
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
@@ -187,7 +200,7 @@ class SlotNode(Node):
             # Render slot as a function
             # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
             #       the render function ALWAYS receives them.
-            output = slot_fill.content_func(used_ctx, slot_kwargs, slot_ref)
+            output = slot_fill.content_func(used_ctx, kwargs, slot_ref)
 
         trace_msg("RENDR", "SLOT", self.name, self.node_id, msg="...Done!")
         return output
@@ -208,7 +221,7 @@ class SlotNode(Node):
             raise ValueError(f"Unknown value for CONTEXT_BEHAVIOR: '{app_settings.CONTEXT_BEHAVIOR}'")
 
 
-class FillNode(Node):
+class FillNode(BaseNode):
     """
     Set when a `component` tag pair is passed template content that
     excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
@@ -217,19 +230,16 @@ class FillNode(Node):
 
     def __init__(
         self,
+        name: FilterExpression,
         nodelist: NodeList,
-        name_fexp: FilterExpression,
-        slot_default_var_fexp: Optional[FilterExpression] = None,
-        slot_data_var_fexp: Optional[FilterExpression] = None,
-        is_implicit: bool = False,
+        kwargs: RuntimeKwargs,
         node_id: Optional[str] = None,
+        is_implicit: bool = False,
     ):
-        self.node_id = node_id or gen_id()
-        self.nodelist = nodelist
-        self.name_fexp = name_fexp
-        self.slot_default_var_fexp = slot_default_var_fexp
+        super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
+
+        self.name = name
         self.is_implicit = is_implicit
-        self.slot_data_var_fexp = slot_data_var_fexp
         self.component_id: Optional[str] = None
 
     def render(self, context: Context) -> str:
@@ -240,33 +250,44 @@ class FillNode(Node):
         )
 
     def __repr__(self) -> str:
-        return f"<{type(self)} Name: {self.name_fexp}. Contents: {repr(self.nodelist)}.>"
+        return f"<{type(self)} Name: {self.name}. Contents: {repr(self.nodelist)}.>"
 
-    def resolve_slot_default(self, context: Context, component_name: Optional[str] = None) -> Optional[str]:
-        return self.resolve_fexp("slot default", self.slot_default_var_fexp, context, component_name)
+    def resolve_kwargs(self, context: Context, component_name: Optional[str] = None) -> Dict[str, Optional[str]]:
+        kwargs = self.kwargs.resolve(context)
 
-    def resolve_slot_data(self, context: Context, component_name: Optional[str] = None) -> Optional[str]:
-        return self.resolve_fexp("slot data", self.slot_data_var_fexp, context, component_name)
+        default_key = self._resolve_kwarg(kwargs, SLOT_DEFAULT_KWARG, "slot default", component_name)
+        data_key = self._resolve_kwarg(kwargs, SLOT_DATA_KWARG, "slot data", component_name)
 
-    def resolve_fexp(
+        # data and default cannot be bound to the same variable
+        if data_key and default_key and data_key == default_key:
+            raise RuntimeError(
+                f"Fill {self.name} received the same string for slot default ({SLOT_DEFAULT_KWARG}=...)"
+                f" and slot data ({SLOT_DATA_KWARG}=...)"
+            )
+
+        return {
+            SLOT_DEFAULT_KWARG: default_key,
+            SLOT_DATA_KWARG: data_key,
+        }
+
+    def _resolve_kwarg(
         self,
+        kwargs: Dict[str, Any],
+        key: str,
         name: str,
-        fexp: Optional[FilterExpression],
-        context: Context,
         component_name: Optional[str] = None,
     ) -> Optional[str]:
-        if not fexp:
+        if key not in kwargs:
             return None
 
-        try:
-            resolved_name = resolve_expression_as_identifier(context, fexp)
-        except ValueError as err:
-            raise TemplateSyntaxError(
-                f"Fill tag {name} '{fexp.var}' in component {component_name}"
-                f"does not resolve to a valid Python identifier."
-            ) from err
+        value = kwargs[key]
+        if not is_identifier(value):
+            raise RuntimeError(
+                f"Fill tag {name} in component {component_name}"
+                f"does not resolve to a valid Python identifier, got '{value}'"
+            )
 
-        return resolved_name
+        return value
 
 
 def parse_slot_fill_nodes_from_component_nodelist(
@@ -316,18 +337,18 @@ def _try_parse_as_named_fill_tag_set(
     ComponentNodeCls: Type[Node],
 ) -> List[FillNode]:
     result = []
-    seen_name_fexps: Set[str] = set()
+    seen_names: Set[str] = set()
     for node in nodelist:
         if isinstance(node, FillNode):
             # Check that, after we've resolved the names, that there's still no duplicates.
             # This makes sure that if two different variables refer to same string, we detect
             # them.
-            if node.name_fexp.token in seen_name_fexps:
+            if node.name.token in seen_names:
                 raise TemplateSyntaxError(
                     f"Multiple fill tags cannot target the same slot name: "
-                    f"Detected duplicate fill tag name '{node.name_fexp}'."
+                    f"Detected duplicate fill tag name '{node.name}'."
                 )
-            seen_name_fexps.add(node.name_fexp.token)
+            seen_names.add(node.name.token)
             result.append(node)
         elif isinstance(node, CommentNode):
             pass
@@ -357,7 +378,8 @@ def _try_parse_as_default_fill(
         return [
             FillNode(
                 nodelist=nodelist,
-                name_fexp=FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
+                name=FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
+                kwargs=RuntimeKwargs({}),
                 is_implicit=True,
             )
         ]
@@ -609,8 +631,8 @@ def _escape_slot_name(name: str) -> str:
     return escaped_name
 
 
-def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotRenderFunc:
-    def render_func(ctx: Context, slot_kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotRenderedContent:
+def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
+    def render_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         return nodelist.render(ctx)
 
-    return render_func
+    return render_func  # type: ignore[return-value]
