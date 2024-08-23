@@ -822,8 +822,8 @@ class ScopedSlotTest(BaseTestCase):
             {% endcomponent %}
         """
         with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "'fill' received the same string for slot default (default=...) and slot data (data=...)",
+            RuntimeError,
+            'Fill "my_slot" received the same string for slot default (default=...) and slot data (data=...)',
         ):
             Template(template).render(Context())
 

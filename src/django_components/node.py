@@ -5,6 +5,24 @@ from django.template.base import Node, NodeList, TextNode
 from django.template.defaulttags import CommentNode
 from django.template.loader_tags import ExtendsNode, IncludeNode, construct_relative_path
 
+from django_components.expression import Expression, RuntimeKwargs
+from django_components.utils import gen_id
+
+
+class BaseNode(Node):
+    """Shared behavior for our subclasses of Django's `Node`"""
+    def __init__(
+        self,
+        nodelist: Optional[NodeList] = None,
+        node_id: Optional[str] = None,
+        args: Optional[List[Expression]] = None,
+        kwargs: Optional[RuntimeKwargs] = None,
+    ):
+        self.nodelist = nodelist or NodeList()
+        self.node_id = node_id or gen_id()
+        self.args = args or []
+        self.kwargs = kwargs or RuntimeKwargs({})
+
 
 def nodelist_has_content(nodelist: NodeList) -> bool:
     for node in nodelist:
