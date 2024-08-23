@@ -8,7 +8,7 @@ from django.template import Context
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.expression import RuntimeKwargs, RuntimeKwargPairs
+from django_components.expression import RuntimeKwargPairs, RuntimeKwargs
 from django_components.node import BaseNode
 
 HTML_ATTRS_DEFAULTS_KEY = "defaults"

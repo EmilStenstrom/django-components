@@ -1,8 +1,7 @@
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from django.template import Context
+from django.template import Context, TemplateSyntaxError
 from django.template.base import FilterExpression, Parser
-
 
 Expression = FilterExpression
 RuntimeKwargsInput = Dict[str, Expression]

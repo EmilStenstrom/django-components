@@ -12,9 +12,11 @@ from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
 from django_components.expression import (
     Expression,
+    RuntimeKwargPairs,
     RuntimeKwargs,
     RuntimeKwargsInput,
-    RuntimeKwargPairs,
+    is_aggregate_key,
+    is_kwarg,
     resolve_string,
 )
 from django_components.logger import trace_msg
@@ -35,7 +37,6 @@ from django_components.slots import (
 )
 from django_components.tag_formatter import get_tag_formatter
 from django_components.template_parser import parse_bits
-from django_components.expression import is_aggregate_key, is_kwarg
 from django_components.utils import gen_id, is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:

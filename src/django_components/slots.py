@@ -35,7 +35,7 @@ SlotResult = Union[str, SafeString]
 
 
 class SlotFunc(Protocol, Generic[TSlotData]):
-    def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult: ...
+    def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult: ...  # noqa E704
 
 
 SlotContent = Union[SlotResult, SlotFunc[TSlotData]]
