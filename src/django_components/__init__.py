@@ -1,4 +1,6 @@
 # flake8: noqa F401
+"""Main package for Django Components."""
+
 import django
 
 # Public API
