@@ -19,7 +19,7 @@ from django_components.expression import (
     RuntimeKwargsInput,
     SpreadOperator,
     is_aggregate_key,
-    is_escaped_spread_operator,
+    is_internal_spread_operator,
     is_kwarg,
     is_spread_operator,
     resolve_string,
@@ -427,8 +427,8 @@ def _parse_tag(
                 # position.
                 # Since there can be multiple spread operators, we suffix
                 # them with an index, e.g. `...0=`
-                escaped_spread_bit = f"...{spread_count}={value[3:]}"
-                bits_without_flags.append(escaped_spread_bit)
+                internal_spread_bit = f"...{spread_count}={value[3:]}"
+                bits_without_flags.append(internal_spread_bit)
                 spread_count += 1
                 continue
 
@@ -482,7 +482,7 @@ def _parse_tag(
     # or dynamic expressions
     kwarg_pairs: RuntimeKwargPairsInput = []
     for key, val in raw_kwarg_pairs:
-        is_spread_op = is_escaped_spread_operator(key + "=")
+        is_spread_op = is_internal_spread_operator(key + "=")
 
         if is_spread_op:
             expr = parser.compile_filter(val.token)

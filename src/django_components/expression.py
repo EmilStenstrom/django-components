@@ -116,15 +116,22 @@ def is_spread_operator(value: Any) -> bool:
     return value.startswith("...")
 
 
-# A string that starts with `...1=`, `...29=`, etc
-ESCAPED_SPREAD_OPERATOR_RE = re.compile(r"^\.\.\.\d+=")
+# A string that starts with `...1=`, `...29=`, etc.
+# We convert the spread syntax to this, so Django parses
+# it as a kwarg, so it remains in the original position.
+#
+# So from `...dict`, we make `...1=dict`
+#
+# That way it's trivial to merge the kwargs after the spread
+# operator is replaced with actual values.
+INTERNAL_SPREAD_OPERATOR_RE = re.compile(r"^\.\.\.\d+=")
 
 
-def is_escaped_spread_operator(value: Any) -> bool:
+def is_internal_spread_operator(value: Any) -> bool:
     if not isinstance(value, str) or not value:
         return False
 
-    return bool(ESCAPED_SPREAD_OPERATOR_RE.match(value))
+    return bool(INTERNAL_SPREAD_OPERATOR_RE.match(value))
 
 
 def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:
