@@ -19,8 +19,8 @@ from django_components.expression import (
     RuntimeKwargs,
     RuntimeKwargsInput,
     SpreadOperator,
-    is_dynamic_expression,
     is_aggregate_key,
+    is_dynamic_expression,
     is_internal_spread_operator,
     is_kwarg,
     is_spread_operator,
@@ -587,7 +587,7 @@ def _fix_nested_tags(parser: Parser, token: Token) -> None:
     # Above you can see that the token ends at the end of the NESTED tag,
     # and includes `{%`. So that's what we use to identify if we need to fix
     # nested tags or not.
-    has_unclosed_tag = block_token.contents.count('{%') > block_token.contents.count('%}')
+    has_unclosed_tag = block_token.contents.count("{%") > block_token.contents.count("%}")
 
     if not has_unclosed_tag:
         return
@@ -601,7 +601,7 @@ def _fix_nested_tags(parser: Parser, token: Token) -> None:
         #
         # NOTE: If we run out of tokens, this will raise, and break out of the loop
         token = parser.next_token()
-        
+
         # If there is a nested BLOCK `{% %}`, VAR `{{ }}`, or COMMENT `{# #}` tag inside the template tag,
         # then the way Django parses it results in alternating Tokens of TEXT and non-TEXT types.
         #
@@ -609,9 +609,9 @@ def _fix_nested_tags(parser: Parser, token: Token) -> None:
         if expects_text:
             if token.token_type != TokenType.TEXT:
                 raise TemplateSyntaxError(f"Template parser received TokenType '{token.token_type}' instead of 'TEXT'")
-            
+
             expects_text = False
-            
+
             # Once we come across a closing tag in the text, we know that's our original
             # end tag. Until then, append all the text to the block token and continue
             if "%}" not in token.contents:
@@ -619,7 +619,7 @@ def _fix_nested_tags(parser: Parser, token: Token) -> None:
                 continue
 
             # This is the ACTUAL end of the block template tag
-            remaining_block_content, text_content = token.contents.split('%}', 1)
+            remaining_block_content, text_content = token.contents.split("%}", 1)
             block_token.contents += remaining_block_content
 
             # We put back into the Parser the remaining bit of the text.
@@ -643,7 +643,7 @@ def _fix_nested_tags(parser: Parser, token: Token) -> None:
                 raise TemplateSyntaxError(
                     f"Template parser received TokenType '{token.token_type}' instead of 'BLOCK', 'VAR', 'COMMENT'"
                 )
-            
+
             if token.token_type == TokenType.BLOCK:
                 block_token.contents += "{% " + token.contents + " %}"
             elif token.token_type == TokenType.VAR:

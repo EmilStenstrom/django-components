@@ -3,14 +3,10 @@
 from typing import Any, Dict
 
 from django.template import Context, Template, TemplateSyntaxError
-from django.template.base import Node, Token, FilterExpression, Parser
+from django.template.base import FilterExpression, Node, Parser, Token
 
 from django_components import Component, register, registry, types
-from django_components.expression import (
-    DynamicFilterExpression,
-    safe_resolve_dict,
-    safe_resolve_list,
-)
+from django_components.expression import DynamicFilterExpression, safe_resolve_dict, safe_resolve_list
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -195,7 +191,8 @@ class DynamicExprTests(BaseTestCase):
                 <div>{{ dict_var|safe }}</div>
             """
 
-        template_str: types.django_html = """
+        template_str: types.django_html = (
+            """
             {% load component_tags %}
             {% component 'test'
                 "{% lorem var_a w %}"
@@ -203,16 +200,21 @@ class DynamicExprTests(BaseTestCase):
                 list_var="{% noop list %}"
                 dict_var="{% noop dict %}"
             / %}
-        """.replace("\n", " ")
+        """.replace(
+                "\n", " "
+            )
+        )
 
         template = Template(template_str)
         rendered = template.render(
-            Context({
-                "var_a": 3,
-                "is_active": True,
-                "list": [{"a": 1}, {"a": 2}],
-                "dict": {"a": 3},
-            }),
+            Context(
+                {
+                    "var_a": 3,
+                    "is_active": True,
+                    "list": [{"a": 1}, {"a": 2}],
+                    "dict": {"a": 3},
+                }
+            ),
         )
 
         # Check that variables passed to the component are of correct type
@@ -264,7 +266,8 @@ class DynamicExprTests(BaseTestCase):
                 <div>{{ list_var|safe }}</div>
             """
 
-        template_str: types.django_html = """
+        template_str: types.django_html = (
+            """
             {% load component_tags %}
             {% component 'test'
                 "{# lorem var_a w #}"
@@ -272,15 +275,20 @@ class DynamicExprTests(BaseTestCase):
                 bool_var="{# noop is_active #}"
                 list_var=" {# noop list #} "
             / %}
-        """.replace("\n", " ")
+        """.replace(
+                "\n", " "
+            )
+        )
 
         template = Template(template_str)
         rendered = template.render(
-            Context({
-                "var_a": 3,
-                "is_active": True,
-                "list": [{"a": 1}, {"a": 2}],
-            }),
+            Context(
+                {
+                    "var_a": 3,
+                    "is_active": True,
+                    "list": [{"a": 1}, {"a": 2}],
+                }
+            ),
         )
 
         # Check that variables passed to the component are of correct type
@@ -336,7 +344,8 @@ class DynamicExprTests(BaseTestCase):
                 <div>{{ dict_var|safe }}</div>
             """
 
-        template_str: types.django_html = """
+        template_str: types.django_html = (
+            """
             {% load component_tags %}
             {% component 'test'
                 " {% lorem var_a w %} "
@@ -345,16 +354,21 @@ class DynamicExprTests(BaseTestCase):
                 list_var=" {% noop list %} "
                 dict_var=" {% noop dict %} "
             / %}
-        """.replace("\n", " ")
+        """.replace(
+                "\n", " "
+            )
+        )
 
         template = Template(template_str)
         rendered = template.render(
-            Context({
-                "var_a": 3,
-                "is_active": True,
-                "list": [{"a": 1}, {"a": 2}],
-                "dict": {"a": 3},
-            }),
+            Context(
+                {
+                    "var_a": 3,
+                    "is_active": True,
+                    "list": [{"a": 1}, {"a": 2}],
+                    "dict": {"a": 3},
+                }
+            ),
         )
 
         # Check that variables passed to the component are of correct type
