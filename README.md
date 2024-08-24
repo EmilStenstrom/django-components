@@ -50,6 +50,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Using slots in templates](#using-slots-in-templates)
 - [Passing data to components](#passing-data-to-components)
 - [Rendering HTML attributes](#rendering-html-attributes)
+- [Template tag syntax](#template-tag-syntax)
 - [Prop drilling and dependency injection (provide / inject)](#prop-drilling-and-dependency-injection-provide--inject)
 - [Component context and scope](#component-context-and-scope)
 - [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter)
@@ -1446,105 +1447,6 @@ As seen above, you can pass arguments to components like so:
 </body>
 ```
 
-### Special characters
-
-_New in version 0.71_:
-
-Keyword arguments can contain special characters `# @ . - _`, so keywords like
-so are still valid:
-
-```django
-<body>
-    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True / %}
-</body>
-```
-
-These can then be accessed inside `get_context_data` so:
-
-```py
-@register("calendar")
-class Calendar(Component):
-    # Since # . @ - are not valid identifiers, we have to
-    # use `**kwargs` so the method can accept these args.
-    def get_context_data(self, **kwargs):
-        return {
-            "date": kwargs["my-date"],
-            "id": kwargs["#some_id"],
-            "on_click": kwargs["@click.native"]
-        }
-```
-
-### Pass dictonary by its key-value pairs
-
-_New in version 0.74_:
-
-Sometimes, a component may expect a dictionary as one of its inputs.
-
-Most commonly, this happens when a component accepts a dictionary
-of HTML attributes (usually called `attrs`) to pass to the underlying template.
-
-In such cases, we may want to define some HTML attributes statically, and other dynamically.
-But for that, we need to define this dictionary on Python side:
-
-```py
-@register("my_comp")
-class MyComp(Component):
-    template = """
-        {% component "other" attrs=attrs / %}
-    """
-
-    def get_context_data(self, some_id: str):
-        attrs = {
-            "class": "pa-4 flex",
-            "data-some-id": some_id,
-            "@click.stop": "onClickHandler",
-        }
-        return {"attrs": attrs}
-```
-
-But as you can see in the case above, the event handler `@click.stop` and styling `pa-4 flex`
-are disconnected from the template. If the component grew in size and we moved the HTML
-to a separate file, we would have hard time reasoning about the component's template.
-
-Luckily, there's a better way.
-
-When we want to pass a dictionary to a component, we can define individual key-value pairs
-as component kwargs, so we can keep all the relevant information in the template. For that,
-we prefix the key with the name of the dict and `:`. So key `class` of input `attrs` becomes
-`attrs:class`. And our example becomes:
-
-```py
-@register("my_comp")
-class MyComp(Component):
-    template = """
-        {% component "other"
-            attrs:class="pa-4 flex"
-            attrs:data-some-id=some_id
-            attrs:@click.stop="onClickHandler"
-        / %}
-    """
-
-    def get_context_data(self, some_id: str):
-        return {"some_id": some_id}
-```
-
-Sweet! Now all the relevant HTML is inside the template, and we can move it to a separate file with confidence:
-
-```django
-{% component "other"
-    attrs:class="pa-4 flex"
-    attrs:data-some-id=some_id
-    attrs:@click.stop="onClickHandler"
-/ %}
-```
-
-> Note: It is NOT possible to define nested dictionaries, so
-> `attrs:my_key:two=2` would be interpreted as:
->
-> ```py
-> {"attrs": {"my_key:two": 2}}
-> ```
-
 ### Accessing data passed to the component
 
 When you call `Component.render` or `Component.render_to_response`, the inputs to these methods can be accessed from within the instance under `self.input`.
@@ -1952,6 +1854,149 @@ attrs = {
 attributes_to_string(attrs)
 # 'class="my-class text-red pa-4" data-id="123" required'
 ```
+
+## Template tag syntax
+
+All template tags in django_component, like `{% component %}` or `{% slot %}`, and so on,
+support extra syntax that makes it possible to write components like in Vue or React.
+
+### Special characters
+
+_New in version 0.71_:
+
+Keyword arguments can contain special characters `# @ . - _`, so keywords like
+so are still valid:
+
+```django
+<body>
+    {% component "calendar" my-date="2015-06-19" @click.native=do_something #some_id=True / %}
+</body>
+```
+
+These can then be accessed inside `get_context_data` so:
+
+```py
+@register("calendar")
+class Calendar(Component):
+    # Since # . @ - are not valid identifiers, we have to
+    # use `**kwargs` so the method can accept these args.
+    def get_context_data(self, **kwargs):
+        return {
+            "date": kwargs["my-date"],
+            "id": kwargs["#some_id"],
+            "on_click": kwargs["@click.native"]
+        }
+```
+
+### Spread operator
+
+_New in version 0.93_:
+
+Instead of passing keyword arguments one-by-one:
+
+```django
+{% component "calendar" title="How to abc" date="2015-06-19" author="John Wick" / %}
+```
+
+You can use a spread operator `...dict` to apply key-value pairs from a dictionary:
+
+```py
+post_data = {
+    "title": "How to...",
+    "date": "2015-06-19",
+    "author": "John Wick",
+}
+```
+
+```django
+{% component "calendar" ...post_data / %}
+```
+
+This behaves similar to [JSX's spread operator](https://kevinyckim33.medium.com/jsx-spread-operator-component-props-meaning-3c9bcadd2493)
+or [Vue's `v-bind`](https://vuejs.org/api/built-in-directives.html#v-bind).
+
+Spread operators are treated as keyword arguments, which means that:
+1. Spread operators must come after positional arguments.
+2. You cannot use spread operators for [positional-only arguments](https://martinxpn.medium.com/positional-only-and-keyword-only-arguments-in-python-37-100-days-of-python-310c311657b0).
+
+Other than that, you can use spread operators multiple times, and even put keyword arguments in-between or after them:
+
+```django
+{% component "calendar" ...post_data id=post.id ...extra / %}
+```
+
+In a case of conflicts, the values added later (right-most) overwrite previous values.
+
+### Pass dictonary by its key-value pairs
+
+_New in version 0.74_:
+
+Sometimes, a component may expect a dictionary as one of its inputs.
+
+Most commonly, this happens when a component accepts a dictionary
+of HTML attributes (usually called `attrs`) to pass to the underlying template.
+
+In such cases, we may want to define some HTML attributes statically, and other dynamically.
+But for that, we need to define this dictionary on Python side:
+
+```py
+@register("my_comp")
+class MyComp(Component):
+    template = """
+        {% component "other" attrs=attrs / %}
+    """
+
+    def get_context_data(self, some_id: str):
+        attrs = {
+            "class": "pa-4 flex",
+            "data-some-id": some_id,
+            "@click.stop": "onClickHandler",
+        }
+        return {"attrs": attrs}
+```
+
+But as you can see in the case above, the event handler `@click.stop` and styling `pa-4 flex`
+are disconnected from the template. If the component grew in size and we moved the HTML
+to a separate file, we would have hard time reasoning about the component's template.
+
+Luckily, there's a better way.
+
+When we want to pass a dictionary to a component, we can define individual key-value pairs
+as component kwargs, so we can keep all the relevant information in the template. For that,
+we prefix the key with the name of the dict and `:`. So key `class` of input `attrs` becomes
+`attrs:class`. And our example becomes:
+
+```py
+@register("my_comp")
+class MyComp(Component):
+    template = """
+        {% component "other"
+            attrs:class="pa-4 flex"
+            attrs:data-some-id=some_id
+            attrs:@click.stop="onClickHandler"
+        / %}
+    """
+
+    def get_context_data(self, some_id: str):
+        return {"some_id": some_id}
+```
+
+Sweet! Now all the relevant HTML is inside the template, and we can move it to a separate file with confidence:
+
+```django
+{% component "other"
+    attrs:class="pa-4 flex"
+    attrs:data-some-id=some_id
+    attrs:@click.stop="onClickHandler"
+/ %}
+```
+
+> Note: It is NOT possible to define nested dictionaries, so
+> `attrs:my_key:two=2` would be interpreted as:
+>
+> ```py
+> {"attrs": {"my_key:two": 2}}
+> ```
 
 ## Prop drilling and dependency injection (provide / inject)
 
