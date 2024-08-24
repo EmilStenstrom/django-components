@@ -419,6 +419,9 @@ def _parse_tag(
 
             # Extract spread operator (...dict)
             elif is_spread_operator(value):
+                if value == "...":
+                    raise TemplateSyntaxError("Syntax operator is missing a value")
+
                 # Replace the leading `...` with `...=`, so the parser
                 # interprets it as a kwargs, and keeps it in the correct
                 # position.

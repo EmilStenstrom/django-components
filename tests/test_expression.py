@@ -379,3 +379,64 @@ class SpreadOperatorTests(BaseTestCase):
             TemplateSyntaxError, "'component' received some positional argument(s) after some keyword argument(s)"
         ):
             Template(template_str)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_missing_value(self):
+        @register("test")
+        class SimpleComponent(Component):
+            pass
+
+        template_str: types.django_html = (
+            """
+            {% load component_tags %}
+            {% component 'test'
+                var_a
+                ...
+            / %}
+        """.replace(
+                "\n", " "
+            )
+        )
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "Syntax operator is missing a value"
+        ):
+            Template(template_str)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_non_dict(self):
+        @register("test")
+        class SimpleComponent(Component):
+            pass
+
+        template_str: types.django_html = (
+            """
+            {% load component_tags %}
+            {% component 'test'
+                var_a
+                ...var_b
+            / %}
+        """.replace(
+                "\n", " "
+            )
+        )
+
+        template = Template(template_str)
+    
+        # List
+        with self.assertRaisesMessage(
+            AttributeError, "'list' object has no attribute 'items'"
+        ):
+            template.render(Context({
+                "var_a": "abc",
+                "var_b": [1,2,3],
+            }))
+    
+        # String
+        with self.assertRaisesMessage(
+            AttributeError, "'str' object has no attribute 'items'"
+        ):
+            template.render(Context({
+                "var_a": "abc",
+                "var_b": "def",
+            }))
