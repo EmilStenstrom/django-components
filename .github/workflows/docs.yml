@@ -1,9 +1,8 @@
 ---
-name: Test and Deploy Docs
+name: Docs - build & deploy
 on:
   push:
-    # XXX Commented-out for testing
-    # branches: [master]
+    branches: [master]
   workflow_dispatch:
     inputs:
       ref:
@@ -18,8 +17,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    # XXX Enable to avoid forks deploying
-    # if: github.ref == 'refs/heads/main' && github.repository_owner == 'EmilStenstrom'
+    if: github.ref == 'refs/heads/master' && github.repository_owner == 'EmilStenstrom'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,9 +49,7 @@ jobs:
           git config user.email github-actions@github.com
 
       - name: Deploy docs (dev)
-        if: github.event_name == 'push' && github.ref_type == 'branch'
-        # XXX Set to master only after testing
-        # if: github.event_name == 'push' && github.ref_name == 'master' && github.ref_type == 'branch'
+        if: github.event_name == 'push' && github.ref_name == 'master' && github.ref_type == 'branch'
         run: |
           export SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           hatch run docs:mike deploy dev --update-aliases --title "dev (${SHORT_SHA})" --push
