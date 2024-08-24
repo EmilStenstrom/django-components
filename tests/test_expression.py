@@ -822,7 +822,9 @@ class SpreadOperatorTests(BaseTestCase):
         template = Template(template_str)
 
         # List
-        with self.assertRaisesMessage(RuntimeError, "Spread operator expression must resolve to a Dict, got [1, 2, 3]"):
+        with self.assertRaisesMessage(
+            RuntimeError, "Spread operator expression must resolve to a Dict, got [1, 2, 3]"
+        ):
             template.render(
                 Context(
                     {
