@@ -30,7 +30,10 @@ class SpreadOperator(Operator):
         self.expr = expr
 
     def resolve(self, context: Context) -> Dict[str, Any]:
-        return self.expr.resolve(context)
+        data = self.expr.resolve(context)
+        if not isinstance(data, dict):
+            raise RuntimeError(f"Spread operator expression must resolve to a Dict, got {data}")
+        return data
 
 
 class DynamicFilterExpression:

@@ -822,7 +822,7 @@ class SpreadOperatorTests(BaseTestCase):
         template = Template(template_str)
 
         # List
-        with self.assertRaisesMessage(AttributeError, "'list' object has no attribute 'items'"):
+        with self.assertRaisesMessage(RuntimeError, "Spread operator expression must resolve to a Dict, got [1, 2, 3]"):
             template.render(
                 Context(
                     {
@@ -833,7 +833,7 @@ class SpreadOperatorTests(BaseTestCase):
             )
 
         # String
-        with self.assertRaisesMessage(AttributeError, "'str' object has no attribute 'items'"):
+        with self.assertRaisesMessage(RuntimeError, "Spread operator expression must resolve to a Dict, got def"):
             template.render(
                 Context(
                     {
