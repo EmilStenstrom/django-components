@@ -396,19 +396,19 @@ class DynamicExprTests(BaseTestCase):
             """
             {% load component_tags %}
             {% component 'test' '"' "{%}" bool_var="{% noop is_active %}" / %}
-            """.replace("\n", " ")
+            """.replace(
+                "\n", " "
+            )
         )
 
         template = Template(template_str)
         rendered = template.render(
-            Context(
-                {"is_active": True}
-            ),
+            Context({"is_active": True}),
         )
 
         self.assertEqual(
             rendered.strip(),
-            "<div>\"</div>\n                <div>{%}</div>\n                <div>True</div>",
+            '<div>"</div>\n                <div>{%}</div>\n                <div>True</div>',
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -440,7 +440,9 @@ class DynamicExprTests(BaseTestCase):
                 "{% component 'test' '{{ var_a }}' bool_var=is_active / %}"
                 bool_var="{% noop is_active %}"
             / %}
-            """.replace("\n", " ")
+            """.replace(
+                "\n", " "
+            )
         )
 
         template = Template(template_str)
