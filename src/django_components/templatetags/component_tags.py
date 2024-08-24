@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Union
 
 import django.template
-from django.template.base import FilterExpression, NodeList, Parser, Token
+from django.template.base import FilterExpression, NodeList, Parser, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
@@ -11,6 +11,7 @@ from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
 from django_components.expression import (
+    DynamicFilterExpression,
     Expression,
     Operator,
     RuntimeKwargPairs,
@@ -18,6 +19,7 @@ from django_components.expression import (
     RuntimeKwargs,
     RuntimeKwargsInput,
     SpreadOperator,
+    is_dynamic_expression,
     is_aggregate_key,
     is_internal_spread_operator,
     is_kwarg,
@@ -132,11 +134,10 @@ def component_js_dependencies(preload: str = "") -> SafeString:
 
 @register.tag("slot")
 def slot(parser: Parser, token: Token) -> SlotNode:
-    bits = token.split_contents()
     tag = _parse_tag(
         "slot",
         parser,
-        bits,
+        token,
         params=["name"],
         flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
         keywordonly_kwargs=True,
@@ -171,11 +172,10 @@ def fill(parser: Parser, token: Token) -> FillNode:
     This tag is available only within a {% component %}..{% endcomponent %} block.
     Runtime checks should prohibit other usages.
     """
-    bits = token.split_contents()
     tag = _parse_tag(
         "fill",
         parser,
-        bits,
+        token,
         params=["name"],
         keywordonly_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
         repeatable_kwargs=False,
@@ -210,6 +210,7 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
     be either the first positional argument or, if there are no positional
     arguments, passed as 'name'.
     """
+    _fix_nested_tags(parser, token)
     bits = token.split_contents()
 
     # Let the TagFormatter pre-process the tokens
@@ -219,11 +220,12 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
 
     # NOTE: The tokens returned from TagFormatter.parse do NOT include the tag itself
     bits = [bits[0], *result.tokens]
+    token.contents = " ".join(bits)
 
     tag = _parse_tag(
         tag_name,
         parser,
-        bits,
+        token,
         params=True,  # Allow many args
         flags=["only"],
         keywordonly_kwargs=True,
@@ -260,11 +262,10 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
 @register.tag("provide")
 def provide(parser: Parser, token: Token) -> ProvideNode:
     # e.g. {% provide <name> key=val key2=val2 %}
-    bits = token.split_contents()
     tag = _parse_tag(
         "provide",
         parser,
-        bits,
+        token,
         params=["name"],
         flags=[],
         keywordonly_kwargs=True,
@@ -315,12 +316,10 @@ def html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
     {% html_attrs attrs defaults:class="default-class" class="extra-class" data-id="123" %}
     ```
     """
-    bits = token.split_contents()
-
     tag = _parse_tag(
         "html_attrs",
         parser,
-        bits,
+        token,
         params=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
         optional_params=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
         flags=[],
@@ -350,7 +349,7 @@ class ParsedTag(NamedTuple):
 def _parse_tag(
     tag: str,
     parser: Parser,
-    bits: List[str],
+    token: Token,
     params: Union[List[str], bool] = False,
     flags: Optional[List[str]] = None,
     end_tag: Optional[str] = None,
@@ -364,8 +363,10 @@ def _parse_tag(
 
     params = params or []
 
+    _fix_nested_tags(parser, token)
+
     # e.g. {% slot <name> ... %}
-    tag_name, *bits = bits
+    tag_name, *bits = token.split_contents()
     if tag_name != tag:
         raise TemplateSyntaxError(f"Start tag parser received tag '{tag_name}', expected '{tag}'")
 
@@ -471,7 +472,7 @@ def _parse_tag(
             params = [param for param in params_to_sort if param not in optional_params]
 
     # Parse args/kwargs that will be passed to the fill
-    args, raw_kwarg_pairs = parse_bits(
+    raw_args, raw_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
         params=[] if isinstance(params, bool) else params,
@@ -480,13 +481,27 @@ def _parse_tag(
 
     # Post-process args/kwargs - Mark special cases like aggregate dicts
     # or dynamic expressions
+    args: List[Expression] = []
+    for val in raw_args:
+        if is_dynamic_expression(val.token):
+            args.append(DynamicFilterExpression(parser, val.token))
+        else:
+            args.append(val)
+
     kwarg_pairs: RuntimeKwargPairsInput = []
     for key, val in raw_kwarg_pairs:
         is_spread_op = is_internal_spread_operator(key + "=")
 
         if is_spread_op:
-            expr = parser.compile_filter(val.token)
+            # Allow to use dynamic expressions with spread operator, e.g.
+            # `..."{{ }}"`
+            if is_dynamic_expression(val.token):
+                expr = DynamicFilterExpression(parser, val.token)
+            else:
+                expr = parser.compile_filter(val.token)
             kwarg_pairs.append((key, SpreadOperator(expr)))
+        elif is_dynamic_expression(val.token) and not is_spread_op:
+            kwarg_pairs.append((key, DynamicFilterExpression(parser, val.token)))
         else:
             kwarg_pairs.append((key, val))
 
@@ -558,6 +573,88 @@ def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
         body = parser.parse(parse_until=[end_tag])
         parser.delete_first_token()
     return body
+
+
+def _fix_nested_tags(parser: Parser, token: Token) -> None:
+    block_token = token
+
+    # When our template tag contains a nested tag, e.g.:
+    # `{% component 'test' "{% lorem var_a w %}"`
+    #
+    # Django parses this into:
+    # `TokenType.BLOCK: 'component 'test'     "{% lorem var_a w'`
+    #
+    # Above you can see that the token ends at the end of the NESTED tag,
+    # and includes `{%`. So that's what we use to identify if we need to fix
+    # nested tags or not.
+    has_unclosed_tag = block_token.contents.count('{%') > block_token.contents.count('%}')
+
+    if not has_unclosed_tag:
+        return
+
+    block_token.contents += " %}"
+    expects_text = has_unclosed_tag
+    while True:
+        # This is where we need to take parsing in our own hands, because Django parser parsed
+        # only up to the first closing tag `%}`, but that closing tag corresponds to a nested tag,
+        # and not to the end of the outer template tag.
+        #
+        # NOTE: If we run out of tokens, this will raise, and break out of the loop
+        token = parser.next_token()
+        
+        # If there is a nested BLOCK `{% %}`, VAR `{{ }}`, or COMMENT `{# #}` tag inside the template tag,
+        # then the way Django parses it results in alternating Tokens of TEXT and non-TEXT types.
+        #
+        # We use `expects_text` to know which type to handle.
+        if expects_text:
+            if token.token_type != TokenType.TEXT:
+                raise TemplateSyntaxError(f"Template parser received TokenType '{token.token_type}' instead of 'TEXT'")
+            
+            expects_text = False
+            
+            # Once we come across a closing tag in the text, we know that's our original
+            # end tag. Until then, append all the text to the block token and continue
+            if "%}" not in token.contents:
+                block_token.contents += token.contents
+                continue
+
+            # This is the ACTUAL end of the block template tag
+            remaining_block_content, text_content = token.contents.split('%}', 1)
+            block_token.contents += remaining_block_content
+
+            # We put back into the Parser the remaining bit of the text.
+            # NOTE: Looking at the implementation, `parser.prepend_token()` is the opposite
+            # of `parser.next_token()`.
+            parser.prepend_token(Token(TokenType.TEXT, contents=text_content))
+            break
+
+        # In this case we've come across a next block tag `{% %}` inside the template tag
+        # This isn't the first occurence, where the `{%` was ignored. And so, the content
+        # between the `{% %}` is correctly captured, e.g.
+        #
+        # `{% firstof False 0 is_active %}`
+        # gives
+        # `TokenType.BLOCK: 'firstof False 0 is_active'`
+        #
+        # But we don't want to evaluate this as a standalone BLOCK tag, and instead append
+        # it to the block tag that this nested block is part of
+        else:
+            if token.token_type == TokenType.TEXT:
+                raise TemplateSyntaxError(
+                    f"Template parser received TokenType '{token.token_type}' instead of 'BLOCK', 'VAR', 'COMMENT'"
+                )
+            
+            if token.token_type == TokenType.BLOCK:
+                block_token.contents += "{% " + token.contents + " %}"
+            elif token.token_type == TokenType.VAR:
+                block_token.contents += "{{ " + token.contents + " }}"
+            elif token.token_type == TokenType.COMMENT:
+                pass  # Comments are ignored
+            else:
+                raise TemplateSyntaxError(f"Unknown token type '{token.token_type}'")
+
+            expects_text = True
+            continue
 
 
 class ParsedSlotTag(NamedTuple):
