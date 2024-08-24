@@ -398,9 +398,7 @@ class SpreadOperatorTests(BaseTestCase):
             )
         )
 
-        with self.assertRaisesMessage(
-            TemplateSyntaxError, "Syntax operator is missing a value"
-        ):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Syntax operator is missing a value"):
             Template(template_str)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -422,21 +420,25 @@ class SpreadOperatorTests(BaseTestCase):
         )
 
         template = Template(template_str)
-    
+
         # List
-        with self.assertRaisesMessage(
-            AttributeError, "'list' object has no attribute 'items'"
-        ):
-            template.render(Context({
-                "var_a": "abc",
-                "var_b": [1,2,3],
-            }))
-    
+        with self.assertRaisesMessage(AttributeError, "'list' object has no attribute 'items'"):
+            template.render(
+                Context(
+                    {
+                        "var_a": "abc",
+                        "var_b": [1, 2, 3],
+                    }
+                )
+            )
+
         # String
-        with self.assertRaisesMessage(
-            AttributeError, "'str' object has no attribute 'items'"
-        ):
-            template.render(Context({
-                "var_a": "abc",
-                "var_b": "def",
-            }))
+        with self.assertRaisesMessage(AttributeError, "'str' object has no attribute 'items'"):
+            template.render(
+                Context(
+                    {
+                        "var_a": "abc",
+                        "var_b": "def",
+                    }
+                )
+            )
