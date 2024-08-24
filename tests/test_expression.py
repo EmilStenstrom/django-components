@@ -148,13 +148,9 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["bool_var"], True)
         self.assertEqual(captured["list_var"], [{"a": 1}, {"a": 2}])
 
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <div>lorem</div>
-            <div>True</div>
-            <div>[{'a': 1}, {'a': 2}]</div>
-            """,
+        self.assertEqual(
+            rendered.strip(),
+            "<div>lorem</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -222,14 +218,9 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["dict_var"], {"a": 3})
         self.assertEqual(captured["list_var"], [{"a": 1}, {"a": 2}])
 
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <div>lorem ipsum dolor</div>
-            <div>True</div>
-            <div>[{'a': 1}, {'a': 2}]</div>
-            <div>{'a': 3}</div>
-            """,
+        self.assertEqual(
+            rendered.strip(),
+            "<div>lorem ipsum dolor</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>\n                <div>{'a': 3}</div>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -254,7 +245,7 @@ class DynamicExprTests(BaseTestCase):
 
                 return {
                     "pos_var1": pos_var1,
-                    "pos_var2": pos_var1,
+                    "pos_var2": pos_var2,
                     "bool_var": bool_var,
                     "list_var": list_var,
                 }
@@ -297,14 +288,9 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["bool_var"], "")
         self.assertEqual(captured["list_var"], "  ")
 
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <div></div>
-            <div> </div>
-            <div></div>
-            <div> </div>
-            """,
+        self.assertEqual(
+            rendered.strip(),
+            "<div></div>\n                <div>  abc</div>\n                <div></div>\n                <div>  </div>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -376,15 +362,100 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["dict_var"], " {'a': 3} ")
         self.assertEqual(captured["list_var"], " [{'a': 1}, {'a': 2}] ")
 
-        self.assertHTMLEqual(
-            rendered,
+        self.assertEqual(
+            rendered.strip(),
+            "<div> lorem ipsum dolor </div>\n                <div> lorem ipsum dolor [{&#x27;a&#x27;: 1}] </div>\n                <div> True </div>\n                <div> [{'a': 1}, {'a': 2}] </div>\n                <div> {'a': 3} </div>",
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_ignores_invalid_tag(self):
+        registry.library.tag(noop)
+
+        @register("test")
+        class SimpleComponent(Component):
+            def get_context_data(
+                self,
+                pos_var1: Any,
+                pos_var2: Any,
+                *args: Any,
+                bool_var: bool,
+            ):
+                return {
+                    "pos_var1": pos_var1,
+                    "pos_var2": pos_var2,
+                    "bool_var": bool_var,
+                }
+
+            template: types.django_html = """
+                <div>{{ pos_var1 }}</div>
+                <div>{{ pos_var2 }}</div>
+                <div>{{ bool_var }}</div>
             """
-            <div>lorem ipsum dolor</div>
-            <div>lorem ipsum dolor [{'a': 1}]</div>
-            <div>True</div>
-            <div>[{'a': 1}, {'a': 2}]</div>
-            <div>{'a': 3}</div>
-            """,
+
+        template_str: types.django_html = (
+            """
+            {% load component_tags %}
+            {% component 'test' '"' "{%}" bool_var="{% noop is_active %}" / %}
+            """.replace("\n", " ")
+        )
+
+        template = Template(template_str)
+        rendered = template.render(
+            Context(
+                {"is_active": True}
+            ),
+        )
+
+        self.assertEqual(
+            rendered.strip(),
+            "<div>\"</div>\n                <div>{%}</div>\n                <div>True</div>",
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_nested_in_template(self):
+        registry.library.tag(noop)
+
+        @register("test")
+        class SimpleComponent(Component):
+            def get_context_data(
+                self,
+                pos_var1: Any,
+                *args: Any,
+                bool_var: bool,
+            ):
+                return {
+                    "pos_var1": pos_var1,
+                    "bool_var": bool_var,
+                }
+
+            template: types.django_html = """
+                <div>{{ pos_var1 }}</div>
+                <div>{{ bool_var }}</div>
+            """
+
+        template_str: types.django_html = (
+            """
+            {% load component_tags %}
+            {% component 'test'
+                "{% component 'test' '{{ var_a }}' bool_var=is_active / %}"
+                bool_var="{% noop is_active %}"
+            / %}
+            """.replace("\n", " ")
+        )
+
+        template = Template(template_str)
+        rendered = template.render(
+            Context(
+                {
+                    "var_a": 3,
+                    "is_active": True,
+                }
+            ),
+        )
+
+        self.assertEqual(
+            rendered.strip(),
+            "<div>\n                <div>3</div>\n                <div>True</div>\n            </div>\n                <div>True</div>",
         )
 
 

@@ -179,11 +179,12 @@ def is_aggregate_key(key: str) -> bool:
 # A string that must start and end with quotes, and somewhere inside includes
 # at least one tag. Tag may be variable (`{{ }}`), block (`{% %}`), or comment (`{# #}`).
 DYNAMIC_EXPR_RE = re.compile(
-    r"""^{quote}.*?(?:{var_tag}|{block_tag}|{comment_tag}).*?{quote}$""".format(
+    r"^{start_quote}.*?(?:{var_tag}|{block_tag}|{comment_tag}).*?{end_quote}$".format(
         var_tag=r"(?:\{\{.*?\}\})",
         block_tag=r"(?:\{%.*?%\})",
         comment_tag=r"(?:\{#.*?#\})",
-        quote=r"['\"]",
+        start_quote=r"(?P<quote>['\"])", # NOTE: Capture group so we check for the same quote at the end
+        end_quote=r"(?P=quote)",
     )
 )
 
@@ -198,10 +199,6 @@ def is_dynamic_expression(value: Any) -> bool:
 
     # Is not wrapped in quotes, or does not contain any tags
     if not DYNAMIC_EXPR_RE.match(value):
-        return False
-
-    # Open and close quotes don't match
-    if value[0] != value[-1]:
         return False
 
     return True

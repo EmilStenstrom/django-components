@@ -4,6 +4,7 @@ import django.template
 from django.template.base import FilterExpression, NodeList, Parser, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
+from django.utils.text import smart_split
 
 from django_components.app_settings import ContextBehavior, app_settings
 from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY, HtmlAttrsNode
@@ -575,9 +576,7 @@ def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
     return body
 
 
-def _fix_nested_tags(parser: Parser, token: Token) -> None:
-    block_token = token
-
+def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     # When our template tag contains a nested tag, e.g.:
     # `{% component 'test' "{% lorem var_a w %}"`
     #
@@ -589,11 +588,31 @@ def _fix_nested_tags(parser: Parser, token: Token) -> None:
     # nested tags or not.
     has_unclosed_tag = block_token.contents.count("{%") > block_token.contents.count("%}")
 
-    if not has_unclosed_tag:
+    # Moreover we need to also check for unclosed quotes for this edge case:
+    # `{% component 'test' "{%}" %}`
+    #
+    # Which Django parses this into:
+    # `TokenType.BLOCK: 'component 'test'  "{'`
+    #
+    # Here we cannot see any unclosed tags, but there is an unclosed double quote at the end.
+    #
+    # But we cannot naively search the full contents for unclosed quotes, but
+    # only within the last 'bit'. Consider this:
+    #`{% component 'test' '"' "{%}" %}`
+    #
+    # There is 3 double quotes, but if the contents get split at the first `%}`
+    # then there will be a single unclosed double quote in the last bit.
+    # Hence, for this we use Django's `smart_split()`, which can detect quoted text.
+    last_bit = list(smart_split(block_token.contents))[-1]
+    has_unclosed_quote = last_bit.count("'") % 2 or last_bit.count('"') % 2
+
+    needs_fixing = has_unclosed_tag or has_unclosed_quote
+
+    if not needs_fixing:
         return
 
-    block_token.contents += " %}"
-    expects_text = has_unclosed_tag
+    block_token.contents += "%}" if has_unclosed_quote else " %}"
+    expects_text = True
     while True:
         # This is where we need to take parsing in our own hands, because Django parser parsed
         # only up to the first closing tag `%}`, but that closing tag corresponds to a nested tag,
