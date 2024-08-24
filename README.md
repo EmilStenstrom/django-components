@@ -1972,8 +1972,6 @@ In the example above:
 
 This is inspired by [django-cotton](https://github.com/wrabit/django-cotton#template-expressions-in-attributes).
 
-> Note: Never use this feature to mix business logic and template logic. Business logic should still be in the template!
-
 #### Passing data as string vs original values
 
 Sometimes you may want to use the template tags to transform
