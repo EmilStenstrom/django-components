@@ -203,7 +203,7 @@ tinycss2==1.2.1
     # via
     #   cairosvg
     #   cssselect2
-urllib3==2.2.1
+urllib3==2.2.2
     # via requests
 verspec==0.1.0
     # via mike
