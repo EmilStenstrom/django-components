@@ -183,7 +183,7 @@ DYNAMIC_EXPR_RE = re.compile(
         var_tag=r"(?:\{\{.*?\}\})",
         block_tag=r"(?:\{%.*?%\})",
         comment_tag=r"(?:\{#.*?#\})",
-        start_quote=r"(?P<quote>['\"])", # NOTE: Capture group so we check for the same quote at the end
+        start_quote=r"(?P<quote>['\"])",  # NOTE: Capture group so we check for the same quote at the end
         end_quote=r"(?P=quote)",
     )
 )

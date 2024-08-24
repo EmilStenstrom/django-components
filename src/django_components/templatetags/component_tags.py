@@ -598,7 +598,7 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     #
     # But we cannot naively search the full contents for unclosed quotes, but
     # only within the last 'bit'. Consider this:
-    #`{% component 'test' '"' "{%}" %}`
+    # `{% component 'test' '"' "{%}" %}`
     #
     # There is 3 double quotes, but if the contents get split at the first `%}`
     # then there will be a single unclosed double quote in the last bit.

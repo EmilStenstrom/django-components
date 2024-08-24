@@ -220,7 +220,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div>lorem ipsum dolor</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>\n                <div>{'a': 3}</div>",
+            "<div>lorem ipsum dolor</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>\n                <div>{'a': 3}</div>",  # noqa E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -290,7 +290,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div></div>\n                <div>  abc</div>\n                <div></div>\n                <div>  </div>",
+            "<div></div>\n                <div>  abc</div>\n                <div></div>\n                <div>  </div>",  # noqa E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -364,7 +364,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div> lorem ipsum dolor </div>\n                <div> lorem ipsum dolor [{&#x27;a&#x27;: 1}] </div>\n                <div> True </div>\n                <div> [{'a': 1}, {'a': 2}] </div>\n                <div> {'a': 3} </div>",
+            "<div> lorem ipsum dolor </div>\n                <div> lorem ipsum dolor [{&#x27;a&#x27;: 1}] </div>\n                <div> True </div>\n                <div> [{'a': 1}, {'a': 2}] </div>\n                <div> {'a': 3} </div>",  # noqa E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -455,7 +455,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div>\n                <div>3</div>\n                <div>True</div>\n            </div>\n                <div>True</div>",
+            "<div>\n                <div>3</div>\n                <div>True</div>\n            </div>\n                <div>True</div>",  # noqa E501
         )
 
 
