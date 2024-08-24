@@ -15,6 +15,8 @@ on:
 
 jobs:
   docs:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     # XXX Enable to avoid forks deploying
     # if: github.ref == 'refs/heads/main' && github.repository_owner == 'EmilStenstrom'
