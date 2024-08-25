@@ -65,6 +65,10 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+**Version 0.93**
+- Spread operator `...dict` inside template tags. See [Spread operator](#spread-operator))
+- Use template tags inside string literals in component inputs. See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
+
 🚨📢 **Version 0.92**
 - BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
 
@@ -1926,6 +1930,105 @@ Other than that, you can use spread operators multiple times, and even put keywo
 ```
 
 In a case of conflicts, the values added later (right-most) overwrite previous values.
+
+### Use template tags inside component inputs
+
+_New in version 0.93_
+
+When passing data around, sometimes you may need to do light transformations, like negating booleans or filtering lists.
+
+Normally, what you would have to do is to define ALL the variables
+inside `get_context_data()`. But this can get messy if your components contain a lot of logic.
+
+```py
+@register("calendar")
+class Calendar(Component):
+    def get_context_data(self, id: str, editable: bool):
+        return {
+            "editable": editable,
+            "readonly": not editable,
+            "input_id": f"input-{id}",
+            "icon_id": f"icon-{id}",
+            ...
+        }
+```
+
+Instead, template tags in django_components (`{% component %}`, `{% slot %}`, `{% provide %}`, etc) allow you to treat literal string values as templates:
+
+```django
+{% component 'blog_post'
+  "As positional arg {# yay #}"
+  title="{{ person.first_name }} {{ person.last_name }}"
+  id="{% random_int 10 20 %}"
+  author="John Wick {# TODO: parametrize #}"
+/ %}
+```
+
+In the example above:
+- Component `test` receives a positional argument with value `"As positional arg "`. The comment is omitted.
+- Kwarg `title` is passed as a string, e.g. `John Doe`
+- Kwarg `id` is passed as `int`, e.g. `15`
+- Kwarg `author` is passed as a string, e.g. `John Wick ` (Comment omitted)
+
+This is inspired by [django-cotton](https://github.com/wrabit/django-cotton#template-expressions-in-attributes).
+
+#### Passing data as string vs original values
+
+Sometimes you may want to use the template tags to transform
+or generate the data that is then passed to the component.
+
+The data doesn't necessarily have to be strings. In the example above, the kwarg `id` was passed as an integer, NOT a string.
+
+Although the string literals for components inputs are treated as regular Django templates, there is one special case:
+
+When the string literal contains only a single template tag, with no extra text, then the value is passed as the original type instead of a string.
+
+Here, `page` is an integer:
+
+```django
+{% component 'blog_post' page="{% random_int 10 20 %}" / %}
+```
+
+Here, `page` is a string:
+
+```django
+{% component 'blog_post' page=" {% random_int 10 20 %} " / %}
+```
+
+And same applies to the `{{ }}` variable tags:
+
+Here, `items` is a list:
+
+```django
+{% component 'cat_list' items="{{ cats|slice:':2' }}" / %}
+```
+
+Here, `items` is a string:
+
+```django
+{% component 'cat_list' items="{{ cats|slice:':2' }} See more" / %}
+```
+
+#### Evaluating Python expressions in template
+
+You can even go a step further and have a similar experience to Vue or React,
+where you can evaluate arbitrary code expressions:
+
+```jsx
+<MyForm
+  value={ isEnabled ? inputValue : null }
+/>
+```
+
+Similar is possible with [`django-expr`](https://pypi.org/project/django-expr/), which adds an `expr` tag and filter that you can use to evaluate Python expressions from within the template:
+
+```django
+{% component "my_form"
+  value="{% expr 'input_value if is_enabled else None' %}"
+/ %}
+```
+
+> Note: Never use this feature to mix business logic and template logic. Business logic should still be in the template!
 
 ### Pass dictonary by its key-value pairs
 

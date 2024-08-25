@@ -1,5 +1,5 @@
 from django.template import Context, Template
-from django.template.base import Parser
+from django.template.base import Lexer, Parser
 
 from django_components import Component, registry, types
 from django_components.expression import (
@@ -18,8 +18,10 @@ setup_test_config({"autodiscover": False})
 
 class ParserTest(BaseTestCase):
     def test_parses_args_kwargs(self):
-        bits = ["component", "42", "myvar", "key='val'", "key2=val2"]
-        tag = _parse_tag("component", Parser(""), bits, params=["num", "var"], keywordonly_kwargs=True)
+        template_str = "{% component 42 myvar key='val' key2=val2 %}"
+        tokens = Lexer(template_str).tokenize()
+        parser = Parser(tokens=tokens)
+        tag = _parse_tag("component", parser, parser.tokens[0], params=["num", "var"], keywordonly_kwargs=True)
 
         ctx = {"myvar": {"a": "b"}, "val2": 1}
         args = safe_resolve_list(ctx, tag.args)
@@ -31,15 +33,10 @@ class ParserTest(BaseTestCase):
         self.assertDictEqual(kwargs, {"key": "val", "key2": 1})
 
     def test_parses_special_kwargs(self):
-        bits = [
-            "component",
-            "date=date",
-            "@lol=2",
-            "na-me=bzz",
-            "@event:na-me.mod=bzz",
-            "#my-id=True",
-        ]
-        tag = _parse_tag("component", Parser(""), bits, keywordonly_kwargs=True)
+        template_str = "{% component date=date @lol=2 na-me=bzz @event:na-me.mod=bzz #my-id=True %}"
+        tokens = Lexer(template_str).tokenize()
+        parser = Parser(tokens=tokens)
+        tag = _parse_tag("component", parser, parser.tokens[0], keywordonly_kwargs=True)
 
         ctx = Context({"date": 2024, "bzz": "fzz"})
         args = safe_resolve_list(ctx, tag.args)

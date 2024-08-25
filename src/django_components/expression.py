@@ -2,10 +2,10 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
-from django.template import Context, TemplateSyntaxError
-from django.template.base import FilterExpression, Parser
+from django.template import Context, Node, NodeList, TemplateSyntaxError
+from django.template.base import FilterExpression, Lexer, Parser, VariableNode
 
-Expression = Union[FilterExpression]
+Expression = Union[FilterExpression, "DynamicFilterExpression"]
 RuntimeKwargsInput = Dict[str, Union[Expression, "Operator"]]
 RuntimeKwargPairsInput = List[Tuple[str, Union[Expression, "Operator"]]]
 
@@ -30,7 +30,77 @@ class SpreadOperator(Operator):
         self.expr = expr
 
     def resolve(self, context: Context) -> Dict[str, Any]:
-        return self.expr.resolve(context)
+        data = self.expr.resolve(context)
+        if not isinstance(data, dict):
+            raise RuntimeError(f"Spread operator expression must resolve to a Dict, got {data}")
+        return data
+
+
+class DynamicFilterExpression:
+    def __init__(self, parser: Parser, expr_str: str) -> None:
+        if not is_dynamic_expression(expr_str):
+            raise TemplateSyntaxError(f"Not a valid dynamic expression: '{expr_str}'")
+
+        # Drop the leading and trailing quote
+        self.expr = expr_str[1:-1]
+
+        # Copy the Parser, and pass through the tags and filters available
+        # in the current context. Thus, if user calls `{% load %}` inside
+        # the expression, it won't spill outside.
+        lexer = Lexer(self.expr)
+        tokens = lexer.tokenize()
+        expr_parser = Parser(tokens=tokens)
+        expr_parser.tags = {**parser.tags}
+        expr_parser.filters = {**parser.filters}
+
+        self.nodelist = expr_parser.parse()
+
+    def resolve(self, context: Context) -> Any:
+        # If the expression consists of a single node, we return the node's value
+        # directly, skipping stringification that would occur by rendering the node
+        # via nodelist.
+        #
+        # This make is possible to pass values from the nested tag expressions
+        # and use them as component inputs.
+        # E.g. below, the value of `value_from_tag` kwarg would be a dictionary,
+        # not a string.
+        #
+        # `{% component "my_comp" value_from_tag="{% gen_dict %}" %}`
+        #
+        # But if it already container spaces, e.g.
+        #
+        # `{% component "my_comp" value_from_tag=" {% gen_dict %} " %}`
+        #
+        # Then we'd treat it as a regular template and pass it as string.
+        if len(self.nodelist) == 1:
+            node = self.nodelist[0]
+
+            # Handle `{{ }}` tags, where we need to access the expression directly
+            # to avoid it being stringified
+            if isinstance(node, VariableNode):
+                return node.filter_expression.resolve(context)
+            else:
+                # For any other tags `{% %}`, we're at a mercy of the authors, and
+                # we don't know if the result comes out stringified or not.
+                return node.render(context)
+        else:
+            # Lastly, if there's multiple nodes, we render it to a string
+            #
+            # NOTE: When rendering a NodeList, it expects that each node is a string.
+            # However, we want to support tags that return non-string results, so we can pass
+            # them as inputs to components. So we wrap the nodes in `StringifiedNode`
+            nodelist = NodeList(StringifiedNode(node) for node in self.nodelist)
+            return nodelist.render(context)
+
+
+class StringifiedNode(Node):
+    def __init__(self, wrapped_node: Node) -> None:
+        super().__init__()
+        self.wrapped_node = wrapped_node
+
+    def render(self, context: Context) -> str:
+        result = self.wrapped_node.render(context)
+        return str(result)
 
 
 class RuntimeKwargs:
@@ -107,6 +177,34 @@ def is_aggregate_key(key: str) -> bool:
     # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
     # This syntax is used by Vue and AlpineJS.
     return ":" in key and not key.startswith(":")
+
+
+# A string that must start and end with quotes, and somewhere inside includes
+# at least one tag. Tag may be variable (`{{ }}`), block (`{% %}`), or comment (`{# #}`).
+DYNAMIC_EXPR_RE = re.compile(
+    r"^{start_quote}.*?(?:{var_tag}|{block_tag}|{comment_tag}).*?{end_quote}$".format(
+        var_tag=r"(?:\{\{.*?\}\})",
+        block_tag=r"(?:\{%.*?%\})",
+        comment_tag=r"(?:\{#.*?#\})",
+        start_quote=r"(?P<quote>['\"])",  # NOTE: Capture group so we check for the same quote at the end
+        end_quote=r"(?P=quote)",
+    )
+)
+
+
+def is_dynamic_expression(value: Any) -> bool:
+    # NOTE: Currently dynamic expression need at least 6 characters
+    # for the opening and closing tags, and quotes
+    MIN_EXPR_LEN = 6
+
+    if not isinstance(value, str) or not value or len(value) < MIN_EXPR_LEN:
+        return False
+
+    # Is not wrapped in quotes, or does not contain any tags
+    if not DYNAMIC_EXPR_RE.match(value):
+        return False
+
+    return True
 
 
 def is_spread_operator(value: Any) -> bool:
