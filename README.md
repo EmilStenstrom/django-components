@@ -2106,7 +2106,7 @@ Similar is possible with [`django-expr`](https://pypi.org/project/django-expr/),
 / %}
 ```
 
-> Note: Never use this feature to mix business logic and template logic. Business logic should still be in the component!
+> Note: Never use this feature to mix business logic and template logic. Business logic should still be in the view!
 
 ### Pass dictonary by its key-value pairs
 
