@@ -56,17 +56,17 @@ jobs:
         if: github.event_name == 'push' && github.ref_name == 'master' && github.ref_type == 'branch'
         run: |
           export SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
-          hatch run docs:mike deploy dev --update-aliases --title "dev (${SHORT_SHA})" --push
+          hatch run docs:mike deploy dev --update-aliases --title "dev (${SHORT_SHA})" --push --alias-type=redirect
 
       - name: Deploy docs (tag)
         if: github.ref_type == 'tag' && github.event_name == 'push'
         run: |
-          hatch run docs:mike deploy ${{ github.ref_name }} latest --push --update-aliases
+          hatch run docs:mike deploy ${{ github.ref_name }} latest --push --update-aliases --alias-type=redirect
           hatch run docs:mike set-default latest --push
 
       - name: Deploy docs (Released published)
         if: github.event_name == 'release' && github.event.action == 'published' && github.ref_type == 'tag'
         run: |
           # Version from tag, keep leading v, from github.ref workflow variable
-          hatch run docs:mike deploy ${{ github.ref_name }} latest --push --update-aliases
+          hatch run docs:mike deploy ${{ github.ref_name }} latest --push --update-aliases --alias-type=redirect
           hatch run docs:mike set-default latest --push
