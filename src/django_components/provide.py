@@ -10,7 +10,6 @@ from django_components.logger import trace_msg
 from django_components.node import BaseNode
 from django_components.utils import gen_id
 
-
 PROVIDE_NAME_KWARG = "name"
 
 

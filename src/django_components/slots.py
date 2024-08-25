@@ -231,11 +231,10 @@ class SlotNode(BaseNode):
         name = kwargs.pop(SLOT_NAME_KWARG, None)
 
         if not name:
-            raise RuntimeError(
-                f"Slot tag kwarg 'name' is missing in component {component_name}"
-            )
+            raise RuntimeError(f"Slot tag kwarg 'name' is missing in component {component_name}")
 
         return (name, kwargs)
+
 
 class FillNode(BaseNode):
     """
@@ -306,9 +305,7 @@ class FillNode(BaseNode):
                 f"does not resolve to a valid Python identifier, got '{value}'"
             )
         elif not identifier and not value:
-            raise RuntimeError(
-                f"Fill tag {name} is missing value in component {component_name}"
-            )
+            raise RuntimeError(f"Fill tag {name} is missing value in component {component_name}")
 
         return value
 
@@ -401,15 +398,17 @@ def _try_parse_as_default_fill(
         return [
             FillNode(
                 nodelist=nodelist,
-                kwargs=RuntimeKwargs({
-                    # Wrap the default slot name in quotes so it's treated as FilterExpression
-                    SLOT_NAME_KWARG: FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
-                }),
+                kwargs=RuntimeKwargs(
+                    {
+                        # Wrap the default slot name in quotes so it's treated as FilterExpression
+                        SLOT_NAME_KWARG: FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
+                    }
+                ),
                 is_implicit=True,
                 trace_id="default",
             )
         ]
-    
+
 
 def resolve_fill_nodes(
     context: Context,
@@ -428,7 +427,7 @@ def resolve_fill_nodes(
 
         if not isinstance(fill_name, str):
             raise TemplateSyntaxError(f"Fill tag 'name' kwarg must resolve to a string, got {fill_name}")
-        
+
         if fill_name in fill_content:
             raise TemplateSyntaxError(
                 f"Multiple fill tags cannot target the same slot name: "

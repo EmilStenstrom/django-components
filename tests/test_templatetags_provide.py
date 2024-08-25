@@ -273,9 +273,13 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
-        rendered = template.render(Context({
-            "var_a": "my_provide",
-        }))
+        rendered = template.render(
+            Context(
+                {
+                    "var_a": "my_provide",
+                }
+            )
+        )
 
         self.assertHTMLEqual(
             rendered,
@@ -307,13 +311,17 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
-        rendered = template.render(Context({
-            "provide_props": {
-                "name": "my_provide",
-                "key": "hi",
-                "another": 123,
-            },
-        }))
+        rendered = template.render(
+            Context(
+                {
+                    "provide_props": {
+                        "name": "my_provide",
+                        "key": "hi",
+                        "another": 123,
+                    },
+                }
+            )
+        )
 
         self.assertHTMLEqual(
             rendered,

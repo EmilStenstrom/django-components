@@ -796,7 +796,6 @@ class ScopedSlotTest(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_with_variable(self):
         @register("test")
@@ -1006,10 +1005,14 @@ class ScopedSlotTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        rendered = Template(template).render(Context({
-            "fill_name": "my_slot",
-            "data_var": "slot_data_in_fill",
-        }))
+        rendered = Template(template).render(
+            Context(
+                {
+                    "fill_name": "my_slot",
+                    "data_var": "slot_data_in_fill",
+                }
+            )
+        )
 
         expected = """
             <div>
@@ -1045,12 +1048,16 @@ class ScopedSlotTest(BaseTestCase):
                 {% endfill %}
             {% endcomponent %}
         """
-        rendered = Template(template).render(Context({
-            "fill_props": {
-                "name": "my_slot",
-                "data": "slot_data_in_fill",
-            },
-        }))
+        rendered = Template(template).render(
+            Context(
+                {
+                    "fill_props": {
+                        "name": "my_slot",
+                        "data": "slot_data_in_fill",
+                    },
+                }
+            )
+        )
 
         expected = """
             <div>
