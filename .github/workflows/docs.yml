@@ -14,8 +14,11 @@ on:
 
 jobs:
   docs:
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      contents: write
+      contents: write  # to let mkdocs write the new docs
+      pages: write     # to deploy to Pages
+      id-token: write  # to verify the deployment originates from an appropriate source
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master' && github.repository_owner == 'EmilStenstrom'
     steps:
@@ -39,7 +42,8 @@ jobs:
       - name: "Check for mkdocs build --strict"
         # XXX Enable strict mode once docs are clean
         run: |
-          hatch run docs:build # --strict
+          hatch run docs:build
+          # hatch run docs:build --strict
         # If pull request or not master branch and not a tag
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
 
