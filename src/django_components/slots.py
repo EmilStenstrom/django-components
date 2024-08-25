@@ -25,6 +25,7 @@ TSlotData = TypeVar("TSlotData", bound=Mapping, contravariant=True)
 
 DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
 SLOT_DATA_KWARG = "data"
+SLOT_NAME_KWARG = "name"
 SLOT_DEFAULT_KWARG = "default"
 SLOT_REQUIRED_KEYWORD = "required"
 SLOT_DEFAULT_KEYWORD = "default"
@@ -127,8 +128,8 @@ class SlotRef:
 class SlotNode(BaseNode):
     def __init__(
         self,
-        name: str,
         nodelist: NodeList,
+        trace_id: str,
         node_id: Optional[str] = None,
         kwargs: Optional[RuntimeKwargs] = None,
         is_required: bool = False,
@@ -136,9 +137,9 @@ class SlotNode(BaseNode):
     ):
         super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
 
-        self.name = name
         self.is_required = is_required
         self.is_default = is_default
+        self.trace_id = trace_id
 
     @property
     def active_flags(self) -> List[str]:
@@ -150,13 +151,15 @@ class SlotNode(BaseNode):
         return flags
 
     def __repr__(self) -> str:
-        return f"<Slot Node: {self.name}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
+        return f"<Slot Node: {self.node_id}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
 
     def render(self, context: Context) -> SafeString:
-        trace_msg("RENDR", "SLOT", self.name, self.node_id)
+        trace_msg("RENDR", "SLOT", self.trace_id, self.node_id)
         slots: Dict[SlotId, "SlotFill"] = context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY]
         # NOTE: Slot entry MUST be present. If it's missing, there was an issue upstream.
         slot_fill = slots[self.node_id]
+
+        name, kwargs = self.resolve_kwargs(context)
 
         extra_context: Dict[str, Any] = {}
 
@@ -177,19 +180,18 @@ class SlotNode(BaseNode):
         if default_var:
             if not default_var.isidentifier():
                 raise TemplateSyntaxError(
-                    f"Slot default alias in fill '{self.name}' must be a valid identifier. Got '{default_var}'"
+                    f"Slot default alias in fill '{name}' must be a valid identifier. Got '{default_var}'"
                 )
             extra_context[default_var] = slot_ref
 
         # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
         # are made available through a variable name that was set on the `{% fill %}`
         # tag.
-        kwargs = self.kwargs.resolve(context)
         data_var = slot_fill.slot_data_var
         if data_var:
             if not data_var.isidentifier():
                 raise TemplateSyntaxError(
-                    f"Slot data alias in fill '{self.name}' must be a valid identifier. Got '{data_var}'"
+                    f"Slot data alias in fill '{name}' must be a valid identifier. Got '{data_var}'"
                 )
             extra_context[data_var] = kwargs
 
@@ -202,7 +204,7 @@ class SlotNode(BaseNode):
             #       the render function ALWAYS receives them.
             output = slot_fill.content_func(used_ctx, kwargs, slot_ref)
 
-        trace_msg("RENDR", "SLOT", self.name, self.node_id, msg="...Done!")
+        trace_msg("RENDR", "SLOT", self.trace_id, self.node_id, msg="...Done!")
         return output
 
     def _resolve_slot_context(self, context: Context, slot_fill: "SlotFill") -> Context:
@@ -220,6 +222,19 @@ class SlotNode(BaseNode):
         else:
             raise ValueError(f"Unknown value for CONTEXT_BEHAVIOR: '{app_settings.CONTEXT_BEHAVIOR}'")
 
+    def resolve_kwargs(
+        self,
+        context: Context,
+        component_name: Optional[str] = None,
+    ) -> Tuple[str, Dict[str, Optional[str]]]:
+        kwargs = self.kwargs.resolve(context)
+        name = kwargs.pop(SLOT_NAME_KWARG, None)
+
+        if not name:
+            raise RuntimeError(f"Slot tag kwarg 'name' is missing in component {component_name}")
+
+        return (name, kwargs)
+
 
 class FillNode(BaseNode):
     """
@@ -230,16 +245,16 @@ class FillNode(BaseNode):
 
     def __init__(
         self,
-        name: FilterExpression,
         nodelist: NodeList,
         kwargs: RuntimeKwargs,
+        trace_id: str,
         node_id: Optional[str] = None,
         is_implicit: bool = False,
     ):
         super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
 
-        self.name = name
         self.is_implicit = is_implicit
+        self.trace_id = trace_id
         self.component_id: Optional[str] = None
 
     def render(self, context: Context) -> str:
@@ -250,22 +265,24 @@ class FillNode(BaseNode):
         )
 
     def __repr__(self) -> str:
-        return f"<{type(self)} Name: {self.name}. Contents: {repr(self.nodelist)}.>"
+        return f"<{type(self)} ID: {self.node_id}. Contents: {repr(self.nodelist)}.>"
 
     def resolve_kwargs(self, context: Context, component_name: Optional[str] = None) -> Dict[str, Optional[str]]:
         kwargs = self.kwargs.resolve(context)
 
+        name = self._resolve_kwarg(kwargs, SLOT_NAME_KWARG, "slot name", component_name, identifier=False)
         default_key = self._resolve_kwarg(kwargs, SLOT_DEFAULT_KWARG, "slot default", component_name)
         data_key = self._resolve_kwarg(kwargs, SLOT_DATA_KWARG, "slot data", component_name)
 
         # data and default cannot be bound to the same variable
         if data_key and default_key and data_key == default_key:
             raise RuntimeError(
-                f"Fill {self.name} received the same string for slot default ({SLOT_DEFAULT_KWARG}=...)"
+                f"Fill '{name}' received the same string for slot default ({SLOT_DEFAULT_KWARG}=...)"
                 f" and slot data ({SLOT_DATA_KWARG}=...)"
             )
 
         return {
+            SLOT_NAME_KWARG: name,
             SLOT_DEFAULT_KWARG: default_key,
             SLOT_DATA_KWARG: data_key,
         }
@@ -276,16 +293,19 @@ class FillNode(BaseNode):
         key: str,
         name: str,
         component_name: Optional[str] = None,
+        identifier: bool = True,
     ) -> Optional[str]:
         if key not in kwargs:
             return None
 
         value = kwargs[key]
-        if not is_identifier(value):
+        if identifier and not is_identifier(value):
             raise RuntimeError(
                 f"Fill tag {name} in component {component_name}"
                 f"does not resolve to a valid Python identifier, got '{value}'"
             )
+        elif not identifier and not value:
+            raise RuntimeError(f"Fill tag {name} is missing value in component {component_name}")
 
         return value
 
@@ -340,15 +360,15 @@ def _try_parse_as_named_fill_tag_set(
     seen_names: Set[str] = set()
     for node in nodelist:
         if isinstance(node, FillNode):
-            # Check that, after we've resolved the names, that there's still no duplicates.
-            # This makes sure that if two different variables refer to same string, we detect
-            # them.
-            if node.name.token in seen_names:
-                raise TemplateSyntaxError(
-                    f"Multiple fill tags cannot target the same slot name: "
-                    f"Detected duplicate fill tag name '{node.name}'."
-                )
-            seen_names.add(node.name.token)
+            # If the fill name was defined statically, then check for no duplicates.
+            maybe_fill_name = node.kwargs.kwargs.get(SLOT_NAME_KWARG)
+            if isinstance(maybe_fill_name, FilterExpression):
+                if maybe_fill_name.token in seen_names:
+                    raise TemplateSyntaxError(
+                        f"Multiple fill tags cannot target the same slot name: "
+                        f"Detected duplicate fill tag name '{maybe_fill_name.token}'."
+                    )
+                seen_names.add(maybe_fill_name.token)
             result.append(node)
         elif isinstance(node, CommentNode):
             pass
@@ -378,11 +398,48 @@ def _try_parse_as_default_fill(
         return [
             FillNode(
                 nodelist=nodelist,
-                name=FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
-                kwargs=RuntimeKwargs({}),
+                kwargs=RuntimeKwargs(
+                    {
+                        # Wrap the default slot name in quotes so it's treated as FilterExpression
+                        SLOT_NAME_KWARG: FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
+                    }
+                ),
                 is_implicit=True,
+                trace_id="default",
             )
         ]
+
+
+def resolve_fill_nodes(
+    context: Context,
+    fill_nodes: List[FillNode],
+    component_name: str,
+) -> Dict[str, FillContent]:
+    fill_content: Dict[str, FillContent] = {}
+    for fill_node in fill_nodes:
+        # Note that outer component context is used to resolve variables in
+        # fill tag.
+        fill_kwargs = fill_node.resolve_kwargs(context, component_name)
+        fill_name = fill_kwargs.get(SLOT_NAME_KWARG)
+
+        if SLOT_NAME_KWARG not in fill_kwargs:
+            raise TemplateSyntaxError("Fill tag is missing the 'name' kwarg")
+
+        if not isinstance(fill_name, str):
+            raise TemplateSyntaxError(f"Fill tag 'name' kwarg must resolve to a string, got {fill_name}")
+
+        if fill_name in fill_content:
+            raise TemplateSyntaxError(
+                f"Multiple fill tags cannot target the same slot name: "
+                f"Detected duplicate fill tag name '{fill_name}'."
+            )
+
+        fill_content[fill_name] = FillContent(
+            content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
+            slot_default_var=fill_kwargs[SLOT_DEFAULT_KWARG],
+            slot_data_var=fill_kwargs[SLOT_DATA_KWARG],
+        )
+    return fill_content
 
 
 ####################
@@ -427,13 +484,15 @@ def resolve_slots(
         if not isinstance(node, SlotNode):
             return
 
+        slot_name, _ = node.resolve_kwargs(context, component_name)
+
         # 1. Collect slots
         # Basically we take all the important info form the SlotNode, so the logic is
         # less coupled to Django's Template/Node. Plain tuples should also help with
         # troubleshooting.
         slot = Slot(
             id=node.node_id,
-            name=node.name,
+            name=slot_name,
             nodelist=node.nodelist,
             is_default=node.is_default,
             is_required=node.is_required,

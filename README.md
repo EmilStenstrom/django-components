@@ -48,7 +48,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Use components as views](#use-components-as-views)
 - [Autodiscovery](#autodiscovery)
 - [Using slots in templates](#using-slots-in-templates)
-- [Passing data to components](#passing-data-to-components)
+- [Accessing data passed to the component](#accessing-data-passed-to-the-component)
 - [Rendering HTML attributes](#rendering-html-attributes)
 - [Template tag syntax](#template-tag-syntax)
 - [Prop drilling and dependency injection (provide / inject)](#prop-drilling-and-dependency-injection-provide--inject)
@@ -68,6 +68,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 **Version 0.93**
 - Spread operator `...dict` inside template tags. See [Spread operator](#spread-operator))
 - Use template tags inside string literals in component inputs. See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
+- Dynamic slots, fills and provides - The `name` argument for these can now be a variable, a template expression, or via spread operator
 
 🚨📢 **Version 0.92**
 - BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
@@ -812,7 +813,7 @@ class ComponentView(View):
 
 If you want to define your own `View` class, you need to:
 1. Set the class as `Component.View`
-2. Subclass from `ComponentView`, so the View instance has access to the component class.
+2. Subclass from `ComponentView`, so the View instance has access to the component instance.
 
 In the example below, we added extra logic into `View.setup()`.
 
@@ -1440,18 +1441,77 @@ to the same name. This raises an error:
 {% endcomponent %}
 ```
 
-## Passing data to components
+### Dynamic slots and fills
 
-As seen above, you can pass arguments to components like so:
+Until now, we were declaring slot and fill names statically, as a string literal, e.g.
 
 ```django
-<body>
-    {% component "calendar" date="2015-06-19" %}
-    {% endcomponent %}
-</body>
+{% slot "content" / %}
 ```
 
-### Accessing data passed to the component
+However, sometimes you may want to generate slots based on the given input. One example of this is [a table component like that of Vuetify](https://vuetifyjs.com/en/api/v-data-table/), which creates a header and an item slots for each user-defined column.
+
+In django_components you can achieve the same, simply by using a variable (or a [template expression](#use-template-tags-inside-component-inputs)) instead of a string literal:
+
+```django
+<table>
+  <tr>
+    {% for header in headers %}
+      <th>
+        {% slot "header-{{ header.key }}" value=header.title %}
+          {{ header.title }}
+        {% endslot %}
+      </th>
+    {% endfor %}
+  </tr>
+</table>
+```
+
+When using the component, you can either set the fill explicitly:
+
+```django
+{% component "table" headers=headers items=items %}
+  {% fill "header-name" data="data" %}
+    <b>{{ data.value }}</b>
+  {% endfill %}
+{% endcomponent %}
+```
+
+Or also use a variable:
+
+```django
+{% component "table" headers=headers items=items %}
+  {# Make only the active column bold #}
+  {% fill "header-{{ active_header_name }}" data="data" %}
+    <b>{{ data.value }}</b>
+  {% endfill %}
+{% endcomponent %}
+```
+
+> NOTE: It's better to use static slot names whenever possible for clarity. The dynamic slot names should be reserved for advanced use only.
+
+Lastly, in rare cases, you can also pass the slot name via [the spread operator](#spread-operator). This is possible, because the slot name argument is actually a shortcut for a `name` keyword argument.
+
+So this:
+
+```django
+{% slot "content" / %}
+```
+
+is the same as:
+
+```django
+{% slot name="content" / %}
+```
+
+So it's possible to define a `name` key on a dictionary, and then spread that onto the slot tag:
+
+```django
+{# slot_props = {"name": "content"} #}
+{% slot ...slot_props / %}
+```
+
+## Accessing data passed to the component
 
 When you call `Component.render` or `Component.render_to_response`, the inputs to these methods can be accessed from within the instance under `self.input`.
 
@@ -1862,7 +1922,23 @@ attributes_to_string(attrs)
 ## Template tag syntax
 
 All template tags in django_component, like `{% component %}` or `{% slot %}`, and so on,
-support extra syntax that makes it possible to write components like in Vue or React.
+support extra syntax that makes it possible to write components like in Vue or React (JSX).
+
+### Self-closing tags
+
+When you have a tag like `{% component %}` or `{% slot %}`, but it has no content, you can simply append a forward slash `/` at the end, instead of writing out the closing tags like `{% endcomponent %}` or `{% endslot %}`:
+
+So this:
+
+```django
+{% component "button" %}{% endcomponent %}
+```
+
+becomes
+
+```django
+{% component "button" / %}
+```
 
 ### Special characters
 
@@ -1960,6 +2036,7 @@ Instead, template tags in django_components (`{% component %}`, `{% slot %}`, `{
   "As positional arg {# yay #}"
   title="{{ person.first_name }} {{ person.last_name }}"
   id="{% random_int 10 20 %}"
+  readonly="{{ editable|not }}"
   author="John Wick {# TODO: parametrize #}"
 / %}
 ```
@@ -1968,6 +2045,7 @@ In the example above:
 - Component `test` receives a positional argument with value `"As positional arg "`. The comment is omitted.
 - Kwarg `title` is passed as a string, e.g. `John Doe`
 - Kwarg `id` is passed as `int`, e.g. `15`
+- Kwarg `readonly` is passed as `bool`, e.g. `False`
 - Kwarg `author` is passed as a string, e.g. `John Wick ` (Comment omitted)
 
 This is inspired by [django-cotton](https://github.com/wrabit/django-cotton#template-expressions-in-attributes).
@@ -2028,7 +2106,7 @@ Similar is possible with [`django-expr`](https://pypi.org/project/django-expr/),
 / %}
 ```
 
-> Note: Never use this feature to mix business logic and template logic. Business logic should still be in the template!
+> Note: Never use this feature to mix business logic and template logic. Business logic should still be in the view!
 
 ### Pass dictonary by its key-value pairs
 
@@ -2147,10 +2225,7 @@ First we use the `{% provide %}` tag to define the data we want to "provide" (ma
 
 Notice that the `provide` tag REQUIRES a name as a first argument. This is the _key_ by which we can then access the data passed to this tag.
 
-`provide` tag _key_, similarly to the _name_ argument in `component` or `slot` tags, has these requirements:
-
-- The _key_ must be a string literal
-- It must be a valid identifier (AKA a valid Python variable name)
+`provide` tag name must resolve to a valid identifier (AKA a valid Python variable name).
 
 Once you've set the name, you define the data you want to "provide" by passing it as keyword arguments. This is similar to how you pass data to the `{% with %}` tag.
 
@@ -2162,6 +2237,15 @@ Once you've set the name, you define the data you want to "provide" by passing i
 >     {{ key }}
 > {% endprovide %}
 > ```
+
+Similarly to [slots and fills](#dynamic-slots-and-fills), also provide's name argument can be set dynamically via a variable, a template expression, or a spread operator:
+
+```django
+{% provide name=name ... %}
+    ...
+{% provide %}
+</table>
+```
 
 ### Using `inject()` method
 
@@ -2180,7 +2264,7 @@ class ChildComponent(Component):
         return {}
 ```
 
-First argument to `inject` is the _key_ of the provided data. This
+First argument to `inject` is the _key_ (or _name_) of the provided data. This
 must match the string that you used in the `provide` tag. If no provider
 with given key is found, `inject` raises a `KeyError`.
 
@@ -2237,7 +2321,7 @@ With this in mind, the `{% component %}` tag behaves similarly to `{% include %}
 And just like with `{% include %}`, if you don't want a specific component template to have access to the parent context, add `only` to the `{% component %}` tag:
 
 ```htmldjango
-{% component "calendar" date="2015-06-19" only %}{% endcomponent %}
+{% component "calendar" date="2015-06-19" only / %}
 ```
 
 NOTE: `{% csrf_token %}` tags need access to the top-level context, and they will not function properly if they are rendered in a component that is called with the `only` modifier.

@@ -797,6 +797,80 @@ class ScopedSlotTest(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_data_with_variable(self):
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot slot_name abc=abc var123=var123 default required %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "slot_name": "my_slot",
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.var123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_data_with_spread(self):
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot ...slot_props default required %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "slot_props": {
+                        "name": "my_slot",
+                        "abc": "def",
+                        "var123": 456,
+                    },
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill "my_slot" data="slot_data_in_fill" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.var123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_raises_on_slot_data_and_slot_default_same_var(self):
         @register("test")
         class TestComponent(Component):
@@ -823,7 +897,7 @@ class ScopedSlotTest(BaseTestCase):
         """
         with self.assertRaisesMessage(
             RuntimeError,
-            'Fill "my_slot" received the same string for slot default (default=...) and slot data (data=...)',
+            "Fill 'my_slot' received the same string for slot default (default=...) and slot data (data=...)",
         ):
             Template(template).render(Context())
 
@@ -903,6 +977,94 @@ class ScopedSlotTest(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = "<div> Default text </div>"
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_data_fill_with_variables(self):
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill fill_name data=data_var %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.var123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(
+            Context(
+                {
+                    "fill_name": "my_slot",
+                    "data_var": "slot_data_in_fill",
+                }
+            )
+        )
+
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_data_fill_with_spread(self):
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% slot "my_slot" abc=abc var123=var123 %}Default text{% endslot %}
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "def",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill ...fill_props %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_data_in_fill.var123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(
+            Context(
+                {
+                    "fill_props": {
+                        "name": "my_slot",
+                        "data": "slot_data_in_fill",
+                    },
+                }
+            )
+        )
+
+        expected = """
+            <div>
+                def
+                456
+            </div>
+        """
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
