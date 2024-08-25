@@ -25,7 +25,6 @@ from django.forms.widgets import Media
 from django.http import HttpRequest, HttpResponse
 from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context
-from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
 from django.utils.html import conditional_escape

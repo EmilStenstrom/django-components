@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Union
 
 import django.template
-from django.template.base import FilterExpression, NodeList, Parser, Token, TokenType
+from django.template.base import NodeList, Parser, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 from django.utils.text import smart_split
