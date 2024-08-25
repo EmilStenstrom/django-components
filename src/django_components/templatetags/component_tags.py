@@ -25,7 +25,6 @@ from django_components.expression import (
     is_internal_spread_operator,
     is_kwarg,
     is_spread_operator,
-    resolve_string,
 )
 from django_components.logger import trace_msg
 from django_components.middleware import (
@@ -33,11 +32,12 @@ from django_components.middleware import (
     JS_DEPENDENCY_PLACEHOLDER,
     is_dependency_middleware_active,
 )
-from django_components.provide import ProvideNode
+from django_components.provide import PROVIDE_NAME_KWARG, ProvideNode
 from django_components.slots import (
     SLOT_DATA_KWARG,
     SLOT_DEFAULT_KEYWORD,
     SLOT_DEFAULT_KWARG,
+    SLOT_NAME_KWARG,
     SLOT_REQUIRED_KEYWORD,
     FillNode,
     SlotNode,
@@ -45,7 +45,7 @@ from django_components.slots import (
 )
 from django_components.tag_formatter import get_tag_formatter
 from django_components.template_parser import parse_bits
-from django_components.utils import gen_id, is_str_wrapped_in_quotes
+from django_components.utils import gen_id
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -139,27 +139,30 @@ def slot(parser: Parser, token: Token) -> SlotNode:
         "slot",
         parser,
         token,
-        params=["name"],
+        params=[SLOT_NAME_KWARG],
+        optional_params=[SLOT_NAME_KWARG],
         flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
         keywordonly_kwargs=True,
         repeatable_kwargs=False,
         end_tag="endslot",
     )
-    data = _parse_slot_args(parser, tag)
 
-    trace_msg("PARSE", "SLOT", data.name, tag.id)
+    slot_name_kwarg = tag.kwargs.kwargs.get(SLOT_NAME_KWARG, None)
+    trace_id = f"slot-id-{tag.id} ({slot_name_kwarg})" if slot_name_kwarg else f"slot-id-{tag.id}"
+
+    trace_msg("PARSE", "SLOT", trace_id, tag.id)
 
     body = tag.parse_body()
     slot_node = SlotNode(
-        name=data.name,
         nodelist=body,
         node_id=tag.id,
         kwargs=tag.kwargs,
         is_required=tag.flags[SLOT_REQUIRED_KEYWORD],
         is_default=tag.flags[SLOT_DEFAULT_KEYWORD],
+        trace_id=trace_id,
     )
 
-    trace_msg("PARSE", "SLOT", data.name, tag.id, "...Done!")
+    trace_msg("PARSE", "SLOT", trace_id, tag.id, "...Done!")
     return slot_node
 
 
@@ -177,24 +180,27 @@ def fill(parser: Parser, token: Token) -> FillNode:
         "fill",
         parser,
         token,
-        params=["name"],
+        params=[SLOT_NAME_KWARG],
+        optional_params=[SLOT_NAME_KWARG],
         keywordonly_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
         repeatable_kwargs=False,
         end_tag="endfill",
     )
-    slot_name = tag.named_args["name"]
 
-    trace_msg("PARSE", "FILL", str(slot_name), tag.id)
+    fill_name_kwarg = tag.kwargs.kwargs.get(SLOT_NAME_KWARG, None)
+    trace_id = f"fill-id-{tag.id} ({fill_name_kwarg})" if fill_name_kwarg else f"fill-id-{tag.id}"
+
+    trace_msg("PARSE", "FILL", trace_id, tag.id)
 
     body = tag.parse_body()
     fill_node = FillNode(
         nodelist=body,
-        name=slot_name,
         node_id=tag.id,
         kwargs=tag.kwargs,
+        trace_id=trace_id,
     )
 
-    trace_msg("PARSE", "FILL", str(slot_name), tag.id, "...Done!")
+    trace_msg("PARSE", "FILL", trace_id, tag.id, "...Done!")
     return fill_node
 
 
@@ -244,7 +250,7 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
 
     # Tag all fill nodes as children of this particular component instance
     for node in fill_nodes:
-        trace_msg("ASSOC", "FILL", node.name, node.node_id, component_id=tag.id)
+        trace_msg("ASSOC", "FILL", node.trace_id, node.node_id, component_id=tag.id)
         node.component_id = tag.id
 
     component_node = ComponentNode(
@@ -267,25 +273,28 @@ def provide(parser: Parser, token: Token) -> ProvideNode:
         "provide",
         parser,
         token,
-        params=["name"],
+        params=[PROVIDE_NAME_KWARG],
+        optional_params=[PROVIDE_NAME_KWARG],
         flags=[],
         keywordonly_kwargs=True,
         repeatable_kwargs=False,
         end_tag="endprovide",
     )
-    data = _parse_provide_args(parser, tag)
 
-    trace_msg("PARSE", "PROVIDE", data.key, tag.id)
+    name_kwarg = tag.kwargs.kwargs.get(PROVIDE_NAME_KWARG, None)
+    trace_id = f"provide-id-{tag.id} ({name_kwarg})" if name_kwarg else f"fill-id-{tag.id}"
+
+    trace_msg("PARSE", "PROVIDE", trace_id, tag.id)
 
     body = tag.parse_body()
     slot_node = ProvideNode(
-        name=data.key,
         nodelist=body,
         node_id=tag.id,
         kwargs=tag.kwargs,
+        trace_id=trace_id,
     )
 
-    trace_msg("PARSE", "PROVIDE", data.key, tag.id, "...Done!")
+    trace_msg("PARSE", "PROVIDE", trace_id, tag.id, "...Done!")
     return slot_node
 
 
@@ -531,7 +540,9 @@ def _parse_tag(
         else:
             is_key_allowed = keywordonly_kwargs == True or key in keywordonly_kwargs  # noqa: E712
         if not is_key_allowed:
-            extra_keywords.add(key)
+            is_optional = key in optional_params if optional_params else False
+            if not is_optional:
+                extra_keywords.add(key)
 
         # Check for repeated keys
         if key in kwargs:
@@ -674,43 +685,3 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
 
             expects_text = True
             continue
-
-
-class ParsedSlotTag(NamedTuple):
-    name: str
-
-
-def _parse_slot_args(
-    parser: Parser,
-    tag: ParsedTag,
-) -> ParsedSlotTag:
-    slot_name_expr = tag.named_args["name"]
-    if not isinstance(slot_name_expr, FilterExpression):
-        raise TemplateSyntaxError(f"Slot name must be string literal, got {slot_name_expr}")
-    slot_name = slot_name_expr.token
-    if not is_str_wrapped_in_quotes(slot_name):
-        raise TemplateSyntaxError(f"'{tag.name}' name must be a string 'literal', got {slot_name}.")
-
-    slot_name = resolve_string(slot_name, parser)
-
-    return ParsedSlotTag(name=slot_name)
-
-
-class ParsedProvideTag(NamedTuple):
-    key: str
-
-
-def _parse_provide_args(
-    parser: Parser,
-    tag: ParsedTag,
-) -> ParsedProvideTag:
-    provide_key_expr = tag.named_args["name"]
-    if not isinstance(provide_key_expr, FilterExpression):
-        raise TemplateSyntaxError(f"Provide key must be string literal, got {provide_key_expr}")
-    provide_key = provide_key_expr.token
-    if not is_str_wrapped_in_quotes(provide_key):
-        raise TemplateSyntaxError(f"'{tag.name}' key must be a string 'literal', got {provide_key}")
-
-    provide_key = resolve_string(provide_key, parser)
-
-    return ParsedProvideTag(key=provide_key)

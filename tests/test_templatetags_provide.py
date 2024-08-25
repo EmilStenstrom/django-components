@@ -220,7 +220,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_provide_key_single_quotes(self):
+    def test_provide_name_single_quotes(self):
         @register("injectee")
         class InjectComponent(Component):
             template: types.django_html = """
@@ -252,7 +252,79 @@ class ProvideTemplateTagTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_provide_no_key_raises(self):
+    def test_provide_name_as_var(self):
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
+                <div> injected: {{ var|safe }} </div>
+            """
+
+            def get_context_data(self):
+                var = self.inject("my_provide", "default")
+                return {"var": var}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% provide var_a key="hi" another=123 %}
+                {% component "injectee" %}
+                {% endcomponent %}
+            {% endprovide %}
+            {% component "injectee" %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({
+            "var_a": "my_provide",
+        }))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div> injected: DepInject(key='hi', another=123) </div>
+            <div> injected: default </div>
+        """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_provide_name_as_spread(self):
+        @register("injectee")
+        class InjectComponent(Component):
+            template: types.django_html = """
+                <div> injected: {{ var|safe }} </div>
+            """
+
+            def get_context_data(self):
+                var = self.inject("my_provide", "default")
+                return {"var": var}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% provide ...provide_props %}
+                {% component "injectee" %}
+                {% endcomponent %}
+            {% endprovide %}
+            {% component "injectee" %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({
+            "provide_props": {
+                "name": "my_provide",
+                "key": "hi",
+                "another": 123,
+            },
+        }))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div> injected: DepInject(key='hi', another=123) </div>
+            <div> injected: default </div>
+        """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_provide_no_name_raises(self):
         @register("injectee")
         class InjectComponent(Component):
             template: types.django_html = """
@@ -272,11 +344,11 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% component "injectee" %}
             {% endcomponent %}
         """
-        with self.assertRaises(TemplateSyntaxError):
-            Template(template_str)
+        with self.assertRaisesMessage(RuntimeError, "Provide tag kwarg 'name' is missing"):
+            Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_provide_key_must_be_string_literal(self):
+    def test_provide_name_must_be_string_literal(self):
         @register("injectee")
         class InjectComponent(Component):
             template: types.django_html = """
@@ -296,11 +368,11 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% component "injectee" %}
             {% endcomponent %}
         """
-        with self.assertRaises(TemplateSyntaxError):
-            Template(template_str)
+        with self.assertRaisesMessage(RuntimeError, "Provide tag kwarg 'name' is missing"):
+            Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_provide_key_must_be_identifier(self):
+    def test_provide_name_must_be_identifier(self):
         @register("injectee")
         class InjectComponent(Component):
             template: types.django_html = """

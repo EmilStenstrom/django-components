@@ -48,8 +48,6 @@ from django_components.middleware import is_dependency_middleware_active
 from django_components.node import BaseNode
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
-    SLOT_DATA_KWARG,
-    SLOT_DEFAULT_KWARG,
     FillContent,
     FillNode,
     SlotContent,
@@ -57,6 +55,7 @@ from django_components.slots import (
     SlotRef,
     SlotResult,
     _nodelist_to_slot_render_func,
+    resolve_fill_nodes,
     resolve_slots,
 )
 from django_components.utils import gen_id
@@ -634,23 +633,7 @@ class ComponentNode(BaseNode):
                 ),
             }
         else:
-            fill_content = {}
-            for fill_node in self.fill_nodes:
-                # Note that outer component context is used to resolve variables in
-                # fill tag.
-                resolved_name = fill_node.name.resolve(context)
-                if resolved_name in fill_content:
-                    raise TemplateSyntaxError(
-                        f"Multiple fill tags cannot target the same slot name: "
-                        f"Detected duplicate fill tag name '{resolved_name}'."
-                    )
-
-                fill_kwargs = fill_node.resolve_kwargs(context, self.name)
-                fill_content[resolved_name] = FillContent(
-                    content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
-                    slot_default_var=fill_kwargs[SLOT_DEFAULT_KWARG],
-                    slot_data_var=fill_kwargs[SLOT_DATA_KWARG],
-                )
+            fill_content = resolve_fill_nodes(context, self.fill_nodes, self.name)
 
         component: Component = component_cls(
             registered_name=self.name,

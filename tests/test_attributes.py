@@ -188,6 +188,38 @@ class HtmlAttrsTests(BaseTestCase):
         )
         self.assertNotIn("override-me", rendered)
 
+    def test_tag_spread(self):
+        @register("test")
+        class AttrsComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div {% html_attrs ...props class="another-class" %}>
+                    content
+                </div>
+            """  # noqa: E501
+
+            def get_context_data(self, *args, attrs):
+                return {
+                    "props": {
+                        "attrs": attrs,
+                        "defaults": {"class": "override-me"},
+                        "class": "added_class",
+                        "data-id": 123,
+                    },
+                }
+
+        template = Template(self.template_str)
+        rendered = template.render(Context({"class_var": "padding-top-8"}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div @click.stop="dispatch('click_event')" class="added_class another-class padding-top-8" data-id="123" x-data="{hello: 'world'}">
+                content
+            </div>
+            """,  # noqa: E501
+        )
+        self.assertNotIn("override-me", rendered)
+
     def test_tag_aggregate_args(self):
         @register("test")
         class AttrsComponent(Component):
