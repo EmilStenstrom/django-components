@@ -35,6 +35,11 @@ class ComponentRegistryEntry(NamedTuple):
 
 
 class RegistrySettings(NamedTuple):
+    CONTEXT_BEHAVIOR: Optional[ContextBehavior] = None
+    TAG_FORMATTER: Optional[Union["TagFormatterABC", str]] = None
+
+
+class InternalRegistrySettings(NamedTuple):
     CONTEXT_BEHAVIOR: ContextBehavior
     TAG_FORMATTER: Union["TagFormatterABC", str]
 
@@ -80,7 +85,8 @@ class ComponentRegistry:
         self._registry: Dict[str, ComponentRegistryEntry] = {}  # component name -> component_entry mapping
         self._tags: Dict[str, Set[str]] = {}  # tag -> list[component names]
         self._library = library
-        self._settings = settings
+        self._settings_input = settings
+        self._settings: Optional[Callable[[], InternalRegistrySettings]] = None
 
     @property
     def library(self) -> Library:
@@ -103,18 +109,32 @@ class ComponentRegistry:
         return lib
 
     @property
-    def settings(self) -> RegistrySettings:
-        # Lazily use the default settings if none was passed
+    def settings(self) -> InternalRegistrySettings:
+        # This is run on subsequent calls
         if self._settings is not None:
             # NOTE: Registry's settings can be a function, so we always take
             # the latest value from Django's settings.
-            settings = self._settings(self) if callable(self._settings) else self._settings
-        else:
-            self._settings = lambda _: RegistrySettings(
-                CONTEXT_BEHAVIOR=app_settings.CONTEXT_BEHAVIOR,
-                TAG_FORMATTER=app_settings.TAG_FORMATTER,
-            )
-            settings = self._settings(self)
+            settings = self._settings()
+
+        # First-time initialization
+        # NOTE: We allow the settings to be given as a getter function
+        # so the settings can respond to changes.
+        # So we wrapp that in our getter, which assigns default values from the settings.
+        elif self._settings_input:
+            def get_settings() -> InternalRegistrySettings:
+                if callable(self._settings_input):
+                    settings_input: Optional[RegistrySettings] = self._settings_input(self)
+                else:
+                    settings_input = self._settings_input
+
+                return InternalRegistrySettings(
+                    CONTEXT_BEHAVIOR=(settings_input and settings_input.CONTEXT_BEHAVIOR) or app_settings.CONTEXT_BEHAVIOR,
+                    TAG_FORMATTER=(settings_input and settings_input.TAG_FORMATTER) or app_settings.TAG_FORMATTER,
+                )
+
+            self._settings = get_settings
+            settings = self._settings()
+
         return settings
 
     def register(self, name: str, component: Type["Component"]) -> None:
