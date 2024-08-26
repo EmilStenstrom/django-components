@@ -191,7 +191,7 @@ pyyaml-env-tag==0.1
     # via mkdocs
 regex==2022.10.31
     # via mkdocs-material
-requests==2.32.2
+requests==2.32.3
     # via mkdocs-material
 six==1.16.0
     # via python-dateutil
