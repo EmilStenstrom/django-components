@@ -37,7 +37,6 @@ class ComponentRegistryEntry(NamedTuple):
 class RegistrySettings(NamedTuple):
     CONTEXT_BEHAVIOR: ContextBehavior
     TAG_FORMATTER: Union["TagFormatterABC", str]
-    TEMPLATE_CACHE_SIZE: int
 
 
 class ComponentRegistry:
@@ -114,7 +113,6 @@ class ComponentRegistry:
             self._settings = lambda _: RegistrySettings(
                 CONTEXT_BEHAVIOR=app_settings.CONTEXT_BEHAVIOR,
                 TAG_FORMATTER=app_settings.TAG_FORMATTER,
-                TEMPLATE_CACHE_SIZE=app_settings.TEMPLATE_CACHE_SIZE,
             )
             settings = self._settings(self)
         return settings

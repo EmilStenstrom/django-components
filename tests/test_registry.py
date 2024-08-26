@@ -149,7 +149,6 @@ class MultipleComponentRegistriesTest(BaseTestCase):
             settings=RegistrySettings(
                 CONTEXT_BEHAVIOR=ContextBehavior.ISOLATED,
                 TAG_FORMATTER=component_shorthand_formatter,
-                TEMPLATE_CACHE_SIZE=128,
             ),
         )
 
@@ -159,7 +158,6 @@ class MultipleComponentRegistriesTest(BaseTestCase):
             settings=RegistrySettings(
                 CONTEXT_BEHAVIOR=ContextBehavior.DJANGO,
                 TAG_FORMATTER=component_formatter,
-                TEMPLATE_CACHE_SIZE=128,
             ),
         )
 
