@@ -120,8 +120,7 @@ class ComponentRegistry:
         # NOTE: We allow the settings to be given as a getter function
         # so the settings can respond to changes.
         # So we wrapp that in our getter, which assigns default values from the settings.
-        elif self._settings_input:
-
+        else:
             def get_settings() -> InternalRegistrySettings:
                 if callable(self._settings_input):
                     settings_input: Optional[RegistrySettings] = self._settings_input(self)
@@ -129,8 +128,7 @@ class ComponentRegistry:
                     settings_input = self._settings_input
 
                 return InternalRegistrySettings(
-                    CONTEXT_BEHAVIOR=(settings_input and settings_input.CONTEXT_BEHAVIOR)
-                    or app_settings.CONTEXT_BEHAVIOR,
+                    CONTEXT_BEHAVIOR=(settings_input and settings_input.CONTEXT_BEHAVIOR) or app_settings.CONTEXT_BEHAVIOR,
                     TAG_FORMATTER=(settings_input and settings_input.TAG_FORMATTER) or app_settings.TAG_FORMATTER,
                 )
 
