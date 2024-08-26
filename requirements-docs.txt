@@ -138,7 +138,7 @@ mkdocs-minify-plugin==0.8.0
     # via hatch.envs.docs
 mkdocs-redirects==1.2.1
     # via hatch.envs.docs
-mkdocstrings==0.24.1
+mkdocstrings==0.25.2
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
