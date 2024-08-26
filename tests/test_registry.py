@@ -1,14 +1,13 @@
 import unittest
 
 from django.template import Context, Engine, Library, Template
-
 from django.test import override_settings
 
 from django_components import (
     AlreadyRegistered,
-    ContextBehavior,
     Component,
     ComponentRegistry,
+    ContextBehavior,
     NotRegistered,
     RegistrySettings,
     TagProtectedError,

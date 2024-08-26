@@ -545,7 +545,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                     _ROOT_CTX_CONTEXT_KEY: self.outer_context,
                     _FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_slots,
                     _REGISTRY_CONTEXT_KEY: self.registry,
-
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
                     "component_vars": {
