@@ -1,14 +1,17 @@
 import abc
 import re
-from typing import List, NamedTuple
+from typing import List, NamedTuple, TYPE_CHECKING
 
 from django.template import TemplateSyntaxError
 from django.utils.module_loading import import_string
 
-from django_components.app_settings import app_settings
 from django_components.expression import resolve_string
 from django_components.template_parser import VAR_CHARS
 from django_components.utils import is_str_wrapped_in_quotes
+
+if TYPE_CHECKING:
+    from django_components.component_registry import ComponentRegistry
+
 
 TAG_RE = re.compile(r"^[{chars}]+$".format(chars=VAR_CHARS))
 
@@ -201,10 +204,10 @@ class ShorthandComponentFormatter(TagFormatterABC):
         return TagResult(name, tokens)
 
 
-def get_tag_formatter() -> InternalTagFormatter:
+def get_tag_formatter(registry: "ComponentRegistry") -> InternalTagFormatter:
     """Returns an instance of the currently configured component tag formatter."""
     # Allow users to configure the component TagFormatter
-    formatter_cls_or_str = app_settings.TAG_FORMATTER
+    formatter_cls_or_str = registry.settings.TAG_FORMATTER
 
     if isinstance(formatter_cls_or_str, str):
         tag_formatter: TagFormatterABC = import_string(formatter_cls_or_str)

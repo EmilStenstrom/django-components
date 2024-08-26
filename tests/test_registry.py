@@ -1,19 +1,26 @@
 import unittest
 
-from django.template import Library
+from django.template import Context, Engine, Library, Template
+
 from django.test import override_settings
 
 from django_components import (
     AlreadyRegistered,
+    ContextBehavior,
     Component,
     ComponentRegistry,
     NotRegistered,
+    RegistrySettings,
     TagProtectedError,
+    component_formatter,
+    component_shorthand_formatter,
     register,
     registry,
+    types,
 )
 
 from .django_test_setup import setup_test_config
+from .testutils import BaseTestCase, parametrize_context_behavior
 
 setup_test_config({"autodiscover": False})
 
@@ -131,6 +138,83 @@ class ComponentRegistryTest(unittest.TestCase):
     def test_raises_on_failed_unregister(self):
         with self.assertRaises(NotRegistered):
             self.registry.unregister(name="testcomponent")
+
+
+class MultipleComponentRegistriesTest(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_different_registries_have_different_settings(self):
+        library_a = Library()
+        registry_a = ComponentRegistry(
+            library=library_a,
+            settings=RegistrySettings(
+                CONTEXT_BEHAVIOR=ContextBehavior.ISOLATED,
+                TAG_FORMATTER=component_shorthand_formatter,
+                TEMPLATE_CACHE_SIZE=128,
+            ),
+        )
+
+        library_b = Library()
+        registry_b = ComponentRegistry(
+            library=library_b,
+            settings=RegistrySettings(
+                CONTEXT_BEHAVIOR=ContextBehavior.DJANGO,
+                TAG_FORMATTER=component_formatter,
+                TEMPLATE_CACHE_SIZE=128,
+            ),
+        )
+
+        # NOTE: We cannot load the Libraries above using `{% load xxx %}` tag, because
+        # for that we'd need to register a Django app and whatnot.
+        # Instead, we insert the Libraries directly into the engine's builtins.
+        engine = Engine.get_default()
+
+        # Add the custom template tags to Django's built-in tags
+        engine.template_builtins.append(library_a)
+        engine.template_builtins.append(library_b)
+
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot: {% slot "default" default / %}
+            """
+
+            def get_context_data(self, variable=None):
+                return {
+                    "variable": variable,
+                }
+
+        registry_a.register("simple_a", SimpleComponent)
+        registry_b.register("simple_b", SimpleComponent)
+
+        template_str: types.django_html = """
+            {% simple_a variable=123 %}
+                SLOT 123
+            {% endsimple_a %}
+            {% component "simple_b" variable=123 %} 
+                SLOT ABC
+            {% endcomponent %} 
+        """
+        template = Template(template_str)
+
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>123</strong>
+            Slot: 
+            SLOT 123
+
+            Variable: <strong>123</strong>
+            Slot:  
+            SLOT ABC
+            """,
+        )
+
+        # Remove the custom template tags to clean up after tests
+        engine.template_builtins.remove(library_a)
+        engine.template_builtins.remove(library_b)
 
 
 class ProtectedTagsTest(unittest.TestCase):

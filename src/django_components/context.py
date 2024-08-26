@@ -14,6 +14,7 @@ from django_components.utils import find_last_index
 
 _FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 _ROOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_ROOT_CTX"
+_REGISTRY_CONTEXT_KEY = "_DJANGO_COMPONENTS_REGISTRY"
 _PARENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_PARENT_COMP"
 _CURRENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_CURRENT_COMP"
 _INJECT_CONTEXT_KEY_PREFIX = "_DJANGO_COMPONENTS_INJECT__"
@@ -38,6 +39,7 @@ def make_isolated_context_copy(context: Context) -> Context:
 
     # Pass through our internal keys
     context_copy[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = context.get(_FILLED_SLOTS_CONTENT_CONTEXT_KEY, {})
+    context_copy[_REGISTRY_CONTEXT_KEY] = context.get(_REGISTRY_CONTEXT_KEY, None)
     if _ROOT_CTX_CONTEXT_KEY in context:
         context_copy[_ROOT_CTX_CONTEXT_KEY] = context[_ROOT_CTX_CONTEXT_KEY]
 

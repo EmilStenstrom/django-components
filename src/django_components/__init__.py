@@ -5,6 +5,7 @@ import django
 
 # Public API
 # isort: off
+from django_components.app_settings import ContextBehavior as ContextBehavior
 from django_components.autodiscover import (
     autodiscover as autodiscover,
     import_libraries as import_libraries,
@@ -17,6 +18,7 @@ from django_components.component_registry import (
     AlreadyRegistered as AlreadyRegistered,
     ComponentRegistry as ComponentRegistry,
     NotRegistered as NotRegistered,
+    RegistrySettings as RegistrySettings,
     register as register,
     registry as registry,
 )

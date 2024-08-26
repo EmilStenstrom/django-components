@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, Optional, Set, Type, TypeVar
+from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, Optional, Set, Type, TypeVar, Union
 
 from django.template import Library
 
+from django_components.app_settings import ContextBehavior, app_settings
 from django_components.library import is_tag_protected, mark_protected_tags, register_tag_from_formatter
-from django_components.tag_formatter import get_tag_formatter
+from django_components.tag_formatter import TagFormatterABC, get_tag_formatter
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -31,6 +32,12 @@ class NotRegistered(Exception):
 class ComponentRegistryEntry(NamedTuple):
     cls: Type["Component"]
     tag: str
+
+
+class RegistrySettings(NamedTuple):
+    CONTEXT_BEHAVIOR: ContextBehavior
+    TAG_FORMATTER: Union["TagFormatterABC", str]
+    TEMPLATE_CACHE_SIZE: int
 
 
 class ComponentRegistry:
@@ -66,10 +73,15 @@ class ComponentRegistry:
     ```
     """
 
-    def __init__(self, library: Optional[Library] = None) -> None:
+    def __init__(
+        self,
+        library: Optional[Library] = None,
+        settings: Optional[Union[RegistrySettings, Callable[["ComponentRegistry"], RegistrySettings]]] = None,
+    ) -> None:
         self._registry: Dict[str, ComponentRegistryEntry] = {}  # component name -> component_entry mapping
         self._tags: Dict[str, Set[str]] = {}  # tag -> list[component names]
         self._library = library
+        self._settings = settings
 
     @property
     def library(self) -> Library:
@@ -90,6 +102,22 @@ class ComponentRegistry:
             mark_protected_tags(tag_library)
             lib = self._library = tag_library
         return lib
+
+    @property
+    def settings(self) -> RegistrySettings:
+        # Lazily use the default settings if none was passed
+        if self._settings is not None:
+            # NOTE: Registry's settings can be a function, so we always take
+            # the latest value from Django's settings.
+            settings = self._settings(self) if callable(self._settings) else self._settings
+        else:
+            self._settings = lambda _: RegistrySettings(
+                CONTEXT_BEHAVIOR=app_settings.CONTEXT_BEHAVIOR,
+                TAG_FORMATTER=app_settings.TAG_FORMATTER,
+                TEMPLATE_CACHE_SIZE=app_settings.TEMPLATE_CACHE_SIZE,
+            )
+            settings = self._settings(self)
+        return settings
 
     def register(self, name: str, component: Type["Component"]) -> None:
         """
@@ -243,8 +271,8 @@ class ComponentRegistry:
         # Lazily import to avoid circular dependencies
         from django_components.templatetags.component_tags import component as do_component
 
-        formatter = get_tag_formatter()
-        tag = register_tag_from_formatter(self.library, do_component, formatter, comp_name)
+        formatter = get_tag_formatter(self)
+        tag = register_tag_from_formatter(self, do_component, formatter, comp_name)
 
         return ComponentRegistryEntry(cls=component, tag=tag)
 

@@ -6,9 +6,8 @@ from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 from django.utils.text import smart_split
 
-from django_components.app_settings import ContextBehavior, app_settings
 from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY, HtmlAttrsNode
-from django_components.component import RENDERED_COMMENT_TEMPLATE, ComponentNode
+from django_components.component import COMP_ONLY_FLAG, RENDERED_COMMENT_TEMPLATE, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
 from django_components.expression import (
@@ -204,7 +203,7 @@ def fill(parser: Parser, token: Token) -> FillNode:
     return fill_node
 
 
-def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
+def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_name: str) -> ComponentNode:
     """
     To give the component access to the template context:
         ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... %}```
@@ -221,7 +220,7 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
     bits = token.split_contents()
 
     # Let the TagFormatter pre-process the tokens
-    formatter = get_tag_formatter()
+    formatter = get_tag_formatter(registry)
     result = formatter.parse([*bits])
     end_tag = formatter.end_tag(result.component_name)
 
@@ -234,14 +233,14 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
         parser,
         token,
         params=True,  # Allow many args
-        flags=["only"],
+        flags=[COMP_ONLY_FLAG],
         keywordonly_kwargs=True,
         repeatable_kwargs=False,
         end_tag=end_tag,
     )
 
     # Check for isolated context keyword
-    isolated_context = tag.flags["only"] or app_settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED
+    isolated_context = tag.flags[COMP_ONLY_FLAG]
 
     trace_msg("PARSE", "COMP", result.component_name, tag.id)
 
@@ -260,6 +259,7 @@ def component(parser: Parser, token: Token, tag_name: str) -> ComponentNode:
         isolated_context=isolated_context,
         fill_nodes=fill_nodes,
         node_id=tag.id,
+        registry=register,
     )
 
     trace_msg("PARSE", "COMP", result.component_name, tag.id, "...Done!")

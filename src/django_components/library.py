@@ -1,11 +1,14 @@
 """Module for interfacing with Django's Library (`django.template.library`)"""
 
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, TYPE_CHECKING
 
 from django.template.base import Node, Parser, Token
 from django.template.library import Library
 
 from django_components.tag_formatter import InternalTagFormatter
+
+if TYPE_CHECKING:
+    from django_components.component_registry import ComponentRegistry
 
 
 class TagProtectedError(Exception):
@@ -28,25 +31,25 @@ as they would conflict with other tags in the Library.
 
 
 def register_tag(
-    library: Library,
+    registry: "ComponentRegistry",
     tag: str,
-    tag_fn: Callable[[Parser, Token, str], Node],
+    tag_fn: Callable[[Parser, Token, "ComponentRegistry", str], Node],
 ) -> None:
     # Register inline tag
-    if is_tag_protected(library, tag):
+    if is_tag_protected(registry.library, tag):
         raise TagProtectedError('Cannot register tag "%s", this tag name is protected' % tag)
     else:
-        library.tag(tag, lambda parser, token: tag_fn(parser, token, tag))
+        registry.library.tag(tag, lambda parser, token: tag_fn(parser, token, registry, tag))
 
 
 def register_tag_from_formatter(
-    library: Library,
-    tag_fn: Callable[[Parser, Token, str], Node],
+    registry: "ComponentRegistry",
+    tag_fn: Callable[[Parser, Token, "ComponentRegistry", str], Node],
     formatter: InternalTagFormatter,
     component_name: str,
 ) -> str:
     tag = formatter.start_tag(component_name)
-    register_tag(library, tag, tag_fn)
+    register_tag(registry, tag, tag_fn)
     return tag
 
 
