@@ -33,7 +33,8 @@ from django.views import View
 
 from django_components.app_settings import ContextBehavior
 from django_components.component_media import ComponentMediaInput, MediaMeta
-from django_components.component_registry import ComponentRegistry, registry as registry_
+from django_components.component_registry import ComponentRegistry
+from django_components.component_registry import registry as registry_
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
@@ -173,7 +174,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
         fill_content: Optional[Dict[str, FillContent]] = None,
-        registry: Optional[ComponentRegistry] = None,
+        registry: Optional[ComponentRegistry] = None,  # noqa F811
     ):
         # When user first instantiates the component class before calling
         # `render` or `render_to_response`, then we want to allow the render
@@ -603,7 +604,7 @@ class ComponentNode(BaseNode):
         name: str,
         args: List[Expression],
         kwargs: RuntimeKwargs,
-        registry: ComponentRegistry,
+        registry: ComponentRegistry,  # noqa F811
         isolated_context: bool = False,
         fill_nodes: Optional[List[FillNode]] = None,
         node_id: Optional[str] = None,

@@ -259,7 +259,7 @@ def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_nam
         isolated_context=isolated_context,
         fill_nodes=fill_nodes,
         node_id=tag.id,
-        registry=register,
+        registry=registry,
     )
 
     trace_msg("PARSE", "COMP", result.component_name, tag.id, "...Done!")

@@ -191,9 +191,9 @@ class MultipleComponentRegistriesTest(BaseTestCase):
             {% simple_a variable=123 %}
                 SLOT 123
             {% endsimple_a %}
-            {% component "simple_b" variable=123 %} 
+            {% component "simple_b" variable=123 %}
                 SLOT ABC
-            {% endcomponent %} 
+            {% endcomponent %}
         """
         template = Template(template_str)
 
@@ -203,11 +203,11 @@ class MultipleComponentRegistriesTest(BaseTestCase):
             rendered,
             """
             Variable: <strong>123</strong>
-            Slot: 
+            Slot:
             SLOT 123
 
             Variable: <strong>123</strong>
-            Slot:  
+            Slot:
             SLOT ABC
             """,
         )

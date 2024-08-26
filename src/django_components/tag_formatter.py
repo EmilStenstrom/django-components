@@ -1,6 +1,6 @@
 import abc
 import re
-from typing import List, NamedTuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, NamedTuple
 
 from django.template import TemplateSyntaxError
 from django.utils.module_loading import import_string

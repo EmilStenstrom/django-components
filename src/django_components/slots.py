@@ -3,7 +3,22 @@ import json
 import re
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Mapping, NamedTuple, Optional, Protocol, Set, Tuple, Type, TypeVar, Union, TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
