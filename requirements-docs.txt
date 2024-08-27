@@ -70,7 +70,7 @@ htmlmin2==0.1.13
     # via mkdocs-minify-plugin
 idna==3.7
     # via requests
-importlib-metadata==7.1.0
+importlib-metadata==8.4.0
     # via mike
 importlib-resources==6.4.0
     # via mike
@@ -138,7 +138,7 @@ mkdocs-minify-plugin==0.8.0
     # via hatch.envs.docs
 mkdocs-redirects==1.2.1
     # via hatch.envs.docs
-mkdocstrings==0.24.1
+mkdocstrings==0.25.2
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
@@ -150,7 +150,7 @@ packaging==24.0
     # via
     #   black
     #   mkdocs
-paginate==0.5.6
+paginate==0.5.7
     # via mkdocs-material
 pathspec==0.12.1
     # via
@@ -169,7 +169,7 @@ pycparser==2.22
     # via cffi
 pygments==2.17.2
     # via mkdocs-material
-pymdown-extensions==10.7.1
+pymdown-extensions==10.9
     # via
     #   hatch.envs.docs
     #   markdown-exec
@@ -189,9 +189,9 @@ pyyaml==6.0.1
     #   pyyaml-env-tag
 pyyaml-env-tag==0.1
     # via mkdocs
-regex==2022.10.31
+regex==2024.7.24
     # via mkdocs-material
-requests==2.32.2
+requests==2.32.3
     # via mkdocs-material
 six==1.16.0
     # via python-dateutil
