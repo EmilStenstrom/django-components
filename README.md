@@ -59,6 +59,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Available settings](#available-settings)
 - [Logging and debugging](#logging-and-debugging)
 - [Management Command](#management-command)
+- [Writing and sharing component libraries](#writing-and-sharing-component-libraries)
 - [Community examples](#community-examples)
 - [Running django-components project locally](#running-django-components-project-locally)
 - [Development guides](#development-guides)
@@ -69,6 +70,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - Spread operator `...dict` inside template tags. See [Spread operator](#spread-operator))
 - Use template tags inside string literals in component inputs. See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
 - Dynamic slots, fills and provides - The `name` argument for these can now be a variable, a template expression, or via spread operator
+- Component library authors can now configure `CONTEXT_BEHAVIOR` and `TAG_FORMATTER` settings independently from user settings.
 
 🚨📢 **Version 0.92**
 - BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
@@ -932,8 +934,8 @@ registry.clear()
 
 ### Registering components to custom ComponentRegistry
 
-In rare cases, you may want to manage your own instance of `ComponentRegistry`,
-or register components onto a different `Library` instance than the default one.
+If you are writing a component library to be shared with others, you may want to manage your own instance of `ComponentRegistry`
+and register components onto a different `Library` instance than the default one.
 
 The `Library` instance can be set at instantiation of `ComponentRegistry`. If omitted,
 then the default Library instance from django_components is used.
@@ -959,6 +961,34 @@ class MyComponent(Component):
 ```
 
 NOTE: The Library instance can be accessed under `library` attribute of `ComponentRegistry`.
+
+### ComponentRegistry settings
+
+When you are creating an instance of `ComponentRegistry`, you can define the components' behavior within the template.
+
+The registry accepts these settings:
+- `CONTEXT_BEHAVIOR`
+- `TAG_FORMATTER`
+
+```py
+from django.template import Library
+from django_components import ComponentRegistry, RegistrySettings
+
+register = library = django.template.Library()
+comp_registry = ComponentRegistry(
+    library=library,
+    settings=RegistrySettings(
+        CONTEXT_BEHAVIOR="isolated",
+        TAG_FORMATTER="django_components.component_formatter",
+    ),
+)
+```
+
+These settings are [the same as the ones you can set for django_components](#available-settings).
+
+In fact, when you set `COMPONENT.tag_formatter` or `COMPONENT.context_behavior`, these are forwarded to the default `ComponentRegistry`.
+
+This makes it possible to have multiple registries with different settings in one projects, and makes sharing of component libraries possible.
 
 ## Autodiscovery
 
@@ -1002,7 +1032,7 @@ If you are using autodiscovery, keep a few points in mind:
 - Components inside the auto-imported files still need to be registered with `@register()`
 - Auto-imported component files must be valid Python modules, they must use suffix `.py`, and module name should follow [PEP-8](https://peps.python.org/pep-0008/#package-and-module-names).
 
-Autodiscovery can be disabled in the [settings](#disable-autodiscovery).
+Autodiscovery can be disabled in the [settings](#autodiscover---toggle-autodiscovery).
 
 ### Manually trigger autodiscovery
 
@@ -2719,9 +2749,9 @@ COMPONENTS = {
 
 All library settings are handled from a global `COMPONENTS` variable that is read from `settings.py`. By default you don't need it set, there are resonable defaults.
 
-### Configure the module where components are loaded from
+### `libraries` - Load component modules
 
-Configure the location where components are loaded. To do this, add a `COMPONENTS` variable to you `settings.py` with a list of python paths to load. This allows you to build a structure of components that are independent from your apps.
+Configure the locations where components are loaded. To do this, add a `COMPONENTS` variable to you `settings.py` with a list of python paths to load. This allows you to build a structure of components that are independent from your apps.
 
 ```python
 COMPONENTS = {
@@ -2761,7 +2791,7 @@ from django_components import import_libraries
 import_libraries()
 ```
 
-### Disable autodiscovery
+### `autodiscover` - Toggle autodiscovery
 
 If you specify all the component locations with the setting above and have a lot of apps, you can (very) slightly speed things up by disabling autodiscovery.
 
@@ -2771,9 +2801,11 @@ COMPONENTS = {
 }
 ```
 
-### Tune the template cache
+### `template_cache_size` - Tune the template cache
 
-Each time a template is rendered it is cached to a global in-memory cache (using Python's lru_cache decorator). This speeds up the next render of the component. As the same component is often used many times on the same page, these savings add up. By default the cache holds 128 component templates in memory, which should be enough for most sites. But if you have a lot of components, or if you are using the `template` method of a component to render lots of dynamic templates, you can increase this number. To remove the cache limit altogether and cache everything, set template_cache_size to `None`.
+Each time a template is rendered it is cached to a global in-memory cache (using Python's `lru_cache` decorator). This speeds up the next render of the component. As the same component is often used many times on the same page, these savings add up.
+
+By default the cache holds 128 component templates in memory, which should be enough for most sites. But if you have a lot of components, or if you are using the `template` method of a component to render lots of dynamic templates, you can increase this number. To remove the cache limit altogether and cache everything, set template_cache_size to `None`.
 
 ```python
 COMPONENTS = {
@@ -2781,7 +2813,7 @@ COMPONENTS = {
 }
 ```
 
-### Context behavior setting
+### `context_behavior` - Make components isolated (or not)
 
 > NOTE: `context_behavior` and `slot_context_behavior` options were merged in v0.70.
 >
@@ -2886,9 +2918,8 @@ But since `"cheese"` is not defined there, it's empty.
 
 Notice that the variables defined with the `{% with %}` tag are ignored inside the `{% fill %}` tag with the `"isolated"` mode.
 
-### Tag formatter setting
-
-Set the [`TagFormatter`](#available-tagformatters) instance.
+### `tag_formatter` - Change how components are used in templates
+Sets the [`TagFormatter`](#available-tagformatters) instance. See the section [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter).
 
 Can be set either as direct reference, or as an import string;
 
@@ -3011,6 +3042,239 @@ python manage.py startcomponent my_component --dry-run
 ```
 
 This will simulate the creation of `my_component` without creating any files.
+
+## Writing and sharing component libraries
+
+You can publish and share your components for others to use. Here are the steps to do so:
+
+### Writing component libraries
+
+1. Create a Django project with the following structure:
+
+    ```txt
+    project/
+      |--  myapp/
+        |--  __init__.py
+        |--  apps.py
+        |--  templates/
+          |--  table/
+            |--  table.py
+            |--  table.js
+            |--  table.css
+            |--  table.html
+        |--  menu.py   <--- single-file component
+      |--  templatetags/
+        |--  __init__.py
+        |--  mytags.py
+    ```
+
+2. Create custom `Library` and `ComponentRegistry` instances in `mytags.py`
+
+    This will be the entrypoint for using the components inside Django templates.
+
+    Remember that Django requires the `Library` instance to be accessible under the `register` variable ([See Django docs](https://docs.djangoproject.com/en/dev/howto/custom-template-tags)):
+
+    ```py
+    from django.template import Library
+    from django_components import ComponentRegistry, RegistrySettings
+
+    register = library = django.template.Library()
+    comp_registry = ComponentRegistry(
+        library=library,
+        settings=RegistrySettings(
+            CONTEXT_BEHAVIOR="isolated",
+            TAG_FORMATTER="django_components.component_formatter",
+        ),
+    )
+    ```
+
+    As you can see above, this is also the place where we configure how our components should behave, using the `settings` argument. If omitted, default settings are used.
+
+    For library authors, we recommend setting `CONTEXT_BEHAVIOR` to `"isolated"`, so that the state cannot leak into the components, and so the components' behavior is configured solely through the inputs. This means that the components will be more predictable and easier to debug.
+
+    Next, you can decide how will others use your components by settingt the `TAG_FORMATTER` options.
+
+    If omitted or set to `"django_components.component_formatter"`,
+    your components will be used like this:
+
+    ```django
+    {% component "table" items=items headers=headers %}
+    {% endcomponent %}
+    ```
+
+    Or you can use `"django_components.component_shorthand_formatter"`
+    to use components like so:
+
+    ```django
+    {% table items=items headers=headers %}
+    {% endtable %}
+    ```
+
+    Or you can define a [custom TagFormatter](#tagformatter).
+
+    Either way, these settings will be scoped only to your components. So, in the user code, there may be components side-by-side that use different formatters:
+
+    ```django
+    {% load mytags %}
+
+    {# Component from your library "mytags", using the "shorthand" formatter #}
+    {% table items=items headers=header %}
+    {% endtable %}
+
+    {# User-created components using the default settings #}
+    {% component "my_comp" title="Abc..." %}
+    {% endcomponent %}
+    ```
+
+3. Write your components and register them with your instance of `ComponentRegistry`
+
+    There's one difference when you are writing components that are to be shared, and that's that the components must be explicitly registered with your instance of `ComponentRegistry` from the previous step.
+
+    For better user experience, you can also define the types for the args, kwargs, slots and data.
+
+    It's also a good idea to have a common prefix for your components, so they can be easily distinguished from users' components. In the example below, we use the prefix `my_` / `My`.
+
+    ```py
+    from typing import Dict, NotRequired, Optional, Tuple, TypedDict
+
+    from django_components import Component, SlotFunc, register, types
+
+    from myapp.templatetags.mytags import comp_registry
+
+    # Define the types
+    class EmptyDict(TypedDict):
+        pass
+
+    type MyMenuArgs = Tuple[int, str]
+
+    class MyMenuSlots(TypedDict):
+        default: NotRequired[Optional[SlotFunc[EmptyDict]]]
+
+    class MyMenuProps(TypedDict):
+        vertical: NotRequired[bool]
+        klass: NotRequired[str]
+        style: NotRequired[str]
+
+    # Define the component
+    # NOTE: Don't forget to set the `registry`!
+    @register("my_menu", registry=comp_registry)
+    class MyMenu(Component[MyMenuArgs, MyMenuProps, MyMenuSlots, Any]):
+        def get_context_data(
+            self,
+            *args,
+            attrs: Optional[Dict] = None,
+        ):
+            return {
+                "attrs": attrs,
+            }
+
+        template: types.django_html = """
+            {# Load django_components template tags #}
+            {% load component_tags %}
+
+            <div {% html_attrs attrs class="my-menu" %}>
+                <div class="my-menu__content">
+                    {% slot "default" default / %}
+                </div>
+            </div>
+        """
+    ```
+
+4. Import the components in `apps.py`
+
+    Normally, users rely on [autodiscovery](#autodiscovery) and `STATICFILES_DIRS` to load the component files.
+
+    Since you, as the library author, are not in control of the file system, it is recommended to load the components manually.
+
+    We recommend doing this in the `AppConfig.ready()` hook of your `apps.py`:
+
+    ```py
+    from django.apps import AppConfig
+
+    class MyAppConfig(AppConfig):
+        default_auto_field = "django.db.models.BigAutoField"
+        name = "myapp"
+
+        # This is the code that gets run when user adds myapp
+        # to Django's INSTALLED_APPS
+        def ready(self) -> None:
+            # Import the components that you want to make available
+            # inside the templates.
+            from myapp.templates import (
+                menu,
+                table,
+            )
+    ```
+
+    Note that you can also include any other startup logic within `AppConfig.ready()`.
+
+And that's it! The next step is to publish it.
+
+### Publishing component libraries
+
+Once you are ready to share your library, you need to build
+a distribution and then publish it to PyPI.
+
+django_components uses the [`build`](https://build.pypa.io/en/stable/) utility to build a distribution:
+
+```bash
+python -m build --sdist --wheel --outdir dist/ .
+```
+
+And to publish to PyPI, you can use `twine` ([See Python user guide](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives))
+
+```bash
+twine upload --repository pypi dist/* -u __token__ -p <PyPI_TOKEN>
+```
+
+Notes on publishing:
+- The user of the package NEEDS to have installed and configured `django_components`.
+- If you use components where the HTML / CSS / JS files are separate, you may need to define `MANIFEST.in` to include those files with the distribution ([see user guide](https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html)).
+
+### Installing and using component libraries
+
+After the package has been published, all that remains is to install it in other django projects:
+
+1. Install the package:
+
+    ```bash
+    pip install myapp
+    ```
+
+2. Add the package to `INSTALLED_APPS`
+
+    ```py
+    INSTALLED_APPS = [
+        ...
+        "myapp",
+    ]
+    ```
+
+3. Optionally add the template tags to the `builtins`, so you don't have to call `{% load mytags %}` in every template:
+
+    ```py
+    TEMPLATES = [
+        {
+            ...,
+            'OPTIONS': {
+                'context_processors': [
+                    ...
+                ],
+                'builtins': [
+                    'myapp.templatetags.mytags',
+                ]
+            },
+        },
+    ]
+    ```
+
+4. And, at last, you can use the components in your own project!
+
+    ```django
+    {% my_menu title="Abc..." %}
+        Hello World!
+    {% endmy_menu %}
+    ```
 
 ## Community examples
 

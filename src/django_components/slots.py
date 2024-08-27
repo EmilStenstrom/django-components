@@ -3,7 +3,22 @@ import json
 import re
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Mapping, NamedTuple, Optional, Protocol, Set, Tuple, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from django.template import Context, Template
 from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
@@ -11,15 +26,19 @@ from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.app_settings import ContextBehavior, app_settings
+from django_components.app_settings import ContextBehavior
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _INJECT_CONTEXT_KEY_PREFIX,
+    _REGISTRY_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
 )
 from django_components.expression import RuntimeKwargs, is_identifier
 from django_components.logger import trace_msg
 from django_components.node import BaseNode, NodeTraverse, nodelist_has_content, walk_nodelist
+
+if TYPE_CHECKING:
+    from django_components.component_registry import ComponentRegistry
 
 TSlotData = TypeVar("TSlotData", bound=Mapping, contravariant=True)
 
@@ -215,12 +234,13 @@ class SlotNode(BaseNode):
         if not slot_fill.is_filled:
             return context
 
-        if app_settings.CONTEXT_BEHAVIOR == ContextBehavior.DJANGO:
+        registry: "ComponentRegistry" = context[_REGISTRY_CONTEXT_KEY]
+        if registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.DJANGO:
             return context
-        elif app_settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
+        elif registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
             return context[_ROOT_CTX_CONTEXT_KEY]
         else:
-            raise ValueError(f"Unknown value for CONTEXT_BEHAVIOR: '{app_settings.CONTEXT_BEHAVIOR}'")
+            raise ValueError(f"Unknown value for CONTEXT_BEHAVIOR: '{registry.settings.CONTEXT_BEHAVIOR}'")
 
     def resolve_kwargs(
         self,

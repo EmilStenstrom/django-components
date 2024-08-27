@@ -31,11 +31,14 @@ from django.utils.html import conditional_escape
 from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
+from django_components.app_settings import ContextBehavior
 from django_components.component_media import ComponentMediaInput, MediaMeta
-from django_components.component_registry import registry
+from django_components.component_registry import ComponentRegistry
+from django_components.component_registry import registry as registry_
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _PARENT_COMP_CONTEXT_KEY,
+    _REGISTRY_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
     get_injected_context_var,
     make_isolated_context_copy,
@@ -70,6 +73,7 @@ from django_components.component_registry import registry as registry  # NOQA
 # isort: on
 
 RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
+COMP_ONLY_FLAG = "only"
 
 # Define TypeVars for args and kwargs
 ArgsType = TypeVar("ArgsType", bound=tuple, contravariant=True)
@@ -170,6 +174,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
         fill_content: Optional[Dict[str, FillContent]] = None,
+        registry: Optional[ComponentRegistry] = None,  # noqa F811
     ):
         # When user first instantiates the component class before calling
         # `render` or `render_to_response`, then we want to allow the render
@@ -189,6 +194,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         self.outer_context: Context = outer_context or Context()
         self.fill_content = fill_content or {}
         self.component_id = component_id or gen_id()
+        self.registry = registry or registry_
         self._render_stack: Deque[RenderInput[ArgsType, KwargsType, SlotsType]] = deque()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -535,8 +541,10 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
             with context.update(
                 {
+                    # Private context fields
                     _ROOT_CTX_CONTEXT_KEY: self.outer_context,
                     _FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_slots,
+                    _REGISTRY_CONTEXT_KEY: self.registry,
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
                     "component_vars": {
@@ -595,6 +603,7 @@ class ComponentNode(BaseNode):
         name: str,
         args: List[Expression],
         kwargs: RuntimeKwargs,
+        registry: ComponentRegistry,  # noqa F811
         isolated_context: bool = False,
         fill_nodes: Optional[List[FillNode]] = None,
         node_id: Optional[str] = None,
@@ -604,6 +613,7 @@ class ComponentNode(BaseNode):
         self.name = name
         self.isolated_context = isolated_context
         self.fill_nodes = fill_nodes or []
+        self.registry = registry
 
     def __repr__(self) -> str:
         return "<ComponentNode: {}. Contents: {!r}>".format(
@@ -614,7 +624,7 @@ class ComponentNode(BaseNode):
     def render(self, context: Context) -> str:
         trace_msg("RENDR", "COMP", self.name, self.node_id)
 
-        component_cls: Type[Component] = registry.get(self.name)
+        component_cls: Type[Component] = self.registry.get(self.name)
 
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
@@ -639,10 +649,11 @@ class ComponentNode(BaseNode):
             outer_context=context,
             fill_content=fill_content,
             component_id=self.node_id,
+            registry=self.registry,
         )
 
         # Prevent outer context from leaking into the template of the component
-        if self.isolated_context:
+        if self.isolated_context or self.registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
             context = make_isolated_context_copy(context)
 
         output = component._render(
