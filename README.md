@@ -227,6 +227,7 @@ For a step-by-step guide on deploying production server with static files,
 4. Modify `TEMPLATES` section of settings.py as follows:
 
    - _Remove `'APP_DIRS': True,`_
+      - NOTE: Instead of APP_DIRS, for the same effect, we will use [`django.template.loaders.app_directories.Loader`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#django.template.loaders.app_directories.Loader)
    - Add `loaders` to `OPTIONS` list and set it to following value:
 
    ```python
@@ -239,8 +240,11 @@ For a step-by-step guide on deploying production server with static files,
                ],
                'loaders':[(
                   'django.template.loaders.cached.Loader', [
+                     # Default Django loader
                      'django.template.loaders.filesystem.Loader',
+                     # Inluding this is the same as APP_DIRS=True
                      'django.template.loaders.app_directories.Loader',
+                     # Components loader
                      'django_components.template_loader.Loader',
                   ]
                )],
