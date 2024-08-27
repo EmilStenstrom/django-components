@@ -37,7 +37,7 @@ class SimpleComponent(Component):
 
 
 class BreadcrumbComponent(Component):
-    template_name: types.django_html = """
+    template: types.django_html = """
         <div class="breadcrumb-container">
             <nav class="breadcrumbs">
                 <ol typeof="BreadcrumbList" vocab="https://schema.org/" aria-label="breadcrumbs">
