@@ -1,3 +1,5 @@
+import re
+
 from django.apps import AppConfig
 
 
@@ -24,3 +26,19 @@ class ComponentsConfig(AppConfig):
             dirs = get_dirs()
             component_filepaths = search_dirs(dirs, "**/*")
             watch_files_for_autoreload(component_filepaths)
+
+        if app_settings.MULTILINE_TAGS:
+            # Allow tags to span multiple lines. This makes it easier to work with
+            # components inside Django templates, allowing us syntax like:
+            # ```html
+            #   {% component "icon"
+            #     icon='outline_chevron_down'
+            #     size=16
+            #     color="text-gray-400"
+            #     attrs:class="ml-2"
+            #   %}{% endcomponent %}
+            # ```
+            #
+            # See https://stackoverflow.com/a/54206609/9788634
+            from django.template import base
+            base.tag_re = re.compile(base.tag_re.pattern, re.DOTALL)

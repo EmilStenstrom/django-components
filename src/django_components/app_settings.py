@@ -103,6 +103,10 @@ class AppSettings:
         return self.settings.get("libraries", [])
 
     @property
+    def MULTILINE_TAGS(self) -> bool:
+        return self.settings.get("multiline_tags", True)
+
+    @property
     def RELOAD_ON_TEMPLATE_CHANGE(self) -> bool:
         return self.settings.get("reload_on_template_change", False)
 

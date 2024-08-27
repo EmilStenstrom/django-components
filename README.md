@@ -2214,6 +2214,34 @@ Sweet! Now all the relevant HTML is inside the template, and we can move it to a
 > {"attrs": {"my_key:two": 2}}
 > ```
 
+### Multi-line tags
+
+By default, Django expects a template tag to be defined on a single line.
+
+However, this can become unwieldy if you have a component with a lot of inputs:
+
+```django
+{% component "card" title="Joanne Arc" subtitle="Head of Kitty Relations" date_last_active="2024-09-03" ... %}
+```
+
+Instead, when you install django_components, it automatically configures Django
+to suport multi-line tags.
+
+So we can rewrite the above as:
+
+```django
+{% component "card"
+    title="Joanne Arc"
+    subtitle="Head of Kitty Relations"
+    date_last_active="2024-09-03"
+    ...
+%}
+```
+
+Much better!
+
+To disable this behavior, set [`COMPONENTS.multiline_tag`](#multiline_tags---enabledisable-multiline-support) to `False`
+
 ## Prop drilling and dependency injection (provide / inject)
 
 _New in version 0.80_:
@@ -2754,13 +2782,14 @@ COMPONENTS = {
 
 All library settings are handled from a global `COMPONENTS` variable that is read from `settings.py`. By default you don't need it set, there are resonable defaults.
 
-Here's overview of all available settings:
+Here's overview of all available settings and their defaults:
 
 ```py
 COMPONENTS = {
     "autodiscover": True,
     "context_behavior": "django",  # "django" | "isolated"
     "libraries": [],  # ["mysite.components.forms", ...]
+    "multiline_tags": True,
     "reload_on_template_change": False,
     "tag_formatter": "django_components.component_formatter",
     "template_cache_size": 128,
@@ -2816,6 +2845,16 @@ If you specify all the component locations with the setting above and have a lot
 ```python
 COMPONENTS = {
     "autodiscover": False,
+}
+```
+
+### `multiline_tags` - Enable/Disable multiline support
+
+If `True`, template tags can span multiple lines. Default: `True`
+
+```python
+COMPONENTS = {
+    "multiline_tags": True,
 }
 ```
 
