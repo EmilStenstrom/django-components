@@ -57,6 +57,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Defining HTML/JS/CSS files](#defining-htmljscss-files)
 - [Rendering JS/CSS dependencies](#rendering-jscss-dependencies)
 - [Available settings](#available-settings)
+- [Running with development server](#running-with-development-server)
 - [Logging and debugging](#logging-and-debugging)
 - [Management Command](#management-command)
 - [Writing and sharing component libraries](#writing-and-sharing-component-libraries)
@@ -2753,6 +2754,19 @@ COMPONENTS = {
 
 All library settings are handled from a global `COMPONENTS` variable that is read from `settings.py`. By default you don't need it set, there are resonable defaults.
 
+Here's overview of all available settings:
+
+```py
+COMPONENTS = {
+    "autodiscover": True,
+    "context_behavior": "django",  # "django" | "isolated"
+    "libraries": [],  # ["mysite.components.forms", ...]
+    "reload_on_template_change": False,
+    "tag_formatter": "django_components.component_formatter",
+    "template_cache_size": 128,
+}
+```
+
 ### `libraries` - Load component modules
 
 Configure the locations where components are loaded. To do this, add a `COMPONENTS` variable to you `settings.py` with a list of python paths to load. This allows you to build a structure of components that are independent from your apps.
@@ -2922,6 +2936,13 @@ But since `"cheese"` is not defined there, it's empty.
 
 Notice that the variables defined with the `{% with %}` tag are ignored inside the `{% fill %}` tag with the `"isolated"` mode.
 
+### `reload_on_template_change` - Reload dev server on component file changes
+
+If `True`, configures Django to reload on component files. See
+[Reload dev server on component file changes](#reload-dev-server-on-component-file-changes).
+
+NOTE: This setting should be enabled only for the dev environment!
+
 ### `tag_formatter` - Change how components are used in templates
 Sets the [`TagFormatter`](#available-tagformatters) instance. See the section [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter).
 
@@ -2942,6 +2963,26 @@ COMPONENTS = {
     "tag_formatter": component_formatter
 }
 ```
+
+## Running with development server
+
+### Reload dev server on component file changes
+
+This is relevant if you are using the project structure as shown in our examples, where
+HTML, JS, CSS and Python are separate and nested in a directory.
+
+In this case you may notice that when you are running a development server,
+the server sometimes does not reload when you change comoponent files.
+
+From relevant [StackOverflow thread](https://stackoverflow.com/a/76722393/9788634):
+
+> TL;DR is that the server won't reload if it thinks the changed file is in a templates directory,
+> or in a nested sub directory of a templates directory. This is by design.
+
+To make the dev server reload on all component files, set [`reload_on_template_change`](#reload_on_template_change---reload-dev-server-on-component-file-changes) to `True`.
+This configures Django to watch for component files too.
+
+NOTE: This setting should be enabled only for the dev environment!
 
 ## Logging and debugging
 
