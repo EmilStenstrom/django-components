@@ -41,4 +41,5 @@ class ComponentsConfig(AppConfig):
             #
             # See https://stackoverflow.com/a/54206609/9788634
             from django.template import base
+
             base.tag_re = re.compile(base.tag_re.pattern, re.DOTALL)
