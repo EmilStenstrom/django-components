@@ -208,6 +208,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
 
         # Run app installation so the `dynamic` component is defined
         from django_components.apps import ComponentsConfig
+
         ComponentsConfig.ready(None)  # type: ignore[arg-type]
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -261,12 +262,16 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        rendered = template.render(Context({
-            "props": {
-                "is": "test",
-                "variable": "variable",
-            },
-        }))
+        rendered = template.render(
+            Context(
+                {
+                    "props": {
+                        "is": "test",
+                        "variable": "variable",
+                    },
+                }
+            )
+        )
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -279,9 +284,13 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        rendered = template.render(Context({
-            "comp_cls": self.SimpleComponent,
-        }))
+        rendered = template.render(
+            Context(
+                {
+                    "comp_cls": self.SimpleComponent,
+                }
+            )
+        )
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
 
     @parametrize_context_behavior(
@@ -291,10 +300,11 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
                 "tag_formatter": "django_components.component_shorthand_formatter",
                 "autodiscover": False,
             },
-        }
+        },
     )
     def test_shorthand_formatter(self):
         from django_components.apps import ComponentsConfig
+
         ComponentsConfig.ready(None)  # type: ignore[arg-type]
 
         registry.register(name="test", component=self.SimpleComponent)
@@ -316,10 +326,11 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
                 "tag_formatter": "django_components.component_shorthand_formatter",
                 "autodiscover": False,
             },
-        }
+        },
     )
     def test_component_name_is_configurable(self):
         from django_components.apps import ComponentsConfig
+
         ComponentsConfig.ready(None)  # type: ignore[arg-type]
 
         registry.register(name="test", component=self.SimpleComponent)
@@ -366,7 +377,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
             """
             Variable: <strong>variable</strong>
             Slot: HELLO_FROM_SLOT
-            """
+            """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -409,7 +420,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
             Variable: <strong>variable</strong>
             Slot 1: HELLO_FROM_SLOT_1
             Slot 2: HELLO_FROM_SLOT_2
-            """
+            """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -447,8 +458,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         template = Template(simple_tag_template)
 
         with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Component \\'dynamic\\' passed fill that refers to undefined slot: \\'three\\'"
+            TemplateSyntaxError, "Component \\'dynamic\\' passed fill that refers to undefined slot: \\'three\\'"
         ):
             template.render(Context({}))
 
@@ -464,10 +474,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaisesMessage(
-            TypeError,
-            "got an unexpected keyword argument \\\'invalid_variable\\\'"
-        ):
+        with self.assertRaisesMessage(TypeError, "got an unexpected keyword argument \\'invalid_variable\\'"):
             template.render(Context({}))
 
 
