@@ -9,7 +9,7 @@ from django_components import Component, register, registry, types
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class SlottedComponent(Component):
@@ -478,5 +478,36 @@ class BlockCompatTests(BaseTestCase):
                 </custom-template>
             </body>
             </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+
+class MultilineTagsTests(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_multiline_tags(self):
+        @register("test_component")
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+            """
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component
+                "test_component"
+                123
+                variable2="abc"
+            %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            Variable: <strong>123</strong>
         """
         self.assertHTMLEqual(rendered, expected)

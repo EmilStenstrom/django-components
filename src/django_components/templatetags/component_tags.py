@@ -232,7 +232,8 @@ def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_nam
         tag_name,
         parser,
         token,
-        params=True,  # Allow many args
+        params=[],
+        extra_params=True,  # Allow many args
         flags=[COMP_ONLY_FLAG],
         keywordonly_kwargs=True,
         repeatable_kwargs=False,
@@ -360,7 +361,8 @@ def _parse_tag(
     tag: str,
     parser: Parser,
     token: Token,
-    params: Union[List[str], bool] = False,
+    params: Optional[List[str]] = None,
+    extra_params: bool = False,
     flags: Optional[List[str]] = None,
     end_tag: Optional[str] = None,
     optional_params: Optional[List[str]] = None,
@@ -455,37 +457,36 @@ def _parse_tag(
     # modify it much to maintain some sort of compatibility with Django's version of
     # `parse_bits`.
     # Ideally, Django's parser would be expanded to support our use cases.
-    if params != True:  # noqa F712
-        params_to_sort = [param for param in params if param not in seen_kwargs]
-        new_args = []
-        new_params = []
-        new_kwargs = []
-        for index, bit in enumerate(bits):
-            if is_kwarg(bit) or not len(params_to_sort):
-                # Pass all remaining bits (including current one) as kwargs
-                new_kwargs.extend(bits[index:])
-                break
+    params_to_sort = [param for param in params if param not in seen_kwargs]
+    new_args = []
+    new_params = []
+    new_kwargs = []
+    for index, bit in enumerate(bits):
+        if is_kwarg(bit) or not len(params_to_sort):
+            # Pass all remaining bits (including current one) as kwargs
+            new_kwargs.extend(bits[index:])
+            break
 
-            param = params_to_sort.pop(0)
-            if optional_params and param in optional_params:
-                mark_kwarg_key(param, False)
-                new_kwargs.append(f"{param}={bit}")
-                continue
-            new_args.append(bit)
-            new_params.append(param)
+        param = params_to_sort.pop(0)
+        if optional_params and param in optional_params:
+            mark_kwarg_key(param, False)
+            new_kwargs.append(f"{param}={bit}")
+            continue
+        new_args.append(bit)
+        new_params.append(param)
 
-        bits = [*new_args, *new_kwargs]
-        params = [*new_params, *params_to_sort]
+    bits = [*new_args, *new_kwargs]
+    params = [*new_params, *params_to_sort]
 
-        # Remove any remaining optional positional args if they were not given
-        if optional_params:
-            params = [param for param in params_to_sort if param not in optional_params]
+    # Remove any remaining optional positional args if they were not given
+    if optional_params:
+        params = [param for param in params_to_sort if param not in optional_params]
 
     # Parse args/kwargs that will be passed to the fill
     raw_args, raw_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
-        params=[] if isinstance(params, bool) else params,
+        params=[] if extra_params else params,
         name=tag_name,
     )
 
@@ -516,14 +517,11 @@ def _parse_tag(
             kwarg_pairs.append((key, val))
 
     # Allow only as many positional args as given
-    if params != True and len(args) > len(params):  # noqa F712
+    if not extra_params and len(args) > len(params):  # noqa F712
         raise TemplateSyntaxError(f"Tag '{tag_name}' received unexpected positional arguments: {args[len(params):]}")
 
     # For convenience, allow to access named args by their name instead of index
-    if params != True:  # noqa F712
-        named_args = {param: args[index] for index, param in enumerate(params)}
-    else:
-        named_args = {}
+    named_args = {param: args[index] for index, param in enumerate(params)}
 
     # Validate kwargs
     kwargs: RuntimeKwargsInput = {}

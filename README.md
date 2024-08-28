@@ -57,6 +57,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Defining HTML/JS/CSS files](#defining-htmljscss-files)
 - [Rendering JS/CSS dependencies](#rendering-jscss-dependencies)
 - [Available settings](#available-settings)
+- [Running with development server](#running-with-development-server)
 - [Logging and debugging](#logging-and-debugging)
 - [Management Command](#management-command)
 - [Writing and sharing component libraries](#writing-and-sharing-component-libraries)
@@ -66,9 +67,13 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+**Version 0.94**
+- django_components now automatically configures Django to support multi-line tags. (See [Multi-line tags](#multi-line-tags))
+- New setting `reload_on_template_change`. Set this to `True` to reload the dev server on changes to component template files. (See [Reload dev server on component file changes](#reload-dev-server-on-component-file-changes))
+
 **Version 0.93**
-- Spread operator `...dict` inside template tags. See [Spread operator](#spread-operator))
-- Use template tags inside string literals in component inputs. See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
+- Spread operator `...dict` inside template tags. (See [Spread operator](#spread-operator))
+- Use template tags inside string literals in component inputs. (See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
 - Dynamic slots, fills and provides - The `name` argument for these can now be a variable, a template expression, or via spread operator
 - Component library authors can now configure `CONTEXT_BEHAVIOR` and `TAG_FORMATTER` settings independently from user settings.
 
@@ -227,6 +232,7 @@ For a step-by-step guide on deploying production server with static files,
 4. Modify `TEMPLATES` section of settings.py as follows:
 
    - _Remove `'APP_DIRS': True,`_
+      - NOTE: Instead of APP_DIRS, for the same effect, we will use [`django.template.loaders.app_directories.Loader`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#django.template.loaders.app_directories.Loader)
    - Add `loaders` to `OPTIONS` list and set it to following value:
 
    ```python
@@ -239,8 +245,11 @@ For a step-by-step guide on deploying production server with static files,
                ],
                'loaders':[(
                   'django.template.loaders.cached.Loader', [
+                     # Default Django loader
                      'django.template.loaders.filesystem.Loader',
+                     # Inluding this is the same as APP_DIRS=True
                      'django.template.loaders.app_directories.Loader',
+                     # Components loader
                      'django_components.template_loader.Loader',
                   ]
                )],
@@ -2209,6 +2218,34 @@ Sweet! Now all the relevant HTML is inside the template, and we can move it to a
 > {"attrs": {"my_key:two": 2}}
 > ```
 
+### Multi-line tags
+
+By default, Django expects a template tag to be defined on a single line.
+
+However, this can become unwieldy if you have a component with a lot of inputs:
+
+```django
+{% component "card" title="Joanne Arc" subtitle="Head of Kitty Relations" date_last_active="2024-09-03" ... %}
+```
+
+Instead, when you install django_components, it automatically configures Django
+to suport multi-line tags.
+
+So we can rewrite the above as:
+
+```django
+{% component "card"
+    title="Joanne Arc"
+    subtitle="Head of Kitty Relations"
+    date_last_active="2024-09-03"
+    ...
+%}
+```
+
+Much better!
+
+To disable this behavior, set [`COMPONENTS.multiline_tag`](#multiline_tags---enabledisable-multiline-support) to `False`
+
 ## Prop drilling and dependency injection (provide / inject)
 
 _New in version 0.80_:
@@ -2749,6 +2786,20 @@ COMPONENTS = {
 
 All library settings are handled from a global `COMPONENTS` variable that is read from `settings.py`. By default you don't need it set, there are resonable defaults.
 
+Here's overview of all available settings and their defaults:
+
+```py
+COMPONENTS = {
+    "autodiscover": True,
+    "context_behavior": "django",  # "django" | "isolated"
+    "libraries": [],  # ["mysite.components.forms", ...]
+    "multiline_tags": True,
+    "reload_on_template_change": False,
+    "tag_formatter": "django_components.component_formatter",
+    "template_cache_size": 128,
+}
+```
+
 ### `libraries` - Load component modules
 
 Configure the locations where components are loaded. To do this, add a `COMPONENTS` variable to you `settings.py` with a list of python paths to load. This allows you to build a structure of components that are independent from your apps.
@@ -2798,6 +2849,16 @@ If you specify all the component locations with the setting above and have a lot
 ```python
 COMPONENTS = {
     "autodiscover": False,
+}
+```
+
+### `multiline_tags` - Enable/Disable multiline support
+
+If `True`, template tags can span multiple lines. Default: `True`
+
+```python
+COMPONENTS = {
+    "multiline_tags": True,
 }
 ```
 
@@ -2918,6 +2979,13 @@ But since `"cheese"` is not defined there, it's empty.
 
 Notice that the variables defined with the `{% with %}` tag are ignored inside the `{% fill %}` tag with the `"isolated"` mode.
 
+### `reload_on_template_change` - Reload dev server on component file changes
+
+If `True`, configures Django to reload on component files. See
+[Reload dev server on component file changes](#reload-dev-server-on-component-file-changes).
+
+NOTE: This setting should be enabled only for the dev environment!
+
 ### `tag_formatter` - Change how components are used in templates
 Sets the [`TagFormatter`](#available-tagformatters) instance. See the section [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter).
 
@@ -2938,6 +3006,26 @@ COMPONENTS = {
     "tag_formatter": component_formatter
 }
 ```
+
+## Running with development server
+
+### Reload dev server on component file changes
+
+This is relevant if you are using the project structure as shown in our examples, where
+HTML, JS, CSS and Python are separate and nested in a directory.
+
+In this case you may notice that when you are running a development server,
+the server sometimes does not reload when you change comoponent files.
+
+From relevant [StackOverflow thread](https://stackoverflow.com/a/76722393/9788634):
+
+> TL;DR is that the server won't reload if it thinks the changed file is in a templates directory,
+> or in a nested sub directory of a templates directory. This is by design.
+
+To make the dev server reload on all component files, set [`reload_on_template_change`](#reload_on_template_change---reload-dev-server-on-component-file-changes) to `True`.
+This configures Django to watch for component files too.
+
+NOTE: This setting should be enabled only for the dev environment!
 
 ## Logging and debugging
 

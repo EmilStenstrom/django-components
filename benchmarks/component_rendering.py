@@ -37,7 +37,22 @@ class SimpleComponent(Component):
 
 
 class BreadcrumbComponent(Component):
-    template_name = "mdn_component_template.html"
+    template: types.django_html = """
+        <div class="breadcrumb-container">
+            <nav class="breadcrumbs">
+                <ol typeof="BreadcrumbList" vocab="https://schema.org/" aria-label="breadcrumbs">
+                    {% for label, url in links %}
+                        <li property="itemListElement" typeof="ListItem">
+                            <a class="breadcrumb-current-page" property="item" typeof="WebPage" href="{{ url }}">
+                                <span property="name">{{ label }}</span>
+                            </a>
+                            <meta property="position" content="4">
+                        </li>
+                    {% endfor %}
+                </ol>
+            </nav>
+        </div>
+    """
 
     LINKS = [
         (
