@@ -16,6 +16,7 @@ class DynamicComponent(Component):
     - `registry` - optional - Specify the registry to search for the registered name. If omitted,
     all registries are searched.
     """
+
     _is_dynamic_component = True
 
     def get_context_data(
@@ -28,7 +29,7 @@ class DynamicComponent(Component):
         comp_name_or_class: Union[str, Type[Component]] = kwargs.pop("is", None)
         if not comp_name_or_class:
             raise TypeError(f"Component '{self.name}' is missing a required argument 'is'")
-        
+
         comp_class = self._resolve_component(comp_name_or_class, registry)
 
         comp = comp_class(
@@ -48,11 +49,11 @@ class DynamicComponent(Component):
         return {
             "output": output,
         }
-    
+
     template: types.django_html = """
         {{ output }}
     """
-    
+
     def _resolve_component(
         self,
         comp_name_or_class: Union[str, Type[Component], Any],

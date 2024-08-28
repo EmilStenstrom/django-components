@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, List, Optional, Set, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Type, TypeVar, Union
 
 from django.template import Library
 

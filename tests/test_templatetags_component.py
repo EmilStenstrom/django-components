@@ -210,7 +210,6 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         from django_components.apps import ComponentsConfig
         ComponentsConfig.ready(None)  # type: ignore[arg-type]
 
-
     @parametrize_context_behavior(["django", "isolated"])
     def test_basic(self):
         registry.register(name="test", component=self.SimpleComponent)
