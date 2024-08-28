@@ -44,8 +44,9 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Using single-file components](#using-single-file-components)
 - [Use components in templates](#use-components-in-templates)
 - [Use components outside of templates](#use-components-outside-of-templates)
-- [Registering components](#registering-components)
 - [Use components as views](#use-components-as-views)
+- [Pre-defined components](#pre-defined-components)
+- [Registering components](#registering-components)
 - [Autodiscovery](#autodiscovery)
 - [Using slots in templates](#using-slots-in-templates)
 - [Accessing data passed to the component](#accessing-data-passed-to-the-component)
@@ -66,6 +67,10 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Development guides](#development-guides)
 
 ## Release notes
+
+**Version 0.95**
+- Added support for dynamic components, where the component name is passed as a variable. (See [Dynamic components](#dynamic-components))
+- Changed `Component.input` to raise `RuntimeError` if accessed outside of render context. Previously it returned `None` if unset.
 
 **Version 0.94**
 - django_components now automatically configures Django to support multi-line tags. (See [Multi-line tags](#multi-line-tags))
@@ -849,6 +854,38 @@ class MyComponent(Component):
 
             do_something_extra(request, *args, **kwargs)
 ```
+
+## Pre-defined components
+
+### Dynamic components
+
+If you are writing something like a form component, you may design it such that users
+give you the component names, and your component renders it.
+
+While you can handle this with a series of if / else statements, this is not an extensible solution.
+
+Instead, you can use **dynamic components**. Dynamic components are used in place of normal components.
+
+```django
+{% load component_tags %}
+{% component "dynamic" is=component_name title="Cat Museum" %}
+    {% fill "content" %}
+        HELLO_FROM_SLOT_1
+    {% endfill %}
+    {% fill "sidebar" %}
+        HELLO_FROM_SLOT_2
+    {% endfill %}
+{% endcomponent %}
+```
+
+These behave same way as regular components. You pass it the same args, kwargs, and slots as you would
+to the component that you want to render.
+
+The only exception is that also you supply 1-2 additional inputs:
+- `is` - Required - The component name or a component class to render
+- `registry` - Optional - The `ComponentRegistry` that will be searched if `is` is a component name. If omitted, ALL registries are searched.
+
+By default, the dynamic component is registered under the name `"dynamic"`. In case of a conflict, you can change the name used for the dynamic components by defining the [`COMPONENTS.dynamic_component_name` setting](#dynamic_component_name).
 
 ## Registering components
 
@@ -2792,6 +2829,7 @@ Here's overview of all available settings and their defaults:
 COMPONENTS = {
     "autodiscover": True,
     "context_behavior": "django",  # "django" | "isolated"
+    "dynamic_component_name": "dynamic",
     "libraries": [],  # ["mysite.components.forms", ...]
     "multiline_tags": True,
     "reload_on_template_change": False,
@@ -2849,6 +2887,16 @@ If you specify all the component locations with the setting above and have a lot
 ```python
 COMPONENTS = {
     "autodiscover": False,
+}
+```
+
+### `dynamic_component_name`
+
+By default, the dynamic component is registered under the name `"dynamic"`. In case of a conflict, use this setting to change the name used for the dynamic components.
+
+```python
+COMPONENTS = {
+    "dynamic_component_name": "new_dynamic",
 }
 ```
 
