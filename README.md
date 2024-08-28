@@ -1559,7 +1559,7 @@ This means that you can use `self.input` inside:
 - `get_template_name`
 - `get_template_string`
 
-`self.input` is defined only for the duration of `Component.render`, and returns `None` when called outside of this.
+`self.input` is defined only for the duration of `Component.render`, and raises `RuntimeError` when called outside of this.
 
 `self.input` has the same fields as the input to `Component.render`:
 
