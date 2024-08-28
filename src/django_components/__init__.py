@@ -22,6 +22,7 @@ from django_components.component_registry import (
     register as register,
     registry as registry,
 )
+from django_components.components import DynamicComponent as DynamicComponent
 from django_components.library import TagProtectedError as TagProtectedError
 from django_components.slots import (
     SlotContent as SlotContent,

@@ -1,0 +1,1 @@
+from django_components.components.dynamic import DynamicComponent as DynamicComponent

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, Optional, Set, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, Dict, NamedTuple, List, Optional, Set, Type, TypeVar, Union
 
 from django.template import Library
 
@@ -44,6 +44,12 @@ class InternalRegistrySettings(NamedTuple):
     TAG_FORMATTER: Union["TagFormatterABC", str]
 
 
+# We keep track of all registries that exist so that, when users want to
+# dynamically resolve component name to component class, they would be able
+# to search across all registries.
+all_registries: List["ComponentRegistry"] = []
+
+
 class ComponentRegistry:
     """
     Manages which components can be used in the template tags.
@@ -87,6 +93,8 @@ class ComponentRegistry:
         self._library = library
         self._settings_input = settings
         self._settings: Optional[Callable[[], InternalRegistrySettings]] = None
+
+        all_registries.append(self)
 
     @property
     def library(self) -> Library:

@@ -526,6 +526,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 component_name=self.name,
                 context_data=slot_context_data,
                 fill_content=fill_content,
+                # Dynamic component has a special mark do it doesn't raise certain errors
+                is_dynamic_component=getattr(self, "_is_dynamic_component", False),
             )
 
             # Available slot fills - this is internal to us
