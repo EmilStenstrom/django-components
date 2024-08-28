@@ -67,9 +67,13 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+**Version 0.94**
+- django_components now automatically configures Django to support multi-line tags. (See [Multi-line tags](#multi-line-tags))
+- New setting `reload_on_template_change`. Set this to `True` to reload the dev server on changes to component template files. (See [Reload dev server on component file changes](#reload-dev-server-on-component-file-changes))
+
 **Version 0.93**
-- Spread operator `...dict` inside template tags. See [Spread operator](#spread-operator))
-- Use template tags inside string literals in component inputs. See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
+- Spread operator `...dict` inside template tags. (See [Spread operator](#spread-operator))
+- Use template tags inside string literals in component inputs. (See [Use template tags inside component inputs](#use-template-tags-inside-component-inputs))
 - Dynamic slots, fills and provides - The `name` argument for these can now be a variable, a template expression, or via spread operator
 - Component library authors can now configure `CONTEXT_BEHAVIOR` and `TAG_FORMATTER` settings independently from user settings.
 
