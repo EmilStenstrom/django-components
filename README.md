@@ -887,6 +887,22 @@ The only exception is that also you supply 1-2 additional inputs:
 
 By default, the dynamic component is registered under the name `"dynamic"`. In case of a conflict, you can change the name used for the dynamic components by defining the [`COMPONENTS.dynamic_component_name` setting](#dynamic_component_name).
 
+If you need to use the dynamic components in Python, you can also import it from `django_components`:
+```py
+from django_components import DynamicComponent
+
+comp = SimpleTableComp if is_readonly else TableComp
+
+output = DynamicComponent.render(
+    kwargs={
+        "is": comp,
+        # Other kwargs...
+    },
+    # args: [...],
+    # slots: {...},
+)
+```
+
 ## Registering components
 
 In previous examples you could repeatedly see us using `@register()` to "register"
