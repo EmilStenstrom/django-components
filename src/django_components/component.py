@@ -205,14 +205,17 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         return self.registered_name or self.__class__.__name__
 
     @property
-    def input(self) -> Optional[RenderInput[ArgsType, KwargsType, SlotsType]]:
+    def input(self) -> RenderInput[ArgsType, KwargsType, SlotsType]:
         """
         Input holds the data (like arg, kwargs, slots) that were passsed to
         the current execution of the `render` method.
         """
+        if not len(self._render_stack):
+            raise RuntimeError(f"{self.name}: Tried to access Component input while outside of rendering execution")
+
         # NOTE: Input is managed as a stack, so if `render` is called within another `render`,
         # the propertes below will return only the inner-most state.
-        return self._render_stack[-1] if len(self._render_stack) else None
+        return self._render_stack[-1]
 
     def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
         return cast(DataType, {})
@@ -526,6 +529,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 component_name=self.name,
                 context_data=slot_context_data,
                 fill_content=fill_content,
+                # Dynamic component has a special mark do it doesn't raise certain errors
+                is_dynamic_component=getattr(self, "_is_dynamic_component", False),
             )
 
             # Available slot fills - this is internal to us

@@ -2,12 +2,12 @@ import textwrap
 
 from django.template import Context, Template, TemplateSyntaxError
 
-from django_components import Component, NotRegistered, register, registry, types
+from django_components import AlreadyRegistered, Component, NotRegistered, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class SlottedComponent(Component):
@@ -74,18 +74,6 @@ class ComponentTemplateTagTest(BaseTestCase):
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
-
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_raises_on_no_registered_components(self):
-        # Note: No tag registered
-
-        simple_tag_template: types.django_html = """
-            {% load component_tags %}
-            {% component name="test" variable="variable" %}{% endcomponent %}
-        """
-
-        with self.assertRaisesMessage(TemplateSyntaxError, "Invalid block tag on line 3: 'component'"):
-            Template(simple_tag_template)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_call_with_invalid_name(self):
@@ -197,6 +185,302 @@ class ComponentTemplateTagTest(BaseTestCase):
             rendered,
             "Provided variable: <strong>provided value</strong>\nDefault: <p>default text</p>",
         )
+
+
+class DynamicComponentTemplateTagTest(BaseTestCase):
+    class SimpleComponent(Component):
+        template: types.django_html = """
+            Variable: <strong>{{ variable }}</strong>
+        """
+
+        def get_context_data(self, variable, variable2="default"):
+            return {
+                "variable": variable,
+                "variable2": variable2,
+            }
+
+        class Media:
+            css = "style.css"
+            js = "script.js"
+
+    def setUp(self):
+        super().setUp()
+
+        # Run app installation so the `dynamic` component is defined
+        from django_components.apps import ComponentsConfig
+
+        ComponentsConfig.ready(None)  # type: ignore[arg-type]
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_basic(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component "dynamic" is="test" variable="variable" %}{% endcomponent %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_call_with_invalid_name(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component "dynamic" is="haber_der_baber" variable="variable" %}{% endcomponent %}
+        """
+
+        template = Template(simple_tag_template)
+        with self.assertRaisesMessage(NotRegistered, "The component 'haber_der_baber' was not found"):
+            template.render(Context({}))
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_called_with_variable_as_name(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component "dynamic" is=component_name variable="variable" %}{% endcomponent %}
+            {% endwith %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_called_with_variable_as_spread(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component "dynamic" ...props %}{% endcomponent %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(
+            Context(
+                {
+                    "props": {
+                        "is": "test",
+                        "variable": "variable",
+                    },
+                }
+            )
+        )
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_as_class(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% component "dynamic" is=comp_cls variable="variable" %}{% endcomponent %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(
+            Context(
+                {
+                    "comp_cls": self.SimpleComponent,
+                }
+            )
+        )
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(
+        ["django", "isolated"],
+        settings={
+            "COMPONENTS": {
+                "tag_formatter": "django_components.component_shorthand_formatter",
+                "autodiscover": False,
+            },
+        },
+    )
+    def test_shorthand_formatter(self):
+        from django_components.apps import ComponentsConfig
+
+        ComponentsConfig.ready(None)  # type: ignore[arg-type]
+
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% dynamic is="test" variable="variable" %}{% enddynamic %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(
+        ["django", "isolated"],
+        settings={
+            "COMPONENTS": {
+                "dynamic_component_name": "uno_reverse",
+                "tag_formatter": "django_components.component_shorthand_formatter",
+                "autodiscover": False,
+            },
+        },
+    )
+    def test_component_name_is_configurable(self):
+        from django_components.apps import ComponentsConfig
+
+        ComponentsConfig.ready(None)  # type: ignore[arg-type]
+
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% uno_reverse is="test" variable="variable" %}{% enduno_reverse %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_already_registered_on_name_conflict(self):
+        with self.assertRaisesMessage(AlreadyRegistered, 'The component "dynamic" has already been registered'):
+            registry.register(name="dynamic", component=self.SimpleComponent)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_called_with_default_slot(self):
+        class SimpleSlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot: {% slot "default" default / %}
+            """
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+        registry.register(name="test", component=SimpleSlottedComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component "dynamic" is=component_name variable="variable" %}
+                    HELLO_FROM_SLOT
+                {% endcomponent %}
+            {% endwith %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>variable</strong>
+            Slot: HELLO_FROM_SLOT
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_called_with_named_slots(self):
+        class SimpleSlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "default" default / %}
+                Slot 2: {% slot "two" / %}
+            """
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+        registry.register(name="test", component=SimpleSlottedComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component "dynamic" is=component_name variable="variable" %}
+                    {% fill "default" %}
+                        HELLO_FROM_SLOT_1
+                    {% endfill %}
+                    {% fill "two" %}
+                        HELLO_FROM_SLOT_2
+                    {% endfill %}
+                {% endcomponent %}
+            {% endwith %}
+        """
+
+        template = Template(simple_tag_template)
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>variable</strong>
+            Slot 1: HELLO_FROM_SLOT_1
+            Slot 2: HELLO_FROM_SLOT_2
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_invalid_slots(self):
+        class SimpleSlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "default" default / %}
+                Slot 2: {% slot "two" / %}
+            """
+
+            def get_context_data(self, variable, variable2="default"):
+                return {
+                    "variable": variable,
+                    "variable2": variable2,
+                }
+
+        registry.register(name="test", component=SimpleSlottedComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component "dynamic" is=component_name variable="variable" %}
+                    {% fill "default" %}
+                        HELLO_FROM_SLOT_1
+                    {% endfill %}
+                    {% fill "three" %}
+                        HELLO_FROM_SLOT_2
+                    {% endfill %}
+                {% endcomponent %}
+            {% endwith %}
+        """
+
+        template = Template(simple_tag_template)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "Component \\'dynamic\\' passed fill that refers to undefined slot: \\'three\\'"
+        ):
+            template.render(Context({}))
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_invalid_args(self):
+        registry.register(name="test", component=self.SimpleComponent)
+
+        simple_tag_template: types.django_html = """
+            {% load component_tags %}
+            {% with component_name="test" %}
+                {% component "dynamic" is=component_name invalid_variable="variable" %}{% endcomponent %}
+            {% endwith %}
+        """
+
+        template = Template(simple_tag_template)
+        with self.assertRaisesMessage(TypeError, "got an unexpected keyword argument \\'invalid_variable\\'"):
+            template.render(Context({}))
 
 
 class MultiComponentTests(BaseTestCase):

@@ -473,6 +473,7 @@ def resolve_slots(
     component_name: Optional[str],
     context_data: Mapping[str, Any],
     fill_content: Dict[SlotName, FillContent],
+    is_dynamic_component: bool = False,
 ) -> Tuple[Dict[SlotId, Slot], Dict[SlotId, SlotFill]]:
     """
     Search the template for all SlotNodes, and associate the slots
@@ -546,10 +547,14 @@ def resolve_slots(
         component_name=component_name,
         slots=slots,
         slot_fills=slot_fills,
+        is_dynamic_component=is_dynamic_component,
     )
 
     # 4. Detect any errors with slots/fills
-    _report_slot_errors(slots, slot_fills, component_name)
+    # NOTE: We ignore errors for the dynamic component, as the underlying component
+    # will deal with it
+    if not is_dynamic_component:
+        _report_slot_errors(slots, slot_fills, component_name)
 
     # 5. Find roots of the slot relationships
     top_level_slot_ids: List[SlotId] = []
@@ -598,6 +603,7 @@ def _resolve_default_slot(
     component_name: Optional[str],
     slots: Dict[SlotId, Slot],
     slot_fills: Dict[SlotName, SlotFill],
+    is_dynamic_component: bool,
 ) -> Dict[SlotName, SlotFill]:
     """Figure out which slot the default fill refers to, and perform checks."""
     named_fills = slot_fills.copy()
@@ -637,7 +643,7 @@ def _resolve_default_slot(
 
     # Check: Only component templates that include a 'default' slot
     # can be invoked with implicit filling.
-    if default_fill and not default_slot_encountered:
+    if default_fill and not default_slot_encountered and not is_dynamic_component:
         raise TemplateSyntaxError(
             f"Component '{component_name}' passed default fill content '{default_fill.name}'"
             f"(i.e. without explicit 'fill' tag), "

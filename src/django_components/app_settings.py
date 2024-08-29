@@ -99,7 +99,11 @@ class AppSettings:
         return self.settings.get("autodiscover", True)
 
     @property
-    def LIBRARIES(self) -> List:
+    def DYNAMIC_COMPONENT_NAME(self) -> str:
+        return self.settings.get("dynamic_component_name", "dynamic")
+
+    @property
+    def LIBRARIES(self) -> List[str]:
         return self.settings.get("libraries", [])
 
     @property
