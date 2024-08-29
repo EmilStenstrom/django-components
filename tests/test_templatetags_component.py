@@ -2,7 +2,7 @@ import textwrap
 
 from django.template import Context, Template, TemplateSyntaxError
 
-from django_components import Component, NotRegistered, register, registry, types
+from django_components import AlreadyRegistered, Component, NotRegistered, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -343,6 +343,11 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
         self.assertHTMLEqual(rendered, "Variable: <strong>variable</strong>\n")
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_already_registered_on_name_conflict(self):
+        with self.assertRaisesMessage(AlreadyRegistered, 'The component "dynamic" has already been registered'):
+            registry.register(name="dynamic", component=self.SimpleComponent)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_called_with_default_slot(self):
