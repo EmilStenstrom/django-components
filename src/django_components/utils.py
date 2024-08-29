@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union, get_type_hints
 
@@ -45,10 +46,14 @@ def validate_typed_tuple(
     prefix: str,
     kind: str,
 ) -> None:
+    # `Any` type is the signal that we should skip validation
     if tuple_type == Any:
         return
 
-    # Validate positional args
+    # We do two kinds of validation with the given Tuple type:
+    # 1. We check whether there are any extra / missing positional args
+    # 2. We look at the members of the Tuple (which are types themselves),
+    #    and check if our concrete list / tuple has correct types under correct indices.
     expected_pos_args = len(tuple_type.__args__)
     actual_pos_args = len(value)
     if expected_pos_args > actual_pos_args:
@@ -72,6 +77,7 @@ def validate_typed_tuple(
 #   in function signature (only its subclasses can), so we specify the type as Mapping.
 #   See https://stackoverflow.com/questions/74412803
 def validate_typed_dict(value: Mapping[str, Any], dict_type: Any, prefix: str, kind: str) -> None:
+    # `Any` type is the signal that we should skip validation
     if dict_type == Any:
         return
 
@@ -79,6 +85,11 @@ def validate_typed_dict(value: Mapping[str, Any], dict_type: Any, prefix: str, k
     # And https://stackoverflow.com/a/71231688
     required_kwargs = dict_type.__required_keys__
     unseen_keys = set(value.keys())
+
+    # For each entry in the TypedDict, we do two kinds of validation:
+    # 1. We check whether there are any extra / missing keys
+    # 2. We look at the values of TypedDict entries (which are types themselves),
+    #    and check if our concrete dict has correct types under correct keys.
     for key, kwarg_type in get_type_hints(dict_type).items():
         if key not in value:
             if key in required_kwargs:
@@ -90,7 +101,10 @@ def validate_typed_dict(value: Mapping[str, Any], dict_type: Any, prefix: str, k
         else:
             unseen_keys.remove(key)
             kwarg = value[key]
-            if not isinstance(kwarg, kwarg_type):
+
+            # NOTE: `isinstance()` cannot be used with the version of TypedDict prior to 3.11.
+            # So we do type validation for TypedDicts only in 3.11 and later.
+            if sys.version_info >= (3, 11) and not isinstance(kwarg, kwarg_type):
                 # Generate errors like below (listed for searchability)
                 # `Component 'name' expected keyword argument 'key' to be <class 'int'>, got 123.4 of type <class 'float'>`  # noqa: E501
                 # `Component 'name' expected slot 'key' to be <class 'int'>, got 123.4 of type <class 'float'>`
