@@ -18,6 +18,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    runtime_checkable,
 )
 
 from django.template import Context, Template
@@ -54,6 +55,7 @@ SLOT_DEFAULT_KEYWORD = "default"
 SlotResult = Union[str, SafeString]
 
 
+@runtime_checkable
 class SlotFunc(Protocol, Generic[TSlotData]):
     def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult: ...  # noqa E704
 

@@ -3,19 +3,57 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
-from typing import Dict, Tuple, TypedDict, no_type_check
+import sys
+from typing import Any, Dict, Tuple, Union, no_type_check
+
+# See https://peps.python.org/pep-0655/#usage-in-python-3-11
+if sys.version_info >= (3, 11):
+    from typing import NotRequired, TypedDict
+else:
+    from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
+
+from unittest import skipIf
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
 from django.template import Context, RequestContext, Template, TemplateSyntaxError
+from django.utils.safestring import SafeString
 
-from django_components import Component, registry, types
+from django_components import Component, SlotFunc, registry, types
 from django_components.slots import SlotRef
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
 setup_test_config({"autodiscover": False})
+
+
+# Component typings
+CompArgs = Tuple[int, str]
+
+
+class CompData(TypedDict):
+    variable: str
+
+
+class CompSlots(TypedDict):
+    my_slot: Union[str, int]
+    my_slot2: SlotFunc
+
+
+if sys.version_info >= (3, 11):
+
+    class CompKwargs(TypedDict):
+        variable: str
+        another: int
+        optional: NotRequired[int]
+
+else:
+
+    class CompKwargs(TypedDict, total=False):
+        variable: str
+        another: int
+        optional: NotRequired[int]
 
 
 class ComponentTest(BaseTestCase):
@@ -186,46 +224,6 @@ class ComponentTest(BaseTestCase):
             """,
         )
 
-    def test_typed(self):
-        TestCompArgs = Tuple[int, str]
-
-        class TestCompKwargs(TypedDict):
-            variable: str
-            another: int
-
-        class TestCompData(TypedDict):
-            abc: int
-
-        class TestCompSlots(TypedDict):
-            my_slot: str
-
-        class TestComponent(Component[TestCompArgs, TestCompKwargs, TestCompData, TestCompSlots]):
-            def get_context_data(self, var1, var2, variable, another, **attrs):
-                return {
-                    "variable": variable,
-                }
-
-            def get_template(self, context):
-                template_str: types.django_html = """
-                    {% load component_tags %}
-                    Variable: <strong>{{ variable }}</strong>
-                    {% slot 'my_slot' / %}
-                """
-                return Template(template_str)
-
-        rendered = TestComponent.render(
-            kwargs={"variable": "test", "another": 1},
-            args=(123, "str"),
-            slots={"my_slot": "MY_SLOT"},
-        )
-
-        self.assertHTMLEqual(
-            rendered,
-            """
-            Variable: <strong>test</strong> MY_SLOT
-            """,
-        )
-
     def test_input(self):
         tester = self
 
@@ -267,6 +265,226 @@ class ComponentTest(BaseTestCase):
             Variable: <strong>test</strong> MY_SLOT
             """,
         )
+
+
+class ComponentValidationTest(BaseTestCase):
+    def test_validate_input_passes(self):
+        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "my_slot" / %}
+                Slot 2: {% slot "my_slot2" / %}
+            """
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=(123, "str"),
+            slots={
+                "my_slot": SafeString("MY_SLOT"),
+                "my_slot2": lambda ctx, data, ref: "abc",
+            },
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong>
+            Slot 1: MY_SLOT
+            Slot 2: abc
+            """,
+        )
+
+    @skipIf(sys.version_info < (3, 11), "Requires >= 3.11")
+    def test_validate_input_fails(self):
+        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "my_slot" / %}
+                Slot 2: {% slot "my_slot2" / %}
+            """
+
+        with self.assertRaisesMessage(TypeError, "Component 'TestComponent' expected 2 positional arguments, got 1"):
+            TestComponent.render(
+                kwargs={"variable": 1, "another": "test"},  # type: ignore
+                args=(123,),  # type: ignore
+                slots={
+                    "my_slot": "MY_SLOT",
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
+
+        with self.assertRaisesMessage(TypeError, "Component 'TestComponent' expected 2 positional arguments, got 0"):
+            TestComponent.render(
+                kwargs={"variable": 1, "another": "test"},  # type: ignore
+                slots={
+                    "my_slot": "MY_SLOT",
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
+
+        with self.assertRaisesMessage(
+            TypeError,
+            "Component 'TestComponent' expected keyword argument 'variable' to be <class 'str'>, got 1 of type <class 'int'>",  # noqa: E501
+        ):
+            TestComponent.render(
+                kwargs={"variable": 1, "another": "test"},  # type: ignore
+                args=(123, "abc", 456),  # type: ignore
+                slots={
+                    "my_slot": "MY_SLOT",
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
+
+        with self.assertRaisesMessage(TypeError, "Component 'TestComponent' expected 2 positional arguments, got 0"):
+            TestComponent.render()
+
+        with self.assertRaisesMessage(
+            TypeError,
+            "Component 'TestComponent' expected keyword argument 'variable' to be <class 'str'>, got 1 of type <class 'int'>",  # noqa: E501
+        ):
+            TestComponent.render(
+                kwargs={"variable": 1, "another": "test"},  # type: ignore
+                args=(123, "str"),
+                slots={
+                    "my_slot": "MY_SLOT",
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
+
+        with self.assertRaisesMessage(
+            TypeError, "Component 'TestComponent' is missing a required keyword argument 'another'"
+        ):
+            TestComponent.render(
+                kwargs={"variable": "abc"},  # type: ignore
+                args=(123, "str"),
+                slots={
+                    "my_slot": "MY_SLOT",
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
+
+        with self.assertRaisesMessage(
+            TypeError,
+            "Component 'TestComponent' expected slot 'my_slot' to be typing.Union[str, int], got 123.5 of type <class 'float'>",  # noqa: E501
+        ):
+            TestComponent.render(
+                kwargs={"variable": "abc", "another": 1},
+                args=(123, "str"),
+                slots={
+                    "my_slot": 123.5,  # type: ignore
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
+
+        with self.assertRaisesMessage(TypeError, "Component 'TestComponent' is missing a required slot 'my_slot2'"):
+            TestComponent.render(
+                kwargs={"variable": "abc", "another": 1},
+                args=(123, "str"),
+                slots={
+                    "my_slot": "MY_SLOT",
+                },  # type: ignore
+            )
+
+    def test_validate_input_skipped(self):
+        class TestComponent(Component[Any, CompKwargs, CompData, Any]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "my_slot" / %}
+                Slot 2: {% slot "my_slot2" / %}
+            """
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=("123", "str"),  # NOTE: Normally should raise
+            slots={
+                "my_slot": 123.5,  # NOTE: Normally should raise
+                "my_slot2": lambda ctx, data, ref: "abc",
+            },
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong>
+            Slot 1: 123.5
+            Slot 2: abc
+            """,
+        )
+
+    def test_validate_output_passes(self):
+        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "my_slot" / %}
+                Slot 2: {% slot "my_slot2" / %}
+            """
+
+        rendered = TestComponent.render(
+            kwargs={"variable": "test", "another": 1},
+            args=(123, "str"),
+            slots={
+                "my_slot": SafeString("MY_SLOT"),
+                "my_slot2": lambda ctx, data, ref: "abc",
+            },
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong>
+            Slot 1: MY_SLOT
+            Slot 2: abc
+            """,
+        )
+
+    def test_validate_output_fails(self):
+        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+            def get_context_data(self, var1, var2, variable, another, **attrs):
+                return {
+                    "variable": variable,
+                    "invalid_key": var1,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                Variable: <strong>{{ variable }}</strong>
+                Slot 1: {% slot "my_slot" / %}
+                Slot 2: {% slot "my_slot2" / %}
+            """
+
+        with self.assertRaisesMessage(TypeError, "Component 'TestComponent' got unexpected data keys 'invalid_key'"):
+            TestComponent.render(
+                kwargs={"variable": "test", "another": 1},
+                args=(123, "str"),
+                slots={
+                    "my_slot": SafeString("MY_SLOT"),
+                    "my_slot2": lambda ctx, data, ref: "abc",
+                },
+            )
 
 
 class ComponentRenderTest(BaseTestCase):
