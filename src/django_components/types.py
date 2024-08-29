@@ -38,5 +38,6 @@ js = Annotated[str, "js"]
 
 EmptyTuple = Tuple[()]
 
+
 class EmptyDict(TypedDict):
     pass

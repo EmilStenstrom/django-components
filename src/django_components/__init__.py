@@ -38,8 +38,8 @@ from django_components.tag_formatter import (
 )
 import django_components.types as types
 from django_components.types import (
-    EmptyTuple as EmptyTuple, 
-    EmptyDict as EmptyDict, 
+    EmptyTuple as EmptyTuple,
+    EmptyDict as EmptyDict,
 )
 
 # isort: on
