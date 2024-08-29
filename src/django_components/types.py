@@ -1,7 +1,14 @@
 """Helper types for IDEs."""
 
+import sys
 import typing
-from typing import Any
+from typing import Any, Tuple
+
+# See https://peps.python.org/pep-0655/#usage-in-python-3-11
+if sys.version_info >= (3, 11):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict  # for Python <3.11 with (Not)Required
 
 try:
     from typing import Annotated  # type: ignore
@@ -28,3 +35,9 @@ except ImportError:
 css = Annotated[str, "css"]
 django_html = Annotated[str, "django_html"]
 js = Annotated[str, "js"]
+
+EmptyTuple = Tuple[()]
+
+
+class EmptyDict(TypedDict):
+    pass
