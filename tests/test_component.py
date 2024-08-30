@@ -871,7 +871,7 @@ class ComponentHookTest(BaseTestCase):
                     "args": args,
                     "kwargs": kwargs,
                 }
-            
+
             def on_render_before(self, context: Context, template: Template) -> None:
                 # Insert value into the Context
                 context["from_on_before"] = ":)"
@@ -911,7 +911,7 @@ class ComponentHookTest(BaseTestCase):
                     "args": args,
                     "kwargs": kwargs,
                 }
-            
+
             # Check that modifying the context or template does nothing
             def on_render_after(self, context: Context, template: Template, content: str) -> None:
                 # Insert value into the Context
@@ -931,7 +931,7 @@ class ComponentHookTest(BaseTestCase):
             args: ()
             kwargs: {}
             ---
-            from_on_before: 
+            from_on_before:
             """,
         )
         self.assertHTMLEqual(
@@ -940,7 +940,7 @@ class ComponentHookTest(BaseTestCase):
             args: ()
             kwargs: {}
             ---
-            from_on_before: 
+            from_on_before:
             """,
         )
 
@@ -963,7 +963,7 @@ class ComponentHookTest(BaseTestCase):
                     "args": args,
                     "kwargs": kwargs,
                 }
-            
+
             def on_render_after(self, context: Context, template: Template, content: str) -> str:
                 nonlocal captured_content
                 captured_content = content
@@ -978,7 +978,7 @@ class ComponentHookTest(BaseTestCase):
             args: ()
             kwargs: {}
             ---
-            from_on_before: 
+            from_on_before:
             """,
         )
         self.assertHTMLEqual(
@@ -988,6 +988,6 @@ class ComponentHookTest(BaseTestCase):
             args: ()
             kwargs: {}
             ---
-            from_on_before: 
+            from_on_before:
             """,
         )
