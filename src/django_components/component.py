@@ -169,6 +169,27 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
     View = ComponentView
 
+    def on_render_before(self, context: Context, template: Template) -> None:
+        """
+        Hook that runs just before the component's template is rendered.
+
+        You can use this hook to access or modify the context or the template.
+        """
+        pass
+
+    def on_render_after(self, context: Context, template: Template, content: str) -> Optional[SlotResult]:
+        """
+        Hook that runs just after the component's template was rendered.
+        It receives the rendered output as the last argument.
+
+        You can use this hook to access the context or the template, but modifying
+        them won't have any effect.
+
+        To override the content that gets rendered, you can return a string or SafeString
+        from this hook.
+        """
+        pass
+
     def __init__(
         self,
         registered_name: Optional[str] = None,
@@ -563,7 +584,12 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                     },
                 }
             ):
+                self.on_render_before(context, template)
+
                 rendered_component = template.render(context)
+
+                new_output = self.on_render_after(context, template, rendered_component)
+                rendered_component = new_output if new_output is not None else rendered_component
 
         if is_dependency_middleware_active():
             output = RENDERED_COMMENT_TEMPLATE.format(name=self.name) + rendered_component

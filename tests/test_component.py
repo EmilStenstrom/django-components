@@ -17,6 +17,7 @@ from unittest import skipIf
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
 from django.template import Context, RequestContext, Template, TemplateSyntaxError
+from django.template.base import TextNode
 from django.utils.safestring import SafeString
 
 from django_components import Component, SlotFunc, registry, types
@@ -850,4 +851,143 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered_resp.content.decode("utf-8"),
             "Variable: <strong>123</strong>",
+        )
+
+
+class ComponentHookTest(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_on_render_before(self):
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                args: {{ args|safe }}
+                kwargs: {{ kwargs|safe }}
+                ---
+                from_on_before: {{ from_on_before }}
+            """
+
+            def get_context_data(self, *args, **kwargs):
+                return {
+                    "args": args,
+                    "kwargs": kwargs,
+                }
+            
+            def on_render_before(self, context: Context, template: Template) -> None:
+                # Insert value into the Context
+                context["from_on_before"] = ":)"
+
+                # Insert text into the Template
+                template.nodelist.append(TextNode("\n---\nFROM_ON_BEFORE"))
+
+        rendered = SimpleComponent.render()
+        self.assertHTMLEqual(
+            rendered,
+            """
+            args: ()
+            kwargs: {}
+            ---
+            from_on_before: :)
+            ---
+            FROM_ON_BEFORE
+            """,
+        )
+
+    # Check that modifying the context or template does nothing
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_on_render_after(self):
+        captured_content = None
+
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                args: {{ args|safe }}
+                kwargs: {{ kwargs|safe }}
+                ---
+                from_on_before: {{ from_on_before }}
+            """
+
+            def get_context_data(self, *args, **kwargs):
+                return {
+                    "args": args,
+                    "kwargs": kwargs,
+                }
+            
+            # Check that modifying the context or template does nothing
+            def on_render_after(self, context: Context, template: Template, content: str) -> None:
+                # Insert value into the Context
+                context["from_on_before"] = ":)"
+
+                # Insert text into the Template
+                template.nodelist.append(TextNode("\n---\nFROM_ON_BEFORE"))
+
+                nonlocal captured_content
+                captured_content = content
+
+        rendered = SimpleComponent.render()
+
+        self.assertHTMLEqual(
+            captured_content,
+            """
+            args: ()
+            kwargs: {}
+            ---
+            from_on_before: 
+            """,
+        )
+        self.assertHTMLEqual(
+            rendered,
+            """
+            args: ()
+            kwargs: {}
+            ---
+            from_on_before: 
+            """,
+        )
+
+    # Check that modifying the context or template does nothing
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_on_render_after_override_output(self):
+        captured_content = None
+
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                args: {{ args|safe }}
+                kwargs: {{ kwargs|safe }}
+                ---
+                from_on_before: {{ from_on_before }}
+            """
+
+            def get_context_data(self, *args, **kwargs):
+                return {
+                    "args": args,
+                    "kwargs": kwargs,
+                }
+            
+            def on_render_after(self, context: Context, template: Template, content: str) -> str:
+                nonlocal captured_content
+                captured_content = content
+
+                return "Chocolate cookie recipe: " + content
+
+        rendered = SimpleComponent.render()
+
+        self.assertHTMLEqual(
+            captured_content,
+            """
+            args: ()
+            kwargs: {}
+            ---
+            from_on_before: 
+            """,
+        )
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Chocolate cookie recipe:
+            args: ()
+            kwargs: {}
+            ---
+            from_on_before: 
+            """,
         )

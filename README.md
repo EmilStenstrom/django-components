@@ -55,6 +55,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Rendering HTML attributes](#rendering-html-attributes)
 - [Template tag syntax](#template-tag-syntax)
 - [Prop drilling and dependency injection (provide / inject)](#prop-drilling-and-dependency-injection-provide--inject)
+- [Component hooks](#component-hooks)
 - [Component context and scope](#component-context-and-scope)
 - [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter)
 - [Defining HTML/JS/CSS files](#defining-htmljscss-files)
@@ -809,6 +810,8 @@ class MyComponent(Component):
 
 ### Adding type hints with Generics
 
+_New in version 0.92_
+
 The `Component` class optionally accepts type parameters
 that allow you to specify the types of args, kwargs, slots, and
 data:
@@ -936,6 +939,8 @@ class Button(Component[Args, Kwargs, Data, Slots]):
 ```
 
 ### Runtime input validation with types
+
+_New in version 0.96_
 
 > NOTE: Kwargs, slots, and data validation is supported only for Python >=3.11
 
@@ -2552,6 +2557,88 @@ renders:
 ```html
 <div>hi</div>
 <div>123</div>
+```
+
+## Component hooks
+
+_New in version 0.96_
+
+Component hooks are functions that allow you to intercept the rendering process at specific positions.
+
+### Available hooks
+
+- `on_render_before`
+
+  ```py
+  def on_render_before(
+      self: Component,
+      context: Context,
+      template: Template
+  ) -> None:
+  ```
+
+    Hook that runs just before the component's template is rendered.
+
+    You can use this hook to access or modify the context or the template:
+
+    ```py
+    def on_render_before(self, context, template) -> None:
+        # Insert value into the Context
+        context["from_on_before"] = ":)"
+
+        # Append text into the Template
+        template.nodelist.append(TextNode("FROM_ON_BEFORE"))
+    ```
+
+- `on_render_after`
+
+  ```py
+  def on_render_after(
+      self: Component,
+      context: Context,
+      template: Template,
+      content: str
+  ) -> None | str | SafeString:
+  ```
+
+    Hook that runs just after the component's template was rendered.
+    It receives the rendered output as the last argument.
+
+    You can use this hook to access the context or the template, but modifying
+    them won't have any effect.
+
+    To override the content that gets rendered, you can return a string or SafeString from this hook:
+
+    ```py
+    def on_render_after(self, context, template, content):
+        # Prepend text to the rendered content
+        return "Chocolate cookie recipe: " + content
+    ```
+
+### Component hooks example
+
+You can use hooks together with [provide / inject](#how-to-use-provide--inject) to create components
+that accept a list of items via a slot.
+
+In the example below, each `tab_item` component will be rendered on a separate tab page, but they are all defined in the default slot of the `tabs` component.
+
+[See here for how it was done](https://github.com/EmilStenstrom/django-components/discussions/540)
+
+```django
+{% component "tabs" %}
+  {% component "tab_item" header="Tab 1" %}
+    <p>
+      hello from tab 1
+    </p>
+    {% component "button" %}
+      Click me!
+    {% endcomponent %}
+  {% endcomponent %}
+
+  {% component "tab_item" header="Tab 2" %}
+    Hello this is tab 2
+  {% endcomponent %}
+{% endcomponent %}
 ```
 
 ## Component context and scope
