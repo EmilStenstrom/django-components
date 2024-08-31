@@ -260,7 +260,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 f"{self.name}: Tried to access Component's `is_filled` attribute "
                 "while outside of rendering execution"
             )
-        
+
         ctx = self._render_stack[-1]
         if ctx.is_filled is None:
             raise RuntimeError(

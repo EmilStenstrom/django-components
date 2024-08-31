@@ -776,7 +776,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
         captured_after = None
 
         @register("is_filled_vars")
-        class IsFilledVarsComponent(self.IsFilledVarsComponent):
+        class IsFilledVarsComponent(self.IsFilledVarsComponent):  # type: ignore[name-defined]
             def on_render_before(self, context: Context, template: Template) -> None:
                 nonlocal captured_before
                 captured_before = self.is_filled.copy()
