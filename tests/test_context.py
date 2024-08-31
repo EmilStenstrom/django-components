@@ -1,6 +1,6 @@
 from django.template import Context, Template
 
-from django_components import Component, registry, types
+from django_components import Component, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -546,6 +546,23 @@ class OuterContextPropertyTests(BaseTestCase):
         self.assertIn("outer_value", rendered, rendered)
 
 
+class ContextVarsTests(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_access_self_in_template(self):
+        @register("the_test_comp")
+        class Test(Component):
+            template: types.django_html = """
+                name: {{ self.name }}
+            """
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "the_test_comp" / %}
+        """
+        rendered = Template(template).render(Context())
+        self.assertHTMLEqual(rendered, "name: the_test_comp")
+
+
 class ContextVarsIsFilledTests(BaseTestCase):
     class IsFilledVarsComponent(Component):
         template: types.django_html = """
@@ -556,7 +573,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
                 {% slot "my title 1" %}{% endslot %}
                 {% slot "my-title-2" %}{% endslot %}
                 {% slot "escape this: #$%^*()" %}{% endslot %}
-                {{ component_vars.is_filled|safe }}
+                {{ self.is_filled|safe }}
             </div>
         """
 
@@ -566,7 +583,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
             {% load component_tags %}
             <div class="frontmatter-component">
                 <div class="title">{% slot "title" %}Title{% endslot %}</div>
-                {% if component_vars.is_filled.subtitle %}
+                {% if self.is_filled.subtitle %}
                     <div class="subtitle">
                         {% slot "subtitle" %}Optional subtitle
                         {% endslot %}
@@ -581,26 +598,12 @@ class ContextVarsIsFilledTests(BaseTestCase):
             {% load component_tags %}
             <div class="frontmatter-component">
                 <div class="title">{% slot "title" %}Title{% endslot %}</div>
-                {% if component_vars.is_filled.subtitle %}
+                {% if self.is_filled.subtitle %}
                     <div class="subtitle">{% slot "subtitle" %}Optional subtitle{% endslot %}</div>
-                {% elif component_vars.is_filled.alt_subtitle %}
+                {% elif self.is_filled.alt_subtitle %}
                     <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
                 {% else %}
                 <div class="warning">Nothing filled!</div>
-                {% endif %}
-            </div>
-        """
-
-    class ComponentWithNegatedConditionalSlot(Component):
-        template: types.django_html = """
-            {# Example from django-components/issues/98 #}
-            {% load component_tags %}
-            <div class="frontmatter-component">
-                <div class="title">{% slot "title" %}Title{% endslot %}</div>
-                {% if not component_vars.is_filled.subtitle %}
-                <div class="warning">Subtitle not filled!</div>
-                {% else %}
-                    <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
                 {% endif %}
             </div>
         """
@@ -613,7 +616,6 @@ class ContextVarsIsFilledTests(BaseTestCase):
             "complex_conditional_slots",
             self.ComponentWithComplexConditionalSlots,
         )
-        registry.register("negated_conditional_slot", self.ComponentWithNegatedConditionalSlot)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_is_filled_vars(self):
@@ -679,7 +681,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "conditional_slots" %}
-            {% fill "subtitle" %} My subtitle {% endfill %}
+                {% fill "subtitle" %} My subtitle {% endfill %}
             {% endcomponent %}
         """
         expected = """
@@ -736,6 +738,21 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_with_negated_conditional_slot(self):
+        @register("negated_conditional_slot")
+        class ComponentWithNegatedConditionalSlot(Component):
+            template: types.django_html = """
+                {# Example from django-components/issues/98 #}
+                {% load component_tags %}
+                <div class="frontmatter-component">
+                    <div class="title">{% slot "title" %}Title{% endslot %}</div>
+                    {% if not self.is_filled.subtitle %}
+                    <div class="warning">Subtitle not filled!</div>
+                    {% else %}
+                        <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
+                    {% endif %}
+                </div>
+            """
+
         template: types.django_html = """
             {% load component_tags %}
             {% component "negated_conditional_slot" %}
@@ -752,3 +769,36 @@ class ContextVarsIsFilledTests(BaseTestCase):
         """
         rendered = Template(template).render(Context({}))
         self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_is_filled_vars_in_hooks(self):
+        captured_before = None
+        captured_after = None
+
+        @register("is_filled_vars")
+        class IsFilledVarsComponent(self.IsFilledVarsComponent):
+            def on_render_before(self, context: Context, template: Template) -> None:
+                nonlocal captured_before
+                captured_before = self.is_filled.copy()
+
+            def on_render_after(self, context: Context, template: Template, content: str) -> None:
+                nonlocal captured_after
+                captured_after = self.is_filled.copy()
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "is_filled_vars" %}
+                bla bla
+            {% endcomponent %}
+        """
+        Template(template).render(Context())
+
+        expected = {
+            "title": True,
+            "my_title": False,
+            "my_title_1": False,
+            "my_title_2": False,
+            "escape_this_________": False,
+        }
+        self.assertEqual(captured_before, expected)
+        self.assertEqual(captured_after, expected)

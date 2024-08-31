@@ -45,7 +45,6 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Use components in templates](#use-components-in-templates)
 - [Use components outside of templates](#use-components-outside-of-templates)
 - [Use components as views](#use-components-as-views)
-- [Pre-defined components](#pre-defined-components)
 - [Typing and validating components](#typing-and-validating-components)
 - [Pre-defined components](#pre-defined-components)
 - [Registering components](#registering-components)
@@ -57,6 +56,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Prop drilling and dependency injection (provide / inject)](#prop-drilling-and-dependency-injection-provide--inject)
 - [Component hooks](#component-hooks)
 - [Component context and scope](#component-context-and-scope)
+- [Pre-defined template variables](#pre-defined-template-variables)
 - [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter)
 - [Defining HTML/JS/CSS files](#defining-htmljscss-files)
 - [Rendering JS/CSS dependencies](#rendering-jscss-dependencies)
@@ -1474,7 +1474,12 @@ This produces:
 
 _Added in version 0.26._
 
-> NOTE: In version 0.70, `{% if_filled %}` tags were replaced with `{{ component_vars.is_filled }}` variables. If your slot name contained special characters, see the section "Accessing slot names with special characters".
+> NOTE: In version 0.70, `{% if_filled %}` tags were replaced with `{{ component_vars.is_filled }}` variables. If your slot name contained special characters, see the section [Accessing `is_filled` of slot names with special characters](#accessing-is_filled-of-slot-names-with-special-characters).
+>
+> Since v0.96, you can use `{{ self.is_filled }}` instead of `{{ component_vars.is_filled }}`.
+>
+> <!-- # TODO_REMOVE_IN_V1 -->
+> In v1.0, `{{ component_vars.is_filled }}` will be removed.
 
 In certain circumstances, you may want the behavior of slot filling to depend on
 whether or not a particular slot is filled.
@@ -1505,17 +1510,17 @@ explicit fills, the div containing the slot is still rendered, as shown below:
 This may not be what you want. What if instead the outer 'subtitle' div should only
 be included when the inner slot is in fact filled?
 
-The answer is to use the `{{ component_vars.is_filled.<name> }}` variable. You can use this together with Django's `{% if/elif/else/endif %}` tags to define a block whose contents will be rendered only if the component slot with
+The answer is to use the `{{ self.is_filled.<name> }}` variable. You can use this together with Django's `{% if/elif/else/endif %}` tags to define a block whose contents will be rendered only if the component slot with
 the corresponding 'name' is filled.
 
-This is what our example looks like with `component_vars.is_filled`.
+This is what our example looks like with `self.is_filled`.
 
 ```htmldjango
 <div class="frontmatter-component">
     <div class="title">
         {% slot "title" %}Title{% endslot %}
     </div>
-    {% if component_vars.is_filled.subtitle %}
+    {% if self.is_filled.subtitle %}
     <div class="subtitle">
         {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
     </div>
@@ -1530,23 +1535,23 @@ Here's our example with more complex branching.
     <div class="title">
         {% slot "title" %}Title{% endslot %}
     </div>
-    {% if component_vars.is_filled.subtitle %}
+    {% if self.is_filled.subtitle %}
     <div class="subtitle">
         {% slot "subtitle" %}{# Optional subtitle #}{% endslot %}
     </div>
-    {% elif component_vars.is_filled.title %}
+    {% elif self.is_filled.title %}
         ...
-    {% elif component_vars.is_filled.<name> %}
+    {% elif self.is_filled.<name> %}
         ...
     {% endif %}
 </div>
 ```
 
 Sometimes you're not interested in whether a slot is filled, but rather that it _isn't_.
-To negate the meaning of `component_vars.is_filled`, simply treat it as boolean and negate it with `not`:
+To negate the meaning of `self.is_filled`, simply treat it as boolean and negate it with `not`:
 
 ```htmldjango
-{% if not component_vars.is_filled.subtitle %}
+{% if not self.is_filled.subtitle %}
 <div class="subtitle">
     {% slot "subtitle" / %}
 </div>
@@ -1555,11 +1560,11 @@ To negate the meaning of `component_vars.is_filled`, simply treat it as boolean 
 
 #### Accessing `is_filled` of slot names with special characters
 
-To be able to access a slot name via `component_vars.is_filled`, the slot name needs to be composed of only alphanumeric characters and underscores (e.g. `this__isvalid_123`).
+To be able to access a slot name via `self.is_filled`, the slot name needs to be composed of only alphanumeric characters and underscores (e.g. `this__isvalid_123`).
 
-However, you can still define slots with other special characters. In such case, the slot name in `component_vars.is_filled` is modified to replace all invalid characters into `_`.
+However, you can still define slots with other special characters. In such case, the slot name in `self.is_filled` is modified to replace all invalid characters into `_`.
 
-So a slot named `"my super-slot :)"` will be available as `component_vars.is_filled.my_super_slot___`.
+So a slot named `"my super-slot :)"` will be available as `self.is_filled.my_super_slot___`.
 
 ### Scoped slots
 
@@ -2658,6 +2663,28 @@ NOTE: `{% csrf_token %}` tags need access to the top-level context, and they wil
 If you find yourself using the `only` modifier often, you can set the [context_behavior](#context-behavior) option to `"isolated"`, which automatically applies the `only` modifier. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 Components can also access the outer context in their context methods like `get_context_data` by accessing the property `self.outer_context`.
+
+## Pre-defined template variables
+
+Here is a list of all variables that are automatically available from within the component's template and `on_render_before` / `on_render_after` hooks.
+
+- `self`
+
+    _New in version 0.96_
+
+    Reference to the component instance itself.
+
+    Example:
+
+    ```django
+    name: {{ self.name }}
+    kwargs: {{ self.input.kwargs }}
+    slots: {{ self.input.slots }}
+
+    {% if self.is_filled.my_slot %}
+        {% slot "my_slot" / %}
+    {% endif %}
+    ```
 
 ## Customizing component tags with TagFormatter
 

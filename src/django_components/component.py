@@ -63,7 +63,7 @@ from django_components.slots import (
 )
 from django_components.utils import gen_id, validate_typed_dict, validate_typed_tuple
 
-# TODO_DEPRECATE_V1 - REMOVE IN V1, users should use top-level import instead
+# TODO_REMOVE_IN_V1 - Users should use top-level import instead
 # isort: off
 from django_components.component_registry import AlreadyRegistered as AlreadyRegistered  # NOQA
 from django_components.component_registry import ComponentRegistry as ComponentRegistry  # NOQA
@@ -90,6 +90,12 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
     kwargs: KwargsType
     slots: SlotsType
     escape_slots_content: bool
+
+
+@dataclass()
+class RenderStackItem(Generic[ArgsType, KwargsType, SlotsType]):
+    input: RenderInput[ArgsType, KwargsType, SlotsType]
+    is_filled: Optional[Dict[str, bool]]
 
 
 class ViewFn(Protocol):
@@ -217,7 +223,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         self.fill_content = fill_content or {}
         self.component_id = component_id or gen_id()
         self.registry = registry or registry_
-        self._render_stack: Deque[RenderInput[ArgsType, KwargsType, SlotsType]] = deque()
+        self._render_stack: Deque[RenderStackItem[ArgsType, KwargsType, SlotsType]] = deque()
         # None == uninitialized, False == No types, Tuple == types
         self._types: Optional[Union[Tuple[Any, Any, Any, Any], Literal[False]]] = None
 
@@ -239,7 +245,30 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
         # NOTE: Input is managed as a stack, so if `render` is called within another `render`,
         # the propertes below will return only the inner-most state.
-        return self._render_stack[-1]
+        return self._render_stack[-1].input
+
+    @property
+    def is_filled(self) -> Dict[str, bool]:
+        """
+        Dictionary describing which slots have or have not been filled.
+
+        This attribute is available for use only within the template as `{{ self.is_filled.slot_name }}`,
+        and within `on_render_before` and `on_render_after` hooks.
+        """
+        if not len(self._render_stack):
+            raise RuntimeError(
+                f"{self.name}: Tried to access Component's `is_filled` attribute "
+                "while outside of rendering execution"
+            )
+        
+        ctx = self._render_stack[-1]
+        if ctx.is_filled is None:
+            raise RuntimeError(
+                f"{self.name}: Tried to access Component's `is_filled` attribute "
+                "before slots were resolved"
+            )
+
+        return ctx.is_filled
 
     def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
         return cast(DataType, {})
@@ -506,13 +535,16 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         # to access the provided context, slots, etc. Also required so users can
         # call `self.inject()` from within `get_context_data()`.
         self._render_stack.append(
-            RenderInput(
-                context=context,
-                slots=slots,
-                args=args,
-                kwargs=kwargs,
-                escape_slots_content=escape_slots_content,
-            )
+            RenderStackItem(
+                input=RenderInput(
+                    context=context,
+                    slots=slots,
+                    args=args,
+                    kwargs=kwargs,
+                    escape_slots_content=escape_slots_content,
+                ),
+                is_filled=None,
+            ),
         )
 
         self._validate_inputs()
@@ -568,8 +600,12 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
             # For users, we expose boolean variables that they may check
             # to see if given slot was filled, e.g.:
-            # `{% if variable > 8 and component_vars.is_filled.header %}`
-            slot_bools = {slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()}
+            # `{% if variable > 8 and self.is_filled.header %}`
+            slot_bools = {
+                slot_fill.escaped_name: slot_fill.is_filled
+                for slot_fill in resolved_fills.values()
+            }
+            self._render_stack[-1].is_filled = slot_bools
 
             with context.update(
                 {
@@ -577,11 +613,12 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                     _ROOT_CTX_CONTEXT_KEY: self.outer_context,
                     _FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_slots,
                     _REGISTRY_CONTEXT_KEY: self.registry,
+
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
-                    "component_vars": {
-                        "is_filled": slot_bools,
-                    },
+                    "self": self,
+                    # TODO_REMOVE_IN_V1 - users should use `self` instead
+                    "component_vars": self,
                 }
             ):
                 self.on_render_before(context, template)
