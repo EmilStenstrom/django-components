@@ -264,8 +264,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         ctx = self._render_stack[-1]
         if ctx.is_filled is None:
             raise RuntimeError(
-                f"{self.name}: Tried to access Component's `is_filled` attribute "
-                "before slots were resolved"
+                f"{self.name}: Tried to access Component's `is_filled` attribute " "before slots were resolved"
             )
 
         return ctx.is_filled
@@ -601,10 +600,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             # For users, we expose boolean variables that they may check
             # to see if given slot was filled, e.g.:
             # `{% if variable > 8 and self.is_filled.header %}`
-            slot_bools = {
-                slot_fill.escaped_name: slot_fill.is_filled
-                for slot_fill in resolved_fills.values()
-            }
+            slot_bools = {slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()}
             self._render_stack[-1].is_filled = slot_bools
 
             with context.update(
@@ -613,7 +609,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                     _ROOT_CTX_CONTEXT_KEY: self.outer_context,
                     _FILLED_SLOTS_CONTENT_CONTEXT_KEY: updated_slots,
                     _REGISTRY_CONTEXT_KEY: self.registry,
-
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
                     "self": self,
