@@ -3,7 +3,10 @@ name: Docs - build & deploy
 on:
   push:
     tags:
+      # for versions before 1.0.0
       - '[0-9]+.[0-9]+'
+      # after 1.0.0
+      - '[0-9]+.[0-9]+.[0-9]+'
     branches: 
       - master
   pull_request:
