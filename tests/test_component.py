@@ -13,20 +13,39 @@ else:
     from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from unittest import skipIf
+from unittest.mock import patch
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, HttpResponse
 from django.template import Context, RequestContext, Template, TemplateSyntaxError
 from django.template.base import TextNode
+from django.test import Client
+from django.urls import path
 from django.utils.safestring import SafeString
 
-from django_components import Component, SlotFunc, registry, types
+from django_components import Component, ComponentView, SlotFunc, register, registry, types
 from django_components.slots import SlotRef
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
 
 setup_test_config({"autodiscover": False})
+
+
+# Client for testing endpoints via requests
+class CustomClient(Client):
+    def __init__(self, urlpatterns=None, *args, **kwargs):
+        import types
+
+        if urlpatterns:
+            urls_module = types.ModuleType("urls")
+            urls_module.urlpatterns = urlpatterns  # type: ignore
+            settings.ROOT_URLCONF = urls_module
+        else:
+            settings.ROOT_URLCONF = __name__
+        settings.SECRET_KEY = "secret"  # noqa
+        super().__init__(*args, **kwargs)
 
 
 # Component typings
@@ -772,6 +791,7 @@ class ComponentRenderTest(BaseTestCase):
         )
 
     # See https://github.com/EmilStenstrom/django-components/issues/580
+    # And https://github.com/EmilStenstrom/django-components/issues/634
     # And https://github.com/EmilStenstrom/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_include_and_request_context(self):
@@ -790,6 +810,56 @@ class ComponentRenderTest(BaseTestCase):
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
+            """,
+        )
+
+    # See https://github.com/EmilStenstrom/django-components/issues/580
+    # And https://github.com/EmilStenstrom/django-components/issues/634
+    @parametrize_context_behavior(["django", "isolated"])
+    @patch('django.middleware.csrf.get_token')
+    def test_request_context_is_populated_from_context_processors(self, mock_get_token):
+        mock_get_token.return_value = 'test_csrf_token'
+        @register("thing")
+        class Thing(Component):
+            template: types.django_html = """
+                <kbd>Rendered {{ how }}</kbd> 
+                <div>
+                    CSRF token:
+
+                    <div>
+                        {{ csrf_token|default:"<em>No CSRF token</em>" }}
+                    </div>
+                </div>
+            """
+
+            def get_context_data(self, *args, how: str, **kwargs):
+                return {"how": how}
+
+            class View(ComponentView):
+                def get(self, request):
+                    how = "via GET request"
+            
+                    return self.component.render_to_response(
+                        context=RequestContext(self.request),
+                        kwargs=self.component.get_context_data(how=how),
+                    )
+
+        client = CustomClient(urlpatterns=[path("test_thing/", Thing.as_view())])
+        response = client.get("/test_thing/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertHTMLEqual(
+            response.content.decode(),
+            """
+            <kbd>
+                Rendered via GET request
+            </kbd>
+            <div>
+                CSRF token:
+                <div>
+                test_csrf_token
+                </div>
+            </div>
             """,
         )
 
