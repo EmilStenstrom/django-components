@@ -3,6 +3,7 @@ Tests focusing on the Component class.
 For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
+import re
 import sys
 from typing import Any, Dict, Tuple, Union, no_type_check
 
@@ -13,7 +14,6 @@ else:
     from typing_extensions import NotRequired, TypedDict  # for Python <3.11 with (Not)Required
 
 from unittest import skipIf
-from unittest.mock import patch
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -816,19 +816,13 @@ class ComponentRenderTest(BaseTestCase):
     # See https://github.com/EmilStenstrom/django-components/issues/580
     # And https://github.com/EmilStenstrom/django-components/issues/634
     @parametrize_context_behavior(["django", "isolated"])
-    @patch('django.middleware.csrf.get_token')
-    def test_request_context_is_populated_from_context_processors(self, mock_get_token):
-        mock_get_token.return_value = 'test_csrf_token'
+    def test_request_context_is_populated_from_context_processors(self):
         @register("thing")
         class Thing(Component):
             template: types.django_html = """
-                <kbd>Rendered {{ how }}</kbd> 
+                <kbd>Rendered {{ how }}</kbd>
                 <div>
-                    CSRF token:
-
-                    <div>
-                        {{ csrf_token|default:"<em>No CSRF token</em>" }}
-                    </div>
+                    CSRF token: {{ csrf_token|default:"<em>No CSRF token</em>" }}
                 </div>
             """
 
@@ -838,7 +832,7 @@ class ComponentRenderTest(BaseTestCase):
             class View(ComponentView):
                 def get(self, request):
                     how = "via GET request"
-            
+
                     return self.component.render_to_response(
                         context=RequestContext(self.request),
                         kwargs=self.component.get_context_data(how=how),
@@ -848,20 +842,33 @@ class ComponentRenderTest(BaseTestCase):
         response = client.get("/test_thing/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertHTMLEqual(
-            response.content.decode(),
+
+        # Full response:
+        # """
+        # <kbd>
+        #     Rendered via GET request
+        # </kbd>
+        # <div>
+        #     CSRF token:
+        #     <div>
+        #         test_csrf_token
+        #     </div>
+        # </div>
+        # """
+        self.assertInHTML(
             """
             <kbd>
                 Rendered via GET request
             </kbd>
-            <div>
-                CSRF token:
-                <div>
-                test_csrf_token
-                </div>
-            </div>
             """,
+            response.content.decode(),
         )
+
+        token_re = re.compile(rb"CSRF token:\s+(?P<token>[0-9a-zA-Z]{64})")
+        token = token_re.findall(response.content)[0]
+
+        self.assertTrue(token)
+        self.assertEqual(len(token), 64)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_extends(self):
