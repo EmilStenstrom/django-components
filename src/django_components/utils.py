@@ -59,7 +59,7 @@ _typing_exports = frozenset(
                 getattr(typing, "_GenericAlias", ()),
                 # Used in 3.11+ (possibly 3.10?)
                 getattr(typing, "_SpecialGenericAlias", ()),
-            )
+            ),
         )
     ]
 )
