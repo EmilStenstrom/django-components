@@ -237,7 +237,7 @@ class ComponentTest(BaseTestCase):
                     **attrs,
                 }
 
-            def get_template_name(self, context):
+            def template_name(self, context):
                 return f"dynamic_{context['name']}.svg"
 
         self.assertHTMLEqual(
@@ -261,7 +261,7 @@ class ComponentTest(BaseTestCase):
                     "variable": variable,
                 }
 
-            def get_template(self, context):
+            def template(self, context):
                 template_str = "Variable: <strong>{{ variable }}</strong>"
                 return Template(template_str)
 
@@ -289,7 +289,7 @@ class ComponentTest(BaseTestCase):
                 }
 
             @no_type_check
-            def get_template(self, context):
+            def template(self, context):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
                 tester.assertIsInstance(self.input.context, Context)
