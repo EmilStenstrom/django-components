@@ -45,7 +45,6 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Use components in templates](#use-components-in-templates)
 - [Use components outside of templates](#use-components-outside-of-templates)
 - [Use components as views](#use-components-as-views)
-- [Pre-defined components](#pre-defined-components)
 - [Typing and validating components](#typing-and-validating-components)
 - [Pre-defined components](#pre-defined-components)
 - [Registering components](#registering-components)
@@ -57,6 +56,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - [Prop drilling and dependency injection (provide / inject)](#prop-drilling-and-dependency-injection-provide--inject)
 - [Component hooks](#component-hooks)
 - [Component context and scope](#component-context-and-scope)
+- [Pre-defined template variables](#pre-defined-template-variables)
 - [Customizing component tags with TagFormatter](#customizing-component-tags-with-tagformatter)
 - [Defining HTML/JS/CSS files](#defining-htmljscss-files)
 - [Rendering JS/CSS dependencies](#rendering-jscss-dependencies)
@@ -1474,7 +1474,7 @@ This produces:
 
 _Added in version 0.26._
 
-> NOTE: In version 0.70, `{% if_filled %}` tags were replaced with `{{ component_vars.is_filled }}` variables. If your slot name contained special characters, see the section "Accessing slot names with special characters".
+> NOTE: In version 0.70, `{% if_filled %}` tags were replaced with `{{ component_vars.is_filled }}` variables. If your slot name contained special characters, see the section [Accessing `is_filled` of slot names with special characters](#accessing-is_filled-of-slot-names-with-special-characters).
 
 In certain circumstances, you may want the behavior of slot filling to depend on
 whether or not a particular slot is filled.
@@ -2658,6 +2658,24 @@ NOTE: `{% csrf_token %}` tags need access to the top-level context, and they wil
 If you find yourself using the `only` modifier often, you can set the [context_behavior](#context-behavior) option to `"isolated"`, which automatically applies the `only` modifier. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 Components can also access the outer context in their context methods like `get_context_data` by accessing the property `self.outer_context`.
+
+## Pre-defined template variables
+
+Here is a list of all variables that are automatically available from within the component's template and `on_render_before` / `on_render_after` hooks.
+
+- `component_vars.is_filled`
+
+    _New in version 0.70_
+
+    Dictonary describing which slots are filled (`True`) or are not (`False`).
+
+    Example:
+
+    ```django
+    {% if component_vars.is_filled.my_slot %}
+        {% slot "my_slot" / %}
+    {% endif %}
+    ```
 
 ## Customizing component tags with TagFormatter
 
