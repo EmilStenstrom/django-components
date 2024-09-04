@@ -102,6 +102,16 @@ def validate_typed_dict(value: Mapping[str, Any], dict_type: Any, prefix: str, k
             unseen_keys.remove(key)
             kwarg = value[key]
 
+            # If we got a typed generic (AKA "subscripted" generic), e.g.
+            # `Component[CompArgs, CompKwargs, ...]`
+            # then we cannot use that generic in `isintance()`, because we get this error:
+            # `TypeError("Subscripted generics cannot be used with class and instance checks")`
+            #
+            # Instead, we resolve the generic to its original class, e.g. `Component`,
+            # which can then be used in instance assertion.
+            if hasattr(kwarg_type, "__origin__"):
+                kwarg_type = kwarg_type.__origin__
+
             # NOTE: `isinstance()` cannot be used with the version of TypedDict prior to 3.11.
             # So we do type validation for TypedDicts only in 3.11 and later.
             if sys.version_info >= (3, 11) and not isinstance(kwarg, kwarg_type):

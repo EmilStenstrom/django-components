@@ -252,7 +252,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         """
         Dictionary describing which slots have or have not been filled.
 
-        This attribute is available for use only within the template as `{{ self.is_filled.slot_name }}`,
+        This attribute is available for use only within the template as `{{ component_vars.is_filled.slot_name }}`,
         and within `on_render_before` and `on_render_after` hooks.
         """
         if not len(self._render_stack):
@@ -599,7 +599,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
             # For users, we expose boolean variables that they may check
             # to see if given slot was filled, e.g.:
-            # `{% if variable > 8 and self.is_filled.header %}`
+            # `{% if variable > 8 and component.is_filled.header %}`
             slot_bools = {slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()}
             self._render_stack[-1].is_filled = slot_bools
 
@@ -611,9 +611,9 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                     _REGISTRY_CONTEXT_KEY: self.registry,
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
-                    "self": self,
-                    # TODO_REMOVE_IN_V1 - users should use `self` instead
-                    "component_vars": self,
+                    "component_vars": {
+                        "is_filled": slot_bools,
+                    },
                 }
             ):
                 self.on_render_before(context, template)

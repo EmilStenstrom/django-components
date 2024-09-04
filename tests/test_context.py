@@ -546,23 +546,6 @@ class OuterContextPropertyTests(BaseTestCase):
         self.assertIn("outer_value", rendered, rendered)
 
 
-class ContextVarsTests(BaseTestCase):
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_access_self_in_template(self):
-        @register("the_test_comp")
-        class Test(Component):
-            template: types.django_html = """
-                name: {{ self.name }}
-            """
-
-        template: types.django_html = """
-            {% load component_tags %}
-            {% component "the_test_comp" / %}
-        """
-        rendered = Template(template).render(Context())
-        self.assertHTMLEqual(rendered, "name: the_test_comp")
-
-
 class ContextVarsIsFilledTests(BaseTestCase):
     class IsFilledVarsComponent(Component):
         template: types.django_html = """
@@ -573,7 +556,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
                 {% slot "my title 1" %}{% endslot %}
                 {% slot "my-title-2" %}{% endslot %}
                 {% slot "escape this: #$%^*()" %}{% endslot %}
-                {{ self.is_filled|safe }}
+                {{ component_vars.is_filled|safe }}
             </div>
         """
 
@@ -583,7 +566,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
             {% load component_tags %}
             <div class="frontmatter-component">
                 <div class="title">{% slot "title" %}Title{% endslot %}</div>
-                {% if self.is_filled.subtitle %}
+                {% if component_vars.is_filled.subtitle %}
                     <div class="subtitle">
                         {% slot "subtitle" %}Optional subtitle
                         {% endslot %}
@@ -598,9 +581,9 @@ class ContextVarsIsFilledTests(BaseTestCase):
             {% load component_tags %}
             <div class="frontmatter-component">
                 <div class="title">{% slot "title" %}Title{% endslot %}</div>
-                {% if self.is_filled.subtitle %}
+                {% if component_vars.is_filled.subtitle %}
                     <div class="subtitle">{% slot "subtitle" %}Optional subtitle{% endslot %}</div>
-                {% elif self.is_filled.alt_subtitle %}
+                {% elif component_vars.is_filled.alt_subtitle %}
                     <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
                 {% else %}
                 <div class="warning">Nothing filled!</div>
@@ -745,7 +728,7 @@ class ContextVarsIsFilledTests(BaseTestCase):
                 {% load component_tags %}
                 <div class="frontmatter-component">
                     <div class="title">{% slot "title" %}Title{% endslot %}</div>
-                    {% if not self.is_filled.subtitle %}
+                    {% if not component_vars.is_filled.subtitle %}
                     <div class="warning">Subtitle not filled!</div>
                     {% else %}
                         <div class="subtitle">{% slot "alt_subtitle" %}Why would you want this?{% endslot %}</div>
