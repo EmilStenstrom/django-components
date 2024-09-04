@@ -599,7 +599,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
             # For users, we expose boolean variables that they may check
             # to see if given slot was filled, e.g.:
-            # `{% if variable > 8 and component.is_filled.header %}`
+            # `{% if variable > 8 and component_vars.is_filled.header %}`
             slot_bools = {slot_fill.escaped_name: slot_fill.is_filled for slot_fill in resolved_fills.values()}
             self._render_stack[-1].is_filled = slot_bools
 
