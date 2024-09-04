@@ -4,7 +4,7 @@ For tests focusing on the `component` tag, see `test_templatetags_component.py`
 """
 
 import sys
-from typing import Any, Dict, Tuple, Union, no_type_check
+from typing import Any, Dict, List, Tuple, Union, no_type_check
 
 # See https://peps.python.org/pep-0655/#usage-in-python-3-11
 if sys.version_info >= (3, 11):
@@ -486,6 +486,111 @@ class ComponentValidationTest(BaseTestCase):
                     "my_slot2": lambda ctx, data, ref: "abc",
                 },
             )
+
+    def test_handles_components_in_typing(self):
+        class InnerKwargs(TypedDict):
+            one: str
+
+        class InnerData(TypedDict):
+            one: Union[str, int]
+            self: "InnerComp"  # type: ignore[misc]
+
+        InnerComp = Component[Any, InnerKwargs, InnerData, Any]  # type: ignore[misc]
+
+        class Inner(InnerComp):
+            def get_context_data(self, one):
+                return {
+                    "self": self,
+                    "one": one,
+                }
+
+            template = ""
+
+        TodoArgs = Tuple[Inner]  # type: ignore[misc]
+
+        class TodoKwargs(TypedDict):
+            inner: Inner
+
+        class TodoData(TypedDict):
+            one: Union[str, int]
+            self: "TodoComp"  # type: ignore[misc]
+            inner: str
+
+        TodoComp = Component[TodoArgs, TodoKwargs, TodoData, Any]  # type: ignore[misc]
+
+        # NOTE: Since we're using ForwardRef for "TodoComp" and "InnerComp", we need
+        # to ensure that the actual types are set as globals, so the ForwardRef class
+        # can resolve them.
+        globals()["TodoComp"] = TodoComp
+        globals()["InnerComp"] = InnerComp
+
+        class TestComponent(TodoComp):
+            def get_context_data(self, var1, inner):
+                return {
+                    "self": self,
+                    "one": "2123",
+                    # NOTE: All of this is typed
+                    "inner": self.input.kwargs["inner"].render(kwargs={"one": "abc"}),
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                Name: <strong>{{ self.name }}</strong>
+            """
+
+        rendered = TestComponent.render(args=(Inner(),), kwargs={"inner": Inner()})
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Name: <strong>TestComponent</strong>
+            """,
+        )
+
+    def test_handles_typing_module(self):
+        TodoArgs = Tuple[
+            Union[str, int],
+            Dict[str, int],
+            List[str],
+            Tuple[int, Union[str, int]],
+        ]
+
+        class TodoKwargs(TypedDict):
+            one: Union[str, int]
+            two: Dict[str, int]
+            three: List[str]
+            four: Tuple[int, Union[str, int]]
+
+        class TodoData(TypedDict):
+            one: Union[str, int]
+            two: Dict[str, int]
+            three: List[str]
+            four: Tuple[int, Union[str, int]]
+
+        TodoComp = Component[TodoArgs, TodoKwargs, TodoData, Any]
+
+        # NOTE: Since we're using ForwardRef for "TodoComp", we need
+        # to ensure that the actual types are set as globals, so the ForwardRef class
+        # can resolve them.
+        globals()["TodoComp"] = TodoComp
+
+        class TestComponent(TodoComp):
+            def get_context_data(self, *args, **kwargs):
+                return {
+                    **kwargs,
+                }
+
+            template = ""
+
+        TestComponent.render(
+            args=("str", {"str": 123}, ["a", "b", "c"], (123, "123")),
+            kwargs={
+                "one": "str",
+                "two": {"str": 123},
+                "three": ["a", "b", "c"],
+                "four": (123, "123"),
+            },
+        )
 
 
 class ComponentRenderTest(BaseTestCase):

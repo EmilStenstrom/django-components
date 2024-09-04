@@ -1,4 +1,5 @@
 import sys
+import typing
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Sequence, Tuple, Union, get_type_hints
 
@@ -39,6 +40,49 @@ def watch_files_for_autoreload(watch_list: Sequence[Union[str, Path]]) -> None:
     autoreload_started.connect(autoreload_hook)
 
 
+# Get all types that users may use from the `typing` module.
+#
+# These are the types that we do NOT try to resolve when it's a typed generic,
+# e.g. `Union[int, str]`.
+# If we get a typed generic that's NOT part of this set, we assume it's a user-made
+# generic, e.g. `Component[Args, Kwargs]`. In such case we assert that a given value
+# is an instance of the base class, e.g. `Component`.
+_typing_exports = frozenset(
+    [
+        value
+        for value in typing.__dict__.values()
+        if isinstance(
+            value,
+            (
+                typing._SpecialForm,
+                # Used in 3.8 and 3.9
+                getattr(typing, "_GenericAlias", ()),
+                # Used in 3.11+ (possibly 3.10?)
+                getattr(typing, "_SpecialGenericAlias", ()),
+            )
+        )
+    ]
+)
+
+
+def _prepare_type_for_validation(the_type: Any) -> Any:
+    # If we got a typed generic (AKA "subscripted" generic), e.g.
+    # `Component[CompArgs, CompKwargs, ...]`
+    # then we cannot use that generic in `isintance()`, because we get this error:
+    # `TypeError("Subscripted generics cannot be used with class and instance checks")`
+    #
+    # Instead, we resolve the generic to its original class, e.g. `Component`,
+    # which can then be used in instance assertion.
+    if hasattr(the_type, "__origin__"):
+        is_custom_typing = the_type.__origin__ not in _typing_exports
+        if is_custom_typing:
+            return the_type.__origin__
+        else:
+            return the_type
+    else:
+        return the_type
+
+
 # NOTE: tuple_type is a _GenericAlias - See https://stackoverflow.com/questions/74412803
 def validate_typed_tuple(
     value: Tuple[Any, ...],
@@ -63,7 +107,8 @@ def validate_typed_tuple(
 
     for index, arg_type in enumerate(tuple_type.__args__):
         arg = value[index]
-        if not isinstance(arg, arg_type):
+        arg_type = _prepare_type_for_validation(arg_type)
+        if sys.version_info >= (3, 11) and not isinstance(arg, arg_type):
             # Generate errors like below (listed for searchability)
             # `Component 'name' expected positional argument at index 0 to be <class 'int'>, got 123.5 of type <class 'float'>`  # noqa: E501
             raise TypeError(
@@ -101,16 +146,7 @@ def validate_typed_dict(value: Mapping[str, Any], dict_type: Any, prefix: str, k
         else:
             unseen_keys.remove(key)
             kwarg = value[key]
-
-            # If we got a typed generic (AKA "subscripted" generic), e.g.
-            # `Component[CompArgs, CompKwargs, ...]`
-            # then we cannot use that generic in `isintance()`, because we get this error:
-            # `TypeError("Subscripted generics cannot be used with class and instance checks")`
-            #
-            # Instead, we resolve the generic to its original class, e.g. `Component`,
-            # which can then be used in instance assertion.
-            if hasattr(kwarg_type, "__origin__"):
-                kwarg_type = kwarg_type.__origin__
+            kwarg_type = _prepare_type_for_validation(kwarg_type)
 
             # NOTE: `isinstance()` cannot be used with the version of TypedDict prior to 3.11.
             # So we do type validation for TypedDicts only in 3.11 and later.
