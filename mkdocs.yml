@@ -64,12 +64,13 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
+    
 extra:
   version:
     provider: mike
     default:
-      - latest
       - dev
+    alias: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/EmilStenstrom/django-components

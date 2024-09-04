@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    if: github.repository == 'EmilStenstrom/django-components'
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v2
