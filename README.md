@@ -71,6 +71,11 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+**Version 0.96**
+- Run-time type validation for Python 3.11+ - If the `Component` class is typed, e.g. `Component[Args, Kwargs, ...]`, the args, kwargs, slots, and data are validated against the given types. (See [Runtime input validation with types](#runtime-input-validation-with-types))
+- Render hooks - Set `on_render_before` and `on_render_after` methods on `Component` to intercept or modify the template or context before rendering, or the rendered result afterwards. (See [Component hooks](#component-hooks))
+- `component_vars.is_filled` context variable can be accessed from within `on_render_before` and `on_render_after` hooks as `self.is_filled.my_slot`
+
 **Version 0.95**
 - Added support for dynamic components, where the component name is passed as a variable. (See [Dynamic components](#dynamic-components))
 - Changed `Component.input` to raise `RuntimeError` if accessed outside of render context. Previously it returned `None` if unset.
