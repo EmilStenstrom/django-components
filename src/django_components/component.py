@@ -1,6 +1,7 @@
 import inspect
 import types
 from collections import deque
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -8,6 +9,7 @@ from typing import (
     ClassVar,
     Deque,
     Dict,
+    Generator,
     Generic,
     List,
     Literal,
@@ -520,22 +522,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         context_data = self.get_context_data(*args, **kwargs)
         self._validate_outputs(context_data)
 
-        with context.update(context_data):
-            template = self.get_template(context)
-            _monkeypatch_template(template)
-
-            if context.template is None:
-                # Associate the newly-created Context with a Template, otherwise we get
-                # an error when we try to use `{% include %}` tag inside the template?
-                # See https://github.com/EmilStenstrom/django-components/issues/580
-                context.template = template
-                context.template_name = template.name
-
-            # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE
-            # the `{% extends %}` tag.
-            # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
-            template._dc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
-
+        with _prepare_template(self, context, context_data) as template:
             # Support passing slots explicitly to `render` method
             if has_slots:
                 fill_content = self._fills_from_slots_data(
@@ -843,3 +830,35 @@ def _monkeypatch_template(template: Template) -> None:
 
     # See https://stackoverflow.com/a/42154067/9788634
     template.render = types.MethodType(_template_render, template)
+
+
+@contextmanager
+def _maybe_bind_template(context: Context, template: Template) -> Generator[None, Any, None]:
+    if context.template is None:
+        with context.bind_template(template):
+            yield
+    else:
+        yield
+
+
+@contextmanager
+def _prepare_template(
+    component: Component,
+    context: Context,
+    context_data: Any,
+) -> Generator[Template, Any, None]:
+    with context.update(context_data):
+        # Associate the newly-created Context with a Template, otherwise we get
+        # an error when we try to use `{% include %}` tag inside the template?
+        # See https://github.com/EmilStenstrom/django-components/issues/580
+        # And https://github.com/EmilStenstrom/django-components/issues/634
+        template = component.get_template(context)
+        _monkeypatch_template(template)
+
+        # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE
+        # the `{% extends %}` tag.
+        # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
+        template._dc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
+
+        with _maybe_bind_template(context, template):
+            yield template
