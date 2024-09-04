@@ -76,6 +76,62 @@ else:
         optional: NotRequired[int]
 
 
+# TODO_REMOVE_IN_V1 - Instead use `self.template_name` and `self.template` in v1
+class ComponentOldTemplateApiTest(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_get_template_string(self):
+        class SimpleComponent(Component):
+            def get_template_string(self, context):
+                content: types.django_html = """
+                    Variable: <strong>{{ variable }}</strong>
+                """
+                return content
+
+            def get_context_data(self, variable=None):
+                return {
+                    "variable": variable,
+                }
+
+            class Media:
+                css = "style.css"
+                js = "script.js"
+
+        rendered = SimpleComponent.render(kwargs={"variable": "test"})
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>test</strong>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_get_template_name(self):
+        class SvgComponent(Component):
+            def get_context_data(self, name, css_class="", title="", **attrs):
+                return {
+                    "name": name,
+                    "css_class": css_class,
+                    "title": title,
+                    **attrs,
+                }
+
+            def get_template_name(self, context):
+                return f"dynamic_{context['name']}.svg"
+
+        self.assertHTMLEqual(
+            SvgComponent.render(kwargs={"name": "svg1"}),
+            """
+            <svg>Dynamic1</svg>
+            """,
+        )
+        self.assertHTMLEqual(
+            SvgComponent.render(kwargs={"name": "svg2"}),
+            """
+            <svg>Dynamic2</svg>
+            """,
+        )
+
+
 class ComponentTest(BaseTestCase):
     class ParentComponent(Component):
         template: types.django_html = """
@@ -123,7 +179,7 @@ class ComponentTest(BaseTestCase):
             pass
 
         with self.assertRaises(ImproperlyConfigured):
-            EmptyComponent("empty_component").get_template(Context({}))
+            EmptyComponent("empty_component")._get_template(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_string_static_inlined(self):
@@ -152,7 +208,7 @@ class ComponentTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_string_dynamic(self):
         class SimpleComponent(Component):
-            def get_template_string(self, context):
+            def template(self, context):
                 content: types.django_html = """
                     Variable: <strong>{{ variable }}</strong>
                 """
@@ -208,7 +264,7 @@ class ComponentTest(BaseTestCase):
                     **attrs,
                 }
 
-            def get_template_name(self, context):
+            def template_name(self, context):
                 return f"dynamic_{context['name']}.svg"
 
         self.assertHTMLEqual(
@@ -225,14 +281,14 @@ class ComponentTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_allows_to_override_get_template(self):
+    def test_allows_to_return_template(self):
         class TestComponent(Component):
             def get_context_data(self, variable, **attrs):
                 return {
                     "variable": variable,
                 }
 
-            def get_template(self, context):
+            def template(self, context):
                 template_str = "Variable: <strong>{{ variable }}</strong>"
                 return Template(template_str)
 
@@ -260,7 +316,7 @@ class ComponentTest(BaseTestCase):
                 }
 
             @no_type_check
-            def get_template(self, context):
+            def template(self, context):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
                 tester.assertIsInstance(self.input.context, Context)

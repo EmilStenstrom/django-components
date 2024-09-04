@@ -122,7 +122,7 @@ class InlineComponentTest(BaseTestCase):
 
     def test_html_variable(self):
         class VariableHTMLComponent(Component):
-            def get_template(self, context):
+            def template(self, context):
                 return Template("<div class='variable-html'>{{ variable }}</div>")
 
         comp = VariableHTMLComponent("variable_html_component")
