@@ -76,6 +76,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 - The previously undocumented `get_template` was made private.
 - In it's place, there's a new `get_template`, which supersedes `get_template_string` (will be removed in v1). The new `get_template` is the same as `get_template_string`, except
 it allows to return either a string or a Template instance.
+- You now must use only one of `template`, `get_template`, `template_name`, or `get_template_name`.
 
 **Version 0.96**
 - Run-time type validation for Python 3.11+ - If the `Component` class is typed, e.g. `Component[Args, Kwargs, ...]`, the args, kwargs, slots, and data are validated against the given types. (See [Runtime input validation with types](#runtime-input-validation-with-types))
