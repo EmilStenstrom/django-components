@@ -3170,6 +3170,26 @@ COMPONENTS = {
 }
 ```
 
+If you want add templates to the cache yourself, you can use `cached_template()`:
+
+```py
+from django_components import cached_template
+
+cached_template("Variable: {{ variable }}")
+
+# You can optionally specify Template class, and other Template inputs:
+class MyTemplate(Template):
+    pass
+
+cached_template(
+    "Variable: {{ variable }}",
+    template_cls=MyTemplate,
+    name=...
+    origin=...
+    engine=...
+)
+```
+
 ### `context_behavior` - Make components isolated (or not)
 
 > NOTE: `context_behavior` and `slot_context_behavior` options were merged in v0.70.

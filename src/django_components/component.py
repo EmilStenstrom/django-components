@@ -63,6 +63,7 @@ from django_components.slots import (
     resolve_fill_nodes,
     resolve_slots,
 )
+from django_components.template import cached_template
 from django_components.utils import gen_id, validate_typed_dict, validate_typed_tuple
 
 # TODO_REMOVE_IN_V1 - Users should use top-level import instead
@@ -314,7 +315,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             
             # We got template string, so we convert it to Template
             if isinstance(template, str):
-                template = Template(template)
+                template = cached_template(template)
 
             return template
 
