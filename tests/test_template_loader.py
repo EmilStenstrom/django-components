@@ -24,7 +24,10 @@ class TemplateLoaderTest(BaseTestCase):
             sorted(dirs),
             sorted(
                 [
+                    # Top-level /components dir
                     Path(__file__).parent.resolve() / "components",
+                    # App-level /components dir
+                    Path(__file__).parent.resolve() / "test_app" / "components",
                 ]
             ),
         )
