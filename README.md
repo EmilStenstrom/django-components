@@ -71,6 +71,13 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+🚨📢 **Version 0.100**
+- BREAKING CHANGE:
+    - `django_components.safer_staticfiles` app was removed. It is no longer needed.
+    - Installation change: Instead of defining component directories in `STATICFILES_DIRS`, set them to `COMPONENTS.dirs`.
+    - Installation change: You now must define `STATICFILES_FINDERS`
+- Beside the top-level `/components` directory, you can now define also app-level components dirs, e.g. `[app]/components`
+
 **Version 0.97**
 - Fixed template caching. You can now also manually create cached templates with [`cached_template()`](#template_cache_size---tune-the-template-cache)
 - The previously undocumented `get_template` was made private.
@@ -191,14 +198,20 @@ _You are advised to read this section before using django-components in producti
 
 Components can be organized however you prefer.
 That said, our prefered way is to keep the files of a component close together by bundling them in the same directory.
+
 This means that files containing backend logic, such as Python modules and HTML templates, live in the same directory as static files, e.g. JS and CSS.
 
-If your are using _django.contrib.staticfiles_ to collect static files, no distinction is made between the different kinds of files.
+From v0.100 onwards, we keep component files (defined by `COMPONENTS.dirs`) separate from the rest of the static
+files (defined by `STATICFILES_DIRS`). That way, the Python and HTML files are NOT exposed by the server. Only the static JS and CSS.
+
+<!-- # TODO_REMOVE_IN_V1 - Remove mentions of safer_staticfiles in V1 -->
+However, prior to v0.100, if your were using _django.contrib.staticfiles_ to collect static files, no distinction was made between the different kinds of files.
+
 As a result, your Python code and templates may inadvertently become available on your static file server.
 You probably don't want this, as parts of your backend logic will be exposed, posing a **potential security vulnerability**.
 
-As of _v0.27_, django-components ships with an additional installable app _django_components.**safer_staticfiles**_.
-It is a drop-in replacement for _django.contrib.staticfiles_.
+From _v0.27_ until _v0.100_, django-components shiped with an additional installable app _django_components.**safer_staticfiles**_.
+It was a drop-in replacement for _django.contrib.staticfiles_.
 Its behavior is 100% identical except it ignores .py and .html files, meaning these will not end up on your static files server.
 To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.
 
@@ -230,11 +243,11 @@ For a step-by-step guide on deploying production server with static files,
 
 ## Installation
 
-1. Install the app into your environment:
+1. Install `django_components` into your environment:
 
    > `pip install django_components`
 
-2. Then add the app into `INSTALLED_APPS` in settings.py
+2. Load `django_components` into Django by adding it into `INSTALLED_APPS` in settings.py:
 
    ```python
    INSTALLED_APPS = [
@@ -243,13 +256,32 @@ For a step-by-step guide on deploying production server with static files,
    ]
    ```
 
-3. Ensure that `BASE_DIR` setting is defined in settings.py:
+3. `BASE_DIR` setting is required. Ensure that it is defined in settings.py:
 
    ```py
    BASE_DIR = Path(__file__).resolve().parent.parent
    ```
 
-4. Modify `TEMPLATES` section of settings.py as follows:
+4. Add / modify `COMPONENTS.dirs` so django_components knows where to  find component HTML, JS and CSS files:
+
+   ```python
+   COMPONENTS = {
+       "dirs": [
+            ...,
+            os.path.join(BASE_DIR, "components"),
+        ],
+   }
+   ```
+
+   If `COMPONENTS.dirs` is omitted or empty, django-components will by default look for a top-level `/components` directory,
+   `{BASE_DIR}/components`.
+
+   Irrespective of `COMPONENTS.dirs`, django_components will also load components from app-level `/components` directories, e.g. `my-app/components/`.
+
+   NOTE: The input to `COMPONENTS.dirs` are the same as for `STATICFILES_DIRS`, and the paths must be full paths. [See Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-dirs).
+
+
+5. Next, to make Django load component HTML files as Django templates, modify `TEMPLATES` section of settings.py as follows:
 
    - _Remove `'APP_DIRS': True,`_
       - NOTE: Instead of APP_DIRS, for the same effect, we will use [`django.template.loaders.app_directories.Loader`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#django.template.loaders.app_directories.Loader)
@@ -278,19 +310,18 @@ For a step-by-step guide on deploying production server with static files,
    ]
    ```
 
-5. Modify `STATICFILES_DIRS` (or add it if you don't have it) so django can find your static JS and CSS files:
+6. Lastly, be able to serve the component JS and CSS files as static files, modify `STATICFILES_FINDERS` section of settings.py as follows:
 
-   ```python
-   STATICFILES_DIRS = [
-      ...,
-      os.path.join(BASE_DIR, "components"),
-   ]
-   ```
+```py
+STATICFILES_FINDERS = [
+	# Default finders
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+	# Django components
+	"django_components.finders.ComponentsFileSystemFinder",
+]
+```
 
-   If `STATICFILES_DIRS` is omitted or empty, django-components will by default look for
-   `{BASE_DIR}/components`
-
-   NOTE: The paths in `STATICFILES_DIRS` must be full paths. [See Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-dirs).
 
 ### Optional
 
@@ -392,7 +423,7 @@ class Calendar(Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir
     # will be automatically found.
     #
-    # `template_name` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
+    # `template_name` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
     template_name = "template.html"
     # Or
     def get_template_name(context):
@@ -404,7 +435,7 @@ class Calendar(Component):
             "date": date,
         }
 
-    # Both `css` and `js` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
+    # Both `css` and `js` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
     class Media:
         css = "style.css"
         js = "script.js"
@@ -1225,7 +1256,7 @@ class MyAppConfig(AppConfig):
 
 However, there's a simpler way!
 
-By default, the Python files in the `STATICFILES_DIRS` directories are auto-imported in order to auto-register the components.
+By default, the Python files in the `COMPONENTS.dirs` directories (or app-level `[app]/components/`) are auto-imported in order to auto-register the components.
 
 Autodiscovery occurs when Django is loaded, during the `ready` hook of the `apps.py` file.
 
@@ -2868,9 +2899,9 @@ class Calendar(Component):
 
 In the example above, the files are defined relative to the directory where `component.py` is.
 
-Alternatively, you can specify the file paths relative to the directories set in `STATICFILES_DIRS`.
+Alternatively, you can specify the file paths relative to the directories set in `COMPONENTS.dirs`.
 
-Assuming that `STATICFILES_DIRS` contains path `[project root]/components`, we can rewrite the example as:
+Assuming that `COMPONENTS.dirs` contains path `[project root]/components`, we can rewrite the example as:
 
 ```py
 # In a file [project root]/components/calendar/calendar.py
@@ -2966,7 +2997,7 @@ In the example [above](#supported-types-for-file-paths), you could see that when
 
 This is an extension of Django's [Paths as objects](https://docs.djangoproject.com/en/5.0/topics/forms/media/#paths-as-objects) feature, where "safe" strings are taken as is, and accessed only at render time.
 
-Because of that, the paths defined as "safe" strings are NEVER resolved, neither relative to component's directory, nor relative to `STATICFILES_DIRS`.
+Because of that, the paths defined as "safe" strings are NEVER resolved, neither relative to component's directory, nor relative to `COMPONENTS.dirs`.
 
 "Safe" strings can be used to lazily resolve a path, or to customize the `<script>` or `<link>` tag for individual paths:
 
@@ -3595,7 +3626,7 @@ You can publish and share your components for others to use. Here are the steps 
 
 4. Import the components in `apps.py`
 
-    Normally, users rely on [autodiscovery](#autodiscovery) and `STATICFILES_DIRS` to load the component files.
+    Normally, users rely on [autodiscovery](#autodiscovery) and `COMPONENTS.dirs` to load the component files.
 
     Since you, as the library author, are not in control of the file system, it is recommended to load the components manually.
 
