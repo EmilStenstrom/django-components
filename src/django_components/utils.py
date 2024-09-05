@@ -205,6 +205,7 @@ def lazy_cache(
         def cache_remove() -> None:
             nonlocal _cached_fn
             _cached_fn = None
+
         wrapper.cache_remove = cache_remove  # type: ignore
 
         return cast(TFunc, wrapper)
