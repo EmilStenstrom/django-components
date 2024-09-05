@@ -155,19 +155,42 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
     # non-null return.
     _class_hash: ClassVar[int]
 
-    template_name: Optional[Union[str, Callable[[Context], str]]] = None
+    template_name: Optional[str] = None
     """
-    Filepath to the Django template associated with this component. Can be a string,
-    or a function that returns one.
+    Filepath to the Django template associated with this component.
 
     The filepath must be relative to either the file where the component class was defined,
     or one of the roots of `STATIFILES_DIRS`.
+
+    Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
     """
-    template: Optional[Union[str, Template, Callable[[Context], Union[Template, str]]]] = None
+
+    def get_template_name(self, context: Context) -> Optional[str]:
+        """
+        Filepath to the Django template associated with this component.
+
+        The filepath must be relative to either the file where the component class was defined,
+        or one of the roots of `STATIFILES_DIRS`.
+
+        Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+        """
+        return None
+
+    template: Optional[Union[str, Template]] = None
     """
-    Inlined Django template associated with this component. Can be a plain string, Template instance,
-    or a function that returns one of the two.
+    Inlined Django template associated with this component. Can be a plain string or a Template instance.
+
+    Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
     """
+
+    def get_template(self, context: Context) -> Optional[Union[str, Template]]:
+        """
+        Inlined Django template associated with this component. Can be a plain string or a Template instance.
+
+        Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+        """
+        return None
+
     js: Optional[str] = None
     """Inlined JS associated with this component."""
     css: Optional[str] = None
@@ -289,33 +312,45 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
     # of Template is reused. This is important to keep in mind, because the implication
     # is that we should treat Templates AND their nodelists as IMMUTABLE.
     def _get_template(self, context: Context) -> Template:
-        # TODO_REMOVE_IN_V1 - Instead use `self.template_name` and `self.template` in v1
-        template_name = getattr(self, "get_template_name", self.template_name)
-        template_str = getattr(self, "get_template_string", self.template)
+        # Resolve template name
+        template_name = self.template_name
+        if self.template_name is not None:
+            if self.get_template_name(context) is not None:
+                raise ImproperlyConfigured(
+                    "Received non-null value from both 'template_name' and 'get_template_name' in"
+                    f" Component {type(self).__name__}. Only one of the two must be set."
+                )
+        else:
+            template_name = self.get_template_name(context)
 
-        if template_name is not None and template_str is not None:
+        # Resolve template str
+        template_input = self.template
+        if self.template is not None:
+            if self.get_template(context) is not None:
+                raise ImproperlyConfigured(
+                    "Received non-null value from both 'template' and 'get_template' in"
+                    f" Component {type(self).__name__}. Only one of the two must be set."
+                )
+        else:
+            # TODO_REMOVE_IN_V1 - Remove `self.get_template_string` in v1
+            template_getter = getattr(self, "get_template_string", self.get_template)
+            template_input = template_getter(context)
+
+        if template_name is not None and template_input is not None:
             raise ImproperlyConfigured(
-                f"Received both 'template_name' and 'template' for Component {type(self).__name__}."
-                " Only one of must be set."
+                f"Received both 'template_name' and 'template' in Component {type(self).__name__}."
+                " Only one of the two must be set."
             )
 
         if template_name is not None:
-            if callable(template_name):
-                template_name = template_name(context)
-            else:
-                template_name = template_name
-
             return get_template(template_name).template
 
-        elif template_str is not None:
-            if callable(template_str):
-                template = template_str(context)
-            else:
-                template = template_str
-
+        elif template_input is not None:
             # We got template string, so we convert it to Template
-            if isinstance(template, str):
-                template = cached_template(template)
+            if isinstance(template_input, str):
+                template: Template = cached_template(template_input)
+            else:
+                template = template_input
 
             return template
 

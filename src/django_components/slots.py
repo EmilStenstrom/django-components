@@ -725,7 +725,6 @@ def _escape_slot_name(name: str) -> str:
 
 
 def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
-    print("NODELOST: ", nodelist) # TODO
     def render_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         return nodelist.render(ctx)
 

@@ -48,7 +48,7 @@ class TemplateCacheTest(BaseTestCase):
 
     def test_component_template_is_cached(self):
         class SimpleComponent(Component):
-            def template(self, context):
+            def get_template(self, context):
                 content: types.django_html = """
                     Variable: <strong>{{ variable }}</strong>
                 """
