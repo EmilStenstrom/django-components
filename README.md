@@ -73,8 +73,9 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 **Version 0.97**
 - Fixed template caching. You can now also manually create cached templates with [`cached_template()`](#template_cache_size---tune-the-template-cache)
-- `get_template_name` and `get_template_string` were merged into `template_name` and `template`, and old formats will be removed in v1.
-- The undocumented `get_template` was made private.
+- The previously undocumented `get_template` was made private.
+- In it's place, there's a new `get_template`, which supersedes `get_template_string` (will be removed in v1). The new `get_template` is the same as `get_template_string`, except
+it allows to return either a string or a Template instance.
 
 **Version 0.96**
 - Run-time type validation for Python 3.11+ - If the `Component` class is typed, e.g. `Component[Args, Kwargs, ...]`, the args, kwargs, slots, and data are validated against the given types. (See [Runtime input validation with types](#runtime-input-validation-with-types))
@@ -98,7 +99,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 🚨📢 **Version 0.92**
 - BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
 
-- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `template` and `template_name` via `self.input`. (See [Accessing data passed to the component](#accessing-data-passed-to-the-component))
+- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](#accessing-data-passed-to-the-component))
 
 - Typing: `Component` class supports generics that specify types for `Component.render` (See [Adding type hints with Generics](#adding-type-hints-with-generics))
 
@@ -393,7 +394,7 @@ class Calendar(Component):
     # `template_name` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
     template_name = "template.html"
     # Or
-    def template_name(context):
+    def get_template_name(context):
         return f"template-{context['name']}.html"
 
     # This component takes one parameter, a date string to show in the template
@@ -1748,8 +1749,8 @@ When you call `Component.render` or `Component.render_to_response`, the inputs t
 
 This means that you can use `self.input` inside:
 - `get_context_data`
-- `template_name`
-- `template`
+- `get_template_name`
+- `get_template`
 
 `self.input` is defined only for the duration of `Component.render`, and raises `RuntimeError` when called outside of this.
 

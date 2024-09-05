@@ -76,7 +76,7 @@ else:
         optional: NotRequired[int]
 
 
-# TODO_REMOVE_IN_V1 - Instead use `self.template_name` and `self.template` in v1
+# TODO_REMOVE_IN_V1 - Superseded by `self.get_template` in v1
 class ComponentOldTemplateApiTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_get_template_string(self):
@@ -101,33 +101,6 @@ class ComponentOldTemplateApiTest(BaseTestCase):
             rendered,
             """
             Variable: <strong>test</strong>
-            """,
-        )
-
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_get_template_name(self):
-        class SvgComponent(Component):
-            def get_context_data(self, name, css_class="", title="", **attrs):
-                return {
-                    "name": name,
-                    "css_class": css_class,
-                    "title": title,
-                    **attrs,
-                }
-
-            def get_template_name(self, context):
-                return f"dynamic_{context['name']}.svg"
-
-        self.assertHTMLEqual(
-            SvgComponent.render(kwargs={"name": "svg1"}),
-            """
-            <svg>Dynamic1</svg>
-            """,
-        )
-        self.assertHTMLEqual(
-            SvgComponent.render(kwargs={"name": "svg2"}),
-            """
-            <svg>Dynamic2</svg>
             """,
         )
 

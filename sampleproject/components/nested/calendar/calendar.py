@@ -9,7 +9,7 @@ class CalendarNested(Component):
     # `template_name` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
     template_name = "calendar.html"
     # Or
-    # def template_name(context):
+    # def get_template_name(context):
     #     return f"template-{context['name']}.html"
 
     # This component takes one parameter, a date string to show in the template
