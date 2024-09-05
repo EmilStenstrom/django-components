@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from django.conf import settings
 
@@ -97,6 +97,10 @@ class AppSettings:
     @property
     def AUTODISCOVER(self) -> bool:
         return self.settings.get("autodiscover", True)
+
+    @property
+    def DIRS(self) -> List[Union[str, Tuple[str, str]]]:
+        return self.settings.get("dirs", [])
 
     @property
     def DYNAMIC_COMPONENT_NAME(self) -> str:

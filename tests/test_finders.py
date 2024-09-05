@@ -11,7 +11,7 @@ from .django_test_setup import *  # NOQA
 #
 # The methods below are overriden to ensure we don't make any filesystem changes
 # (copy/delete), as the original command copies files. Thus we can safely test that
-# our `safer_staticfiles` app works as intended.
+# our app works as intended.
 class MockCollectstaticCommand(Command):
     # NOTE: We do not expect this to be called
     def clear_dir(self, path):
@@ -60,44 +60,57 @@ def do_collect():
 
 common_settings = {
     "STATIC_URL": "static/",
-    "STATICFILES_DIRS": [Path(__file__).resolve().parent / "components"],
     "STATIC_ROOT": "staticfiles",
     "ROOT_URLCONF": __name__,
     "SECRET_KEY": "secret",
+    "COMPONENTS": {
+        "dirs": [Path(__file__).resolve().parent / "components"],
+    },
+    "INSTALLED_APPS": ("django_components", "django.contrib.staticfiles"),
 }
 
 
-# Check that .py and .html files are INCLUDED with the original staticfiles app
+# Check that the component files are NOT loaded when our finder is NOT added
 @override_settings(
     **common_settings,
-    INSTALLED_APPS=("django_components", "django.contrib.staticfiles"),
+    STATICFILES_FINDERS=[
+        # Default finders
+        "django.contrib.staticfiles.finders.FileSystemFinder",
+        "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    ],
 )
 class OrigStaticFileTests(SimpleTestCase):
     def test_python_and_html_included(self):
         collected = do_collect()
 
-        self.assertIn("safer_staticfiles/safer_staticfiles.css", collected["modified"])
-        self.assertIn("safer_staticfiles/safer_staticfiles.js", collected["modified"])
-        self.assertIn("safer_staticfiles/safer_staticfiles.html", collected["modified"])
-        self.assertIn("safer_staticfiles/safer_staticfiles.py", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.css", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
 
 
-# Check that .py and .html files are OMITTED from our version of staticfiles app
+# Check that our staticfiles_finder finds the files and OMITS .py and .html files
 @override_settings(
     **common_settings,
-    INSTALLED_APPS=("django_components", "django_components.safer_staticfiles"),
+    STATICFILES_FINDERS=[
+        # Default finders
+        "django.contrib.staticfiles.finders.FileSystemFinder",
+        "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+        # Django components
+        "django_components.finders.ComponentsFileSystemFinder",
+    ],
 )
 class SaferStaticFileTests(SimpleTestCase):
     def test_python_and_html_omitted(self):
         collected = do_collect()
 
-        self.assertIn("safer_staticfiles/safer_staticfiles.css", collected["modified"])
-        self.assertIn("safer_staticfiles/safer_staticfiles.js", collected["modified"])
-        self.assertNotIn("safer_staticfiles/safer_staticfiles.html", collected["modified"])
-        self.assertNotIn("safer_staticfiles/safer_staticfiles.py", collected["modified"])
+        self.assertIn("staticfiles/staticfiles.css", collected["modified"])
+        self.assertIn("staticfiles/staticfiles.js", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
