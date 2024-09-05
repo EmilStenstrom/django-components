@@ -171,13 +171,14 @@ def validate_typed_dict(value: Mapping[str, Any], dict_type: Any, prefix: str, k
 
 TFunc = TypeVar("TFunc", bound=Callable)
 
+
 def lazy_cache(
     make_cache: Callable[[], Callable[[Callable], Callable]],
 ) -> Callable[[TFunc], TFunc]:
     """
     Decorator that caches the given function similarly to `functools.lru_cache`.
     But the cache is instantiated only at first invocation.
-    
+
     `cache` argument is a function that generates the cache function,
     e.g. `functools.lru_cache()`.
     """
@@ -194,5 +195,7 @@ def lazy_cache(
                 _cached_fn = cache(fn)
 
             return _cached_fn(*args, **kwargs)
+
         return cast(TFunc, wrapper)
+
     return decorator

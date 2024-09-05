@@ -291,7 +291,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
     def _get_template(self, context: Context) -> Template:
         # TODO_REMOVE_IN_V1 - Instead use `self.template_name` and `self.template` in v1
         template_name = getattr(self, "get_template_name", self.template_name)
-        template_str =getattr(self, "get_template_string", self.template)
+        template_str = getattr(self, "get_template_string", self.template)
 
         if template_name and template_str:
             raise ImproperlyConfigured(
@@ -312,7 +312,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 template = template_str(context)
             else:
                 template = template_str
-            
+
             # We got template string, so we convert it to Template
             if isinstance(template, str):
                 template = cached_template(template)
