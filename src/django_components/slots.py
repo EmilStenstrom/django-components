@@ -339,7 +339,7 @@ class FillNode(BaseNode):
 # to control this cache separately. So we use `TEMPLATE_CACHE_SIZE` so the cache is bounded.
 @lazy_cache(lambda: lru_cache(maxsize=app_settings.TEMPLATE_CACHE_SIZE))
 def parse_slot_fill_nodes_from_component_nodelist(
-    component_nodelist: NodeList,
+    nodes: Tuple[Node, ...],
     ignored_nodes: Tuple[Type[Node]],
 ) -> List[FillNode]:
     """
@@ -361,12 +361,12 @@ def parse_slot_fill_nodes_from_component_nodelist(
     and `fill "second_fill"`.
     """
     fill_nodes: List[FillNode] = []
-    if nodelist_has_content(component_nodelist):
+    if nodelist_has_content(nodes):
         for parse_fn in (
             _try_parse_as_default_fill,
             _try_parse_as_named_fill_tag_set,
         ):
-            curr_fill_nodes = parse_fn(component_nodelist, ignored_nodes)
+            curr_fill_nodes = parse_fn(nodes, ignored_nodes)
             if curr_fill_nodes:
                 fill_nodes = curr_fill_nodes
                 break
@@ -381,12 +381,12 @@ def parse_slot_fill_nodes_from_component_nodelist(
 
 
 def _try_parse_as_named_fill_tag_set(
-    nodelist: NodeList,
+    nodes: Tuple[Node, ...],
     ignored_nodes: Tuple[Type[Node]],
 ) -> List[FillNode]:
     result = []
     seen_names: Set[str] = set()
-    for node in nodelist:
+    for node in nodes:
         if isinstance(node, FillNode):
             # If the fill name was defined statically, then check for no duplicates.
             maybe_fill_name = node.kwargs.kwargs.get(SLOT_NAME_KWARG)
@@ -408,10 +408,10 @@ def _try_parse_as_named_fill_tag_set(
 
 
 def _try_parse_as_default_fill(
-    nodelist: NodeList,
+    nodes: Tuple[Node, ...],
     ignored_nodes: Tuple[Type[Node]],
 ) -> List[FillNode]:
-    nodes_stack: List[Node] = list(nodelist)
+    nodes_stack: List[Node] = list(nodes)
     while nodes_stack:
         node = nodes_stack.pop()
         if isinstance(node, FillNode):
@@ -425,7 +425,7 @@ def _try_parse_as_default_fill(
     else:
         return [
             FillNode(
-                nodelist=nodelist,
+                nodelist=NodeList(nodes),
                 kwargs=RuntimeKwargs(
                     {
                         # Wrap the default slot name in quotes so it's treated as FilterExpression
@@ -725,6 +725,7 @@ def _escape_slot_name(name: str) -> str:
 
 
 def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
+    print("NODELOST: ", nodelist) # TODO
     def render_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         return nodelist.render(ctx)
 

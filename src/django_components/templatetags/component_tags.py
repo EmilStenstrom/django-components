@@ -246,7 +246,7 @@ def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_nam
     trace_msg("PARSE", "COMP", result.component_name, tag.id)
 
     body = tag.parse_body()
-    fill_nodes = parse_slot_fill_nodes_from_component_nodelist(body, ignored_nodes=(ComponentNode,))
+    fill_nodes = parse_slot_fill_nodes_from_component_nodelist(tuple(body), ignored_nodes=(ComponentNode,))
 
     # Tag all fill nodes as children of this particular component instance
     for node in fill_nodes:

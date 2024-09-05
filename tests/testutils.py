@@ -24,6 +24,9 @@ class BaseTestCase(SimpleTestCase):
         super().tearDown()
         registry.clear()
 
+        from django_components.template import _create_template
+        _create_template.cache_remove()  # type: ignore[attr-defined]
+
 
 request = Mock()
 mock_template = Mock()

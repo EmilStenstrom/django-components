@@ -196,6 +196,17 @@ def lazy_cache(
 
             return _cached_fn(*args, **kwargs)
 
+        # Allow to access the LRU cache methods
+        # See https://stackoverflow.com/a/37654201/9788634
+        wrapper.cache_info = lambda: _cached_fn.cache_info()  # type: ignore
+        wrapper.cache_clear = lambda: _cached_fn.cache_clear()  # type: ignore
+
+        # And allow to remove the cache instance (mostly for tests)
+        def cache_remove() -> None:
+            nonlocal _cached_fn
+            _cached_fn = None
+        wrapper.cache_remove = cache_remove  # type: ignore
+
         return cast(TFunc, wrapper)
 
     return decorator

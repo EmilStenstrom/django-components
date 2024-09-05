@@ -293,13 +293,13 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         template_name = getattr(self, "get_template_name", self.template_name)
         template_str = getattr(self, "get_template_string", self.template)
 
-        if template_name and template_str:
+        if template_name is not None and template_str is not None:
             raise ImproperlyConfigured(
                 f"Received both 'template_name' and 'template' for Component {type(self).__name__}."
                 " Only one of must be set."
             )
 
-        if template_name:
+        if template_name is not None:
             if callable(template_name):
                 template_name = template_name(context)
             else:
@@ -307,7 +307,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
             return get_template(template_name).template
 
-        elif template_str:
+        elif template_str is not None:
             if callable(template_str):
                 template = template_str(context)
             else:
@@ -631,7 +631,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 self.on_render_before(context, template)
 
                 rendered_component = template.render(context)
-
                 new_output = self.on_render_after(context, template, rendered_component)
                 rendered_component = new_output if new_output is not None else rendered_component
 

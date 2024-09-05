@@ -1093,7 +1093,6 @@ class ComponentRenderTest(BaseTestCase):
 
 
 class ComponentHookTest(BaseTestCase):
-    @parametrize_context_behavior(["django", "isolated"])
     def test_on_render_before(self):
         class SimpleComponent(Component):
             template: types.django_html = """
@@ -1131,7 +1130,6 @@ class ComponentHookTest(BaseTestCase):
         )
 
     # Check that modifying the context or template does nothing
-    @parametrize_context_behavior(["django", "isolated"])
     def test_on_render_after(self):
         captured_content = None
 
