@@ -32,7 +32,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 <div class="calendar-component">Today's date is <span>2015-06-19</span></div>
 ```
 
-[See the example project](./sampleproject) or read on to learn about the details!
+[See the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject) or read on to learn about the details!
 
 ## Table of Contents
 
@@ -219,7 +219,7 @@ python manage.py runserver
 ```
 
 For a step-by-step guide on deploying production server with static files,
-[see the demo project](./sampleproject/README.md).
+[see the demo project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject).
 
 ## Installation
 
