@@ -79,8 +79,13 @@ jobs:
           hatch run docs:mike deploy --push --update-aliases --title "dev (${SHORT_SHA})" dev
 
       - name: Build & deploy docs for a new tag
-        if: github.ref_type == 'tag' && github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         run: |
+          # git checkout -b temp-docs   # Give current position meaningful name
+          # git checkout gh-pages       # Update `gh-pages` to avoid conflicts
+          # git pull origin gh-pages
+          # git checkout temp-docs      # Go back to where we started
+
           # XXX next line removes docs wrongly deployed under latest identifier; remove once latest is used only as alias
           hatch run docs:mike delete --push latest
           hatch run docs:mike deploy --push --update-aliases ${{ github.ref_name }} latest
@@ -89,6 +94,11 @@ jobs:
       - name: Build & deploy docs for a new release
         if: github.event_name == 'release'
         run: |
+          # git checkout -b temp-docs   # Give current position meaningful name
+          # git checkout gh-pages       # Update `gh-pages` to avoid conflicts
+          # git pull origin gh-pages
+          # git checkout temp-docs      # Go back to where we started
+
           # XXX next line removes docs wrongly deployed under latest identifier; remove once latest is used only as alias
           hatch run docs:mike delete --push latest
           hatch run docs:mike deploy --push --update-aliases ${{ github.ref_name }} latest
