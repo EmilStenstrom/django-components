@@ -210,7 +210,7 @@ However, prior to v0.100, if your were using _django.contrib.staticfiles_ to col
 As a result, your Python code and templates may inadvertently become available on your static file server.
 You probably don't want this, as parts of your backend logic will be exposed, posing a **potential security vulnerability**.
 
-From _v0.27_ until _v0.100_, django-components shiped with an additional installable app _django_components.**safer_staticfiles**_.
+From _v0.27_ until _v0.100_, django-components shipped with an additional installable app _django_components.**safer_staticfiles**_.
 It was a drop-in replacement for _django.contrib.staticfiles_.
 Its behavior is 100% identical except it ignores .py and .html files, meaning these will not end up on your static files server.
 To use it, add it to INSTALLED_APPS and remove _django.contrib.staticfiles_.

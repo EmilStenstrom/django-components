@@ -77,14 +77,14 @@ class ComponentsFileSystemFinder(BaseFinder):
                 if prefix.endswith("/"):
                     errors.append(
                         Error(
-                            "The prefix %r in the COMPONENTS.dirs setting must " "not end with a slash." % prefix,
+                            "The prefix %r in the COMPONENTS.dirs setting must not end with a slash." % prefix,
                             id="staticfiles.E003",
                         )
                     )
             elif not os.path.isdir(root):
                 errors.append(
                     Warning(
-                        f"The directory '{root}' in the COMPONENTS.dirs setting " f"does not exist.",
+                        f"The directory '{root}' in the COMPONENTS.dirs setting does not exist.",
                         id="components.W004",
                     )
                 )
