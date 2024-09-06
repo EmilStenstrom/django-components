@@ -78,11 +78,11 @@ TEMPLATES = [
 ]
 
 STATICFILES_FINDERS = [
-	# Default finders
+    # Default finders
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-	# Django components
-	"django_components.finders.ComponentsFileSystemFinder",
+    # Django components
+    "django_components.finders.ComponentsFileSystemFinder",
 ]
 
 WSGI_APPLICATION = "sampleproject.wsgi.application"

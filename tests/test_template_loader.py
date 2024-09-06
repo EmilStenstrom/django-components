@@ -61,18 +61,22 @@ class TemplateLoaderTest(BaseTestCase):
         warn_inputs = [warn.args[0] for warn in mock_warning.call_args_list]
         assert "Got <class 'int'> : 3" in warn_inputs[0]
 
-    @override_settings(COMPONENTS={
-        "dirs": ["components"],
-    })
+    @override_settings(
+        COMPONENTS={
+            "dirs": ["components"],
+        }
+    )
     def test_get_dirs__componenents_dirs__raises_on_relative_path_1(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
         with self.assertRaisesMessage(ValueError, "COMPONENTS.dirs must contain absolute paths"):
             loader.get_dirs()
 
-    @override_settings(COMPONENTS={
-        "dirs": [("with_alias", "components")],
-    })
+    @override_settings(
+        COMPONENTS={
+            "dirs": [("with_alias", "components")],
+        }
+    )
     def test_get_dirs__component_dirs__raises_on_relative_path_2(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
