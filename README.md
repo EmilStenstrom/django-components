@@ -71,6 +71,13 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
+**Version 0.97**
+- Fixed template caching. You can now also manually create cached templates with [`cached_template()`](#template_cache_size---tune-the-template-cache)
+- The previously undocumented `get_template` was made private.
+- In it's place, there's a new `get_template`, which supersedes `get_template_string` (will be removed in v1). The new `get_template` is the same as `get_template_string`, except
+it allows to return either a string or a Template instance.
+- You now must use only one of `template`, `get_template`, `template_name`, or `get_template_name`.
+
 **Version 0.96**
 - Run-time type validation for Python 3.11+ - If the `Component` class is typed, e.g. `Component[Args, Kwargs, ...]`, the args, kwargs, slots, and data are validated against the given types. (See [Runtime input validation with types](#runtime-input-validation-with-types))
 - Render hooks - Set `on_render_before` and `on_render_after` methods on `Component` to intercept or modify the template or context before rendering, or the rendered result afterwards. (See [Component hooks](#component-hooks))
@@ -93,7 +100,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 🚨📢 **Version 0.92**
 - BREAKING CHANGE: `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](#modifying-the-view-class))
 
-- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template_string` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](#accessing-data-passed-to-the-component))
+- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](#accessing-data-passed-to-the-component))
 
 - Typing: `Component` class supports generics that specify types for `Component.render` (See [Adding type hints with Generics](#adding-type-hints-with-generics))
 
@@ -383,11 +390,13 @@ from django_components import Component, register
 @register("calendar")
 class Calendar(Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir
-    # will be automatically found. To customize which template to use based on context
-    # you can override method `get_template_name` instead of specifying `template_name`.
+    # will be automatically found.
     #
     # `template_name` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
     template_name = "template.html"
+    # Or
+    def get_template_name(context):
+        return f"template-{context['name']}.html"
 
     # This component takes one parameter, a date string to show in the template
     def get_context_data(self, date):
@@ -1742,7 +1751,7 @@ When you call `Component.render` or `Component.render_to_response`, the inputs t
 This means that you can use `self.input` inside:
 - `get_context_data`
 - `get_template_name`
-- `get_template_string`
+- `get_template`
 
 `self.input` is defined only for the duration of `Component.render`, and raises `RuntimeError` when called outside of this.
 
@@ -3168,6 +3177,26 @@ By default the cache holds 128 component templates in memory, which should be en
 COMPONENTS = {
     "template_cache_size": 256,
 }
+```
+
+If you want add templates to the cache yourself, you can use `cached_template()`:
+
+```py
+from django_components import cached_template
+
+cached_template("Variable: {{ variable }}")
+
+# You can optionally specify Template class, and other Template inputs:
+class MyTemplate(Template):
+    pass
+
+cached_template(
+    "Variable: {{ variable }}",
+    template_cls=MyTemplate,
+    name=...
+    origin=...
+    engine=...
+)
 ```
 
 ### `context_behavior` - Make components isolated (or not)

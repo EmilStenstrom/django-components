@@ -434,7 +434,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_template_cannot_have_multiple_default_slots(self):
         class BadComponent(Component):
-            def get_template(self, context, template_name: Optional[str] = None) -> Template:
+            def get_template(self, context):
                 template_str: types.django_html = """
                     {% load django_components %}
                     <div>

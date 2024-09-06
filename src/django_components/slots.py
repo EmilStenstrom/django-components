@@ -3,6 +3,7 @@ import json
 import re
 from collections import deque
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -27,7 +28,7 @@ from django.template.defaulttags import CommentNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.app_settings import ContextBehavior
+from django_components.app_settings import ContextBehavior, app_settings
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
     _INJECT_CONTEXT_KEY_PREFIX,
@@ -37,6 +38,7 @@ from django_components.context import (
 from django_components.expression import RuntimeKwargs, is_identifier
 from django_components.logger import trace_msg
 from django_components.node import BaseNode, NodeTraverse, nodelist_has_content, walk_nodelist
+from django_components.utils import lazy_cache
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry
@@ -332,9 +334,13 @@ class FillNode(BaseNode):
         return value
 
 
+# NOTE: There may be more components per template, so using `app_settings.TEMPLATE_CACHE_SIZE`
+# is not entirely correct. However, for now it's not worth it adding a separate setting
+# to control this cache separately. So we use `TEMPLATE_CACHE_SIZE` so the cache is bounded.
+@lazy_cache(lambda: lru_cache(maxsize=app_settings.TEMPLATE_CACHE_SIZE))
 def parse_slot_fill_nodes_from_component_nodelist(
-    component_nodelist: NodeList,
-    ComponentNodeCls: Type[Node],
+    nodes: Tuple[Node, ...],
+    ignored_nodes: Tuple[Type[Node]],
 ) -> List[FillNode]:
     """
     Given a component body (`django.template.NodeList`), find all slot fills,
@@ -355,12 +361,12 @@ def parse_slot_fill_nodes_from_component_nodelist(
     and `fill "second_fill"`.
     """
     fill_nodes: List[FillNode] = []
-    if nodelist_has_content(component_nodelist):
+    if nodelist_has_content(nodes):
         for parse_fn in (
             _try_parse_as_default_fill,
             _try_parse_as_named_fill_tag_set,
         ):
-            curr_fill_nodes = parse_fn(component_nodelist, ComponentNodeCls)
+            curr_fill_nodes = parse_fn(nodes, ignored_nodes)
             if curr_fill_nodes:
                 fill_nodes = curr_fill_nodes
                 break
@@ -375,12 +381,12 @@ def parse_slot_fill_nodes_from_component_nodelist(
 
 
 def _try_parse_as_named_fill_tag_set(
-    nodelist: NodeList,
-    ComponentNodeCls: Type[Node],
+    nodes: Tuple[Node, ...],
+    ignored_nodes: Tuple[Type[Node]],
 ) -> List[FillNode]:
     result = []
     seen_names: Set[str] = set()
-    for node in nodelist:
+    for node in nodes:
         if isinstance(node, FillNode):
             # If the fill name was defined statically, then check for no duplicates.
             maybe_fill_name = node.kwargs.kwargs.get(SLOT_NAME_KWARG)
@@ -402,15 +408,15 @@ def _try_parse_as_named_fill_tag_set(
 
 
 def _try_parse_as_default_fill(
-    nodelist: NodeList,
-    ComponentNodeCls: Type[Node],
+    nodes: Tuple[Node, ...],
+    ignored_nodes: Tuple[Type[Node]],
 ) -> List[FillNode]:
-    nodes_stack: List[Node] = list(nodelist)
+    nodes_stack: List[Node] = list(nodes)
     while nodes_stack:
         node = nodes_stack.pop()
         if isinstance(node, FillNode):
             return []
-        elif isinstance(node, ComponentNodeCls):
+        elif isinstance(node, ignored_nodes):
             # Stop searching here, as fill tags are permitted inside component blocks
             # embedded within a default fill node.
             continue
@@ -419,7 +425,7 @@ def _try_parse_as_default_fill(
     else:
         return [
             FillNode(
-                nodelist=nodelist,
+                nodelist=NodeList(nodes),
                 kwargs=RuntimeKwargs(
                     {
                         # Wrap the default slot name in quotes so it's treated as FilterExpression

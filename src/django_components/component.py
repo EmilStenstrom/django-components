@@ -63,6 +63,7 @@ from django_components.slots import (
     resolve_fill_nodes,
     resolve_slots,
 )
+from django_components.template import cached_template
 from django_components.utils import gen_id, validate_typed_dict, validate_typed_tuple
 
 # TODO_REMOVE_IN_V1 - Users should use top-level import instead
@@ -154,10 +155,42 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
     # non-null return.
     _class_hash: ClassVar[int]
 
-    template_name: ClassVar[Optional[str]] = None
-    """Relative filepath to the Django template associated with this component."""
-    template: Optional[str] = None
-    """Inlined Django template associated with this component."""
+    template_name: Optional[str] = None
+    """
+    Filepath to the Django template associated with this component.
+
+    The filepath must be relative to either the file where the component class was defined,
+    or one of the roots of `STATIFILES_DIRS`.
+
+    Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+    """
+
+    def get_template_name(self, context: Context) -> Optional[str]:
+        """
+        Filepath to the Django template associated with this component.
+
+        The filepath must be relative to either the file where the component class was defined,
+        or one of the roots of `STATIFILES_DIRS`.
+
+        Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+        """
+        return None
+
+    template: Optional[Union[str, Template]] = None
+    """
+    Inlined Django template associated with this component. Can be a plain string or a Template instance.
+
+    Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+    """
+
+    def get_template(self, context: Context) -> Optional[Union[str, Template]]:
+        """
+        Inlined Django template associated with this component. Can be a plain string or a Template instance.
+
+        Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+        """
+        return None
+
     js: Optional[str] = None
     """Inlined JS associated with this component."""
     css: Optional[str] = None
@@ -274,28 +307,55 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
     def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
         return cast(DataType, {})
 
-    def get_template_name(self, context: Context) -> Optional[str]:
-        return self.template_name
-
-    def get_template_string(self, context: Context) -> Optional[str]:
-        return self.template
-
     # NOTE: When the template is taken from a file (AKA specified via `template_name`),
     # then we leverage Django's template caching. This means that the same instance
     # of Template is reused. This is important to keep in mind, because the implication
     # is that we should treat Templates AND their nodelists as IMMUTABLE.
-    def get_template(self, context: Context) -> Template:
-        template_string = self.get_template_string(context)
-        if template_string is not None:
-            return Template(template_string)
+    def _get_template(self, context: Context) -> Template:
+        # Resolve template name
+        template_name = self.template_name
+        if self.template_name is not None:
+            if self.get_template_name(context) is not None:
+                raise ImproperlyConfigured(
+                    "Received non-null value from both 'template_name' and 'get_template_name' in"
+                    f" Component {type(self).__name__}. Only one of the two must be set."
+                )
+        else:
+            template_name = self.get_template_name(context)
 
-        template_name = self.get_template_name(context)
+        # Resolve template str
+        template_input = self.template
+        if self.template is not None:
+            if self.get_template(context) is not None:
+                raise ImproperlyConfigured(
+                    "Received non-null value from both 'template' and 'get_template' in"
+                    f" Component {type(self).__name__}. Only one of the two must be set."
+                )
+        else:
+            # TODO_REMOVE_IN_V1 - Remove `self.get_template_string` in v1
+            template_getter = getattr(self, "get_template_string", self.get_template)
+            template_input = template_getter(context)
+
+        if template_name is not None and template_input is not None:
+            raise ImproperlyConfigured(
+                f"Received both 'template_name' and 'template' in Component {type(self).__name__}."
+                " Only one of the two must be set."
+            )
+
         if template_name is not None:
             return get_template(template_name).template
 
+        elif template_input is not None:
+            # We got template string, so we convert it to Template
+            if isinstance(template_input, str):
+                template: Template = cached_template(template_input)
+            else:
+                template = template_input
+
+            return template
+
         raise ImproperlyConfigured(
             f"Either 'template_name' or 'template' must be set for Component {type(self).__name__}."
-            f"Note: this attribute is not required if you are overriding the class's `get_template*()` methods."
         )
 
     def render_dependencies(self) -> SafeString:
@@ -606,7 +666,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                 self.on_render_before(context, template)
 
                 rendered_component = template.render(context)
-
                 new_output = self.on_render_after(context, template, rendered_component)
                 rendered_component = new_output if new_output is not None else rendered_component
 
@@ -884,7 +943,7 @@ def _prepare_template(
         # an error when we try to use `{% include %}` tag inside the template?
         # See https://github.com/EmilStenstrom/django-components/issues/580
         # And https://github.com/EmilStenstrom/django-components/issues/634
-        template = component.get_template(context)
+        template = component._get_template(context)
         _monkeypatch_template(template)
 
         # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE

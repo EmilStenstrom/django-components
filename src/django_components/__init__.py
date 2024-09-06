@@ -36,6 +36,7 @@ from django_components.tag_formatter import (
     component_formatter as component_formatter,
     component_shorthand_formatter as component_shorthand_formatter,
 )
+from django_components.template import cached_template as cached_template
 import django_components.types as types
 from django_components.types import (
     EmptyTuple as EmptyTuple,

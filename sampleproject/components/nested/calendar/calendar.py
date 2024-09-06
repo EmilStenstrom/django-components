@@ -3,10 +3,14 @@ from django_components import Component, register
 
 @register("calendar_nested")
 class CalendarNested(Component):
-    # Note that Django will look for templates inside `[your apps]/components` dir and
-    # `[project root]/components` dir. To customize which template to use based on context
-    # you can override def get_template_name() instead of specifying the below variable.
+    # Templates inside `[your apps]/components` dir and `[project root]/components` dir
+    # will be automatically found.
+    #
+    # `template_name` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
     template_name = "calendar.html"
+    # Or
+    # def get_template_name(context):
+    #     return f"template-{context['name']}.html"
 
     # This component takes one parameter, a date string to show in the template
     def get_context_data(self, date):
