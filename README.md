@@ -76,6 +76,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
     - `django_components.safer_staticfiles` app was removed. It is no longer needed.
     - Installation change: Instead of defining component directories in `STATICFILES_DIRS`, set them to `COMPONENTS.dirs`.
     - Installation change: You now must define `STATICFILES_FINDERS`
+    - [See here how to migrate your settings.py](https://github.com/EmilStenstrom/django-components/pull/652/files#diff-59eb658f2c5573a64306ac0adc96405344e029fd2df51573555c82e44b4d7062)
 - Beside the top-level `/components` directory, you can now define also app-level components dirs, e.g. `[app]/components`
 
 **Version 0.97**
