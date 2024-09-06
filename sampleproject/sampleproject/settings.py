@@ -88,11 +88,11 @@ STATICFILES_FINDERS = [
 WSGI_APPLICATION = "sampleproject.wsgi.application"
 
 COMPONENTS = {
-#    "autodiscover": True,
+    #    "autodiscover": True,
     "dirs": [BASE_DIR / "components"],
-#    "libraries": [],
-#    "template_cache_size": 128,
-#    "context_behavior": "isolated",  # "django" | "isolated"
+    #    "libraries": [],
+    #    "template_cache_size": 128,
+    #    "context_behavior": "isolated",  # "django" | "isolated"
 }
 
 
