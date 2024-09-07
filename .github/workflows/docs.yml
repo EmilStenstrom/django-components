@@ -3,8 +3,8 @@ name: Docs - build & deploy
 on:
   push:
     tags:
-      # for versions before 1.0.0
-      - '[0-9]+.[0-9]+'
+      # for versions 0.### (before 1.0.0)
+      - '0.[0-9]+'
       # after 1.0.0
       - '[0-9]+.[0-9]+.[0-9]+'
     branches: 
@@ -47,23 +47,12 @@ jobs:
 
       - name: Configure git
         run: |
+          # required for "mike deploy" command below which pushes to gh-pages
           git config user.name github-actions
           git config user.email github-actions@github.com
 
-      - name: Print variables for debugging
-        # XXX this step may be removed
-        # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/accessing-contextual-information-about-workflow-runs#github-context
-        run: |
-          # env vars used in this action
-          echo 'event_name  : ' ${{ github.event_name }}
-          echo 'event.action: ' ${{ github.event.action }}
-          echo 'ref         : ' ${{ github.ref }}
-          echo 'ref_name    : ' ${{ github.ref_name }}
-          echo 'ref_type    : ' ${{ github.ref_type }}
-          echo 'repository  : ' ${{ github.repository }}
-
       # Conditions make sure to select the right step, depending on the job trigger.
-      # Only one of the steps below will run. The others will be skipped.
+      # Only one of the steps below will run at a time. The others will be skipped.
 
       - name: Check docs in pull requests with strict mode
         if: github.event_name == 'pull_request'
@@ -81,15 +70,11 @@ jobs:
       - name: Build & deploy docs for a new tag
         if: github.ref_type == 'tag' && github.event_name == 'push'
         run: |
-          # XXX next line removes docs wrongly deployed under latest identifier; remove once latest is used only as alias
-          hatch run docs:mike delete --push latest
           hatch run docs:mike deploy --push --update-aliases ${{ github.ref_name }} latest
           hatch run docs:mike set-default latest --push
 
       - name: Build & deploy docs for a new release
         if: github.event_name == 'release'
         run: |
-          # XXX next line removes docs wrongly deployed under latest identifier; remove once latest is used only as alias
-          hatch run docs:mike delete --push latest
           hatch run docs:mike deploy --push --update-aliases ${{ github.ref_name }} latest
           hatch run docs:mike set-default latest --push
