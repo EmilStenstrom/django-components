@@ -58,7 +58,7 @@ cssselect2==0.7.0
     # via cairosvg
 defusedxml==0.7.1
     # via cairosvg
-django==5.1
+django==5.1.1
     # via hatch.envs.docs
 ghp-import==2.1.0
     # via mkdocs
@@ -130,7 +130,7 @@ mkdocs-get-deps==0.2.0
     # via mkdocs
 mkdocs-git-authors-plugin==0.9.0
     # via hatch.envs.docs
-mkdocs-git-revision-date-localized-plugin==1.2.7
+mkdocs-git-revision-date-localized-plugin==1.2.8
     # via hatch.envs.docs
 mkdocs-include-markdown-plugin==6.2.2
     # via hatch.envs.docs
@@ -144,7 +144,7 @@ mkdocs-minify-plugin==0.8.0
     # via hatch.envs.docs
 mkdocs-redirects==1.2.1
     # via hatch.envs.docs
-mkdocstrings==0.25.2
+mkdocstrings==0.26.1
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
@@ -166,7 +166,7 @@ pillow==10.4.0
     # via
     #   cairosvg
     #   mkdocs-material
-platformdirs==4.2.2
+platformdirs==4.3.2
     # via
     #   black
     #   mkdocs-get-deps
@@ -218,7 +218,7 @@ urllib3==2.2.2
     # via requests
 verspec==0.1.0
     # via mike
-watchdog==5.0.0
+watchdog==5.0.2
     # via mkdocs
 wcmatch==9.0
     # via mkdocs-include-markdown-plugin
