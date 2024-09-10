@@ -1,3 +1,4 @@
+import re
 import os
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -140,8 +141,17 @@ class ComponentsFileSystemFinder(BaseFinder):
                         yield path, storage
 
     def _is_path_valid(self, path: str) -> bool:
-        allowed_patterns = app_settings.STATIC_FILES_ALLOWED
-        forbidden_patterns = app_settings.STATIC_FILES_FORBIDDEN
+        # Normalize patterns to regexes
+        allowed_patterns = [
+            # Convert suffixes like `.html` to regex `\.html$`
+            re.compile(rf"\{p}$") if isinstance(p, str) else p
+            for p in app_settings.STATIC_FILES_ALLOWED
+        ]
+        forbidden_patterns = [
+            # Convert suffixes like `.html` to regex `\.html$`
+            re.compile(rf"\{p}$") if isinstance(p, str) else p
+            for p in app_settings.STATIC_FILES_FORBIDDEN
+        ]
         return (
             any_regex_match(path, allowed_patterns)
             and no_regex_match(path, forbidden_patterns)

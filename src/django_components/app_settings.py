@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
@@ -127,21 +128,37 @@ class AppSettings:
         return self.settings.get("template_cache_size", 128)
 
     @property
-    def STATIC_FILES_ALLOWED(self) -> List[str]:
+    def STATIC_FILES_ALLOWED(self) -> List[Union[str, re.Pattern]]:
         default_static_files = [
-            # Allow suffixes: .js, .css
-            r"\.(?:js|css)$",
+            "css",
+            "js",
+            # Images - See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types#common_image_file_types
+            ".apng", ".png",  # PNG
+            ".avif",
+            ".gif",
+            ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp",  # JPEG
+            ".svg",
+            ".webp",
+            ".bmp",
+            ".ico", ".cur",  # ICO
+            ".tif", ".tiff",
+            # Fonts - See https://stackoverflow.com/q/30572159/9788634
+            ".eot",
+            ".ttf",
+            ".woff",
+            ".otf",
+            ".svg",
         ]
         return self.settings.get("static_files_allowed", default_static_files)
 
     @property
-    def STATIC_FILES_FORBIDDEN(self) -> List[str]:
+    def STATIC_FILES_FORBIDDEN(self) -> List[Union[str, re.Pattern]]:
         default_forbidden_static_files = [
-            # Exclude suffixes: .html, .django, .dj, .tpl, .py, .pyc
-            #
-            # NOTE: .django, .dj, and .tpl are alterantive suffixes that may be used for django templates.
+            ".html",
             # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
-            r"\.(?:html|django|dj|tpl|py|pyc)$",
+            ".django", ".dj", ".tpl",
+            # Python files
+            ".py", ".pyc",
         ]
         return self.settings.get("forbidden_static_files", default_forbidden_static_files)
 

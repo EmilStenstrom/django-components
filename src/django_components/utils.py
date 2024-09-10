@@ -214,15 +214,15 @@ def lazy_cache(
     return decorator
 
 
-def any_regex_match(string: str, patterns: List[str]) -> bool:
+def any_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
     return any(
-        re.compile(p).search(string) is not None
+        p.search(string) is not None
         for p in patterns
     )
 
 
-def no_regex_match(string: str, patterns: List[str]) -> bool:
+def no_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
     return all(
-        re.compile(p).search(string) is None
+        p.search(string) is None
         for p in patterns
     )

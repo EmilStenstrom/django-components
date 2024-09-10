@@ -205,9 +205,9 @@ That said, our prefered way is to keep the files of a component close together b
 This means that files containing backend logic, such as Python modules and HTML templates, live in the same directory as static files, e.g. JS and CSS.
 
 From v0.100 onwards, we keep component files (as defined by [`COMPONENTS.dirs`](#dirs) and [`COMPONENTS.app_dirs`](#app_dirs)) separate from the rest of the static
-files (defined by `STATICFILES_DIRS`). That way, the Python and HTML files are NOT exposed by the server. Only the static JS and CSS.
+files (defined by `STATICFILES_DIRS`). That way, the Python and HTML files are NOT exposed by the server. Only the static JS, CSS, and [other common formats](#static_files_allowed).
 
-> NOTE: If you need to expose different file types than just `.js` and `.css`, you can configure these with [`COMPONENTS.static_files_allowed`](#static_files_allowed)
+> NOTE: If you need to expose different file formats, you can configure these with [`COMPONENTS.static_files_allowed`](#static_files_allowed)
 and [`COMPONENTS.static_files_forbidden`](#static_files_forbidden).
 
 <!-- # TODO_REMOVE_IN_V1 - Remove mentions of safer_staticfiles in V1 -->
@@ -3264,19 +3264,33 @@ are treated as static files.
 If a file is matched against any of the patterns, it's considered a static file. Such files are collected
 when running `collectstatic`, and can be accessed under the static file endpoint.
 
-By default, only JS and CSS files are considered static files:
+You can also pass in compiled regexes (`re.Pattern`) for more advanced patterns.
+
+By default, JS, CSS, and common image and font file formats are considered static files:
 
 ```python
 COMPONENTS = {
     "static_files_allowed": [
-        r"\.(?:js|css)$",  # Allow suffixes: .js, .css
+            "css",
+            "js",
+            # Images
+            ".apng", ".png",
+            ".avif",
+            ".gif",
+            ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp",  # JPEG
+            ".svg",
+            ".webp", ".bmp",
+            ".ico", ".cur",  # ICO
+            ".tif", ".tiff",
+            # Fonts
+            ".eot", ".ttf", ".woff", ".otf", ".svg",
     ],
 }
 ```
 
 ### `static_files_forbidden`
 
-A list of regex patterns (as strings) that define which files within `COMPONENTS.dirs` and `COMPONENTS.app_dirs`
+A list of suffixes that define which files within `COMPONENTS.dirs` and `COMPONENTS.app_dirs`
 will NEVER be treated as static files.
 
 If a file is matched against any of the patterns, it will never be considered a static file, even if the file matches
@@ -3284,13 +3298,14 @@ a pattern in [`COMPONENTS.static_files_allowed`](#static_files_allowed).
 
 Use this setting together with `COMPONENTS.static_files_allowed` for a fine control over what files will be exposed.
 
+You can also pass in compiled regexes (`re.Pattern`) for more advanced patterns.
+
 By default, any HTML and Python are considered NOT static files:
 
 ```python
 COMPONENTS = {
     "static_files_forbidden": [
-        # Exclude suffixes: .html, .django, .dj, .tpl, .py, .pyc
-        r"\.(?:html|django|dj|tpl|py|pyc)$",
+        ".html", ".django", ".dj", ".tpl", ".py", ".pyc",
     ],
 }
 ```
