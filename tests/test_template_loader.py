@@ -51,7 +51,7 @@ class TemplateLoaderTest(BaseTestCase):
             ("with_alias", Path(__file__).parent.resolve() / "components"),
             ("too_many", Path(__file__).parent.resolve() / "components", Path(__file__).parent.resolve()),
             ("with_not_str_alias", 3),
-        ]  # noqa
+        ],  # noqa
     )
     @patch("django_components.template_loader.logger.warning")
     def test_get_dirs__components_dirs(self, mock_warning: MagicMock):
@@ -76,7 +76,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
         COMPONENTS={
             "dirs": [],
-        }
+        },
     )
     def test_get_dirs__components_dirs__empty(self):
         dirs = get_dirs()
@@ -85,7 +85,9 @@ class TemplateLoaderTest(BaseTestCase):
             sorted(
                 [
                     # App-level /components dir
-                    Path(__file__).parent.resolve() / "test_app" / "components",
+                    Path(__file__).parent.resolve()
+                    / "test_app"
+                    / "components",
                 ]
             ),
         )
@@ -94,7 +96,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
         COMPONENTS={
             "dirs": ["components"],
-        }
+        },
     )
     def test_get_dirs__componenents_dirs__raises_on_relative_path_1(self):
         current_engine = Engine.get_default()
@@ -106,7 +108,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
         COMPONENTS={
             "dirs": [("with_alias", "components")],
-        }
+        },
     )
     def test_get_dirs__component_dirs__raises_on_relative_path_2(self):
         current_engine = Engine.get_default()
@@ -118,7 +120,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
         COMPONENTS={
             "app_dirs": ["custom_comps_dir"],
-        }
+        },
     )
     def test_get_dirs__app_dirs(self):
         current_engine = Engine.get_default()
@@ -140,7 +142,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
         COMPONENTS={
             "app_dirs": [],
-        }
+        },
     )
     def test_get_dirs__app_dirs_empty(self):
         current_engine = Engine.get_default()
@@ -151,7 +153,8 @@ class TemplateLoaderTest(BaseTestCase):
             sorted(
                 [
                     # Top-level /components dir
-                    Path(__file__).parent.resolve() / "components",
+                    Path(__file__).parent.resolve()
+                    / "components",
                 ]
             ),
         )
@@ -160,7 +163,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
         COMPONENTS={
             "app_dirs": ["this_dir_does_not_exist"],
-        }
+        },
     )
     def test_get_dirs__app_dirs_not_found(self):
         current_engine = Engine.get_default()
@@ -171,7 +174,8 @@ class TemplateLoaderTest(BaseTestCase):
             sorted(
                 [
                     # Top-level /components dir
-                    Path(__file__).parent.resolve() / "components",
+                    Path(__file__).parent.resolve()
+                    / "components",
                 ]
             ),
         )

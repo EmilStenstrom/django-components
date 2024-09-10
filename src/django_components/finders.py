@@ -1,5 +1,5 @@
-import re
 import os
+import re
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from django.contrib.staticfiles.finders import BaseFinder
@@ -152,7 +152,4 @@ class ComponentsFileSystemFinder(BaseFinder):
             re.compile(rf"\{p}$") if isinstance(p, str) else p
             for p in app_settings.STATIC_FILES_FORBIDDEN
         ]
-        return (
-            any_regex_match(path, allowed_patterns)
-            and no_regex_match(path, forbidden_patterns)
-        )
+        return any_regex_match(path, allowed_patterns) and no_regex_match(path, forbidden_patterns)

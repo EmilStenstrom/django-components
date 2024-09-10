@@ -133,15 +133,22 @@ class AppSettings:
             "css",
             "js",
             # Images - See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types#common_image_file_types
-            ".apng", ".png",  # PNG
+            ".apng",
+            ".png",  # PNG
             ".avif",
             ".gif",
-            ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp",  # JPEG
+            ".jpg",
+            ".jpeg",
+            ".jfif",
+            ".pjpeg",
+            ".pjp",  # JPEG
             ".svg",
             ".webp",
             ".bmp",
-            ".ico", ".cur",  # ICO
-            ".tif", ".tiff",
+            ".ico",
+            ".cur",  # ICO
+            ".tif",
+            ".tiff",
             # Fonts - See https://stackoverflow.com/q/30572159/9788634
             ".eot",
             ".ttf",
@@ -156,9 +163,12 @@ class AppSettings:
         default_forbidden_static_files = [
             ".html",
             # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
-            ".django", ".dj", ".tpl",
+            ".django",
+            ".dj",
+            ".tpl",
             # Python files
-            ".py", ".pyc",
+            ".py",
+            ".pyc",
         ]
         return self.settings.get("forbidden_static_files", default_forbidden_static_files)
 

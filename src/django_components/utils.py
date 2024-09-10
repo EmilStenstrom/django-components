@@ -215,14 +215,8 @@ def lazy_cache(
 
 
 def any_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
-    return any(
-        p.search(string) is not None
-        for p in patterns
-    )
+    return any(p.search(string) is not None for p in patterns)
 
 
 def no_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
-    return all(
-        p.search(string) is None
-        for p in patterns
-    )
+    return all(p.search(string) is None for p in patterns)

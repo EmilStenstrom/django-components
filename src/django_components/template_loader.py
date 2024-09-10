@@ -48,7 +48,8 @@ class Loader(FilesystemLoader):
         is_legacy_paths = (
             # Use value of `STATICFILES_DIRS` ONLY if `COMPONENT.dirs` not set
             not getattr(settings, "COMPONENTS", {}).get("dirs", None) is not None
-            and hasattr(settings, "STATICFILES_DIRS") and settings.STATICFILES_DIRS
+            and hasattr(settings, "STATICFILES_DIRS")
+            and settings.STATICFILES_DIRS
         )
         if is_legacy_paths:
             # NOTE: For STATICFILES_DIRS, we use the defaults even for empty list.
