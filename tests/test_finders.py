@@ -3,7 +3,9 @@ from pathlib import Path
 from django.contrib.staticfiles.management.commands.collectstatic import Command
 from django.test import SimpleTestCase, override_settings
 
-from .django_test_setup import *  # NOQA
+from .django_test_setup import setup_test_config
+
+setup_test_config({"autodiscover": False})
 
 
 # This subclass allows us to call the `collectstatic` command from within Python.
@@ -62,27 +64,27 @@ common_settings = {
     "STATIC_URL": "static/",
     "STATIC_ROOT": "staticfiles",
     "ROOT_URLCONF": __name__,
-    "SECRET_KEY": "secret",
-    "COMPONENTS": {
-        "dirs": [Path(__file__).resolve().parent / "components"],
-    },
     "INSTALLED_APPS": ("django_components", "django.contrib.staticfiles"),
+}
+COMPONENTS = {
+    "dirs": [Path(__file__).resolve().parent / "components"],
 }
 
 
-# Check that the component files are NOT loaded when our finder is NOT added
-@override_settings(
-    **common_settings,
-    STATICFILES_FINDERS=[
-        # Default finders
-        "django.contrib.staticfiles.finders.FileSystemFinder",
-        "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-    ],
-)
-class OrigStaticFileTests(SimpleTestCase):
+class StaticFilesFinderTests(SimpleTestCase):
+    @override_settings(
+        **common_settings,
+        COMPONENTS=COMPONENTS,
+        STATICFILES_FINDERS=[
+            # Default finders
+            "django.contrib.staticfiles.finders.FileSystemFinder",
+            "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+        ],
+    )
     def test_python_and_html_included(self):
         collected = do_collect()
 
+        # Check that the component files are NOT loaded when our finder is NOT added
         self.assertNotIn("staticfiles/staticfiles.css", collected["modified"])
         self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
         self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
@@ -91,24 +93,114 @@ class OrigStaticFileTests(SimpleTestCase):
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
 
-
-# Check that our staticfiles_finder finds the files and OMITS .py and .html files
-@override_settings(
-    **common_settings,
-    STATICFILES_FINDERS=[
-        # Default finders
-        "django.contrib.staticfiles.finders.FileSystemFinder",
-        "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-        # Django components
-        "django_components.finders.ComponentsFileSystemFinder",
-    ],
-)
-class SaferStaticFileTests(SimpleTestCase):
+    @override_settings(
+        **common_settings,
+        COMPONENTS=COMPONENTS,
+        STATICFILES_FINDERS=[
+            # Default finders
+            "django.contrib.staticfiles.finders.FileSystemFinder",
+            "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+            # Django components
+            "django_components.finders.ComponentsFileSystemFinder",
+        ],
+    )
     def test_python_and_html_omitted(self):
         collected = do_collect()
 
+        # Check that our staticfiles_finder finds the files and OMITS .py and .html files
         self.assertIn("staticfiles/staticfiles.css", collected["modified"])
         self.assertIn("staticfiles/staticfiles.js", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
+
+        self.assertListEqual(collected["unmodified"], [])
+        self.assertListEqual(collected["post_processed"], [])
+
+    @override_settings(
+        **common_settings,
+        COMPONENTS={
+            **COMPONENTS,
+            "static_files_allowed": [
+                r"\.(?:js)$",
+            ],
+            "forbidden_static_files": [],
+        },
+        STATICFILES_FINDERS=[
+            # Default finders
+            "django.contrib.staticfiles.finders.FileSystemFinder",
+            "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+            # Django components
+            "django_components.finders.ComponentsFileSystemFinder",
+        ],
+    )
+    def test_set_static_files_allowed(self):
+        collected = do_collect()
+
+        # Check that our staticfiles_finder finds the files and OMITS .py and .html files
+        self.assertNotIn("staticfiles/staticfiles.css", collected["modified"])
+        self.assertIn("staticfiles/staticfiles.js", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
+
+        self.assertListEqual(collected["unmodified"], [])
+        self.assertListEqual(collected["post_processed"], [])
+
+    @override_settings(
+        **common_settings,
+        COMPONENTS={
+            **COMPONENTS,
+            "static_files_allowed": [
+                r".*",
+            ],
+            "forbidden_static_files": [
+                r"\.(?:js)$",
+            ],
+        },
+        STATICFILES_FINDERS=[
+            # Default finders
+            "django.contrib.staticfiles.finders.FileSystemFinder",
+            "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+            # Django components
+            "django_components.finders.ComponentsFileSystemFinder",
+        ],
+    )
+    def test_set_forbidden_files(self):
+        collected = do_collect()
+
+        # Check that our staticfiles_finder finds the files and OMITS .py and .html files
+        self.assertIn("staticfiles/staticfiles.css", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
+        self.assertIn("staticfiles/staticfiles.html", collected["modified"])
+        self.assertIn("staticfiles/staticfiles.py", collected["modified"])
+
+        self.assertListEqual(collected["unmodified"], [])
+        self.assertListEqual(collected["post_processed"], [])
+
+    @override_settings(
+        **common_settings,
+        COMPONENTS={
+            **COMPONENTS,
+            "static_files_allowed": [
+                r"\.(?:js|css)$",
+            ],
+            "forbidden_static_files": [
+                r"\.(?:js)$",
+            ],
+        },
+        STATICFILES_FINDERS=[
+            # Default finders
+            "django.contrib.staticfiles.finders.FileSystemFinder",
+            "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+            # Django components
+            "django_components.finders.ComponentsFileSystemFinder",
+        ],
+    )
+    def test_set_both_allowed_and_forbidden_files(self):
+        collected = do_collect()
+
+        # Check that our staticfiles_finder finds the files and OMITS .py and .html files
+        self.assertIn("staticfiles/staticfiles.css", collected["modified"])
+        self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
         self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
         self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
 

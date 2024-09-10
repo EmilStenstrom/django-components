@@ -100,7 +100,11 @@ class AppSettings:
 
     @property
     def DIRS(self) -> List[Union[str, Tuple[str, str]]]:
-        return self.settings.get("dirs", [])
+        return self.settings.get("dirs", [settings.BASE_DIR / "components"])
+
+    @property
+    def APP_DIRS(self) -> List[str]:
+        return self.settings.get("app_dirs", ["components"])
 
     @property
     def DYNAMIC_COMPONENT_NAME(self) -> str:
@@ -121,6 +125,25 @@ class AppSettings:
     @property
     def TEMPLATE_CACHE_SIZE(self) -> int:
         return self.settings.get("template_cache_size", 128)
+
+    @property
+    def STATIC_FILES_ALLOWED(self) -> List[str]:
+        default_static_files = [
+            # Allow suffixes: .js, .css
+            r"\.(?:js|css)$",
+        ]
+        return self.settings.get("static_files_allowed", default_static_files)
+
+    @property
+    def STATIC_FILES_FORBIDDEN(self) -> List[str]:
+        default_forbidden_static_files = [
+            # Exclude suffixes: .html, .django, .dj, .tpl, .py, .pyc
+            #
+            # NOTE: .django, .dj, and .tpl are alterantive suffixes that may be used for django templates.
+            # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
+            r"\.(?:html|django|dj|tpl|py|pyc)$",
+        ]
+        return self.settings.get("forbidden_static_files", default_forbidden_static_files)
 
     @property
     def CONTEXT_BEHAVIOR(self) -> ContextBehavior:

@@ -90,6 +90,7 @@ WSGI_APPLICATION = "sampleproject.wsgi.application"
 COMPONENTS = {
     #    "autodiscover": True,
     "dirs": [BASE_DIR / "components"],
+    #    "app_dirs": ["components"],
     #    "libraries": [],
     #    "template_cache_size": 128,
     #    "context_behavior": "isolated",  # "django" | "isolated"

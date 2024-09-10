@@ -1,8 +1,6 @@
 import os
-from fnmatch import fnmatch
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-from django.contrib.staticfiles.apps import StaticFilesConfig
 from django.contrib.staticfiles.finders import BaseFinder
 from django.contrib.staticfiles.utils import get_files
 from django.core.checks import CheckMessage, Error, Warning
@@ -11,6 +9,7 @@ from django.utils._os import safe_join
 
 from django_components.app_settings import app_settings
 from django_components.template_loader import get_dirs
+from django_components.utils import any_regex_match, no_regex_match
 
 # To keep track on which directories the finder has searched the static files.
 searched_locations = []
@@ -24,15 +23,15 @@ searched_locations = []
 # `collectstatic` command.
 class ComponentsFileSystemFinder(BaseFinder):
     """
-    A static files finder based on ``FileSystemFinder``.
+    A static files finder based on `FileSystemFinder`.
 
     Differences:
-    - This finder uses ``COMPONENTS.dirs`` setting to locate files instead of ``STATICFILES_DIRS``.
-    - This finder ignores Python and HTML files (``.py``, ``.pyc``, ``.html``, ``.django``)
-    - If ``COMPONENTS.dirs`` is not set or empty, defaults to ``settings.BASE_DIR / "components"``
+    - This finder uses `COMPONENTS.dirs` setting to locate files instead of `STATICFILES_DIRS`.
+    - Whether a file within `COMPONENTS.dirs` is considered a STATIC file is configured
+      by `COMPONENTS.static_files_allowed` and `COMPONENTS.forbidden_static_files`.
+      By default, this finder ignores Python and HTML files (`.py`, `.pyc`, `.html`, `.django`, `.dj`, `.tpl`)
+    - If `COMPONENTS.dirs` is not set, defaults to `settings.BASE_DIR / "components"`
     """
-
-    IGNORE_PATTERNS = StaticFilesConfig.ignore_patterns + ["*.html", "*.django", "*.py", "*.pyc"]
 
     def __init__(self, app_names: Any = None, *args: Any, **kwargs: Any) -> None:
         component_dirs = [str(p) for p in get_dirs()]
@@ -137,8 +136,13 @@ class ComponentsFileSystemFinder(BaseFinder):
             if os.path.isdir(root):
                 storage = self.storages[root]
                 for path in get_files(storage, ignore_patterns):
-                    if not self._is_path_ignored(path):
+                    if self._is_path_valid(path):
                         yield path, storage
 
-    def _is_path_ignored(self, path: str) -> bool:
-        return any(fnmatch(path, pattern) for pattern in self.IGNORE_PATTERNS)
+    def _is_path_valid(self, path: str) -> bool:
+        allowed_patterns = app_settings.STATIC_FILES_ALLOWED
+        forbidden_patterns = app_settings.STATIC_FILES_FORBIDDEN
+        return (
+            any_regex_match(path, allowed_patterns)
+            and no_regex_match(path, forbidden_patterns)
+        )

@@ -32,6 +32,7 @@ def setup_test_config(components: Optional[Dict] = None):
                 "NAME": ":memory:",
             }
         },
+        SECRET_KEY="secret",
     )
 
     django.setup()

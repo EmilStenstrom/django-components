@@ -45,24 +45,29 @@ class Loader(FilesystemLoader):
         component_dirs = app_settings.DIRS
 
         # TODO_REMOVE_IN_V1
-        is_legacy_paths = not component_dirs and hasattr(settings, "STATICFILES_DIRS") and settings.STATICFILES_DIRS
+        is_legacy_paths = (
+            # Use value of `STATICFILES_DIRS` ONLY if `COMPONENT.dirs` not set
+            not getattr(settings, "COMPONENTS", {}).get("dirs", None) is not None
+            and hasattr(settings, "STATICFILES_DIRS") and settings.STATICFILES_DIRS
+        )
         if is_legacy_paths:
-            component_dirs = settings.STATICFILES_DIRS
+            # NOTE: For STATICFILES_DIRS, we use the defaults even for empty list.
+            # We don't do this for COMPONENTS.dirs, so user can explicitly specify "NO dirs".
+            component_dirs = settings.STATICFILES_DIRS or [settings.BASE_DIR / "components"]
         source = "STATICFILES_DIRS" if is_legacy_paths else "COMPONENTS.dirs"
-
-        component_dirs = component_dirs or [settings.BASE_DIR / "components"]
 
         logger.debug(
             "Template loader will search for valid template dirs from following options:\n"
             + "\n".join([f" - {str(d)}" for d in component_dirs])
         )
 
-        # Add `[app]/components` to the directories
+        # Add `[app]/[APP_DIR]` to the directories. This is, by default `[app]/components`
         app_paths: List[Path] = []
         for conf in apps.get_app_configs():
-            comps_path = Path(conf.path).joinpath("components")
-            if comps_path.exists() and is_relative_to(comps_path, settings.BASE_DIR):
-                app_paths.append(comps_path)
+            for app_dir in app_settings.APP_DIRS:
+                comps_path = Path(conf.path).joinpath(app_dir)
+                if comps_path.exists() and is_relative_to(comps_path, settings.BASE_DIR):
+                    app_paths.append(comps_path)
 
         directories: Set[Path] = set(app_paths)
 
