@@ -118,7 +118,7 @@ class ComponentsFileSystemFinder(BaseFinder):
             path = path.removeprefix(prefix)
         path = safe_join(root, path)
 
-        if os.path.exists(path) and not self._is_path_ignored(path):
+        if os.path.exists(path) and self._is_path_valid(path):
             return path
         return None
 
