@@ -315,11 +315,11 @@ For a step-by-step guide on deploying production server with static files,
 
 ```py
 STATICFILES_FINDERS = [
-	# Default finders
+    # Default finders
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-	# Django components
-	"django_components.finders.ComponentsFileSystemFinder",
+    # Django components
+    "django_components.finders.ComponentsFileSystemFinder",
 ]
 ```
 
@@ -1616,17 +1616,17 @@ Consider a component with slot(s). This component may do some processing on the 
 ```py
 @register("my_comp")
 class MyComp(Component):
-	template = """
-		<div>
-			{% slot "content" default %}
-				input: {{ input }}
-			{% endslot %}
-		</div>
-	"""
+    template = """
+        <div>
+            {% slot "content" default %}
+                input: {{ input }}
+            {% endslot %}
+        </div>
+    """
 
-	def get_context_data(self, input):
-		processed_input = do_something(input)
-		return {"input": processed_input}
+    def get_context_data(self, input):
+        processed_input = do_something(input)
+        return {"input": processed_input}
 ```
 
 You may want to design a component so that users of your component can still access the `input` variable, so they don't have to recompute it.
@@ -1645,17 +1645,17 @@ To pass the data to the `slot` tag, simply pass them as keyword attributes (`key
 ```py
 @register("my_comp")
 class MyComp(Component):
-	template = """
-		<div>
-			{% slot "content" default input=input %}
-				input: {{ input }}
-			{% endslot %}
-		</div>
-	"""
+    template = """
+        <div>
+            {% slot "content" default input=input %}
+                input: {{ input }}
+            {% endslot %}
+        </div>
+    """
 
-	def get_context_data(self, input):
-		processed_input = do_something(input)
-		return {
+    def get_context_data(self, input):
+        processed_input = do_something(input)
+        return {
             "input": processed_input,
         }
 ```
@@ -1989,13 +1989,13 @@ Assuming that:
 class_from_var = "from-var"
 
 attrs = {
-	"class": "from-attrs",
-	"type": "submit",
+    "class": "from-attrs",
+    "type": "submit",
 }
 
 defaults = {
-	"class": "from-defaults",
-	"role": "button",
+    "class": "from-defaults",
+    "role": "button",
 }
 ```
 
