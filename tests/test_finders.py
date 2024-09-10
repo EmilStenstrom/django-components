@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from django.contrib.staticfiles.management.commands.collectstatic import Command
@@ -121,7 +122,7 @@ class StaticFilesFinderTests(SimpleTestCase):
         COMPONENTS={
             **COMPONENTS,
             "static_files_allowed": [
-                r"\.(?:js)$",
+                ".js",
             ],
             "forbidden_static_files": [],
         },
@@ -150,10 +151,10 @@ class StaticFilesFinderTests(SimpleTestCase):
         COMPONENTS={
             **COMPONENTS,
             "static_files_allowed": [
-                r".*",
+                re.compile(r".*"),
             ],
             "forbidden_static_files": [
-                r"\.(?:js)$",
+                re.compile(r"\.(?:js)$"),
             ],
         },
         STATICFILES_FINDERS=[
@@ -181,10 +182,11 @@ class StaticFilesFinderTests(SimpleTestCase):
         COMPONENTS={
             **COMPONENTS,
             "static_files_allowed": [
-                r"\.(?:js|css)$",
+                ".js",
+                ".css",
             ],
             "forbidden_static_files": [
-                r"\.(?:js)$",
+                ".js",
             ],
         },
         STATICFILES_FINDERS=[

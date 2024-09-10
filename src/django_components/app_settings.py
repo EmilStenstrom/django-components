@@ -130,23 +130,23 @@ class AppSettings:
     @property
     def STATIC_FILES_ALLOWED(self) -> List[Union[str, re.Pattern]]:
         default_static_files = [
-            "css",
-            "js",
-            # Images - See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types#common_image_file_types
+            ".css",
+            ".js",
+            # Images - See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types#common_image_file_types  # noqa: E501
             ".apng",
-            ".png",  # PNG
+            ".png",
             ".avif",
             ".gif",
             ".jpg",
             ".jpeg",
             ".jfif",
             ".pjpeg",
-            ".pjp",  # JPEG
+            ".pjp",
             ".svg",
             ".webp",
             ".bmp",
             ".ico",
-            ".cur",  # ICO
+            ".cur",
             ".tif",
             ".tiff",
             # Fonts - See https://stackoverflow.com/q/30572159/9788634
