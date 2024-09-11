@@ -3133,11 +3133,19 @@ COMPONENTS = {
     "multiline_tags": True,
     "reload_on_template_change": False,
     "static_files_allowed": [
-        r"\.(?:js|css)$",  # Allow suffixes: .js, .css
+        ".css",
+        ".js",
+        # Images
+        ".apng", ".png", ".avif", ".gif", ".jpg",
+        ".jpeg",  ".jfif", ".pjpeg", ".pjp", ".svg",
+        ".webp", ".bmp", ".ico", ".cur", ".tif", ".tiff",
+        # Fonts
+        ".eot", ".ttf", ".woff", ".otf", ".svg",
     ],
     "static_files_forbidden": [
-        # Exclude suffixes: .html, .django, .dj, .tpl, .py, .pyc
-        r"\.(?:html|django|dj|tpl|py|pyc)$",
+        ".html", ".django", ".dj", ".tpl",
+        # Python files
+        ".py", ".pyc",
     ],
     "tag_formatter": "django_components.component_formatter",
     "template_cache_size": 128,

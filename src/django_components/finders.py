@@ -30,7 +30,6 @@ class ComponentsFileSystemFinder(BaseFinder):
     - This finder uses `COMPONENTS.dirs` setting to locate files instead of `STATICFILES_DIRS`.
     - Whether a file within `COMPONENTS.dirs` is considered a STATIC file is configured
       by `COMPONENTS.static_files_allowed` and `COMPONENTS.forbidden_static_files`.
-      By default, this finder ignores Python and HTML files (`.py`, `.pyc`, `.html`, `.django`, `.dj`, `.tpl`)
     - If `COMPONENTS.dirs` is not set, defaults to `settings.BASE_DIR / "components"`
     """
 
