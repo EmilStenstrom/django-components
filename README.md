@@ -4,19 +4,24 @@
 
 [**Docs (Work in progress)**](https://EmilStenstrom.github.io/django-components/latest/)
 
-Create simple reusable template components in Django
+Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
 
 ## Features
 
-<!-- FIXME Links -->
+1. 🧩 **Reusability:** Allows creation of self-contained, reusable UI elements.
+2. 📦 **Encapsulation:** Each component can include its own HTML, CSS, and JavaScript.
+3. 🚀 **Server-side rendering:** Components render on the server, improving initial load times and SEO.
+4. 🐍 **Django integration:** Works within the Django ecosystem, using familiar concepts like template tags.
+5. ⚡ **Asynchronous loading:** Components can render independently opening up for integration with JS frameworks like HTMX or AlpineJS.
 
-- ✨ **Reusable components**: Create components that can be reused in different parts of your project, or even in different projects.
-- 📁 **Single file components**: Keep your Python, CSS, Javascript and HTML in one place (if you wish)
-- 🎰 **Slots**: Define slots in your components to make them more flexible.
-- 💻 **CLI**: A command line interface to help you create new components.
-- 🚀 **Wide compatibility**: Works with [modern and LTS versions of Django](https://emilstenstrom.github.io/django-components/latest/user_guide/requirements_compatibility).
-- **Load assets**: Automatically load the right CSS and Javascript files for your components, with [our middleware](https://emilstenstrom.github.io/django-components/latest/user_guide/creating_using_components/middleware).
+Potential benefits:
 
+- 🔄 Reduced code duplication
+- 🛠️ Improved maintainability through modular design
+- 🧠 Easier management of complex UIs
+- 🤝 Potential for better collaboration between frontend and backend developers
+
+Django-components can be particularly useful for larger Django projects that require a more structured approach to UI development, without necessitating a shift to a separate frontend framework.
 
 ## Summary
 
