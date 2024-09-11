@@ -160,6 +160,28 @@ class TestComponentAsView(BaseTestCase):
             response.content,
         )
 
+    def test_instantiate_component(self):
+        class MockComponentRequest(Component):
+            template = """
+                <form method="post">
+                    <input type="text" name="variable" value="{{ inner_var }}">
+                </form>
+                """
+
+            def get_context_data(self, variable):
+                return {"inner_var": variable}
+
+            def get(self, request, *args, **kwargs) -> HttpResponse:
+                return self.render_to_response(kwargs={"variable": self.name})
+
+        client = CustomClient(urlpatterns=[path("test/", MockComponentRequest("my_comp").as_view())])
+        response = client.get("/test/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="text" name="variable" value="my_comp">',
+            response.content,
+        )
+
     @parametrize_context_behavior(["django", "isolated"])
     def test_replace_slot_in_view(self):
         class MockComponentSlot(Component):
