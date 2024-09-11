@@ -252,6 +252,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         # See https://stackoverflow.com/a/76706399/9788634
         self.render_to_response = types.MethodType(self.__class__.render_to_response.__func__, self)  # type: ignore
         self.render = types.MethodType(self.__class__.render.__func__, self)  # type: ignore
+        self.as_view = types.MethodType(self.__class__.as_view.__func__, self)  # type: ignore
 
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
@@ -439,9 +440,15 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         """
         Shortcut for calling `Component.View.as_view` and passing component instance to it.
         """
+        # This method may be called as class method or as instance method.
+        # If called as class method, create a new instance.
+        if isinstance(cls, Component):
+            comp: Component = cls
+        else:
+            comp = cls()
+
         # Allow the View class to access this component via `self.component`
-        component = cls()
-        return component.View.as_view(**initkwargs, component=component)
+        return comp.View.as_view(**initkwargs, component=comp)
 
     @classmethod
     def render_to_response(
