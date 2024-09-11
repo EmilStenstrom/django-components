@@ -28,10 +28,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    # Replaced by django_components.safer_staticfiles as of v0.27:
-    #   "django.contrib.staticfiles",
+    "django.contrib.staticfiles",
     "django_components",
-    "django_components.safer_staticfiles",
     "calendarapp",
 ]
 # Application definition
@@ -79,14 +77,24 @@ TEMPLATES = [
     },
 ]
 
+STATICFILES_FINDERS = [
+    # Default finders
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    # Django components
+    "django_components.finders.ComponentsFileSystemFinder",
+]
+
 WSGI_APPLICATION = "sampleproject.wsgi.application"
 
-# COMPONENTS = {
-#    "autodiscover": True,
-#    "libraries": [],
-#    "template_cache_size": 128,
-#    "context_behavior": "isolated",  # "django" | "isolated"
-# }
+COMPONENTS = {
+    #    "autodiscover": True,
+    "dirs": [BASE_DIR / "components"],
+    #    "app_dirs": ["components"],
+    #    "libraries": [],
+    #    "template_cache_size": 128,
+    #    "context_behavior": "isolated",  # "django" | "isolated"
+}
 
 
 # Database
@@ -135,7 +143,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "components"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field

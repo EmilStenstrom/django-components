@@ -1,4 +1,5 @@
 import functools
+import re
 import sys
 import typing
 from pathlib import Path
@@ -211,3 +212,11 @@ def lazy_cache(
         return cast(TFunc, wrapper)
 
     return decorator
+
+
+def any_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
+    return any(p.search(string) is not None for p in patterns)
+
+
+def no_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
+    return all(p.search(string) is None for p in patterns)

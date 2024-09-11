@@ -284,7 +284,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
             f"No component directory found for component '{component_name}' in {file_path}"
             " If this component defines HTML, JS or CSS templates relatively to the component file,"
             " then check that the component's directory is accessible from one of the paths"
-            " specified in the Django's 'STATICFILES_DIRS' settings."
+            " specified in the Django's 'COMPONENTS.dirs' settings."
         )
         return
 
@@ -327,7 +327,7 @@ def _get_dir_path_from_component_path(
 ) -> Tuple[str, str]:
     comp_dir_path_abs = os.path.dirname(abs_component_file_path)
 
-    # From all dirs defined in settings.STATICFILES_DIRS, find one that's the parent
+    # From all dirs defined in settings.COMPONENTS.dirs, find one that's the parent
     # to the component file.
     root_dir_abs = None
     for candidate_dir in candidate_dirs:
@@ -341,7 +341,7 @@ def _get_dir_path_from_component_path(
             f"Failed to resolve template directory for component file '{abs_component_file_path}'",
         )
 
-    # Derive the path from matched STATICFILES_DIRS to the dir where the current component file is.
+    # Derive the path from matched COMPONENTS.dirs to the dir where the current component file is.
     comp_dir_path_rel = os.path.relpath(comp_dir_path_abs, candidate_dir_abs)
 
     # Return both absolute and relative paths:

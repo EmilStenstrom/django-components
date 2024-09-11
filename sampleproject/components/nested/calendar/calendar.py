@@ -6,7 +6,7 @@ class CalendarNested(Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir
     # will be automatically found.
     #
-    # `template_name` can be relative to dir where `calendar.py` is, or relative to STATICFILES_DIRS
+    # `template_name` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
     template_name = "calendar.html"
     # Or
     # def get_template_name(context):
@@ -19,10 +19,11 @@ class CalendarNested(Component):
         }
 
     def get(self, request, *args, **kwargs):
-        context = {
-            "date": request.GET.get("date", ""),
-        }
-        return self.render_to_response(context)
+        return self.render_to_response(
+            kwargs={
+                "date": request.GET.get("date", ""),
+            },
+        )
 
     class Media:
         css = "calendar.css"

@@ -11,7 +11,7 @@ def setup_test_config(components: Optional[Dict] = None):
 
     settings.configure(
         BASE_DIR=Path(__file__).resolve().parent,
-        INSTALLED_APPS=("django_components",),
+        INSTALLED_APPS=("django_components", "tests.test_app"),
         TEMPLATES=[
             {
                 "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -32,6 +32,7 @@ def setup_test_config(components: Optional[Dict] = None):
                 "NAME": ":memory:",
             }
         },
+        SECRET_KEY="secret",
     )
 
     django.setup()

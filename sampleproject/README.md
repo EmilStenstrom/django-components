@@ -54,7 +54,7 @@ even for production environment.
 Assuming that you're running the prod server with:
 
 1. `DEBUG = False` setting
-2. `"django_components.safer_staticfiles"` in the `INSTALLED_APPS`
+2. `"django.contrib.staticfiles"` in the `INSTALLED_APPS`
 
 Then Django will server only JS and CSS files under the `/static/` URL path.
 

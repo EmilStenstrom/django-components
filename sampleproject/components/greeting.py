@@ -7,8 +7,12 @@ from django_components import Component, register, types
 class Greeting(Component):
     def get(self, request, *args, **kwargs):
         slots = {"message": "Hello, world!"}
-        context = {"name": request.GET.get("name", "")}
-        return self.render_to_response(context=context, slots=slots)
+        return self.render_to_response(
+            slots=slots,
+            kwargs={
+                "name": request.GET.get("name", ""),
+            },
+        )
 
     def get_context_data(self, name, *args, **kwargs) -> Dict[str, Any]:
         return {"name": name}

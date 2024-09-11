@@ -56,15 +56,19 @@ class ComponentRegistryTest(unittest.TestCase):
         my_lib = Library()
         my_reg = ComponentRegistry(library=my_lib)
 
+        default_registry_comps_before = len(registry.all())
+
         self.assertDictEqual(my_reg.all(), {})
-        self.assertDictEqual(registry.all(), {})
 
         @register("decorated_component", registry=my_reg)
         class TestComponent(Component):
             pass
 
         self.assertDictEqual(my_reg.all(), {"decorated_component": TestComponent})
-        self.assertDictEqual(registry.all(), {})
+
+        # Check that the component was NOT added to the default registry
+        default_registry_comps_after = len(registry.all())
+        self.assertEqual(default_registry_comps_before, default_registry_comps_after)
 
     def test_simple_register(self):
         self.registry.register(name="testcomponent", component=MockComponent)

@@ -1,5 +1,6 @@
+import re
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from django.conf import settings
 
@@ -99,6 +100,14 @@ class AppSettings:
         return self.settings.get("autodiscover", True)
 
     @property
+    def DIRS(self) -> List[Union[str, Tuple[str, str]]]:
+        return self.settings.get("dirs", [settings.BASE_DIR / "components"])
+
+    @property
+    def APP_DIRS(self) -> List[str]:
+        return self.settings.get("app_dirs", ["components"])
+
+    @property
     def DYNAMIC_COMPONENT_NAME(self) -> str:
         return self.settings.get("dynamic_component_name", "dynamic")
 
@@ -117,6 +126,51 @@ class AppSettings:
     @property
     def TEMPLATE_CACHE_SIZE(self) -> int:
         return self.settings.get("template_cache_size", 128)
+
+    @property
+    def STATIC_FILES_ALLOWED(self) -> List[Union[str, re.Pattern]]:
+        default_static_files = [
+            ".css",
+            ".js",
+            # Images - See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types#common_image_file_types  # noqa: E501
+            ".apng",
+            ".png",
+            ".avif",
+            ".gif",
+            ".jpg",
+            ".jpeg",
+            ".jfif",
+            ".pjpeg",
+            ".pjp",
+            ".svg",
+            ".webp",
+            ".bmp",
+            ".ico",
+            ".cur",
+            ".tif",
+            ".tiff",
+            # Fonts - See https://stackoverflow.com/q/30572159/9788634
+            ".eot",
+            ".ttf",
+            ".woff",
+            ".otf",
+            ".svg",
+        ]
+        return self.settings.get("static_files_allowed", default_static_files)
+
+    @property
+    def STATIC_FILES_FORBIDDEN(self) -> List[Union[str, re.Pattern]]:
+        default_forbidden_static_files = [
+            ".html",
+            # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
+            ".django",
+            ".dj",
+            ".tpl",
+            # Python files
+            ".py",
+            ".pyc",
+        ]
+        return self.settings.get("forbidden_static_files", default_forbidden_static_files)
 
     @property
     def CONTEXT_BEHAVIOR(self) -> ContextBehavior:

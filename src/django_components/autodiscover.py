@@ -5,10 +5,9 @@ from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 from django.conf import settings
-from django.template.engine import Engine
 
 from django_components.logger import logger
-from django_components.template_loader import Loader
+from django_components.template_loader import get_dirs
 
 
 def autodiscover(
@@ -27,7 +26,13 @@ def autodiscover(
     component_filepaths = search_dirs(dirs, "**/*.py")
     logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
 
-    modules = [_filepath_to_python_module(filepath) for filepath in component_filepaths]
+    modules: List[str] = []
+    for filepath in component_filepaths:
+        module_path = _filepath_to_python_module(filepath)
+        # Ignore relative paths that are outside of the project root
+        if not module_path.startswith(".."):
+            modules.append(module_path)
+
     return _import_modules(modules, map_module)
 
 
@@ -87,19 +92,6 @@ def _filepath_to_python_module(file_path: Union[Path, str]) -> str:
     module_name = rel_path_without_suffix.replace(sep, ".")
 
     return module_name
-
-
-def get_dirs(engine: Optional[Engine] = None) -> List[Path]:
-    """
-    Helper for using django_component's FilesystemLoader class to obtain a list
-    of directories where component python files may be defined.
-    """
-    current_engine = engine
-    if current_engine is None:
-        current_engine = Engine.get_default()
-
-    loader = Loader(current_engine)
-    return loader.get_dirs()
 
 
 def search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:

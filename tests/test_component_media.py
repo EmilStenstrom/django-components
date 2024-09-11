@@ -618,10 +618,9 @@ class MediaStaticfilesTests(BaseTestCase):
         #       See https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS
         STATIC_URL="static/",
         STATIC_ROOT=os.path.join(Path(__file__).resolve().parent, "static_root"),
-        # Either `django.contrib.staticfiles` or `django_components.safer_staticfiles` MUST
-        # be installed for staticfiles resolution to work.
+        # `django.contrib.staticfiles` MUST be installed for staticfiles resolution to work.
         INSTALLED_APPS=[
-            "django_components.safer_staticfiles",  # Or django.contrib.staticfiles
+            "django.contrib.staticfiles",
             "django_components",
         ],
     )
@@ -675,10 +674,9 @@ class MediaStaticfilesTests(BaseTestCase):
                 "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
             },
         },
-        # Either `django.contrib.staticfiles` or `django_components.safer_staticfiles` MUST
-        # be installed for staticfiles resolution to work.
+        # `django.contrib.staticfiles` MUST be installed for staticfiles resolution to work.
         INSTALLED_APPS=[
-            "django_components.safer_staticfiles",  # Or django.contrib.staticfiles
+            "django.contrib.staticfiles",
             "django_components",
         ],
     )
