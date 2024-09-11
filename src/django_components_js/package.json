@@ -1,0 +1,59 @@
+{
+  "name": "django-components",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Client-side utils for django_components",
+  "author": "Juro Oravec <juraj.oravec.josefson@gmail.com>",
+  "homepage": "https://github.com/EmilStenstrom/django-components/blob/main/src/django_components_js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EmilStenstrom/django-components.git",
+    "directory": "src/django_components_js"
+  },
+  "bugs": {
+    "url": "https://github.com/EmilStenstrom/django-components/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "start": "npm run start:dev",
+    "start:prod": "node dist/cjs/index.js",
+    "start:dev": "ts-node ./src/index.ts",
+    "build": "npm run build:cdn && npm run postbuild",
+    "build:cdn": "rollup --config scripts/rollup.config.mjs",
+    "postbuild": "node ./scripts/postbuild.js",
+    "lint": "eslint ./src --ext .ts",
+    "lint:fix": "eslint ./src --ext .ts --fix",
+    "test": "cross-env NODE_ENV=test jest --runInBand"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.25.4",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/jest": "^29.5.12",
+    "@typescript-eslint/eslint-plugin": "^8.5.0",
+    "@typescript-eslint/parser": "^8.5.0",
+    "babel-jest": "^29.7.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.10.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-cypress": "^3.5.0",
+    "eslint-plugin-jest": "^28.8.3",
+    "eslint-plugin-prettier": "^5.2.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-serializer-html": "^7.1.0",
+    "prettier": "^3.3.3",
+    "rollup": "^4.19.1",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}

@@ -74,3 +74,7 @@ poetry.lock
 .python-version
 site
 docs/reference
+
+# JS, NPM Dependency directories
+node_modules/
+jspm_packages/
