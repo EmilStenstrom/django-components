@@ -85,6 +85,7 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
     - [See here how to migrate your settings.py](https://github.com/EmilStenstrom/django-components/blob/master/docs/migrating_from_safer_staticfiles.md)
 - Beside the top-level `/components` directory, you can now define also app-level components dirs, e.g. `[app]/components`
   (See [`COMPONENTS.app_dirs`](#app_dirs)).
+- When you call `as_view()` on a component instance, that instance will be passed to `View.as_view()`
 
 **Version 0.97**
 - Fixed template caching. You can now also manually create cached templates with [`cached_template()`](#template_cache_size---tune-the-template-cache)
