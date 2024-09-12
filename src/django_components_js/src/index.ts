@@ -1,3 +1,4 @@
+/** This file defines the API of the JS code. */
 import { createComponentsManager } from './manager';
 
 export type * from './manager';

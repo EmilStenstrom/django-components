@@ -1,3 +1,8 @@
+/**
+ * This file contains code for safe calling of functions, as seen in Vue and Alpine.
+ * It ensures that when we run JS code for individual components, that the process continues
+ * even if the user-provided JS raises an error.
+ */
 import { isArray, isFunction, isPromise } from './utils';
 
 type Fn = (...args: any[]) => any;

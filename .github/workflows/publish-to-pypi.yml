@@ -26,7 +26,7 @@ jobs:
         run: |
           cd ./src/django_components_js
           npm ci
-      # NOTE: This also copies the generated JS script to ./src/django_components/static
+      # NOTE: This also copies the generated JS script to ./src/django_components/static/django_components/__generated__/
       - name: '[js] Build JS'
         run: |
           cd ./src/django_components_js

@@ -1,3 +1,4 @@
+/** The actual code of the JS dependency manager */
 import { callWithAsyncErrorHandling } from './errorHandling';
 
 type MaybePromise<T> = Promise<T> | T;

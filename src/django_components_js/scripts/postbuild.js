@@ -1,7 +1,8 @@
 const fsp = require('fs/promises');
 const path = require('path');
 
-// This function runs AFTER we build the JS code
+// This function runs AFTER we build the JS code and copies the built JS code into
+// `src/django_components/static/django_components/__generated__/django_components.min.js`
 const main = async () => {
   // Make the built script available in Django as static file
   // See https://testdriven.io/blog/django-static-files/
