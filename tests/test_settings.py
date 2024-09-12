@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from django.test import override_settings
 
 from django_components.app_settings import app_settings
