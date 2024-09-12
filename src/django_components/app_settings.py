@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from django.conf import settings
@@ -101,7 +102,8 @@ class AppSettings:
 
     @property
     def DIRS(self) -> List[Union[str, Tuple[str, str]]]:
-        return self.settings.get("dirs", [settings.BASE_DIR / "components"])
+        base_dir_path = Path(settings.BASE_DIR)
+        return self.settings.get("dirs", [base_dir_path / "components"])
 
     @property
     def APP_DIRS(self) -> List[str]:

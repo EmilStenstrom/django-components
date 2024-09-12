@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.test import override_settings
 
 from django_components.app_settings import app_settings
@@ -17,3 +19,11 @@ class SettingsTestCase(BaseTestCase):
     def test_raises_on_invalid_context_behavior(self):
         with self.assertRaises(ValueError):
             app_settings.CONTEXT_BEHAVIOR
+
+    @override_settings(BASE_DIR="base_dir")
+    def test_works_when_base_dir_is_string(self):
+        self.assertEqual(app_settings.DIRS, [Path("base_dir/components")])
+
+    @override_settings(BASE_DIR=Path("base_dir"))
+    def test_works_when_base_dir_is_path(self):
+        self.assertEqual(app_settings.DIRS, [Path("base_dir/components")])
