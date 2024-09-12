@@ -78,3 +78,6 @@ docs/reference
 # JS, NPM Dependency directories
 node_modules/
 jspm_packages/
+
+# Code gen, e.g. a compiled JS
+__generated__/

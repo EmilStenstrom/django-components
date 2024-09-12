@@ -1,0 +1,3 @@
+# See https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html
+graft src/django_components/static
+prune tests
