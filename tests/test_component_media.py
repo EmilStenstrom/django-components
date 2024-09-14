@@ -765,7 +765,7 @@ class MediaRelativePathTests(BaseTestCase):
             del sys.modules["tests.components.relative_file.relative_file"]
 
         # Fix the paths, since the "components" dir is nested
-        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
+        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}" if p.startswith("components") else p):
             # Make sure that only relevant components are registered:
             comps_to_remove = [
                 comp_name
@@ -807,7 +807,7 @@ class MediaRelativePathTests(BaseTestCase):
             del sys.modules["tests.components.relative_file.relative_file"]
 
         # Fix the paths, since the "components" dir is nested
-        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
+        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}" if p.startswith("components") else p):
             registry.unregister("relative_file_pathobj_component")
 
             template_str: types.django_html = """
@@ -847,7 +847,7 @@ class MediaRelativePathTests(BaseTestCase):
             del sys.modules["tests.components.relative_file_pathobj.relative_file_pathobj"]
 
         # Fix the paths, since the "components" dir is nested
-        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}"):
+        with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}" if p.startswith("components") else p):
             # Mark the PathObj instances of 'relative_file_pathobj_component' so they won raise
             # error PathObj.__str__ is triggered.
             CompCls = registry.get("relative_file_pathobj_component")

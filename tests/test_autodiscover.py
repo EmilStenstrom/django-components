@@ -29,14 +29,25 @@ class TestAutodiscover(_TestCase):
         self.assertNotIn("relative_file_pathobj_component", all_components)
 
         try:
-            modules = autodiscover(map_module=lambda p: "tests." + p)
+            modules = autodiscover(map_module=lambda p: "tests." + p if p.startswith("components") else p)
         except AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
-        self.assertIn("tests.components.single_file", modules)
-        self.assertIn("tests.components.multi_file.multi_file", modules)
-        self.assertIn("tests.components.relative_file_pathobj.relative_file_pathobj", modules)
-        self.assertIn("tests.components.relative_file.relative_file", modules)
+        self.assertEqual(
+            modules,
+            [
+                "tests.components.single_file",
+                "tests.components",
+                "tests.components.urls",
+                "tests.components.staticfiles.staticfiles",
+                "tests.components.multi_file.multi_file",
+                "tests.components.relative_file_pathobj.relative_file_pathobj",
+                "tests.components.relative_file.relative_file",
+                "django_components.components",
+                "django_components.components.dynamic",
+                "tests.test_app.components.app_lvl_comp.app_lvl_comp",
+            ],
+        )
 
         all_components = registry.all().copy()
         self.assertIn("single_file_component", all_components)
@@ -48,11 +59,7 @@ class TestAutodiscover(_TestCase):
 class TestImportLibraries(_TestCase):
     def test_import_libraries(self):
         # Prepare settings
-        setup_test_config(
-            {
-                "autodiscover": False,
-            }
-        )
+        setup_test_config({"autodiscover": False})
         settings.COMPONENTS["libraries"] = ["tests.components.single_file", "tests.components.multi_file.multi_file"]
 
         # Ensure we start with a clean state
@@ -103,7 +110,7 @@ class TestImportLibraries(_TestCase):
             del sys.modules["tests.components.multi_file.multi_file"]
 
         try:
-            modules = import_libraries(map_module=lambda p: "tests." + p)
+            modules = import_libraries(map_module=lambda p: "tests." + p if p.startswith("components") else p)
         except AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
@@ -123,13 +130,13 @@ class TestFilepathToPythonModule(_TestCase):
 
         the_path = os.path.join(base_path, "tests.py")
         self.assertEqual(
-            _filepath_to_python_module(the_path),
+            _filepath_to_python_module(the_path, base_path, None),
             "tests",
         )
 
         the_path = os.path.join(base_path, "tests/components/relative_file/relative_file.py")
         self.assertEqual(
-            _filepath_to_python_module(the_path),
+            _filepath_to_python_module(the_path, base_path, None),
             "tests.components.relative_file.relative_file",
         )
 
@@ -139,13 +146,13 @@ class TestFilepathToPythonModule(_TestCase):
         with mock.patch("os.path.sep", new="//"):
             the_path = os.path.join(base_path, "tests.py")
             self.assertEqual(
-                _filepath_to_python_module(the_path),
+                _filepath_to_python_module(the_path, base_path, None),
                 "tests",
             )
 
             the_path = os.path.join(base_path, "tests//components//relative_file//relative_file.py")
             self.assertEqual(
-                _filepath_to_python_module(the_path),
+                _filepath_to_python_module(the_path, base_path, None),
                 "tests.components.relative_file.relative_file",
             )
 
@@ -153,12 +160,12 @@ class TestFilepathToPythonModule(_TestCase):
         with mock.patch("os.path.sep", new="\\"):
             the_path = os.path.join(base_path, "tests.py")
             self.assertEqual(
-                _filepath_to_python_module(the_path),
+                _filepath_to_python_module(the_path, base_path, None),
                 "tests",
             )
 
             the_path = os.path.join(base_path, "tests\\components\\relative_file\\relative_file.py")
             self.assertEqual(
-                _filepath_to_python_module(the_path),
+                _filepath_to_python_module(the_path, base_path, None),
                 "tests.components.relative_file.relative_file",
             )
