@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
-        dirs = loader.get_dirs()
+        dirs = loader.get_dirs(include_apps=False)
 
         if settings.BASE_DIR:
             dirs.append(Path(settings.BASE_DIR) / "templates")
