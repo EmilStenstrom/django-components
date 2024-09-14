@@ -29,8 +29,9 @@ class TemplateLoaderTest(BaseTestCase):
             own_dirs,
             [
                 # Top-level /components dir
-                Path(__file__).parent.resolve() / "components",
-            ]
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
         )
 
         # Apps with a `components` dir
@@ -85,7 +86,8 @@ class TemplateLoaderTest(BaseTestCase):
             own_dirs,
             [
                 # Top-level /components dir
-                Path(__file__).parent.resolve() / "components",
+                Path(__file__).parent.resolve()
+                / "components",
             ],
         )
 
@@ -154,7 +156,8 @@ class TemplateLoaderTest(BaseTestCase):
             own_dirs,
             [
                 # Top-level /components dir
-                Path(__file__).parent.resolve() / "components",
+                Path(__file__).parent.resolve()
+                / "components",
             ],
         )
 
@@ -223,6 +226,7 @@ class TemplateLoaderTest(BaseTestCase):
             own_dirs,
             [
                 # Top-level /components dir
-                Path(__file__).parent.resolve() / "components",
+                Path(__file__).parent.resolve()
+                / "components",
             ],
         )
