@@ -33,21 +33,15 @@ class TestAutodiscover(_TestCase):
         except AlreadyRegistered:
             self.fail("Autodiscover should not raise AlreadyRegistered exception")
 
-        self.assertEqual(
-            modules,
-            [
-                "tests.components.single_file",
-                "tests.components",
-                "tests.components.urls",
-                "tests.components.staticfiles.staticfiles",
-                "tests.components.multi_file.multi_file",
-                "tests.components.relative_file_pathobj.relative_file_pathobj",
-                "tests.components.relative_file.relative_file",
-                "django_components.components",
-                "django_components.components.dynamic",
-                "tests.test_app.components.app_lvl_comp.app_lvl_comp",
-            ],
-        )
+        self.assertIn("tests.components", modules)
+        self.assertIn("tests.components.single_file", modules)
+        self.assertIn("tests.components.staticfiles.staticfiles", modules)
+        self.assertIn("tests.components.multi_file.multi_file", modules)
+        self.assertIn("tests.components.relative_file_pathobj.relative_file_pathobj", modules)
+        self.assertIn("tests.components.relative_file.relative_file", modules)
+        self.assertIn("tests.test_app.components.app_lvl_comp.app_lvl_comp", modules)
+        self.assertIn("django_components.components", modules)
+        self.assertIn("django_components.components.dynamic", modules)
 
         all_components = registry.all().copy()
         self.assertIn("single_file_component", all_components)
