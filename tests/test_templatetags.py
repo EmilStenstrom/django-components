@@ -511,3 +511,29 @@ class MultilineTagsTests(BaseTestCase):
             Variable: <strong>123</strong>
         """
         self.assertHTMLEqual(rendered, expected)
+
+
+class NestedTagsTests(BaseTestCase):
+    # See https://github.com/EmilStenstrom/django-components/discussions/671
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_nested_tags(self):
+        @register("test_component")
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                Variable: <strong>{{ var }}</strong>
+            """
+
+            def get_context_data(self, var):
+                return {
+                    "var": var,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test_component" var="{% lorem 1 w %}" %}{% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            Variable: <strong>lorem</strong>
+        """
+        self.assertHTMLEqual(rendered, expected)

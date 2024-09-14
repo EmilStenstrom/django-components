@@ -25,9 +25,11 @@ class BaseNode(Node):
         self.kwargs = kwargs or RuntimeKwargs({})
 
 
+# NOTE: We consider Nodes to have content only if they have anything else
+#       beside whitespace and comments.
 def nodelist_has_content(nodelist: NodeList) -> bool:
     for node in nodelist:
-        if isinstance(node, TextNode) and node.s.isspace():
+        if isinstance(node, TextNode) and (not node.s or node.s.isspace()):
             pass
         elif isinstance(node, CommentNode):
             pass
