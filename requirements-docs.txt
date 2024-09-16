@@ -70,7 +70,7 @@ griffe==1.2.0
     # via mkdocstrings-python
 htmlmin2==0.1.13
     # via mkdocs-minify-plugin
-idna==3.8
+idna==3.10
     # via requests
 importlib-metadata==8.4.0
     # via mike
