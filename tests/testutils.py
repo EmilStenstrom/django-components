@@ -17,7 +17,6 @@ from django_components.autodiscover import autodiscover
 from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
 
-
 # Create middleware instance
 response_stash = None
 middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash)
