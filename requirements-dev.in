@@ -7,3 +7,5 @@ isort
 pre-commit
 black
 mypy
+playwright
+pytest-playwright

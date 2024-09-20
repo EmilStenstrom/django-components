@@ -30,16 +30,3 @@ jobs:
     - name: '[py] Run unit tests'
       run: tox
 
-    # JS tests
-    - name: '[js] Set up Node'
-      uses: actions/setup-node@v4
-      with:
-        node-version: latest
-    - name: '[js] Install dependencies'
-      run: |
-        cd ./src/django_components_js
-        npm ci
-    - name: '[js] Run unit tests'
-      run: |
-        cd ./src/django_components_js
-        npm run test

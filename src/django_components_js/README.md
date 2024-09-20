@@ -38,3 +38,25 @@ Components.loadScript("js", '<script src="/abc/def">');
 // we call `loadScript`
 Components.markScriptLoaded("js", '/abc/def');
 ```
+
+## Build
+
+1. Make sure you are inside `django_components_js`:
+
+```sh
+cd src/django_components_js
+```
+
+2. Make sure that JS dependencies are installed
+
+```sh
+npm install
+```
+
+3. Compile the JS/TS code:
+
+```sh
+python build.py
+```
+
+This will copy it to `django_components/static/django_components/django_components.min.js`.

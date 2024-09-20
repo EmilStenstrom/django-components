@@ -163,14 +163,14 @@ export const createComponentsManager = () => {
 
   const callComponent = (name: string, compId: string, inputHash: string): MaybePromise<any> => {
     const initFn = components[name];
-    if (!initFn) throw Error(`[Components] No component registered for name '${name}'`);
+    if (!initFn) throw Error(`[Components] '${name}': No component registered for that name`);
 
     const elems = Array.from(document.querySelectorAll<HTMLElement>(`[data-comp-id-${compId}]`));
-    if (!elems.length) throw Error(`[Components] No elements with component ID '${compId}' found`);
+    if (!elems.length) throw Error(`[Components] '${name}': No elements with component ID '${compId}' found`);
 
     const dataKey = `${name}:${inputHash}`;
     const dataFactory = componentInputs[dataKey];
-    if (!dataFactory) throw Error(`[Components] Cannot find input for hash '${inputHash}'`);
+    if (!dataFactory) throw Error(`[Components] '${name}': Cannot find input for hash '${inputHash}'`);
 
     const data = dataFactory();
 
