@@ -202,11 +202,6 @@ class PlaywrightTestCase(StaticLiveServerTestCase):
         cls.playwright = sync_playwright().start()
         cls.browser = cls.playwright.chromium.launch()
 
-    def setUp(self):
-        super().setUp()
-        if os.environ.get("IS_CI", None) == "true":
-            self.skipTest("Playwright tests currently cannot be run in CI")
-
     @classmethod
     def tearDownClass(cls):
         cls.browser.close()

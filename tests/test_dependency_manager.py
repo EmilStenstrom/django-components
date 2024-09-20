@@ -1,4 +1,6 @@
+import os
 from typing import List
+from unittest import skipIf
 
 from django.test import override_settings
 from playwright.sync_api import Error, Page
@@ -7,6 +9,8 @@ from django_components import types
 
 from .django_test_setup import setup_test_config
 from .testutils import PlaywrightTestCase
+
+IN_CI = os.environ.get("IN_CI", None)
 
 setup_test_config(
     components={"autodiscover": False},
@@ -42,6 +46,7 @@ class _BasePlaywrightTestCase(PlaywrightTestCase):
         return page
 
 
+@skipIf(IN_CI == "true", "Playwright tests currently cannot be run in CI")
 @override_settings(STATIC_URL="static/")
 class DependencyManagerTests(_BasePlaywrightTestCase):
     def _create_page_with_dep_manager(self) -> Page:
@@ -82,6 +87,7 @@ class DependencyManagerTests(_BasePlaywrightTestCase):
 
 
 # Tests for `manager.loadScript()` / `manager.markAsLoaded()`
+@skipIf(IN_CI == "true", "Playwright tests currently cannot be run in CI")
 @override_settings(STATIC_URL="static/")
 class LoadScriptTests(_BasePlaywrightTestCase):
     def test_load_js_scripts(self):
@@ -204,6 +210,7 @@ class LoadScriptTests(_BasePlaywrightTestCase):
 
 
 # Tests for `manager.registerComponent()` / `registerComponentData()` / `callComponent()`
+@skipIf(IN_CI == "true", "Playwright tests currently cannot be run in CI")
 @override_settings(STATIC_URL="static/")
 class CallComponentTests(_BasePlaywrightTestCase):
     def test_calls_component_successfully(self):
