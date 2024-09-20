@@ -28,7 +28,6 @@ jobs:
         python -m pip install tox tox-gh-actions playwright
         # See https://playwright.dev/python/docs/intro#installing-playwright-pytest
         playwright install chrome --with-deps
-        IS_CI=true
     - name: Run unit tests
-      run: tox
+      run: IS_CI=true tox
 
