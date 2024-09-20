@@ -16,12 +16,6 @@ setup_test_config(
     },
 )
 
-# NOTE: Playwright's Page.evaluate introduces async code. To ignore it,
-# we set the following env var.
-# See https://stackoverflow.com/a/67042751/9788634
-# And https://docs.djangoproject.com/en/5.1/topics/async/#asgiref.sync.sync_to_async
-os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
-
 urlpatterns: List = []
 
 
@@ -29,6 +23,12 @@ urlpatterns: List = []
 class DependencyManagerTests(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
+        # NOTE: Playwright's Page.evaluate introduces async code. To ignore it,
+        # we set the following env var.
+        # See https://stackoverflow.com/a/67042751/9788634
+        # And https://github.com/mxschmitt/python-django-playwright/blob/4d2235f4fadc66d88eed7b9cbc8d156c20575ad0/test_login.py
+        # And https://docs.djangoproject.com/en/5.1/topics/async/#asgiref.sync.sync_to_async
+        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
         super().setUpClass()
         cls.playwright = sync_playwright().start()
         cls.browser = cls.playwright.chromium.launch()
