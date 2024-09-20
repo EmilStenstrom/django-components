@@ -3932,8 +3932,8 @@ We use [Playwright](https://playwright.dev/python/docs/intro) for end-to-end tes
 Luckily, Playwright makes it very easy:
 
 ```sh
-pip install playwright pytest-playwright
-playwright install chrome
+pip install playwright
+playwright install chrome --with-deps
 ```
 
 After Playwright is ready, simply run `tox` to run the tests:
