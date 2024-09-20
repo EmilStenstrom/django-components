@@ -17,16 +17,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Python tests
-    - name: '[py] Set up Python ${{ matrix.python-version }}'
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: "pip"
-    - name: '[py] Install dependencies'
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install tox tox-gh-actions django_cypress
-    - name: '[py] Run unit tests'
+        python -m pip install tox tox-gh-actions
+    - name: Run unit tests
       run: tox
 
