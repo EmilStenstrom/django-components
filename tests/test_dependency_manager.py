@@ -1,13 +1,12 @@
-import os
 from typing import List
 
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import override_settings
-from playwright.sync_api import Error, Page, sync_playwright
+from playwright.sync_api import Error, Page
 
 from django_components import types
 
 from .django_test_setup import setup_test_config
+from .testutils import PlaywrightTestCase
 
 setup_test_config(
     components={"autodiscover": False},
@@ -19,26 +18,32 @@ setup_test_config(
 urlpatterns: List = []
 
 
+class _BasePlaywrightTestCase(PlaywrightTestCase):
+    def _create_page_with_dep_manager(self) -> Page:
+        page = self.browser.new_page()
+        # Load the JS library by opening a page with the script, and then running the script code
+        # E.g. `http://localhost:54017/static/django_components/django_components.min.js`
+        script_url = self.live_server_url + "/static/django_components/django_components.min.js"
+        page.goto(script_url)
+        page.evaluate(
+            """() => {
+            eval(document.body.textContent);
+        }"""
+        )
+
+        # Ensure the body is clear
+        page.evaluate(
+            """() => {
+            document.body.innerHTML = '';
+            document.head.innerHTML = '';
+        }"""
+        )
+
+        return page
+
+
 @override_settings(STATIC_URL="static/")
-class DependencyManagerTests(StaticLiveServerTestCase):
-    @classmethod
-    def setUpClass(cls):
-        # NOTE: Playwright's Page.evaluate introduces async code. To ignore it,
-        # we set the following env var.
-        # See https://stackoverflow.com/a/67042751/9788634
-        # And https://github.com/mxschmitt/python-django-playwright/blob/4d2235f4fadc66d88eed7b9cbc8d156c20575ad0/test_login.py  # noqa: 501
-        # And https://docs.djangoproject.com/en/5.1/topics/async/#asgiref.sync.sync_to_async
-        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
-        super().setUpClass()
-        cls.playwright = sync_playwright().start()
-        cls.browser = cls.playwright.chromium.launch()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.browser.close()
-        cls.playwright.stop()
-        super().tearDownClass()
-
+class DependencyManagerTests(_BasePlaywrightTestCase):
     def _create_page_with_dep_manager(self) -> Page:
         page = self.browser.new_page()
         # Load the JS library by opening a page with the script, and then running the script code
@@ -78,7 +83,7 @@ class DependencyManagerTests(StaticLiveServerTestCase):
 
 # Tests for `manager.loadScript()` / `manager.markAsLoaded()`
 @override_settings(STATIC_URL="static/")
-class LoadScriptTests(DependencyManagerTests):
+class LoadScriptTests(_BasePlaywrightTestCase):
     def test_load_js_scripts(self):
         page = self._create_page_with_dep_manager()
 
@@ -200,7 +205,7 @@ class LoadScriptTests(DependencyManagerTests):
 
 # Tests for `manager.registerComponent()` / `registerComponentData()` / `callComponent()`
 @override_settings(STATIC_URL="static/")
-class CallComponentTests(DependencyManagerTests):
+class CallComponentTests(_BasePlaywrightTestCase):
     def test_calls_component_successfully(self):
         page = self._create_page_with_dep_manager()
 

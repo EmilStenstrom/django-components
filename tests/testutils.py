@@ -1,18 +1,35 @@
+import asyncio
 import contextlib
 import functools
+import os
 import sys
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING, cast
 from unittest.mock import Mock
 
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.template import Context, Node
 from django.template.loader import engines
 from django.template.response import TemplateResponse
 from django.test import SimpleTestCase, override_settings
+from playwright.sync_api._context_manager import (
+    PlaywrightContextManager,
+    ChannelOwner,
+    SyncPlaywright,
+    MainGreenlet,
+    Connection,
+    PipeTransport,
+    Playwright,
+    create_remote_object,
+    greenlet,
+)
 
 from django_components.app_settings import ContextBehavior
 from django_components.autodiscover import autodiscover
 from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
+
+if TYPE_CHECKING:
+    from asyncio.unix_events import AbstractChildWatcher
 
 # Create middleware instance
 response_stash = None
@@ -182,3 +199,82 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
         return wrapper
 
     return decorator
+
+
+# Monkeypatch for `PlaywrightContextManager` to allow us to run tests in sync
+# context. We NEED to use sync mode, because, to serve static files during tests,
+# we need to subclass `StaticLiveServerTestCase`, which doesn't have an async variant.
+class SyncPlaywrightContextManager(PlaywrightContextManager):
+    def __init__(self) -> None:
+        self._playwright: SyncPlaywright
+        self._loop: asyncio.AbstractEventLoop
+        self._own_loop = False
+        self._watcher: Optional[AbstractChildWatcher] = None
+        self._exit_was_called = False
+
+    def __enter__(self) -> SyncPlaywright:
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
+            self._own_loop = True
+        # --------- OUR CHANGES START ---------
+        #         if self._loop.is_running():
+        #             raise Error(
+        #                 """It looks like you are using Playwright Sync API inside the asyncio loop.
+        # Please use the Async API instead."""
+        #             )
+        # --------- OUR CHANGES END ---------
+
+        # Create a new fiber for the protocol dispatcher. It will be pumping events
+        # until the end of times. We will pass control to that fiber every time we
+        # block while waiting for a response.
+        def greenlet_main() -> None:
+            self._loop.run_until_complete(self._connection.run_as_sync())
+
+        dispatcher_fiber = MainGreenlet(greenlet_main)
+
+        self._connection = Connection(
+            dispatcher_fiber,
+            create_remote_object,
+            PipeTransport(self._loop),
+            self._loop,
+        )
+
+        g_self = greenlet.getcurrent()
+
+        def callback_wrapper(channel_owner: ChannelOwner) -> None:
+            playwright_impl = cast(Playwright, channel_owner)
+            self._playwright = SyncPlaywright(playwright_impl)
+            g_self.switch()
+
+        # Switch control to the dispatcher, it'll fire an event and pass control to
+        # the calling greenlet.
+        self._connection.call_on_object_with_known_name("Playwright", callback_wrapper)
+        dispatcher_fiber.switch()
+
+        playwright = self._playwright
+        playwright.stop = self.__exit__  # type: ignore
+        return playwright
+
+
+class PlaywrightTestCase(StaticLiveServerTestCase):
+    @classmethod
+    def setUpClass(cls):
+        # NOTE: Playwright's Page.evaluate introduces async code. To ignore it,
+        # we set the following env var.
+        # See https://stackoverflow.com/a/67042751/9788634
+        # And https://github.com/mxschmitt/python-django-playwright/blob/4d2235f4fadc66d88eed7b9cbc8d156c20575ad0/test_login.py  # noqa: 501
+        # And https://docs.djangoproject.com/en/5.1/topics/async/#asgiref.sync.sync_to_async
+        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+        super().setUpClass()
+
+        # NOTE: Calling `SyncPlaywrightContextManager().__enter__()` is the same as `sync_playwright().start()`
+        cls.playwright = SyncPlaywrightContextManager().__enter__()
+        cls.browser = cls.playwright.chromium.launch()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close()
+        cls.playwright.stop()
+        super().tearDownClass()
