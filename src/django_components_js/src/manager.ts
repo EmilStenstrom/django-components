@@ -181,7 +181,8 @@ export const createComponentsManager = () => {
       $els: elems,
     } satisfies ComponentContext;
 
-    return callWithAsyncErrorHandling(initFn, [ctx]);
+    const [result] = callWithAsyncErrorHandling(initFn, [ctx]);
+    return result;
   };
 
   return {

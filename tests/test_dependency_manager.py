@@ -1,7 +1,8 @@
 import os
+from typing import List
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from django.urls import include, path
+from django.test import override_settings
 from playwright.sync_api import Error, Page, sync_playwright
 
 from django_components import types
@@ -12,7 +13,6 @@ setup_test_config(
     components={"autodiscover": False},
     extra_settings={
         "ROOT_URLCONF": "tests.test_dependency_manager",
-        "STATIC_URL": "static/",
     },
 )
 
@@ -22,11 +22,10 @@ setup_test_config(
 # And https://docs.djangoproject.com/en/5.1/topics/async/#asgiref.sync.sync_to_async
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
-urlpatterns = [
-    path("components/", include("django_components.urls")),
-]
+urlpatterns: List = []
 
 
+@override_settings(STATIC_URL="static/")
 class DependencyManagerTests(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
@@ -66,7 +65,7 @@ class DependencyManagerTests(StaticLiveServerTestCase):
         page = self._create_page_with_dep_manager()
 
         # Check the exposed API
-        keys = page.evaluate("Object.keys(Components)")
+        keys = sorted(page.evaluate("Object.keys(Components)"))
         self.assertEqual(keys, ["createComponentsManager", "manager", "unescapeJs"])
 
         keys = page.evaluate("Object.keys(Components.manager)")
@@ -78,6 +77,7 @@ class DependencyManagerTests(StaticLiveServerTestCase):
 
 
 # Tests for `manager.loadScript()` / `manager.markAsLoaded()`
+@override_settings(STATIC_URL="static/")
 class LoadScriptTests(DependencyManagerTests):
     def test_load_js_scripts(self):
         page = self._create_page_with_dep_manager()
@@ -85,7 +85,7 @@ class LoadScriptTests(DependencyManagerTests):
         # JS code that loads a few dependencies, capturing the HTML after each action
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
-                             
+
             const headBeforeFirstLoad = document.head.innerHTML;
 
             // Adds a script the first time
@@ -99,7 +99,7 @@ class LoadScriptTests(DependencyManagerTests):
             // Adds different script
             manager.loadScript('js', "<script src='/four/three'></script>");
             const bodyAfterThirdLoad = document.body.innerHTML;
-                             
+
             const headAfterThirdLoad = document.head.innerHTML;
 
             return {
@@ -130,7 +130,7 @@ class LoadScriptTests(DependencyManagerTests):
         # JS code that loads a few dependencies, capturing the HTML after each action
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
-                             
+
             const bodyBeforeFirstLoad = document.body.innerHTML;
 
             // Adds a script the first time
@@ -144,7 +144,7 @@ class LoadScriptTests(DependencyManagerTests):
             // Adds different script
             manager.loadScript('css', "<link href='/four/three'>");
             const headAfterThirdLoad = document.head.innerHTML;
-                             
+
             const bodyAfterThirdLoad = document.body.innerHTML;
 
             return {
@@ -199,6 +199,7 @@ class LoadScriptTests(DependencyManagerTests):
 
 
 # Tests for `manager.registerComponent()` / `registerComponentData()` / `callComponent()`
+@override_settings(STATIC_URL="static/")
 class CallComponentTests(DependencyManagerTests):
     def test_calls_component_successfully(self):
         page = self._create_page_with_dep_manager()
@@ -314,14 +315,12 @@ class CallComponentTests(DependencyManagerTests):
 
             const result = manager.callComponent(compName, compId, inputHash);
 
-            return {
-              result,
-            };
+            return result;
         }"""
 
         data = page.evaluate(test_js)
 
-        self.assertEqual(data["result"], Error("Oops!"))
+        self.assertEqual(data, None)
 
         page.close()
 
@@ -348,13 +347,15 @@ class CallComponentTests(DependencyManagerTests):
             });
 
             const result = manager.callComponent(compName, compId, inputHash);
-
-            return result;
+            return Promise.allSettled([result]);
         }"""
 
         data = page.evaluate(test_js)
 
-        self.assertEqual(data, Error("Oops!"))
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["status"], "rejected")
+        self.assertIsInstance(data[0]["reason"], Error)
+        self.assertEqual(data[0]["reason"].message, "Oops!")
 
         page.close()
 

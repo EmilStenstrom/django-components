@@ -23,7 +23,7 @@ export function callWithAsyncErrorHandling(fn: Fn | Fn[], args?: any[]): any {
         logError(err);
       });
     }
-    return res;
+    return [res];
   }
 
   if (isArray(fn)) {
