@@ -11,7 +11,7 @@ def setup_test_config(
 ):
     if settings.configured:
         return
-    
+
     default_settings = {
         "BASE_DIR": Path(__file__).resolve().parent,
         "INSTALLED_APPS": ("django_components", "tests.test_app"),
@@ -38,9 +38,11 @@ def setup_test_config(
         "SECRET_KEY": "secret",
     }
 
-    settings.configure(**{
-        **default_settings,
-        **(extra_settings or {}),
-    })
+    settings.configure(
+        **{
+            **default_settings,
+            **(extra_settings or {}),
+        }
+    )
 
     django.setup()

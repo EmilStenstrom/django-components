@@ -2,9 +2,10 @@ import os
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.urls import include, path
-from playwright.sync_api import sync_playwright, Page, Error
+from playwright.sync_api import Error, Page, sync_playwright
 
 from django_components import types
+
 from .django_test_setup import setup_test_config
 
 setup_test_config(
