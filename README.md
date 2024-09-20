@@ -3924,3 +3924,21 @@ To display individual components, add them to the `urls.py`, like in the case of
 ## Development guides
 
 - [Slot rendering flot](https://github.com/EmilStenstrom/django-components/blob/master/docs/slot_rendering.md)
+
+## Running tests
+
+We use [Playwright](https://playwright.dev/python/docs/intro) for end-to-end tests. You will therefore need to install Playwright to be able to run the tests.
+
+Luckily, Playwright makes it very easy:
+
+```sh
+pip install playwright pytest-playwright
+playwright install chrome
+```
+
+After Playwright is ready, simply run `tox` to run the tests:
+```sh
+tox
+# Or
+python -m tox
+```
