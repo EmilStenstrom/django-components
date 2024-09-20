@@ -230,7 +230,12 @@ class SyncPlaywrightContextManager(PlaywrightContextManager):
         # until the end of times. We will pass control to that fiber every time we
         # block while waiting for a response.
         def greenlet_main() -> None:
-            self._loop.run_until_complete(self._connection.run_as_sync())
+            # --------- OUR CHANGES START ---------
+            try:
+                self._loop.run_until_complete(self._connection.run_as_sync())
+            except RuntimeError:
+                pass
+            # --------- OUR CHANGES END ---------
 
         dispatcher_fiber = MainGreenlet(greenlet_main)
 
