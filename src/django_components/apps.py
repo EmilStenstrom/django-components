@@ -25,7 +25,7 @@ class ComponentsConfig(AppConfig):
         # See https://github.com/EmilStenstrom/django-components/discussions/567#discussioncomment-10273632
         # And https://stackoverflow.com/questions/42907285/66673186#66673186
         if app_settings.RELOAD_ON_TEMPLATE_CHANGE:
-            dirs = get_dirs()
+            dirs = get_dirs(include_apps=False)
             component_filepaths = search_dirs(dirs, "**/*")
             watch_files_for_autoreload(component_filepaths)
 

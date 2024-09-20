@@ -14,20 +14,11 @@ from django_components.app_settings import app_settings
 from django_components.logger import logger
 
 
-# Similar to `Path.is_relative_to`, which is missing in 3.8
-def is_relative_to(path: Path, other: Path) -> bool:
-    try:
-        path.relative_to(other)
-        return True
-    except ValueError:
-        return False
-
-
 # This is the heart of all features that deal with filesystem and file lookup.
 # Autodiscovery, Django template resolution, static file resolution - They all
 # depend on this loader.
 class Loader(FilesystemLoader):
-    def get_dirs(self) -> List[Path]:
+    def get_dirs(self, include_apps: bool = True) -> List[Path]:
         """
         Prepare directories that may contain component files:
 
@@ -64,11 +55,12 @@ class Loader(FilesystemLoader):
 
         # Add `[app]/[APP_DIR]` to the directories. This is, by default `[app]/components`
         app_paths: List[Path] = []
-        for conf in apps.get_app_configs():
-            for app_dir in app_settings.APP_DIRS:
-                comps_path = Path(conf.path).joinpath(app_dir)
-                if comps_path.exists() and is_relative_to(comps_path, settings.BASE_DIR):
-                    app_paths.append(comps_path)
+        if include_apps:
+            for conf in apps.get_app_configs():
+                for app_dir in app_settings.APP_DIRS:
+                    comps_path = Path(conf.path).joinpath(app_dir)
+                    if comps_path.exists():
+                        app_paths.append(comps_path)
 
         directories: Set[Path] = set(app_paths)
 
@@ -98,7 +90,7 @@ class Loader(FilesystemLoader):
         return list(directories)
 
 
-def get_dirs(engine: Optional[Engine] = None) -> List[Path]:
+def get_dirs(include_apps: bool = True, engine: Optional[Engine] = None) -> List[Path]:
     """
     Helper for using django_component's FilesystemLoader class to obtain a list
     of directories where component python files may be defined.
@@ -108,4 +100,4 @@ def get_dirs(engine: Optional[Engine] = None) -> List[Path]:
         current_engine = Engine.get_default()
 
     loader = Loader(current_engine)
-    return loader.get_dirs()
+    return loader.get_dirs(include_apps)

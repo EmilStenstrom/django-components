@@ -87,14 +87,7 @@ pyflakes==3.2.0
     # via flake8
 pyproject-api==1.7.1
     # via tox
-pytest==8.3.2
-    # via
-    #   -r requirements-dev.in
-    #   pytest-base-url
-    #   pytest-playwright
-pytest-base-url==2.1.0
-    # via pytest-playwright
-pytest-playwright==0.5.2
+pytest==8.3.3
     # via -r requirements-dev.in
 python-slugify==8.0.4
     # via pytest-playwright

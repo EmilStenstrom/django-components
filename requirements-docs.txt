@@ -37,7 +37,7 @@ cairosvg==2.7.1
     # via mkdocs-material
 certifi==2024.8.30
     # via requests
-cffi==1.17.0
+cffi==1.17.1
     # via cairocffi
 charset-normalizer==3.3.2
     # via requests
@@ -70,11 +70,11 @@ griffe==1.2.0
     # via mkdocstrings-python
 htmlmin2==0.1.13
     # via mkdocs-minify-plugin
-idna==3.8
+idna==3.10
     # via requests
 importlib-metadata==8.4.0
     # via mike
-importlib-resources==6.4.4
+importlib-resources==6.4.5
     # via mike
 jinja2==3.1.4
     # via
@@ -148,7 +148,7 @@ mkdocstrings==0.26.1
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
-mkdocstrings-python==1.10.9
+mkdocstrings-python==1.11.1
     # via hatch.envs.docs
 mypy-extensions==1.0.0
     # via black
@@ -185,7 +185,7 @@ pyparsing==3.1.4
     # via mike
 python-dateutil==2.9.0.post0
     # via ghp-import
-pytz==2024.1
+pytz==2024.2
     # via mkdocs-git-revision-date-localized-plugin
 pyyaml==6.0.2
     # via

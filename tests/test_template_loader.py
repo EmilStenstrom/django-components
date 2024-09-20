@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -19,18 +20,24 @@ class TemplateLoaderTest(BaseTestCase):
     def test_get_dirs__base_dir(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
-        dirs = loader.get_dirs()
+        dirs = sorted(loader.get_dirs())
+
+        apps_dirs = [dirs[0], dirs[2]]
+        own_dirs = [dirs[1], *dirs[3:]]
+
         self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    # Top-level /components dir
-                    Path(__file__).parent.resolve() / "components",
-                    # App-level /components dir
-                    Path(__file__).parent.resolve() / "test_app" / "components",
-                ]
-            ),
+            own_dirs,
+            [
+                # Top-level /components dir
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
         )
+
+        # Apps with a `components` dir
+        self.assertEqual(len(apps_dirs), 2)
+        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
+        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve() / "test_structures" / "test_structure_1",  # noqa
@@ -38,11 +45,20 @@ class TemplateLoaderTest(BaseTestCase):
     def test_get_dirs__base_dir__complex(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
-        dirs = loader.get_dirs()
+        dirs = sorted(loader.get_dirs())
+
+        apps_dirs = dirs[:2]
+        own_dirs = dirs[2:]
+
+        # Apps with a `components` dir
+        self.assertEqual(len(apps_dirs), 2)
+        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
+        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
+
         expected = [
             Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
         ]
-        self.assertEqual(sorted(dirs), sorted(expected))
+        self.assertEqual(own_dirs, expected)
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve(),
@@ -56,17 +72,23 @@ class TemplateLoaderTest(BaseTestCase):
     @patch("django_components.template_loader.logger.warning")
     def test_get_dirs__components_dirs(self, mock_warning: MagicMock):
         mock_warning.reset_mock()
-        dirs = get_dirs()
+        dirs = sorted(get_dirs())
+
+        apps_dirs = [dirs[0], dirs[2]]
+        own_dirs = [dirs[1], *dirs[3:]]
+
+        # Apps with a `components` dir
+        self.assertEqual(len(apps_dirs), 2)
+        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
+        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
+
         self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    # Top-level /components dir
-                    Path(__file__).parent.resolve() / "components",
-                    # App-level /components dir
-                    Path(__file__).parent.resolve() / "test_app" / "components",
-                ]
-            ),
+            own_dirs,
+            [
+                # Top-level /components dir
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
         )
 
         warn_inputs = [warn.args[0] for warn in mock_warning.call_args_list]
@@ -79,18 +101,14 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__components_dirs__empty(self):
-        dirs = get_dirs()
-        self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    # App-level /components dir
-                    Path(__file__).parent.resolve()
-                    / "test_app"
-                    / "components",
-                ]
-            ),
-        )
+        dirs = sorted(get_dirs())
+
+        apps_dirs = dirs
+
+        # Apps with a `components` dir
+        self.assertEqual(len(apps_dirs), 2)
+        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
+        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve(),
@@ -125,17 +143,22 @@ class TemplateLoaderTest(BaseTestCase):
     def test_get_dirs__app_dirs(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
-        dirs = loader.get_dirs()
+        dirs = sorted(loader.get_dirs())
+
+        apps_dirs = dirs[1:]
+        own_dirs = dirs[:1]
+
+        # Apps with a `components` dir
+        self.assertEqual(len(apps_dirs), 1)
+        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/tests\/test_app\/custom_comps_dir$"))
+
         self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    # Top-level /components dir
-                    Path(__file__).parent.resolve() / "components",
-                    # App-level /components dir
-                    Path(__file__).parent.resolve() / "test_app" / "custom_comps_dir",
-                ]
-            ),
+            own_dirs,
+            [
+                # Top-level /components dir
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
         )
 
     @override_settings(
@@ -147,16 +170,17 @@ class TemplateLoaderTest(BaseTestCase):
     def test_get_dirs__app_dirs_empty(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
-        dirs = loader.get_dirs()
+        dirs = sorted(loader.get_dirs())
+
+        own_dirs = dirs
+
         self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    # Top-level /components dir
-                    Path(__file__).parent.resolve()
-                    / "components",
-                ]
-            ),
+            own_dirs,
+            [
+                # Top-level /components dir
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
         )
 
     @override_settings(
@@ -168,14 +192,41 @@ class TemplateLoaderTest(BaseTestCase):
     def test_get_dirs__app_dirs_not_found(self):
         current_engine = Engine.get_default()
         loader = Loader(current_engine)
-        dirs = loader.get_dirs()
+        dirs = sorted(loader.get_dirs())
+
+        own_dirs = dirs
+
         self.assertEqual(
-            sorted(dirs),
-            sorted(
-                [
-                    # Top-level /components dir
-                    Path(__file__).parent.resolve()
-                    / "components",
-                ]
-            ),
+            own_dirs,
+            [
+                # Top-level /components dir
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
+        )
+
+    @override_settings(
+        BASE_DIR=Path(__file__).parent.resolve(),
+        INSTALLED_APPS=("django_components", "tests.test_app_nested.app"),
+    )
+    def test_get_dirs__nested_apps(self):
+        current_engine = Engine.get_default()
+        loader = Loader(current_engine)
+        dirs = sorted(loader.get_dirs())
+
+        apps_dirs = [dirs[0], *dirs[2:]]
+        own_dirs = [dirs[1]]
+
+        # Apps with a `components` dir
+        self.assertEqual(len(apps_dirs), 2)
+        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
+        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app_nested\/app\/components$"))
+
+        self.assertEqual(
+            own_dirs,
+            [
+                # Top-level /components dir
+                Path(__file__).parent.resolve()
+                / "components",
+            ],
         )
