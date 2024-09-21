@@ -3852,7 +3852,7 @@ One of our goals with `django-components` is to make it easy to share components
 
 - [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
-## Running django-components project locally
+## Contributing and development
 
 ### Install locally and run the tests
 
@@ -3868,22 +3868,33 @@ To quickly run the tests install the local dependencies by running:
 pip install -r requirements-dev.txt
 ```
 
-Now you can run the tests to make sure everything works as expected:
+Now you can run the tests using [`tox`](https://tox.wiki/) to make sure everything works as expected:
 
 ```sh
-pytest
+tox
 ```
 
-The library is also tested across many versions of Python and Django. To run tests that way:
+The library is tested across many versions of Python and Django. To run tests for a specific
+version, you can do:
 
 ```sh
-pyenv install -s 3.8
-pyenv install -s 3.9
-pyenv install -s 3.10
-pyenv install -s 3.11
-pyenv install -s 3.12
-pyenv local 3.8 3.9 3.10 3.11 3.12
-tox -p
+tox -e py312
+```
+
+### Running Playwright tests
+
+We use [Playwright](https://playwright.dev/python/docs/intro) for end-to-end tests. You will therefore need to install Playwright to be able to run these tests.
+
+Luckily, Playwright makes it very easy:
+
+```sh
+pip install playwright
+playwright install chrome --with-deps
+```
+
+After Playwright is ready, simply run the tests with `tox`:
+```sh
+tox
 ```
 
 ### Developing against live Django app
@@ -3921,24 +3932,7 @@ Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
 To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>
 
-## Development guides
+### Development guides
 
 - [Slot rendering flot](https://github.com/EmilStenstrom/django-components/blob/master/docs/slot_rendering.md)
-
-## Running tests
-
-We use [Playwright](https://playwright.dev/python/docs/intro) for end-to-end tests. You will therefore need to install Playwright to be able to run the tests.
-
-Luckily, Playwright makes it very easy:
-
-```sh
-pip install playwright
-playwright install chrome --with-deps
-```
-
-After Playwright is ready, simply run `tox` to run the tests:
-```sh
-tox
-# Or
-python -m tox
-```
+- [Slots and blocks](https://github.com/EmilStenstrom/django-components/blob/master/docs/slots_and_blocks.md)

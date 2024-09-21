@@ -204,19 +204,6 @@ def build_readme(python_to_django: VersionMapping):
     return version_lines
 
 
-def build_pyenv(python_to_django: VersionMapping):
-    lines = []
-    all_python_versions = python_to_django.keys()
-    for python_version in all_python_versions:
-        lines.append(f'pyenv install -s {env_format(python_version, divider=".")}')
-
-    lines.append(f'pyenv local {" ".join(env_format(version, divider=".") for version in all_python_versions)}')
-
-    lines.append("tox -p")
-
-    return "\n".join(lines)
-
-
 def build_ci_python_versions(python_to_django: Dict[str, str]):
     # Outputs python-version, like: ['3.8', '3.9', '3.10', '3.11', '3.12']
     lines = [
@@ -267,12 +254,6 @@ def main():
     print("Add this to the middle of README.md:\n")
     readme = build_readme(python_to_django)
     print(readme)
-    print()
-    print()
-
-    print("And this to the end of README.md:\n")
-    pyenv = build_pyenv(python_to_django)
-    print(pyenv)
     print()
     print()
 
