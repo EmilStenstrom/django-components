@@ -31,5 +31,5 @@ jobs:
         python -m pip install -r requirements-test.txt
         # See https://playwright.dev/python/docs/intro#installing-playwright-pytest
         playwright install chrome --with-deps
-    - name: Run unit tests
-      run: IS_CI=true tox
+    - name: Run tests
+      run: tox
