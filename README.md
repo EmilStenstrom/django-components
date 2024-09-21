@@ -3932,6 +3932,35 @@ Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
 To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>
 
+### Building JS code
+
+django_components uses a bit of JS code to:
+- Manage the loading of JS and CSS files used by the components
+- Allow to pass data from Python to JS
+
+When you make changes to this JS code, you also need to compile it:
+
+1. Make sure you are inside `src/django_components_js`:
+
+```sh
+cd src/django_components_js
+```
+
+2. Install the JS dependencies
+
+```sh
+npm install
+```
+
+3. Compile the JS/TS code:
+
+```sh
+python build.py
+```
+
+The script will combine all JS/TS code into a single `.js` file, minify it,
+and copy it to `django_components/static/django_components/django_components.min.js`.
+
 ### Packaging and publishing
 
 To package the library into a distribution that can be published to PyPI, run:
