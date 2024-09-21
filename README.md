@@ -3932,6 +3932,24 @@ Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
 To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>
 
+### Packaging and publishing
+
+To package the library into a distribution that can be published to PyPI, run:
+
+```sh
+# Install pypa/build
+python -m pip install build --user
+# Build a binary wheel and a source tarball
+python -m build --sdist --wheel --outdir dist/ .
+```
+
+To publish the package to PyPI, use `twine` ([See Python user guide](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)):
+```sh
+twine upload --repository pypi dist/* -u __token__ -p <PyPI_TOKEN>
+```
+
+[See the full workflow here.](https://github.com/EmilStenstrom/django-components/discussions/557#discussioncomment-10179141)
+
 ### Development guides
 
 - [Slot rendering flot](https://github.com/EmilStenstrom/django-components/blob/master/docs/slot_rendering.md)
