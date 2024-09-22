@@ -3893,8 +3893,8 @@ We use [Playwright](https://playwright.dev/python/docs/intro) for end-to-end tes
 Luckily, Playwright makes it very easy:
 
 ```sh
-pip install playwright
-playwright install chrome --with-deps
+pip install -r requirements-dev.txt
+playwright install chromium --with-deps
 ```
 
 After Playwright is ready, simply run the tests with `tox`:
