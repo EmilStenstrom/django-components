@@ -1,4 +1,3 @@
-import glob
 import importlib
 import os
 from pathlib import Path
@@ -9,7 +8,8 @@ from django.conf import settings
 
 from django_components.app_settings import app_settings
 from django_components.logger import logger
-from django_components.template_loader import get_dirs
+from django_components.template_loader import get_component_dirs
+from django_components.utils import search_dirs
 
 
 def autodiscover(
@@ -24,7 +24,7 @@ def autodiscover(
     You can map the module paths with `map_module` function. This serves
     as an escape hatch for when you need to use this function in tests.
     """
-    dirs = get_dirs(include_apps=False)
+    dirs = get_component_dirs(include_apps=False)
     component_filepaths = search_dirs(dirs, "**/*.py")
     logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
 
@@ -136,14 +136,11 @@ def _filepath_to_python_module(
     return full_module_name
 
 
-def search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:
+def get_component_filepaths() -> List[Path]:
     """
-    Search the directories for the given glob pattern. Glob search results are returned
-    as a flattened list.
+    Get a list of filepaths that MAY contain component definitions.
+    
+    These are all Python files (`.py`) that are found in `COMPONENT.dirs`.
     """
-    matched_files: List[Path] = []
-    for directory in dirs:
-        for path in glob.iglob(str(Path(directory) / search_glob), recursive=True):
-            matched_files.append(Path(path))
-
-    return matched_files
+    dirs = get_component_dirs()
+    return search_dirs(dirs, "**/*.py")

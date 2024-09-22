@@ -2,7 +2,6 @@ from unittest.mock import Mock
 
 from django.http import HttpResponseNotModified
 from django.template import Template
-from django.test import override_settings
 
 from django_components import Component, registry, types
 from django_components.middleware import ComponentDependencyMiddleware
@@ -65,7 +64,6 @@ class MultistyleComponent(Component):
         js = ["script.js", "script2.js"]
 
 
-@override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
 class ComponentMediaRenderingTests(BaseTestCase):
     def test_no_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)

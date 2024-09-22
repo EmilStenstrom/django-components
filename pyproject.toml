@@ -27,6 +27,8 @@ classifiers = [
 ]
 dependencies = [
     'Django>=4.2',
+    'nanoid>=2.0',
+    'selectolax>=0.3',
 ]
 license = {text = "MIT"}
 

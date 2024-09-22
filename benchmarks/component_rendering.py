@@ -89,7 +89,6 @@ EXPECTED_CSS = """<link href="test.css" media="all" rel="stylesheet">"""
 EXPECTED_JS = """<script src="test.js"></script>"""
 
 
-@override_settings(COMPONENTS={"RENDER_DEPENDENCIES": True})
 class RenderBenchmarks(BaseTestCase):
     def setUp(self):
         registry.clear()

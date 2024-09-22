@@ -90,7 +90,7 @@ class Loader(FilesystemLoader):
         return list(directories)
 
 
-def get_dirs(include_apps: bool = True, engine: Optional[Engine] = None) -> List[Path]:
+def get_component_dirs(include_apps: bool = True, engine: Optional[Engine] = None) -> List[Path]:
     """
     Helper for using django_component's FilesystemLoader class to obtain a list
     of directories where component python files may be defined.
