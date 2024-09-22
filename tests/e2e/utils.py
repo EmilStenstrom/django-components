@@ -5,7 +5,6 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
-
 TEST_SERVER_PORT = "8000"
 TEST_SERVER_URL = f"http://127.0.0.1:{TEST_SERVER_PORT}"
 

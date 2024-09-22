@@ -4,11 +4,9 @@ from django.test import override_settings
 from playwright.async_api import Error, Page
 
 from django_components import types
-
 from tests.django_test_setup import setup_test_config
-from tests.e2e.utils import with_playwright, TEST_SERVER_URL
+from tests.e2e.utils import TEST_SERVER_URL, with_playwright
 from tests.testutils import BaseTestCase
-
 
 setup_test_config(
     components={"autodiscover": False},
