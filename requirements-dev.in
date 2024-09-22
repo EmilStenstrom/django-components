@@ -7,3 +7,7 @@ isort
 pre-commit
 black
 mypy
+playwright
+requests
+types-requests
+whitenoise

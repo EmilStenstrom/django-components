@@ -1,0 +1,5 @@
+# MANIFEST.in is defined so we can include non-Python (e.g. JS) files
+# in the built distribution.
+# See https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html
+graft src/django_components/static
+prune tests

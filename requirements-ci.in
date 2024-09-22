@@ -1,0 +1,6 @@
+tox
+tox-gh-actions
+playwright
+requests
+types-requests
+whitenoise

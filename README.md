@@ -3852,7 +3852,7 @@ One of our goals with `django-components` is to make it easy to share components
 
 - [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
-## Running django-components project locally
+## Contributing and development
 
 ### Install locally and run the tests
 
@@ -3884,6 +3884,22 @@ pyenv install -s 3.11
 pyenv install -s 3.12
 pyenv local 3.8 3.9 3.10 3.11 3.12
 tox -p
+```
+
+### Running Playwright tests
+
+We use [Playwright](https://playwright.dev/python/docs/intro) for end-to-end tests. You will therefore need to install Playwright to be able to run these tests.
+
+Luckily, Playwright makes it very easy:
+
+```sh
+pip install -r requirements-dev.txt
+playwright install chromium --with-deps
+```
+
+After Playwright is ready, simply run the tests with `tox`:
+```sh
+tox
 ```
 
 ### Developing against live Django app
@@ -3921,6 +3937,54 @@ Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
 To display individual components, add them to the `urls.py`, like in the case of <http://127.0.0.1:8000/greeting>
 
-## Development guides
+### Building JS code
+
+django_components uses a bit of JS code to:
+- Manage the loading of JS and CSS files used by the components
+- Allow to pass data from Python to JS
+
+When you make changes to this JS code, you also need to compile it:
+
+1. Make sure you are inside `src/django_components_js`:
+
+```sh
+cd src/django_components_js
+```
+
+2. Install the JS dependencies
+
+```sh
+npm install
+```
+
+3. Compile the JS/TS code:
+
+```sh
+python build.py
+```
+
+The script will combine all JS/TS code into a single `.js` file, minify it,
+and copy it to `django_components/static/django_components/django_components.min.js`.
+
+### Packaging and publishing
+
+To package the library into a distribution that can be published to PyPI, run:
+
+```sh
+# Install pypa/build
+python -m pip install build --user
+# Build a binary wheel and a source tarball
+python -m build --sdist --wheel --outdir dist/ .
+```
+
+To publish the package to PyPI, use `twine` ([See Python user guide](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)):
+```sh
+twine upload --repository pypi dist/* -u __token__ -p <PyPI_TOKEN>
+```
+
+[See the full workflow here.](https://github.com/EmilStenstrom/django-components/discussions/557#discussioncomment-10179141)
+
+### Development guides
 
 - [Slot rendering flot](https://github.com/EmilStenstrom/django-components/blob/master/docs/slot_rendering.md)
+- [Slots and blocks](https://github.com/EmilStenstrom/django-components/blob/master/docs/slots_and_blocks.md)
