@@ -1,0 +1,4 @@
+tox
+tox-gh-actions
+playwright
+whitenoise
