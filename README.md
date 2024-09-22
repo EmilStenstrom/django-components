@@ -3868,17 +3868,22 @@ To quickly run the tests install the local dependencies by running:
 pip install -r requirements-dev.txt
 ```
 
-Now you can run the tests using [`tox`](https://tox.wiki/) to make sure everything works as expected:
+Now you can run the tests to make sure everything works as expected:
 
 ```sh
-tox
+pytest
 ```
 
-The library is tested across many versions of Python and Django. To run tests for a specific
-version, you can do:
+The library is also tested across many versions of Python and Django. To run tests that way:
 
 ```sh
-tox -e py312
+pyenv install -s 3.8
+pyenv install -s 3.9
+pyenv install -s 3.10
+pyenv install -s 3.11
+pyenv install -s 3.12
+pyenv local 3.8 3.9 3.10 3.11 3.12
+tox -p
 ```
 
 ### Running Playwright tests
