@@ -1,16 +1,13 @@
 import contextlib
 import functools
-import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 from unittest.mock import Mock
 
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.template import Context, Node
 from django.template.loader import engines
 from django.template.response import TemplateResponse
 from django.test import SimpleTestCase, override_settings
-from playwright.sync_api import sync_playwright
 
 from django_components.app_settings import ContextBehavior
 from django_components.autodiscover import autodiscover
@@ -185,24 +182,3 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
         return wrapper
 
     return decorator
-
-
-class PlaywrightTestCase(StaticLiveServerTestCase):
-    @classmethod
-    def setUpClass(cls):
-        # NOTE: Playwright's Page.evaluate introduces async code. To ignore it,
-        # we set the following env var.
-        # See https://stackoverflow.com/a/67042751/9788634
-        # And https://github.com/mxschmitt/python-django-playwright/blob/4d2235f4fadc66d88eed7b9cbc8d156c20575ad0/test_login.py  # noqa: 501
-        # And https://docs.djangoproject.com/en/5.1/topics/async/#asgiref.sync.sync_to_async
-        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
-        super().setUpClass()
-
-        cls.playwright = sync_playwright().start()
-        cls.browser = cls.playwright.chromium.launch()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.browser.close()
-        cls.playwright.stop()
-        super().tearDownClass()

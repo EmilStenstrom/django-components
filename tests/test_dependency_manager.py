@@ -1,16 +1,14 @@
-import os
 from typing import List
-from unittest import skipIf
 
 from django.test import override_settings
-from playwright.sync_api import Error, Page
+from playwright.async_api import Error, Page
 
 from django_components import types
 
-from .django_test_setup import setup_test_config
-from .testutils import PlaywrightTestCase
+from tests.django_test_setup import setup_test_config
+from tests.e2e.utils import with_playwright, TEST_SERVER_URL
+from tests.testutils import BaseTestCase
 
-IN_CI = os.environ.get("IN_CI", None)
 
 setup_test_config(
     components={"autodiscover": False},
@@ -22,76 +20,61 @@ setup_test_config(
 urlpatterns: List = []
 
 
-class _BasePlaywrightTestCase(PlaywrightTestCase):
-    def _create_page_with_dep_manager(self) -> Page:
-        page = self.browser.new_page()
+class _BaseDepManagerTestCase(BaseTestCase):
+    async def _create_page_with_dep_manager(self) -> Page:
+        page = await self.browser.new_page()
+
         # Load the JS library by opening a page with the script, and then running the script code
         # E.g. `http://localhost:54017/static/django_components/django_components.min.js`
-        script_url = self.live_server_url + "/static/django_components/django_components.min.js"
-        page.goto(script_url)
-        page.evaluate(
-            """() => {
-            eval(document.body.textContent);
-        }"""
+        script_url = TEST_SERVER_URL + "/static/django_components/django_components.min.js"
+        await page.goto(script_url)
+
+        # The page's body is the script code. We load it by executing the code
+        await page.evaluate(
+            """
+            () => {
+                eval(document.body.textContent);
+            }
+            """
         )
 
         # Ensure the body is clear
-        page.evaluate(
-            """() => {
-            document.body.innerHTML = '';
-            document.head.innerHTML = '';
-        }"""
+        await page.evaluate(
+            """
+            () => {
+                document.body.innerHTML = '';
+                document.head.innerHTML = '';
+            }
+            """
         )
 
         return page
 
 
-@skipIf(IN_CI == "true", "Playwright tests currently cannot be run in CI")
 @override_settings(STATIC_URL="static/")
-class DependencyManagerTests(_BasePlaywrightTestCase):
-    def _create_page_with_dep_manager(self) -> Page:
-        page = self.browser.new_page()
-        # Load the JS library by opening a page with the script, and then running the script code
-        # E.g. `http://localhost:54017/static/django_components/django_components.min.js`
-        script_url = self.live_server_url + "/static/django_components/django_components.min.js"
-        page.goto(script_url)
-        page.evaluate(
-            """() => {
-            eval(document.body.textContent);
-        }"""
-        )
-
-        # Ensure the body is clear
-        page.evaluate(
-            """() => {
-            document.body.innerHTML = '';
-            document.head.innerHTML = '';
-        }"""
-        )
-
-        return page
-
-    def test_script_loads(self):
-        page = self._create_page_with_dep_manager()
+class DependencyManagerTests(_BaseDepManagerTestCase):
+    @with_playwright
+    async def test_script_loads(self):
+        page = await self._create_page_with_dep_manager()
 
         # Check the exposed API
-        keys = sorted(page.evaluate("Object.keys(Components)"))
+        keys = sorted(await page.evaluate("Object.keys(Components)"))
         self.assertEqual(keys, ["createComponentsManager", "manager", "unescapeJs"])
 
-        keys = page.evaluate("Object.keys(Components.manager)")
+        keys = await page.evaluate("Object.keys(Components.manager)")
         self.assertEqual(
             keys, ["callComponent", "registerComponent", "registerComponentData", "loadScript", "markScriptLoaded"]
         )
 
-        page.close()
+        await page.close()
 
 
 # Tests for `manager.loadScript()` / `manager.markAsLoaded()`
-@skipIf(IN_CI == "true", "Playwright tests currently cannot be run in CI")
 @override_settings(STATIC_URL="static/")
-class LoadScriptTests(_BasePlaywrightTestCase):
-    def test_load_js_scripts(self):
-        page = self._create_page_with_dep_manager()
+class LoadScriptTests(_BaseDepManagerTestCase):
+    @with_playwright
+    async def test_load_js_scripts(self):
+        page = await self._create_page_with_dep_manager()
 
         # JS code that loads a few dependencies, capturing the HTML after each action
         test_js: types.js = """() => {
@@ -122,7 +105,7 @@ class LoadScriptTests(_BasePlaywrightTestCase):
             };
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(data["bodyAfterFirstLoad"], '<script src="/one/two"></script>')
         self.assertEqual(data["bodyAfterSecondLoad"], '<script src="/one/two"></script>')
@@ -133,10 +116,11 @@ class LoadScriptTests(_BasePlaywrightTestCase):
         self.assertEqual(data["headBeforeFirstLoad"], data["headAfterThirdLoad"])
         self.assertEqual(data["headBeforeFirstLoad"], "")
 
-        page.close()
+        await page.close()
 
-    def test_load_css_scripts(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_load_css_scripts(self):
+        page = await self._create_page_with_dep_manager()
 
         # JS code that loads a few dependencies, capturing the HTML after each action
         test_js: types.js = """() => {
@@ -167,7 +151,7 @@ class LoadScriptTests(_BasePlaywrightTestCase):
             };
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(data["headAfterFirstLoad"], '<link href="/one/two">')
         self.assertEqual(data["headAfterSecondLoad"], '<link href="/one/two">')
@@ -176,10 +160,11 @@ class LoadScriptTests(_BasePlaywrightTestCase):
         self.assertEqual(data["bodyBeforeFirstLoad"], data["bodyAfterThirdLoad"])
         self.assertEqual(data["bodyBeforeFirstLoad"], "")
 
-        page.close()
+        await page.close()
 
-    def test_does_not_load_script_if_marked_as_loaded(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_does_not_load_script_if_marked_as_loaded(self):
+        page = await self._create_page_with_dep_manager()
 
         # JS code that loads a few dependencies, capturing the HTML after each action
         test_js: types.js = """() => {
@@ -201,20 +186,20 @@ class LoadScriptTests(_BasePlaywrightTestCase):
             };
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(data["headAfterFirstLoad"], "")
         self.assertEqual(data["bodyAfterSecondLoad"], "")
 
-        page.close()
+        await page.close()
 
 
 # Tests for `manager.registerComponent()` / `registerComponentData()` / `callComponent()`
-@skipIf(IN_CI == "true", "Playwright tests currently cannot be run in CI")
 @override_settings(STATIC_URL="static/")
-class CallComponentTests(_BasePlaywrightTestCase):
-    def test_calls_component_successfully(self):
-        page = self._create_page_with_dep_manager()
+class CallComponentTests(_BaseDepManagerTestCase):
+    @with_playwright
+    async def test_calls_component_successfully(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -247,7 +232,7 @@ class CallComponentTests(_BasePlaywrightTestCase):
             };
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(data["result"], 123)
         self.assertEqual(
@@ -262,10 +247,11 @@ class CallComponentTests(_BasePlaywrightTestCase):
             },
         )
 
-        page.close()
+        await page.close()
 
-    def test_calls_component_successfully_async(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_calls_component_successfully_async(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -296,15 +282,16 @@ class CallComponentTests(_BasePlaywrightTestCase):
             }));
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(data["result"], 123)
         self.assertEqual(data["isPromise"], True)
 
-        page.close()
+        await page.close()
 
-    def test_error_in_component_call_do_not_propagate_sync(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_error_in_component_call_do_not_propagate_sync(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -330,14 +317,15 @@ class CallComponentTests(_BasePlaywrightTestCase):
             return result;
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(data, None)
 
-        page.close()
+        await page.close()
 
-    def test_error_in_component_call_do_not_propagate_async(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_error_in_component_call_do_not_propagate_async(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -362,17 +350,18 @@ class CallComponentTests(_BasePlaywrightTestCase):
             return Promise.allSettled([result]);
         }"""
 
-        data = page.evaluate(test_js)
+        data = await page.evaluate(test_js)
 
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["status"], "rejected")
         self.assertIsInstance(data[0]["reason"], Error)
         self.assertEqual(data[0]["reason"].message, "Oops!")
 
-        page.close()
+        await page.close()
 
-    def test_raises_if_component_element_not_in_dom(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_raises_if_component_element_not_in_dom(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -396,12 +385,13 @@ class CallComponentTests(_BasePlaywrightTestCase):
         with self.assertRaisesMessage(
             Error, "Error: [Components] 'my_comp': No elements with component ID '12345' found"
         ):
-            page.evaluate(test_js)
+            await page.evaluate(test_js)
 
-        page.close()
+        await page.close()
 
-    def test_raises_if_input_hash_not_registered(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_raises_if_input_hash_not_registered(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -421,12 +411,13 @@ class CallComponentTests(_BasePlaywrightTestCase):
         }"""
 
         with self.assertRaisesMessage(Error, "Error: [Components] 'my_comp': Cannot find input for hash 'input-abc'"):
-            page.evaluate(test_js)
+            await page.evaluate(test_js)
 
-        page.close()
+        await page.close()
 
-    def test_raises_if_component_not_registered(self):
-        page = self._create_page_with_dep_manager()
+    @with_playwright
+    async def test_raises_if_component_not_registered(self):
+        page = await self._create_page_with_dep_manager()
 
         test_js: types.js = """() => {
             const manager = Components.createComponentsManager();
@@ -446,6 +437,6 @@ class CallComponentTests(_BasePlaywrightTestCase):
         }"""
 
         with self.assertRaisesMessage(Error, "Error: [Components] 'my_comp': No component registered for that name"):
-            page.evaluate(test_js)
+            await page.evaluate(test_js)
 
-        page.close()
+        await page.close()
