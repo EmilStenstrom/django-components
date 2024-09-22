@@ -3,6 +3,7 @@ import subprocess
 import time
 from pathlib import Path
 
+import requests
 from playwright.async_api import async_playwright
 
 TEST_SERVER_PORT = "8000"
@@ -47,12 +48,19 @@ def run_django_dev_server():
         cwd=testserver_dir,
     )
 
-    # Wait for the server to start
-    time.sleep(5)
-
-    # Ensure the server started successfully
-    if proc.poll() is not None:
-        raise RuntimeError("Django server failed to start")
+    # Wait for the server to start by polling
+    start_time = time.time()
+    while time.time() - start_time < 30:  # timeout after 30 seconds
+        try:
+            response = requests.get(f"http://127.0.0.1:{TEST_SERVER_PORT}")
+            if response.status_code == 200:
+                print("Django dev server is up and running.")
+                break
+        except requests.RequestException:
+            time.sleep(0.1)
+    else:
+        proc.terminate()
+        raise RuntimeError("Django server failed to start within the timeout period")
 
     yield  # Hand control back to the test session
 

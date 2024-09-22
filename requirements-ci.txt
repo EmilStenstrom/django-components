@@ -6,8 +6,12 @@
 #
 cachetools==5.5.0
     # via tox
+certifi==2024.8.30
+    # via requests
 chardet==5.2.0
     # via tox
+charset-normalizer==3.3.2
+    # via requests
 colorama==0.4.6
     # via tox
 distlib==0.3.8
@@ -18,6 +22,8 @@ filelock==3.16.1
     #   virtualenv
 greenlet==3.0.3
     # via playwright
+idna==3.10
+    # via requests
 packaging==24.1
     # via
     #   pyproject-api
@@ -34,6 +40,8 @@ pyee==12.0.0
     # via playwright
 pyproject-api==1.8.0
     # via tox
+requests==2.32.3
+    # via -r requirements-ci.in
 tox==4.20.0
     # via
     #   -r requirements-ci.in
@@ -42,6 +50,8 @@ tox-gh-actions==3.2.0
     # via -r requirements-ci.in
 typing-extensions==4.12.2
     # via pyee
+urllib3==2.2.3
+    # via requests
 virtualenv==20.26.5
     # via tox
 whitenoise==6.7.0

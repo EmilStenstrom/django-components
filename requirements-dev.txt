@@ -10,10 +10,14 @@ black==24.8.0
     # via -r requirements-dev.in
 cachetools==5.4.0
     # via tox
+certifi==2024.8.30
+    # via requests
 cfgv==3.4.0
     # via pre-commit
 chardet==5.2.0
     # via tox
+charset-normalizer==3.3.2
+    # via requests
 click==8.1.7
     # via black
 colorama==0.4.6
@@ -36,6 +40,8 @@ greenlet==3.0.3
     # via playwright
 identify==2.5.33
     # via pre-commit
+idna==3.10
+    # via requests
 iniconfig==2.0.0
     # via pytest
 isort==5.13.2
@@ -83,14 +89,22 @@ pytest==8.3.3
     # via -r requirements-dev.in
 pyyaml==6.0.1
     # via pre-commit
+requests==2.32.3
+    # via -r requirements-dev.in
 sqlparse==0.5.0
     # via django
 tox==4.18.0
+    # via -r requirements-dev.in
+types-requests==2.32.0.20240914
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via
     #   mypy
     #   pyee
+urllib3==2.2.3
+    # via
+    #   requests
+    #   types-requests
 virtualenv==20.26.3
     # via
     #   pre-commit
