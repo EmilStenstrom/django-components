@@ -6,7 +6,7 @@
 // Register a function that is run at component initialization
 Components.manager.registerComponent(
   "table",  // Component name
-  async ({ $id, $name, $data, $els }) => {
+  async (data, { id, name, els }) => {
     ...
   },
 );

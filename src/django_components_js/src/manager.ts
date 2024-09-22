@@ -4,17 +4,19 @@ import { callWithAsyncErrorHandling } from './errorHandling';
 type MaybePromise<T> = Promise<T> | T;
 
 export interface ComponentContext<
-  TData extends object = object,
   TEl extends HTMLElement = HTMLElement,
 > {
-  $name: string;
-  $id: string;
-  $data: TData;
-  $els: TEl[];
+  name: string;
+  id: string;
+  els: TEl[];
 }
 
-export type ComponentFn<TData extends object = object, TEl extends HTMLElement = HTMLElement> = (
-  ctx: ComponentContext<TData, TEl>
+export type ComponentFn<
+  TData extends object = object,
+  TEl extends HTMLElement = HTMLElement
+> = (
+  data: TData,
+  ctx: ComponentContext<TEl>
 ) => MaybePromise<any>;
 
 export type DataFn = () => object;
@@ -25,7 +27,7 @@ export type ScriptType = 'js' | 'css';
  * Usage:
  *
  * ```js
- * Components.registerComponent("table", async ({ $id, $name, $data, $els }) => {
+ * Components.registerComponent("table", async (data, { id, name, els }) => {
  *   ...
  * });
  * ```
@@ -175,13 +177,12 @@ export const createComponentsManager = () => {
     const data = dataFactory();
 
     const ctx = {
-      $name: name,
-      $id: compId,
-      $data: data,
-      $els: elems,
+      name,
+      id: compId,
+      els: elems,
     } satisfies ComponentContext;
 
-    const [result] = callWithAsyncErrorHandling(initFn, [ctx]);
+    const [result] = callWithAsyncErrorHandling(initFn, [data, ctx] satisfies Parameters<ComponentFn>);
     return result;
   };
 

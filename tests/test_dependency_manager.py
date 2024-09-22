@@ -209,9 +209,9 @@ class CallComponentTests(_BaseDepManagerTestCase):
             // Pretend that this HTML belongs to our component
             document.body.insertAdjacentHTML('beforeend', '<div data-comp-id-12345> abc </div>');
 
-            let capturedCtx = null;
-            manager.registerComponent(compName, (ctx) => {
-                capturedCtx = ctx;
+            let captured = null;
+            manager.registerComponent(compName, (data, ctx) => {
+                captured = { ctx, data };
                 return 123;
             });
 
@@ -222,11 +222,11 @@ class CallComponentTests(_BaseDepManagerTestCase):
             const result = manager.callComponent(compName, compId, inputHash);
 
             // Serialize the HTML elements
-            capturedCtx.$els = capturedCtx.$els.map((el) => el.outerHTML);
+            captured.ctx.els = captured.ctx.els.map((el) => el.outerHTML);
 
             return {
               result,
-              capturedCtx,
+              captured,
             };
         }"""
 
@@ -234,14 +234,16 @@ class CallComponentTests(_BaseDepManagerTestCase):
 
         self.assertEqual(data["result"], 123)
         self.assertEqual(
-            data["capturedCtx"],
+            data["captured"],
             {
-                "$data": {
+                "data": {
                     "hello": "world",
                 },
-                "$els": ['<div data-comp-id-12345=""> abc </div>'],
-                "$id": "12345",
-                "$name": "my_comp",
+                "ctx": {
+                    "els": ['<div data-comp-id-12345=""> abc </div>'],
+                    "id": "12345",
+                    "name": "my_comp",
+                },
             },
         )
 
@@ -261,7 +263,7 @@ class CallComponentTests(_BaseDepManagerTestCase):
             // Pretend that this HTML belongs to our component
             document.body.insertAdjacentHTML('beforeend', '<div data-comp-id-12345> abc </div>');
 
-            manager.registerComponent(compName, (ctx) => {
+            manager.registerComponent(compName, (data, ctx) => {
                 return Promise.resolve(123);
             });
 
@@ -301,7 +303,7 @@ class CallComponentTests(_BaseDepManagerTestCase):
             // Pretend that this HTML belongs to our component
             document.body.insertAdjacentHTML('beforeend', '<div data-comp-id-12345> abc </div>');
 
-            manager.registerComponent(compName, (ctx) => {
+            manager.registerComponent(compName, (data, ctx) => {
                 throw Error('Oops!');
                 return 123;
             });
@@ -335,7 +337,7 @@ class CallComponentTests(_BaseDepManagerTestCase):
             // Pretend that this HTML belongs to our component
             document.body.insertAdjacentHTML('beforeend', '<div data-comp-id-12345> abc </div>');
 
-            manager.registerComponent(compName, async (ctx) => {
+            manager.registerComponent(compName, async (data, ctx) => {
                 throw Error('Oops!');
                 return 123;
             });
@@ -368,7 +370,7 @@ class CallComponentTests(_BaseDepManagerTestCase):
             const compId = '12345';
             const inputHash = 'input-abc';
 
-            manager.registerComponent(compName, (ctx) => {
+            manager.registerComponent(compName, (data, ctx) => {
                 return 123;
             });
 
@@ -400,7 +402,7 @@ class CallComponentTests(_BaseDepManagerTestCase):
 
             document.body.insertAdjacentHTML('beforeend', '<div data-comp-id-12345> abc </div>');
 
-            manager.registerComponent(compName, (ctx) => {
+            manager.registerComponent(compName, (data, ctx) => {
                 return Promise.resolve(123);
             });
 
