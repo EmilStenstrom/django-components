@@ -7,6 +7,7 @@ from django.test import Client
 from django.urls import path
 
 from django_components import Component, ComponentView, register, types
+from django_components.urls import urlpatterns as dc_urlpatterns
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -20,7 +21,7 @@ class CustomClient(Client):
 
         if urlpatterns:
             urls_module = types.ModuleType("urls")
-            urls_module.urlpatterns = urlpatterns  # type: ignore
+            urls_module.urlpatterns = urlpatterns + dc_urlpatterns  # type: ignore
             settings.ROOT_URLCONF = urls_module
         else:
             settings.ROOT_URLCONF = __name__

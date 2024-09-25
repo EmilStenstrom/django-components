@@ -11,9 +11,9 @@ class ComponentsConfig(AppConfig):
     def ready(self) -> None:
         from django_components.app_settings import app_settings
         from django_components.autodiscover import autodiscover, import_libraries
-        from django_components.template_loader import get_component_dirs
         from django_components.component_registry import registry
         from django_components.components.dynamic import DynamicComponent
+        from django_components.template_loader import get_component_dirs
         from django_components.utils import search_dirs, watch_files_for_autoreload
 
         # Import modules set in `COMPONENTS.libraries` setting

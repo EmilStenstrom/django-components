@@ -10,11 +10,7 @@ from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAUL
 from django_components.component import COMP_ONLY_FLAG, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
-from django_components.dependencies import (
-    CSS_DEPENDENCY_PLACEHOLDER,
-    JS_DEPENDENCY_PLACEHOLDER,
-    COMPONENT_DEPS_COMMENT,
-)
+from django_components.dependencies import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from django_components.expression import (
     DynamicFilterExpression,
     Expression,
@@ -69,38 +65,34 @@ def _get_components_from_preload_str(preload_str: str) -> List["Component"]:
     return components
 
 
-def _component_dependencies(kind: Literal["js", "css", "both"], preload: str = "") -> SafeString:
+def _component_dependencies(kind: Literal["js", "css", "both"]) -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
-    preloaded_dependencies = []
-    for component in _get_components_from_preload_str(preload):
-        preloaded_dependencies.append(COMPONENT_DEPS_COMMENT.format(name=component.registered_name))
-    
-    content = "\n".join(preloaded_dependencies)
-    
+    content = ""
+
     if kind in ("css", "both"):
         content += CSS_DEPENDENCY_PLACEHOLDER
     if kind in ("js", "both"):
         content += JS_DEPENDENCY_PLACEHOLDER
-    
+
     return mark_safe(content)
 
 
 @register.simple_tag(name="component_dependencies")
-def component_dependencies(preload: str = "") -> SafeString:
+def component_dependencies() -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
-    return _component_dependencies("both", preload)
+    return _component_dependencies("both")
 
 
 @register.simple_tag(name="component_css_dependencies")
-def component_css_dependencies(preload: str = "") -> SafeString:
+def component_css_dependencies() -> SafeString:
     """Marks location where CSS link tags should be rendered."""
-    return _component_dependencies("css", preload)
+    return _component_dependencies("css")
 
 
 @register.simple_tag(name="component_js_dependencies")
-def component_js_dependencies(preload: str = "") -> SafeString:
+def component_js_dependencies() -> SafeString:
     """Marks location where JS script tags should be rendered."""
-    return _component_dependencies("js", preload)
+    return _component_dependencies("js")
 
 
 @register.tag("slot")

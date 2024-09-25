@@ -1,5 +1,5 @@
-from django.urls import path, include
+from django.urls import include, path
 
 urlpatterns = [
-    path('', include('django_components.dependencies')),
+    path("components/", include("django_components.dependencies")),
 ]

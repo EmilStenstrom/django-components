@@ -36,6 +36,7 @@ def setup_test_config(
             }
         },
         "SECRET_KEY": "secret",
+        "ROOT_URLCONF": "django_components.urls",
     }
 
     settings.configure(

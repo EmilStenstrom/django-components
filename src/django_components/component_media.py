@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, MutableMapping, Opt
 from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
 
-from django_components.template_loader import get_component_dirs
 from django_components.logger import logger
+from django_components.template_loader import get_component_dirs
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -249,7 +249,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     # so we compute this value at the class creation.
     attrs["_comp_path_absolute"] = None
     attrs["_comp_path_relative"] = None
-    
+
     # First check if we even need to resolve anything. If the class doesn't define any
     # JS/CSS files, just skip.
     will_resolve_files = False
@@ -296,7 +296,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
             " specified in the Django's 'COMPONENTS.dirs' settings."
         )
         return
-    
+
     if not will_resolve_files:
         return
 

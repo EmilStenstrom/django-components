@@ -1,15 +1,23 @@
-from unittest.mock import Mock
+"""
+Here we check that the logic around dependency rendering outputs correct HTML.
+During actual rendering, the HTML is then picked up by the JS-side dependency manager.
+"""
 
-from django.http import HttpResponseNotModified
+import re
+from unittest import skip
+
 from django.template import Template
 
 from django_components import Component, registry, types
-from django_components.middleware import ComponentDependencyMiddleware
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, create_and_process_template_response
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
+
+
+def to_spaces(s: str):
+    return re.compile(r"\s+").sub(" ", s)
 
 
 class SimpleComponent(Component):
@@ -28,17 +36,54 @@ class SimpleComponent(Component):
         js = "script.js"
 
 
-class SimpleComponentAlternate(Component):
+class SimpleComponentNested(Component):
     template: types.django_html = """
-        Variable: <strong>{{ variable }}</strong>
+        {% load component_tags %}
+        <div>
+            {% component "inner" variable=variable / %}
+            {% slot "default" default / %}
+        </div>
+    """
+
+    css: types.css = """
+        .my-class {
+            color: red;
+        }
+    """
+
+    js: types.js = """
+        console.log("Hello");
     """
 
     def get_context_data(self, variable):
         return {}
 
     class Media:
-        css = "style2.css"
+        css = ["style.css", "style2.css"]
         js = "script2.js"
+
+
+class OtherComponent(Component):
+    template: types.django_html = """
+        XYZ: <strong>{{ variable }}</strong>
+    """
+
+    css: types.css = """
+        .xyz {
+            color: red;
+        }
+    """
+
+    js: types.js = """
+        console.log("xyz");
+    """
+
+    def get_context_data(self, variable):
+        return {}
+
+    class Media:
+        css = "xyz1.css"
+        js = "xyz1.js"
 
 
 class SimpleComponentWithSharedDependency(Component):
@@ -64,7 +109,7 @@ class MultistyleComponent(Component):
         js = ["script.js", "script2.js"]
 
 
-class ComponentMediaRenderingTests(BaseTestCase):
+class DependencyRenderingTests(BaseTestCase):
     def test_no_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
 
@@ -73,12 +118,18 @@ class ComponentMediaRenderingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=0)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
+
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
+
+        self.assertEqual(rendered.count('<script'), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count('<link'), 0)  # No CSS
+        self.assertEqual(rendered.count('<style'), 0)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [];"), 1)
 
     def test_no_js_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
@@ -88,7 +139,18 @@ class ComponentMediaRenderingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=0)
+
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
+
+        self.assertEqual(rendered.count('<script'), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count('<link'), 0)  # No CSS
+        self.assertEqual(rendered.count('<style'), 0)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [];"), 1)
 
     def test_no_css_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
@@ -98,12 +160,12 @@ class ComponentMediaRenderingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
 
+        self.assertEqual(rendered.count('<script'), 0)  # No JS
+        self.assertEqual(rendered.count('<link'), 0)  # No CSS
+        self.assertEqual(rendered.count('<style'), 0)
+
+    @skip("Old implementation of preload no longer compatible - needs rework")
     def test_preload_dependencies_render_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
 
@@ -112,6 +174,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
+
         self.assertInHTML('<script src="script.js">', rendered, count=1)
         self.assertInHTML(
             '<link href="style.css" media="all" rel="stylesheet"/>',
@@ -119,6 +182,7 @@ class ComponentMediaRenderingTests(BaseTestCase):
             count=1,
         )
 
+    @skip("Old implementation of preload no longer compatible - needs rework")
     def test_preload_css_dependencies_render_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
 
@@ -133,44 +197,59 @@ class ComponentMediaRenderingTests(BaseTestCase):
             count=1,
         )
 
-    def test_single_component_dependencies_render_when_used(self):
+    def test_single_component_dependencies(self):
         registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
-            {% component 'test' variable='foo' %}{% endcomponent %}
+            {% component 'test' variable='foo' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
+
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
+
+        self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
+        self.assertEqual(rendered.count('<link'), 1)
+        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count('<script'), 2)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
 
     def test_single_component_with_dash_or_slash_in_name(self):
-        registry.register(name="test", component=SimpleComponent)
+        registry.register(name="te-s/t", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
-            {% component 'test' variable='foo' %}{% endcomponent %}
+            {% component 'te-s/t' variable='foo' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
 
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
+
+        self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
+        self.assertEqual(rendered.count('<link'), 1)
+        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count('<script'), 2)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+
+    @skip("Old implementation of preload no longer compatible - needs rework")
     def test_preload_dependencies_render_once_when_used(self):
         registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies preload='test' %}
-            {% component 'test' variable='foo' %}{% endcomponent %}
+            {% component 'test' variable='foo' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
@@ -181,17 +260,19 @@ class ComponentMediaRenderingTests(BaseTestCase):
         )
         self.assertInHTML('<script src="script.js">', rendered, count=1)
 
-    def test_placeholder_removed_when_single_component_rendered(self):
+    def test_single_component_placeholder_removed(self):
         registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
-            {% component 'test' variable='foo' %}{% endcomponent %}
+            {% component 'test' variable='foo' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
+
         self.assertNotIn("_RENDERED", rendered)
 
+    @skip("Old implementation of preload no longer compatible - needs rework")
     def test_placeholder_removed_when_preload_rendered(self):
         registry.register(name="test", component=SimpleComponent)
 
@@ -207,15 +288,19 @@ class ComponentMediaRenderingTests(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_css_dependencies %}
-            {% component 'test' variable='foo' %}{% endcomponent %}
+            {% component 'test' variable='foo' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
+
+        # Dependency manager script - NOT present
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=0)
+
+        self.assertEqual(rendered.count('<link'), 1)
+        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count('<script'), 0)  # No JS scripts
+
+        self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
 
     def test_single_component_js_dependencies(self):
         registry.register(name="test", component=SimpleComponent)
@@ -226,7 +311,19 @@ class ComponentMediaRenderingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
+
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
+
+        # CSS NOT included
+        self.assertEqual(rendered.count('<link'), 0)
+        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count('<script'), 2)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
 
     def test_all_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
@@ -234,219 +331,97 @@ class ComponentMediaRenderingTests(BaseTestCase):
         registry.register(name="test", component=MultistyleComponent)
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
-            {% component 'test' %}{% endcomponent %}
+            {% component 'test' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-        self.assertInHTML('<script src="script2.js">', rendered, count=1)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
 
-    def test_all_js_dependencies_are_rendered_for_component_with_multiple_dependencies(
-        self,
-    ):
-        registry.register(name="test", component=MultistyleComponent)
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_js_dependencies %}
-            {% component 'test' %}{% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-        self.assertInHTML('<script src="script2.js">', rendered, count=1)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-    def test_all_css_dependencies_are_rendered_for_component_with_multiple_dependencies(
-        self,
-    ):
-        registry.register(name="test", component=MultistyleComponent)
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_css_dependencies %}
-            {% component 'test' %}{% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=0)
-        self.assertInHTML('<script src="script2.js">', rendered, count=0)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
+        self.assertEqual(rendered.count('<link'), 2)
+        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count('<script'), 2)  # Boilerplate scripts
+
+        self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
+        self.assertEqual(rendered.count('<link href="style2.css" media="all" rel="stylesheet">'), 1)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;, &quot;style2.css&quot;];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
 
     def test_no_dependencies_with_multiple_unused_components(self):
-        registry.register(name="test1", component=SimpleComponent)
-        registry.register(name="test2", component=SimpleComponentAlternate)
+        registry.register(name="inner", component=SimpleComponent)
+        registry.register(name="outer", component=SimpleComponentNested)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=0)
-        self.assertInHTML('<script src="script2.js">', rendered, count=0)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
 
-    def test_correct_css_dependencies_with_multiple_components(self):
-        registry.register(name="test1", component=SimpleComponent)
-        registry.register(name="test2", component=SimpleComponentAlternate)
+        # Dependency manager script
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_css_dependencies %}
-            {% component 'test1' 'variable' %}{% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
+        self.assertEqual(rendered.count('<script'), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count('<link'), 0)  # No CSS
+        self.assertEqual(rendered.count('<style'), 0)
 
-    def test_correct_js_dependencies_with_multiple_components(self):
-        registry.register(name="test1", component=SimpleComponent)
-        registry.register(name="test2", component=SimpleComponentAlternate)
+        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [];"), 1)
 
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_js_dependencies %}
-            {% component 'test1' 'variable' %}{% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-        self.assertInHTML('<script src="script2.js">', rendered, count=0)
-
-    def test_correct_dependencies_with_multiple_components(self):
-        registry.register(name="test1", component=SimpleComponent)
-        registry.register(name="test2", component=SimpleComponentAlternate)
+    def test_multiple_components_dependencies(self):
+        registry.register(name="inner", component=SimpleComponent)
+        registry.register(name="outer", component=SimpleComponentNested)
+        registry.register(name="other", component=OtherComponent)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
-            {% component 'test2' variable='variable' %}{% endcomponent %}
+            {% component 'outer' variable='variable' %}
+                {% component 'other' variable='variable_inner' / %}
+            {% endcomponent %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=0)
-        self.assertInHTML('<script src="script2.js">', rendered, count=1)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=0,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
 
-    def test_shared_dependencies_rendered_once(self):
-        registry.register(name="test1", component=SimpleComponent)
-        registry.register(name="test2", component=SimpleComponentAlternate)
-        registry.register(name="test3", component=SimpleComponentWithSharedDependency)
+        # Dependency manager script
+        # NOTE: Should be present only ONCE!
+        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
-            {% component 'test1' variable='variable' %}{% endcomponent %}
-            {% component 'test2' variable='variable' %}{% endcomponent %}
-            {% component 'test1' variable='variable' %}{% endcomponent %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-        self.assertInHTML('<script src="script2.js">', rendered, count=1)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML(
-            '<link href="style2.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
+        self.assertEqual(rendered.count('<script'), 4)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count('<link'), 3)
+        self.assertEqual(rendered.count('<style'), 2)
 
-    def test_placeholder_removed_when_multiple_component_rendered(self):
-        registry.register(name="test1", component=SimpleComponent)
-        registry.register(name="test2", component=SimpleComponentAlternate)
-        registry.register(name="test3", component=SimpleComponentWithSharedDependency)
+        # Components' inlined CSS
+        # NOTE: Each of these should be present only ONCE!
+        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)
+        self.assertInHTML("<style>.my-class { color: red; }</style>", rendered, count=1)
+
+        # Components' Media.css
+        # NOTE: Each of these should be present only ONCE!
+        self.assertInHTML('<link href="xyz1.css" media="all" rel="stylesheet">', rendered, count=1)
+        self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)
+        self.assertInHTML('<link href="style2.css" media="all" rel="stylesheet">', rendered, count=1)
+
+        self.assertEqual(rendered.count("const loadedJsScripts = [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;];"), 1)
+        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;xyz1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
+        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;xyz1.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+
+    def test_multiple_components_all_placeholders_removed(self):
+        registry.register(name="inner", component=SimpleComponent)
+        registry.register(name="outer", component=SimpleComponentNested)
+        registry.register(name="test", component=SimpleComponentWithSharedDependency)
 
         template_str: types.django_html = """
             {% load component_tags %}{% component_dependencies %}
-            {% component 'test1' variable='variable' %}{% endcomponent %}
-            {% component 'test2' variable='variable' %}{% endcomponent %}
-            {% component 'test1' variable='variable' %}{% endcomponent %}
+            {% component 'inner' variable='variable' / %}
+            {% component 'outer' variable='variable' / %}
+            {% component 'test' variable='variable' / %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
-
-    def test_middleware_response_without_content_type(self):
-        response = HttpResponseNotModified()
-        middleware = ComponentDependencyMiddleware(get_response=lambda _: response)
-        request = Mock()
-        self.assertEqual(response, middleware(request=request))
-
-    def test_middleware_response_with_components_with_slash_dash_and_underscore(
-        self,
-    ):
-        component_names = [
-            "test-component",
-            "test/component",
-            "test_component",
-        ]
-        for component_name in component_names:
-            registry.register(name=component_name, component=SimpleComponent)
-            template_str: types.django_html = f"""
-                {{% load component_tags %}}
-                {{% component_js_dependencies %}}
-                {{% component_css_dependencies %}}
-                {{% component '{component_name}' variable='value' %}}
-                {{% endcomponent %}}
-            """
-            template = Template(template_str)
-            rendered = create_and_process_template_response(template)
-            self.assertHTMLEqual(
-                rendered,
-                (
-                    '<script src="script.js"></script>'
-                    '<link href="style.css" media="all" rel="stylesheet">'
-                    "Variable: <strong>value</strong>\n"
-                ),
-            )

@@ -877,7 +877,7 @@ that allow you to specify the types of args, kwargs, slots, and
 data:
 
 ```py
-class Button(Component[Args, Kwargs, Data, Slots]):
+class Button(Component[Args, Kwargs, Slots, Data, JsData, CssData]):
     ...
 ```
 
@@ -916,7 +916,7 @@ class Slots(TypedDict):
     # SlotContent == Union[str, SafeString]
     another_slot: SlotContent
 
-class Button(Component[Args, Kwargs, Data, Slots]):
+class Button(Component[Args, Kwargs, Slots, Data, JsData, CssData]):
     def get_context_data(self, variable, another):
         return {
             "variable": variable,
@@ -994,7 +994,7 @@ from django_components import Component, EmptyDict, EmptyTuple
 Args = EmptyTuple
 Kwargs = Data = Slots = EmptyDict
 
-class Button(Component[Args, Kwargs, Data, Slots]):
+class Button(Component[Args, Kwargs, Slots, Data, JsData, CssData]):
     ...
 ```
 
@@ -1036,7 +1036,7 @@ Or you can replace `Args` with `Any` altogether, to skip the validation of args:
 
 ```py
 # Replaced `Args` with `Any`
-class Button(Component[Any, Kwargs, Data, Slots]):
+class Button(Component[Any, Kwargs, Slots, Data, JsData, CssData]):
     ...
 ```
 
@@ -3728,7 +3728,7 @@ You can publish and share your components for others to use. Here are the steps 
     # Define the component
     # NOTE: Don't forget to set the `registry`!
     @register("my_menu", registry=comp_registry)
-    class MyMenu(Component[MyMenuArgs, MyMenuProps, MyMenuSlots, Any]):
+    class MyMenu(Component[MyMenuArgs, MyMenuProps, MyMenuSlots, Any, Any, Any]):
         def get_context_data(
             self,
             *args,

@@ -1,10 +1,9 @@
 from time import perf_counter
 
 from django.template import Context, Template
-from django.test import override_settings
 
 from django_components import Component, registry, types
-from django_components.middleware import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
+from django_components.dependencies import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from tests.django_test_setup import *  # NOQA
 from tests.testutils import BaseTestCase, create_and_process_template_response
 

@@ -21,10 +21,6 @@ class SimpleComponent(Component):
     def get_context_data(self, variable=None):
         return {"variable": variable} if variable is not None else {}
 
-    @staticmethod
-    def expected_output(variable_value):
-        return "Variable: < strong > {} < / strong >".format(variable_value)
-
 
 class VariableDisplay(Component):
     template: types.django_html = """
@@ -250,7 +246,7 @@ class ParentArgsTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_parent_args_can_be_drawn_from_context(self):
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
             {% component 'parent_with_args' parent_value=parent_value %}
             {% endcomponent %}
         """
@@ -297,7 +293,7 @@ class ParentArgsTests(BaseTestCase):
         first_val, second_val = context_behavior_data
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
             {% component 'parent_with_args' parent_value='passed_in' %}
                 {% fill 'content' %}
                     {% component name='variable_display' shadowing_variable='value_from_slot' new_variable=inner_parent_value %}
@@ -331,7 +327,7 @@ class ContextCalledOnceTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_context_call_with_simple_component(self):
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
             {% component name='incrementer' %}{% endcomponent %}
         """
         template = Template(template_str)
@@ -427,7 +423,7 @@ class ComponentsCanAccessOuterContext(BaseTestCase):
     )
     def test_simple_component_can_use_outer_context(self, context_behavior_data):
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
             {% component 'simple_component' %}{% endcomponent %}
         """
         template = Template(template_str)

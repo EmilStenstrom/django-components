@@ -139,7 +139,7 @@ def _filepath_to_python_module(
 def get_component_filepaths() -> List[Path]:
     """
     Get a list of filepaths that MAY contain component definitions.
-    
+
     These are all Python files (`.py`) that are found in `COMPONENT.dirs`.
     """
     dirs = get_component_dirs()

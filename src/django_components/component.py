@@ -46,11 +46,7 @@ from django_components.context import (
     make_isolated_context_copy,
     prepare_context,
 )
-from django_components.dependencies import (
-    cache_inlined_css,
-    cache_inlined_js,
-    postprocess_component_html,
-)
+from django_components.dependencies import RenderKind, cache_inlined_css, cache_inlined_js, postprocess_component_html
 from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
 from django_components.logger import trace_msg
 from django_components.node import BaseNode
@@ -97,6 +93,7 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
     kwargs: KwargsType
     slots: SlotsType
     escape_slots_content: bool
+    kind: Optional[RenderKind]
 
 
 @dataclass()
@@ -456,8 +453,7 @@ class Component(
         escape_slots_content: bool = True,
         args: Optional[ArgsType] = None,
         kwargs: Optional[KwargsType] = None,
-        # Whether we should collect all JS and CSS dependencies and insert them into `{% component_dependencies %}`
-        render_dependencies: bool = True,
+        kind: Optional[RenderKind] = "document",
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -482,6 +478,11 @@ class Component(
           is rendered. The keys on the context can be accessed from within the template.
             - NOTE: In "isolated" mode, context is NOT accessible, and data MUST be passed via
               component's args and kwargs.
+        - `kind` - Configure how to handle JS and CSS dependencies.
+            - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
+              or to the end of the `<body>` tag. CSS dependencies are inserted into
+              `{% component_css_dependencies %}`, or the end of the `<head>` tag.
+            - `None` - No processing applied. Use this if you want to insert the resulting HTML into another component.
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -510,7 +511,7 @@ class Component(
             context=context,
             slots=slots,
             escape_slots_content=escape_slots_content,
-            render_dependencies=render_dependencies,
+            kind=kind,
         )
         return cls.response_class(content, *response_args, **response_kwargs)
 
@@ -522,8 +523,7 @@ class Component(
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        # Whether we should collect all JS and CSS dependencies and insert them into `{% component_dependencies %}`
-        render_dependencies: bool = True,
+        kind: Optional[RenderKind] = "document",
     ) -> str:
         """
         Render the component into a string.
@@ -541,6 +541,11 @@ class Component(
           is rendered. The keys on the context can be accessed from within the template.
             - NOTE: In "isolated" mode, context is NOT accessible, and data MUST be passed via
               component's args and kwargs.
+        - `kind` - Configure how to handle JS and CSS dependencies.
+            - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
+              or to the end of the `<body>` tag. CSS dependencies are inserted into
+              `{% component_css_dependencies %}`, or the end of the `<head>` tag.
+            - `None` - No processing applied. Use this if you want to insert the resulting HTML into another component.
 
         Example:
         ```py
@@ -564,7 +569,7 @@ class Component(
         else:
             comp = cls()
 
-        return comp._render(context, args, kwargs, slots, escape_slots_content, render_dependencies)
+        return comp._render(context, args, kwargs, slots, escape_slots_content, kind)
 
     # This is the internal entrypoint for the render function
     def _render(
@@ -574,10 +579,10 @@ class Component(
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        render_dependencies: bool = True,
+        kind: Optional[RenderKind] = "document",
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content, render_dependencies)
+            return self._render_impl(context, args, kwargs, slots, escape_slots_content, kind)
         except Exception as err:
             raise type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
 
@@ -588,7 +593,7 @@ class Component(
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        render_dependencies: bool = True,
+        kind: Optional[RenderKind] = "document",
     ) -> str:
         has_slots = slots is not None
 
@@ -615,6 +620,7 @@ class Component(
                     args=args,
                     kwargs=kwargs,
                     escape_slots_content=escape_slots_content,
+                    kind=kind,
                 ),
                 is_filled=None,
             ),
@@ -692,7 +698,7 @@ class Component(
                     component_cls=self.__class__,
                     component_id=self.component_id,
                     html_content=html_content,
-                    render_deps=render_dependencies,
+                    kind=kind,
                 )
 
         # After rendering is done, remove the current state from the stack, which means
@@ -741,11 +747,11 @@ class Component(
         So if a component subclasses Component class like so
 
         ```py
-        class MyComp(Component[MyArgs, MyKwargs, Any, MySlots]):
+        class MyComp(Component[MyArgs, MyKwargs, MySlots, MyData, MyJsData, MyCssData]):
             ...
         ```
 
-        Then we want to extract the tuple (MyArgs, MyKwargs, Any, MySlots).
+        Then we want to extract the tuple (MyArgs, MyKwargs, MySlots, MyData, MyJsData, MyCssData).
 
         Returns `None` if types were not provided. That is, the class was subclassed
         as:
@@ -806,7 +812,7 @@ class Component(
         maybe_inputs = self._get_types()
         if maybe_inputs is None:
             return
-        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type  = maybe_inputs
+        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type = maybe_inputs
 
         # Validate args
         validate_typed_tuple(self.input.args, args_type, f"Component '{self.name}'", "positional argument")
@@ -819,7 +825,7 @@ class Component(
         maybe_inputs = self._get_types()
         if maybe_inputs is None:
             return
-        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type  = maybe_inputs
+        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type = maybe_inputs
 
         # Validate data
         validate_typed_dict(data, data_type, f"Component '{self.name}'", "data")
@@ -892,7 +898,7 @@ class ComponentNode(BaseNode):
             kwargs=kwargs,
             # NOTE: When we render components inside the template via template tags,
             # do NOT render deps, because this may be decided by outer component
-            render_dependencies=False,
+            kind=None,
         )
 
         trace_msg("RENDR", "COMP", self.name, self.node_id, "...Done!")

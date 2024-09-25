@@ -23,6 +23,9 @@ from django_components.component_registry import (
     registry as registry,
 )
 from django_components.components import DynamicComponent as DynamicComponent
+
+# NOTE: Middleware is exposed via django_components.middleware
+from django_components.dependencies import render_dependencies as render_dependencies
 from django_components.library import TagProtectedError as TagProtectedError
 from django_components.slots import (
     SlotContent as SlotContent,
