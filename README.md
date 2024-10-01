@@ -3986,5 +3986,8 @@ twine upload --repository pypi dist/* -u __token__ -p <PyPI_TOKEN>
 
 ### Development guides
 
-- [Slot rendering flot](https://github.com/EmilStenstrom/django-components/blob/master/docs/slot_rendering.md)
-- [Slots and blocks](https://github.com/EmilStenstrom/django-components/blob/master/docs/slots_and_blocks.md)
+Deep dive into how django_components' features are implemented.
+
+- [Slot rendering](https://github.com/EmilStenstrom/django-components/blob/master/docs/devguides/slot_rendering.md)
+- [Slots and blocks](https://github.com/EmilStenstrom/django-components/blob/master/docs/devguides/slots_and_blocks.md)
+- [JS and CSS dependency management](https://github.com/EmilStenstrom/django-components/blob/master/docs/devguides/dependency_mgmt.md)
