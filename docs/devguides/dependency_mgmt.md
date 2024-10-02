@@ -44,7 +44,7 @@ associated with components, and how we render them.
 
    ```py
    template = Template("""
-     {% load components %}
+     {% load component_tags %}
      <div>
        {% component "my_table" / %}
      </div>
@@ -74,7 +74,7 @@ associated with components, and how we render them.
    ```py
    def fragment_view(request):
        template = Template("""
-         {% load components %}
+         {% load component_tags %}
          <div>
            {% component "my_table" / %}
          </div>
@@ -122,7 +122,7 @@ This is how we achieve that:
    So a template like this
 
    ```django
-   {% load components %}
+   {% load component_tags %}
    <div>
      {% component "my_table" / %}
    </div>
@@ -189,12 +189,21 @@ This is how we achieve that:
 
    ```js
    // Load JS or CSS script if not loaded already
-   Components.loadScript("js", '<script src="/abc/def">');
+   Components.loadScript("js", '<script src="/abc/xyz/script.js">');
+   Components.loadScript("css", '<link href="/abc/xyz/style.css">');
 
    // Or mark one as already-loaded, so it is ignored when
    // we call `loadScript`
    Components.markScriptLoaded("js", "/abc/def");
    ```
+
+   Note that `loadScript()` receives a whole `<script>` and `<link>` tags, not just the URL.
+   This is because when Django's `Media` class renders JS and CSS, it formats it as `<script>` and `<link>` tags.
+   And we allow users to modify how the JS and CSS should be rendered into the `<script>` and `<link>` tags.
+   
+   So, if users decided to add an extra attribute to their `<script>` tags, e.g. `<script defer src="http://..."></script>`,
+   then this way we make sure that the `defer` attribute will be present on the `<script>` tag when
+   it is inserted into the DOM at the time of loading the JS script.
 
 5. To be able to fetch component's inlined JS and CSS, django-components adds a URL path under:
 
