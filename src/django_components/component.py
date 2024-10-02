@@ -247,10 +247,6 @@ class Component(
 
     _class_hash: ClassVar[int]
 
-    # NOTE: These paths are set by the metaclass
-    _comp_path_absolute: Optional[str] = None
-    _comp_path_relative: Optional[str] = None
-
     def __init__(
         self,
         registered_name: Optional[str] = None,

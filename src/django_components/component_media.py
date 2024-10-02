@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, MutableMapping, Opt
 from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
 
+from django_components.autodiscover import get_component_dirs
 from django_components.logger import logger
-from django_components.template_loader import get_component_dirs
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -245,11 +245,6 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     as the component class. If so, modify the attributes so the class Django's rendering
     will pick up these files correctly.
     """
-    # The component's file path is used when working with its JS and CSS,
-    # so we compute this value at the class creation.
-    attrs["_comp_path_absolute"] = None
-    attrs["_comp_path_relative"] = None
-
     # First check if we even need to resolve anything. If the class doesn't define any
     # JS/CSS files, just skip.
     will_resolve_files = False
@@ -260,14 +255,12 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
         if getattr(media, "css", None) or getattr(media, "js", None):
             will_resolve_files = True
 
-    component_name = attrs["__qualname__"]
-
-    # Get the full path of the file where the component was defined
-    module_name = attrs["__module__"]
-    if module_name == "__main__" or module_name.startswith("django_components."):
-        # NOTE: If a class is defined in __main__ module, it was NOT defined in a file,
-        # but instead in REPL (terminal), in which case the rest of the code doesn't make sense.
+    if not will_resolve_files:
         return
+
+    component_name = attrs["__qualname__"]
+    # Derive the full path of the file where the component was defined
+    module_name = attrs["__module__"]
     module_obj = sys.modules[module_name]
     file_path = module_obj.__file__
 
@@ -285,8 +278,6 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     # Get the directory where the component class is defined
     try:
         comp_dir_abs, comp_dir_rel = _get_dir_path_from_component_path(file_path, components_dirs)
-        attrs["_comp_path_absolute"] = file_path
-        attrs["_comp_path_relative"] = str(Path(comp_dir_rel) / Path(file_path).name)
     except RuntimeError:
         # If no dir was found, we assume that the path is NOT relative to the component dir
         logger.debug(
@@ -295,9 +286,6 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
             " then check that the component's directory is accessible from one of the paths"
             " specified in the Django's 'COMPONENTS.dirs' settings."
         )
-        return
-
-    if not will_resolve_files:
         return
 
     # Check if filepath refers to a file that's in the same directory as the component class.
