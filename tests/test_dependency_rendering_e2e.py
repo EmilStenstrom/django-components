@@ -6,11 +6,9 @@ in an actual browser.
 from playwright.async_api import Page
 
 from django_components import types
-
 from tests.django_test_setup import setup_test_config
-from tests.testutils import BaseTestCase
 from tests.e2e.utils import TEST_SERVER_URL, with_playwright
-
+from tests.testutils import BaseTestCase
 
 setup_test_config({"autodiscover": False})
 

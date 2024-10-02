@@ -122,9 +122,9 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count('<script'), 2)  # Two 2 scripts belong to the boilerplate
-        self.assertEqual(rendered.count('<link'), 0)  # No CSS
-        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count("<script"), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<link"), 0)  # No CSS
+        self.assertEqual(rendered.count("<style"), 0)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
@@ -143,9 +143,9 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count('<script'), 2)  # Two 2 scripts belong to the boilerplate
-        self.assertEqual(rendered.count('<link'), 0)  # No CSS
-        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count("<script"), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<link"), 0)  # No CSS
+        self.assertEqual(rendered.count("<style"), 0)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
@@ -161,9 +161,9 @@ class DependencyRenderingTests(BaseTestCase):
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
 
-        self.assertEqual(rendered.count('<script'), 0)  # No JS
-        self.assertEqual(rendered.count('<link'), 0)  # No CSS
-        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count("<script"), 0)  # No JS
+        self.assertEqual(rendered.count("<link"), 0)  # No CSS
+        self.assertEqual(rendered.count("<style"), 0)
 
     @skip("Old implementation of preload no longer compatible - needs rework")
     def test_preload_dependencies_render_when_no_components_used(self):
@@ -211,14 +211,24 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
-        self.assertEqual(rendered.count('<link'), 1)
-        self.assertEqual(rendered.count('<style'), 0)
-        self.assertEqual(rendered.count('<script'), 2)
+        self.assertEqual(rendered.count("<link"), 1)
+        self.assertEqual(rendered.count("<style"), 0)
+        self.assertEqual(rendered.count("<script"), 2)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
+            ),
+            1,
+        )
 
     def test_single_component_with_dash_or_slash_in_name(self):
         registry.register(name="te-s/t", component=SimpleComponent)
@@ -234,14 +244,24 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
-        self.assertEqual(rendered.count('<link'), 1)
-        self.assertEqual(rendered.count('<style'), 0)
-        self.assertEqual(rendered.count('<script'), 2)
+        self.assertEqual(rendered.count("<link"), 1)
+        self.assertEqual(rendered.count("<style"), 0)
+        self.assertEqual(rendered.count("<script"), 2)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
+            ),
+            1,
+        )
 
     @skip("Old implementation of preload no longer compatible - needs rework")
     def test_preload_dependencies_render_once_when_used(self):
@@ -296,9 +316,9 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script - NOT present
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=0)
 
-        self.assertEqual(rendered.count('<link'), 1)
-        self.assertEqual(rendered.count('<style'), 0)
-        self.assertEqual(rendered.count('<script'), 0)  # No JS scripts
+        self.assertEqual(rendered.count("<link"), 1)
+        self.assertEqual(rendered.count("<style"), 0)
+        self.assertEqual(rendered.count("<script"), 0)  # No JS scripts
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
 
@@ -316,14 +336,24 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         # CSS NOT included
-        self.assertEqual(rendered.count('<link'), 0)
-        self.assertEqual(rendered.count('<style'), 0)
-        self.assertEqual(rendered.count('<script'), 2)
+        self.assertEqual(rendered.count("<link"), 0)
+        self.assertEqual(rendered.count("<style"), 0)
+        self.assertEqual(rendered.count("<script"), 2)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
+            ),
+            1,
+        )
 
     def test_all_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
@@ -339,17 +369,29 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count('<link'), 2)
-        self.assertEqual(rendered.count('<style'), 0)
-        self.assertEqual(rendered.count('<script'), 2)  # Boilerplate scripts
+        self.assertEqual(rendered.count("<link"), 2)
+        self.assertEqual(rendered.count("<style"), 0)
+        self.assertEqual(rendered.count("<script"), 2)  # Boilerplate scripts
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
         self.assertEqual(rendered.count('<link href="style2.css" media="all" rel="stylesheet">'), 1)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;, &quot;style2.css&quot;];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+        self.assertEqual(
+            rendered.count("const loadedCssScripts = [&quot;style.css&quot;, &quot;style2.css&quot;];"), 1
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
+            ),
+            1,
+        )
 
     def test_no_dependencies_with_multiple_unused_components(self):
         registry.register(name="inner", component=SimpleComponent)
@@ -364,9 +406,9 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count('<script'), 2)  # Two 2 scripts belong to the boilerplate
-        self.assertEqual(rendered.count('<link'), 0)  # No CSS
-        self.assertEqual(rendered.count('<style'), 0)
+        self.assertEqual(rendered.count("<script"), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<link"), 0)  # No CSS
+        self.assertEqual(rendered.count("<style"), 0)
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
@@ -391,9 +433,9 @@ class DependencyRenderingTests(BaseTestCase):
         # NOTE: Should be present only ONCE!
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count('<script'), 4)  # Two 2 scripts belong to the boilerplate
-        self.assertEqual(rendered.count('<link'), 3)
-        self.assertEqual(rendered.count('<style'), 2)
+        self.assertEqual(rendered.count("<script"), 4)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<link"), 3)
+        self.assertEqual(rendered.count("<style"), 2)
 
         # Components' inlined CSS
         # NOTE: Each of these should be present only ONCE!
@@ -406,10 +448,30 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)
         self.assertInHTML('<link href="style2.css" media="all" rel="stylesheet">', rendered, count=1)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;xyz1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;xyz1.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"), 1)
+        self.assertEqual(
+            rendered.count(
+                "const loadedJsScripts = [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                "const loadedCssScripts = [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;xyz1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
+            ),
+            1,
+        )
+        self.assertEqual(
+            rendered.count(
+                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;xyz1.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
+            ),
+            1,
+        )
 
     def test_multiple_components_all_placeholders_removed(self):
         registry.register(name="inner", component=SimpleComponent)

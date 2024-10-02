@@ -1,10 +1,10 @@
 from unittest.mock import Mock
-from selectolax.lexbor import LexborHTMLParser
 
 from django.http import HttpResponseNotModified
 from django.template import Context, Template
+from selectolax.lexbor import LexborHTMLParser
 
-from django_components import registry, types, Component, render_dependencies
+from django_components import Component, registry, render_dependencies, types
 from django_components.components.dynamic import DynamicComponent
 from django_components.middleware import ComponentDependencyMiddleware
 
