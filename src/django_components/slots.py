@@ -504,6 +504,7 @@ def resolve_slots(
     slots: Dict[SlotId, Slot] = {}
     # This holds info on which slot (key) has which slots nested in it (value list)
     slot_children: Dict[SlotId, List[SlotId]] = {}
+    all_nested_slots: Set[SlotId] = set()
 
     def on_node(entry: NodeTraverse) -> None:
         node = entry.node
@@ -533,7 +534,7 @@ def resolve_slots(
         # - 0003: [0004]
         # In other words, the data tells us that slot ID 0001 is PARENT of slot 0002.
         parent_slot_entry = entry.parent
-        while parent_slot_entry and parent_slot_entry.parent is not None:
+        while parent_slot_entry is not None:
             if not isinstance(parent_slot_entry.node, SlotNode):
                 parent_slot_entry = parent_slot_entry.parent
                 continue
@@ -542,6 +543,7 @@ def resolve_slots(
             if parent_slot_id not in slot_children:
                 slot_children[parent_slot_id] = []
             slot_children[parent_slot_id].append(node.node_id)
+            all_nested_slots.add(node.node_id)
             break
 
     walk_nodelist(template.nodelist, on_node, context)
@@ -562,10 +564,11 @@ def resolve_slots(
         _report_slot_errors(slots, slot_fills, component_name)
 
     # 5. Find roots of the slot relationships
-    top_level_slot_ids: List[SlotId] = []
-    for node_id, slot in slots.items():
-        if node_id not in slot_children or not slot_children[node_id]:
-            top_level_slot_ids.append(node_id)
+    top_level_slot_ids: List[SlotId] = [
+        node_id
+        for node_id in slots.keys()
+        if node_id not in all_nested_slots
+    ]
 
     # 6. Walk from out-most slots inwards, and decide whether and how
     # we will render each slot.

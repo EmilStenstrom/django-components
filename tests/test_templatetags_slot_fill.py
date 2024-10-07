@@ -522,6 +522,172 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         )
 
 
+# See https://github.com/EmilStenstrom/django-components/issues/698
+class NestedSlotsTests(BaseTestCase):
+    class NestedSlots(Component):
+        template: types.django_html = """
+            {% load component_tags %}
+            {% slot 'wrapper' %}
+                <div>
+                    Wrapper Default 
+                    {% slot 'parent1' %}
+                        <div>
+                            Parent1 Default
+                            {% slot 'child1' %}
+                                <div>
+                                    Child 1 Default
+                                </div>
+                            {% endslot %}
+                        </div>
+                    {% endslot %}
+                    {% slot 'parent2' %}
+                        <div>
+                            Parent2 Default
+                        </div>
+                    {% endslot %}
+                </div>
+            {% endslot %}
+        """
+
+    def setUp(self) -> None:
+        super().setUp()
+        registry.register("example", self.NestedSlots)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_empty(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'example' %} 
+            {% endcomponent %}
+        """
+
+        rendered = Template(template_str).render(Context())
+        expected = """
+            <div>
+                Wrapper Default 
+                <div>
+                    Parent1 Default
+                    <div>
+                        Child 1 Default
+                    </div>
+                </div>
+                <div>
+                    Parent2 Default
+                </div>
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_override_outer(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'example' %} 
+                {% fill 'wrapper' %}
+                    <div>
+                        Entire Wrapper Replaced
+                    </div>
+                {% endfill %}
+            {% endcomponent %} 
+        """
+
+        rendered = Template(template_str).render(Context())
+        expected = """
+            <div>
+                Entire Wrapper Replaced
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_override_middle(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'example' %}
+                {% fill 'parent1' %}
+                    <div>
+                        Parent1 Replaced
+                    </div>
+                {% endfill %}
+            {% endcomponent %}
+        """
+
+        rendered = Template(template_str).render(Context())
+        expected = """
+            <div>
+                Wrapper Default 
+                <div>
+                    Parent1 Replaced
+                </div>
+                <div>
+                    Parent2 Default
+                </div>
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_override_inner(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'example' %}
+                {% fill 'child1' %}
+                    <div>
+                        Child1 Replaced
+                    </div>
+                {% endfill %}
+            {% endcomponent %}
+        """
+
+        rendered = Template(template_str).render(Context())
+        expected = """
+            <div>
+                Wrapper Default 
+                <div>
+                    Parent1 Default
+                    <div>
+                        Child1 Replaced
+                    </div>
+                </div>
+                <div>
+                    Parent2 Default
+                </div>
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_override_all(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'example' %}
+                {% fill 'child1' %}
+                    <div>
+                        Child1 Replaced
+                    </div>
+                {% endfill %}
+                {% fill 'parent1' %}
+                    <div>
+                        Parent1 Replaced
+                    </div>
+                {% endfill %}
+                {% fill 'wrapper' %}
+                    <div>
+                        Entire Wrapper Replaced
+                    </div>
+                {% endfill %}
+            {% endcomponent %}
+        """
+
+        rendered = Template(template_str).render(Context())
+        expected = """
+            <div>
+                Entire Wrapper Replaced
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+
 class SlottedTemplateRegressionTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_that_uses_missing_variable(self):
