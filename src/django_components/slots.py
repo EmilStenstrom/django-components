@@ -564,11 +564,7 @@ def resolve_slots(
         _report_slot_errors(slots, slot_fills, component_name)
 
     # 5. Find roots of the slot relationships
-    top_level_slot_ids: List[SlotId] = [
-        node_id
-        for node_id in slots.keys()
-        if node_id not in all_nested_slots
-    ]
+    top_level_slot_ids: List[SlotId] = [node_id for node_id in slots.keys() if node_id not in all_nested_slots]
 
     # 6. Walk from out-most slots inwards, and decide whether and how
     # we will render each slot.
