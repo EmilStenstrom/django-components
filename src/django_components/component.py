@@ -40,7 +40,6 @@ from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as registry_
 from django_components.context import (
     _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
-    _PARENT_COMP_CONTEXT_KEY,
     _REGISTRY_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
     get_injected_context_var,
@@ -630,16 +629,10 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             else:
                 fill_content = self.fill_content
 
-            # If this is top-level component and it has no parent, use outer context instead
-            slot_context_data = context_data
-            if not context[_PARENT_COMP_CONTEXT_KEY]:
-                slot_context_data = self.outer_context.flatten()
-
             _, resolved_fills = resolve_slots(
                 context,
                 template,
                 component_name=self.name,
-                context_data=slot_context_data,
                 fill_content=fill_content,
                 # Dynamic component has a special mark do it doesn't raise certain errors
                 is_dynamic_component=getattr(self, "_is_dynamic_component", False),

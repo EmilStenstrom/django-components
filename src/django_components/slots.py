@@ -124,7 +124,6 @@ class SlotFill(Generic[TSlotData]):
     escaped_name: str
     is_filled: bool
     content_func: SlotFunc[TSlotData]
-    context_data: Mapping
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
@@ -479,7 +478,6 @@ def resolve_slots(
     context: Context,
     template: Template,
     component_name: Optional[str],
-    context_data: Mapping[str, Any],
     fill_content: Dict[SlotName, FillContent],
     is_dynamic_component: bool = False,
 ) -> Tuple[Dict[SlotId, Slot], Dict[SlotId, SlotFill]]:
@@ -497,7 +495,6 @@ def resolve_slots(
             escaped_name=_escape_slot_name(name),
             is_filled=True,
             content_func=fill.content_func,
-            context_data=context_data,
             slot_default_var=fill.slot_default_var,
             slot_data_var=fill.slot_data_var,
         )
@@ -592,7 +589,6 @@ def resolve_slots(
                 escaped_name=_escape_slot_name(slot.name),
                 is_filled=False,
                 content_func=_nodelist_to_slot_render_func(slot.nodelist),
-                context_data=context_data,
                 slot_default_var=None,
                 slot_data_var=None,
             )
@@ -643,7 +639,6 @@ def _resolve_default_slot(
             named_fills[slot.name] = SlotFill(
                 is_filled=default_fill.is_filled,
                 content_func=default_fill.content_func,
-                context_data=default_fill.context_data,
                 slot_default_var=default_fill.slot_default_var,
                 slot_data_var=default_fill.slot_data_var,
                 # Updated fields
