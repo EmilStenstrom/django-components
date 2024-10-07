@@ -532,13 +532,13 @@ def resolve_slots(
         # - 0002: []
         # - 0003: [0004]
         # In other words, the data tells us that slot ID 0001 is PARENT of slot 0002.
-        curr_entry = entry.parent
-        while curr_entry and curr_entry.parent is not None:
-            if not isinstance(curr_entry.node, SlotNode):
-                curr_entry = curr_entry.parent
+        parent_slot_entry = entry.parent
+        while parent_slot_entry and parent_slot_entry.parent is not None:
+            if not isinstance(parent_slot_entry.node, SlotNode):
+                parent_slot_entry = parent_slot_entry.parent
                 continue
 
-            parent_slot_id = curr_entry.node.node_id
+            parent_slot_id = parent_slot_entry.node.node_id
             if parent_slot_id not in slot_children:
                 slot_children[parent_slot_id] = []
             slot_children[parent_slot_id].append(node.node_id)
@@ -722,7 +722,7 @@ def _escape_slot_name(name: str) -> str:
 
 
 def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
-    def render_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
+    def render_func(ctx: Context, slot_data: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         return nodelist.render(ctx)
 
     return render_func  # type: ignore[return-value]
