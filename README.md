@@ -19,7 +19,7 @@ Potential benefits:
 - 🔄 Reduced code duplication
 - 🛠️ Improved maintainability through modular design
 - 🧠 Easier management of complex UIs
-- 🤝 Potential for better collaboration between frontend and backend developers
+- 🤝 Enhanced collaboration between frontend and backend developers
 
 Django-components can be particularly useful for larger Django projects that require a more structured approach to UI development, without necessitating a shift to a separate frontend framework.
 
@@ -201,7 +201,7 @@ This change is done to simplify the API in anticipation of a 1.0 release of djan
 
 ## Security notes 🚨
 
-_You are advised to read this section before using django-components in production._
+_It is strongly recommended to read this section before using django-components in production._
 
 ### Static files
 
@@ -290,7 +290,7 @@ For a step-by-step guide on deploying production server with static files,
    If `COMPONENTS.dirs` is omitted, django-components will by default look for a top-level `/components` directory,
    `{BASE_DIR}/components`.
 
-   Irrespective of `COMPONENTS.dirs`, django_components will also load components from app-level directories, e.g. `my-app/components/`.
+   In addition to `COMPONENTS.dirs`, django_components will also load components from app-level directories, such as `my-app/components/`.
    The directories within apps are configured with [`COMPONENTS.app_dirs`](#app_dirs), and the default is `[app]/components`.
 
    NOTE: The input to `COMPONENTS.dirs` is the same as for `STATICFILES_DIRS`, and the paths must be full paths. [See Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-dirs).
@@ -1581,7 +1581,6 @@ This is what our example looks like with `component_vars.is_filled`.
     </div>
     {% endif %}
 </div>
-```
 
 Here's our example with more complex branching.
 
@@ -1799,7 +1798,7 @@ This means that you can use `self.input` inside:
 - `get_template_name`
 - `get_template`
 
-`self.input` is defined only for the duration of `Component.render`, and raises `RuntimeError` when called outside of this.
+`self.input` is only defined during the execution of `Component.render`, and raises a `RuntimeError` when called outside of this context.
 
 `self.input` has the same fields as the input to `Component.render`:
 
@@ -2718,6 +2717,30 @@ NOTE: `{% csrf_token %}` tags need access to the top-level context, and they wil
 If you find yourself using the `only` modifier often, you can set the [context_behavior](#context-behavior) option to `"isolated"`, which automatically applies the `only` modifier. This is useful if you want to make sure that components don't accidentally access the outer context.
 
 Components can also access the outer context in their context methods like `get_context_data` by accessing the property `self.outer_context`.
+
+### Example of Accessing Outer Context
+
+```django
+<div>
+  {% component "calender" / %}
+</div>
+```
+
+Assuming that the rendering context has variables such as `date`, you can use `self.outer_context` to access them from within `get_context_data`. Here's how you might implement it:
+
+```python
+class Calender(Component):
+    
+    ...
+
+    def get_context_data(self):
+        outer_field = self.outer_context["date"]
+        return {
+            "date": outer_fields,
+        }
+```
+
+However, as a best practice, it’s recommended not to rely on accessing the outer context directly through `self.outer_context`. Instead, explicitly pass the variables to the component. For instance, continue passing the variables in the component tag as shown in the previous examples.
 
 ## Pre-defined template variables
 

@@ -8,7 +8,7 @@ asgiref==3.8.1
     # via django
 black==24.8.0
     # via -r requirements-dev.in
-cachetools==5.4.0
+cachetools==5.5.0
     # via tox
 certifi==2024.8.30
     # via requests
@@ -24,9 +24,9 @@ colorama==0.4.6
     # via tox
 distlib==0.3.8
     # via virtualenv
-django==5.1
+django==5.1.1
     # via -r requirements-dev.in
-filelock==3.15.4
+filelock==3.16.1
     # via
     #   tox
     #   virtualenv
@@ -64,7 +64,7 @@ packaging==24.1
     #   tox
 pathspec==0.12.1
     # via black
-platformdirs==4.2.2
+platformdirs==4.3.6
     # via
     #   black
     #   tox
@@ -75,7 +75,7 @@ pluggy==1.5.0
     # via
     #   pytest
     #   tox
-pre-commit==3.8.0
+pre-commit==4.0.0
     # via -r requirements-dev.in
 pycodestyle==2.12.0
     # via flake8
@@ -83,7 +83,7 @@ pyee==12.0.0
     # via playwright
 pyflakes==3.2.0
     # via flake8
-pyproject-api==1.7.1
+pyproject-api==1.8.0
     # via tox
 pytest==8.3.3
     # via -r requirements-dev.in
@@ -93,7 +93,7 @@ requests==2.32.3
     # via -r requirements-dev.in
 sqlparse==0.5.0
     # via django
-tox==4.18.0
+tox==4.21.2
     # via -r requirements-dev.in
 types-requests==2.32.0.20240914
     # via -r requirements-dev.in
@@ -105,7 +105,7 @@ urllib3==2.2.3
     # via
     #   requests
     #   types-requests
-virtualenv==20.26.3
+virtualenv==20.26.6
     # via
     #   pre-commit
     #   tox
