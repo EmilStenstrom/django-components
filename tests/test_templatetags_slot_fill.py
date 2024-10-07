@@ -529,7 +529,7 @@ class NestedSlotsTests(BaseTestCase):
             {% load component_tags %}
             {% slot 'wrapper' %}
                 <div>
-                    Wrapper Default 
+                    Wrapper Default
                     {% slot 'parent1' %}
                         <div>
                             Parent1 Default
@@ -557,14 +557,14 @@ class NestedSlotsTests(BaseTestCase):
     def test_empty(self):
         template_str: types.django_html = """
             {% load component_tags %}
-            {% component 'example' %} 
+            {% component 'example' %}
             {% endcomponent %}
         """
 
         rendered = Template(template_str).render(Context())
         expected = """
             <div>
-                Wrapper Default 
+                Wrapper Default
                 <div>
                     Parent1 Default
                     <div>
@@ -582,13 +582,13 @@ class NestedSlotsTests(BaseTestCase):
     def test_override_outer(self):
         template_str: types.django_html = """
             {% load component_tags %}
-            {% component 'example' %} 
+            {% component 'example' %}
                 {% fill 'wrapper' %}
                     <div>
                         Entire Wrapper Replaced
                     </div>
                 {% endfill %}
-            {% endcomponent %} 
+            {% endcomponent %}
         """
 
         rendered = Template(template_str).render(Context())
@@ -615,7 +615,7 @@ class NestedSlotsTests(BaseTestCase):
         rendered = Template(template_str).render(Context())
         expected = """
             <div>
-                Wrapper Default 
+                Wrapper Default
                 <div>
                     Parent1 Replaced
                 </div>
@@ -642,7 +642,7 @@ class NestedSlotsTests(BaseTestCase):
         rendered = Template(template_str).render(Context())
         expected = """
             <div>
-                Wrapper Default 
+                Wrapper Default
                 <div>
                     Parent1 Default
                     <div>
