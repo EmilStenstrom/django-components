@@ -625,29 +625,31 @@ def _resolve_default_slot(
 
     # Check for errors
     for slot in slots.values():
-        if slot.is_default:
-            if default_slot_encountered:
-                raise TemplateSyntaxError(
-                    "Only one component slot may be marked as 'default'. "
-                    f"To fix, check template '{template_name}' "
-                    f"of component '{component_name}'."
-                )
-            default_slot_encountered = True
+        if not slot.is_default:
+            continue
 
-            # Here we've identified which slot the default/implicit fill belongs to
-            if default_fill:
-                # NOTE: We recreate new instance, passing all fields, instead of using
-                # `NamedTuple._replace`, because `_replace` is not typed.
-                named_fills[slot.name] = SlotFill(
-                    is_filled=default_fill.is_filled,
-                    content_func=default_fill.content_func,
-                    context_data=default_fill.context_data,
-                    slot_default_var=default_fill.slot_default_var,
-                    slot_data_var=default_fill.slot_data_var,
-                    # Updated fields
-                    name=slot.name,
-                    escaped_name=_escape_slot_name(slot.name),
-                )
+        if default_slot_encountered:
+            raise TemplateSyntaxError(
+                "Only one component slot may be marked as 'default'. "
+                f"To fix, check template '{template_name}' "
+                f"of component '{component_name}'."
+            )
+        default_slot_encountered = True
+
+        # Here we've identified which slot the default/implicit fill belongs to
+        if default_fill:
+            # NOTE: We recreate new instance, passing all fields, instead of using
+            # `NamedTuple._replace`, because `_replace` is not typed.
+            named_fills[slot.name] = SlotFill(
+                is_filled=default_fill.is_filled,
+                content_func=default_fill.content_func,
+                context_data=default_fill.context_data,
+                slot_default_var=default_fill.slot_default_var,
+                slot_data_var=default_fill.slot_data_var,
+                # Updated fields
+                name=slot.name,
+                escaped_name=_escape_slot_name(slot.name),
+            )
 
     # Check: Only component templates that include a 'default' slot
     # can be invoked with implicit filling.
