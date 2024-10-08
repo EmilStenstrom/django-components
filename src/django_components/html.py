@@ -95,4 +95,4 @@ def transform_html_document(html: str, transform: TransformHtmlCallback) -> str:
     # NOTE: Because of how we work around selectolax to enable modifying the <body> and <head>
     # tags, selectolax also adds `</doctype_>` at the end of the content when we serialize the HTML.
     # So we have to remove that.
-    return final_html[:-len("</doctype_>")]
+    return final_html[: -len("</doctype_>")]
