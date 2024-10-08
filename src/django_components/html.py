@@ -57,6 +57,9 @@ class TransformHtmlCallback(Protocol):
     def __call__(self, head: Optional[LexborNode], body: Optional[LexborNode]) -> None: ...  # noqa: #704
 
 
+# TODO: Remove `transform_html_document`, `insert_before_end`, `html_insert_before_end`
+#       Once Selectolax supports `LaxborNode.insert_child()`
+#       See https://github.com/rushter/selectolax/issues/128
 def transform_html_document(html: str, transform: TransformHtmlCallback) -> str:
     # Escape <!doctype>, <html>, <head>, and <body> tags, because Selectolax treats them
     # specially, which makes it impossible to edit them.
