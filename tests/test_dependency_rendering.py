@@ -412,8 +412,8 @@ class DependencyRenderingTests(BaseTestCase):
 
         self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
         self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [];"), 1)
+        self.assertEqual(rendered.count("const toLoadJsScripts = [];"), 1)
+        self.assertEqual(rendered.count("const toLoadCssScripts = [];"), 1)
 
     def test_multiple_components_dependencies(self):
         registry.register(name="inner", component=SimpleComponent)
