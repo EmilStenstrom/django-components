@@ -577,10 +577,11 @@ class Component(
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        kind: Optional[RenderKind] = "document",
+        kind: RenderKind = "document",
+        nested: bool = False,
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content, kind)
+            return self._render_impl(context, args, kwargs, slots, escape_slots_content, kind, nested)
         except Exception as err:
             raise type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
 
@@ -591,7 +592,8 @@ class Component(
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        kind: Optional[RenderKind] = "document",
+        kind: RenderKind = "document",
+        nested: bool = False,
     ) -> str:
         has_slots = slots is not None
 
