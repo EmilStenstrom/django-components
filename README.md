@@ -81,14 +81,14 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
     - Installation changes:
         - If your components include JS or CSS, you now must use the middleware and add django-components' URLs to your `urlpatterns`
             (See "[Adding support for JS and CSS](#adding-support-for-js-and-css)")
-    - `preload` kwarg of `{% component_dependencies %}` tag was removed. This will be replaced with HTML fragment support.
+    - The undocumented keyword arg `preload` of `{% component_dependencies %}` tag was removed. This will be replaced with HTML fragment support.
     - Component typing signature changed from `Component[Args, Kwargs, Data, Slots]` to `Component[Args, Kwargs, Slots, Data, JsData, CssData]`
-    - If you rendered a component A with `.render()` and then inserted that into another component B, now you must pass `kind=None` to component A:
+    - If you rendered a component A with `.render()` and then inserted that into another component B, now you must pass `nested=True` to component A:
       ```py
       prerendered_a = CompA.render(
           args=[...],
           kwargs={...},
-          kind=None,
+          nested=True,
       )
       html = CompB.render(
           kwargs={
@@ -3299,15 +3299,19 @@ In previous section we've shown that `render_dependencies()` does NOT need to be
 when you render a component via `Component.render()`.
 
 API of django-components makes it possible to compose components in a "React-like" way,
-where we pre-render a piece of HTML and then insert it into a larger structure:
+where we pre-render a piece of HTML and then insert it into a larger structure.
+
+To do this, you must add `nested=True` to the nested components:
 
 ```py
 card_actions = CardActions.render(
     kwargs={"editable": editable},
+    nested=True,
 )
 
 card = Card.render(
     slots={"actions": card_actions},
+    nested=True,
 )
 
 page = MyPage.render(
@@ -3315,32 +3319,17 @@ page = MyPage.render(
 )
 ```
 
-In this case, as mentioned above, each time we call `Component.render()`, we also call `render_dependencies()`.
+Why is `nested=True` required?
 
-However, there is a problem here - When we call `render_dependencies()` inside `CardActions.render`,
+As mentioned earlier, each time we call `Component.render()`, we also call `render_dependencies()`.
+
+However, there is a problem here - When we call `render_dependencies()` inside `CardActions.render()`,
 we extract the info on components' JS and CSS from the HTML. But the template of `CardActions`
 contains no `{% component_depedencies %}` tags, and nor `<head>` nor `<body>` HTML tags.
 So the component's JS and CSS will NOT be inserted, and will be lost.
 
-To work around this, you must set `kind=None` when rendering pieces of HTML with `Component.render()`
-where those pieces  will be inserted into larger structures. This tells `Component.render()` NOT
-to call `render_dependencies()`.
-
-```py
-card_actions = CardActions.render(
-    kwargs={"editable": editable},
-    kind=None,
-)
-
-card = Card.render(
-    slots={"actions": card_actions},
-    kind=None,
-)
-
-page = MyPage.render(
-    slots={"card": card},
-)
-```
+To work around this, you must set `nested=True` when rendering pieces of HTML with `Component.render()`
+and inserting them into larger structures.
 
 ## Available settings
 

@@ -124,7 +124,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         rendered_raw = SimpleComponentWithDeps.render(
             kwargs={"variable": "foo"},
-            kind=None,
+            nested=True,
         )
 
         self.assertEqual(rendered_raw.count("<script"), 1)
@@ -166,37 +166,6 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("<style"), 1)
-
-    def test_component_render_to_response_renders_dependencies_opt_out(self):
-        class SimpleComponentWithDeps(SimpleComponent):
-            template = "{% load component_tags %}{% component_dependencies %}" + SimpleComponent.template
-
-        registry.register(name="test", component=SimpleComponentWithDeps)
-
-        response = SimpleComponentWithDeps.render_to_response(
-            kwargs={"variable": "foo"},
-            kind=None,
-        )
-        rendered_raw = response.content.decode()
-
-        # Placeholders
-        self.assertEqual(rendered_raw.count('<link name="CSS_PLACEHOLDER">'), 1)
-        self.assertEqual(rendered_raw.count('<script name="JS_PLACEHOLDER"></script>'), 1)
-
-        self.assertEqual(rendered_raw.count("<script"), 1)
-        self.assertEqual(rendered_raw.count("<style"), 0)
-        self.assertEqual(rendered_raw.count("<link"), 1)
-        self.assertEqual(rendered_raw.count("_RENDERED"), 1)
-
-        # Dependency manager script
-        self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered_raw, count=0)
-
-        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered_raw, count=0)  # Inlined CSS
-        self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>", rendered_raw, count=0
-        )  # Inlined JS
-
-        self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered_raw, count=0)  # Media.css
 
     def test_inserts_styles_and_script_to_default_places_if_not_overriden(self):
         registry.register(name="test", component=SimpleComponent)

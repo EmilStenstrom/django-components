@@ -93,7 +93,8 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
     kwargs: KwargsType
     slots: SlotsType
     escape_slots_content: bool
-    kind: Optional[RenderKind]
+    kind: RenderKind
+    nested: bool
 
 
 @dataclass()
@@ -449,7 +450,7 @@ class Component(
         escape_slots_content: bool = True,
         args: Optional[ArgsType] = None,
         kwargs: Optional[KwargsType] = None,
-        kind: Optional[RenderKind] = "document",
+        kind: RenderKind = "document",
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -478,7 +479,6 @@ class Component(
             - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
-            - `None` - No processing applied. Use this if you want to insert the resulting HTML into another component.
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -508,6 +508,7 @@ class Component(
             slots=slots,
             escape_slots_content=escape_slots_content,
             kind=kind,
+            nested=False,
         )
         return cls.response_class(content, *response_args, **response_kwargs)
 
@@ -519,7 +520,8 @@ class Component(
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
-        kind: Optional[RenderKind] = "document",
+        kind: RenderKind = "document",
+        nested: bool = False,
     ) -> str:
         """
         Render the component into a string.
@@ -541,7 +543,7 @@ class Component(
             - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
-            - `None` - No processing applied. Use this if you want to insert the resulting HTML into another component.
+        - `nested` - Set this to `True` if you want to insert the resulting HTML into another component.
 
         Example:
         ```py
@@ -565,7 +567,7 @@ class Component(
         else:
             comp = cls()
 
-        return comp._render(context, args, kwargs, slots, escape_slots_content, kind)
+        return comp._render(context, args, kwargs, slots, escape_slots_content, kind, nested)
 
     # This is the internal entrypoint for the render function
     def _render(
@@ -617,6 +619,7 @@ class Component(
                     kwargs=kwargs,
                     escape_slots_content=escape_slots_content,
                     kind=kind,
+                    nested=nested,
                 ),
                 is_filled=None,
             ),
@@ -695,6 +698,7 @@ class Component(
                     component_id=self.component_id,
                     html_content=html_content,
                     kind=kind,
+                    nested=nested,
                 )
 
         # After rendering is done, remove the current state from the stack, which means
@@ -894,7 +898,7 @@ class ComponentNode(BaseNode):
             kwargs=kwargs,
             # NOTE: When we render components inside the template via template tags,
             # do NOT render deps, because this may be decided by outer component
-            kind=None,
+            nested=True,
         )
 
         trace_msg("RENDR", "COMP", self.name, self.node_id, "...Done!")

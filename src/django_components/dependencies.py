@@ -218,7 +218,8 @@ def postprocess_component_html(
     component_cls: Type["Component"],
     component_id: str,
     html_content: str,
-    kind: Optional[RenderKind],
+    kind: RenderKind,
+    nested: bool,
 ) -> str:
     # NOTE: To better understand the next section, consider this:
     #
@@ -248,7 +249,7 @@ def postprocess_component_html(
         ),
     )
 
-    if kind:
+    if not nested:
         output = render_dependencies(output, kind)
     return output
 

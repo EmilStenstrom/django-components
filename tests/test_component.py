@@ -1015,7 +1015,7 @@ class ComponentRenderTest(BaseTestCase):
                 {% endblock %}
             """
 
-        rendered = SimpleComponent.render(kind=None)
+        rendered = SimpleComponent.render(nested=True)
         self.assertHTMLEqual(
             rendered,
             """
