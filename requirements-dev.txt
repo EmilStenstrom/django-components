@@ -54,8 +54,6 @@ mypy-extensions==1.0.0
     # via
     #   black
     #   mypy
-nanoid==2.0.0
-    # via -r requirements-dev.in
 nodeenv==1.8.0
     # via pre-commit
 packaging==24.1

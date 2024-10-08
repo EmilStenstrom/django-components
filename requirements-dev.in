@@ -11,5 +11,4 @@ playwright
 requests
 types-requests
 whitenoise
-nanoid
 selectolax

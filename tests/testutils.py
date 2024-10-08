@@ -34,7 +34,7 @@ class BaseTestCase(SimpleTestCase):
 
         _create_template.cache_remove()  # type: ignore[attr-defined]
 
-    # Mock the `gen_id` function so it returns deterministic IDs
+    # Mock the `generate` function used inside `gen_id` so it returns deterministic IDs
     def _start_gen_id_patch(self):
         # Random number so that the generated IDs are "hex-looking", e.g. a1bc3d
         self._gen_id_count = 10599485

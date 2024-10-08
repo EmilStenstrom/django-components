@@ -8,13 +8,16 @@ from typing import Any, Callable, List, Mapping, Sequence, Tuple, Type, TypeVar,
 
 from django.template.defaultfilters import escape
 from django.utils.autoreload import autoreload_started
-from nanoid import generate
+
+from django_components.util.nanoid import generate
 
 
+# Based on nanoid implementation from
+# https://github.com/puyuan/py-nanoid/tree/99e5b478c450f42d713b6111175886dccf16f156/nanoid
 def gen_id() -> str:
     """Generate a unique ID that can be associated with a Node"""
-    # Alphabet is only alphanumeric. Compared to the default alphabet, we've
-    # omitted `-` and `_`.
+    # Alphabet is only alphanumeric. Compared to the default alphabet used by nanoid,
+    # we've omitted `-` and `_`.
     # With this alphabet, at 6 chars, the chance of collision is 1 in 3.3M.
     # See https://zelark.github.io/nano-id-cc/
     return generate(
