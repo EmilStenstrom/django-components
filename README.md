@@ -1632,6 +1632,7 @@ This is what our example looks like with `component_vars.is_filled`.
     </div>
     {% endif %}
 </div>
+```
 
 Here's our example with more complex branching.
 
