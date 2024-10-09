@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Union
 
 import django.template
 from django.template.base import NodeList, Parser, Token, TokenType
@@ -7,9 +7,10 @@ from django.utils.safestring import SafeString, mark_safe
 from django.utils.text import smart_split
 
 from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY, HtmlAttrsNode
-from django_components.component import COMP_ONLY_FLAG, RENDERED_COMMENT_TEMPLATE, ComponentNode
+from django_components.component import COMP_ONLY_FLAG, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as component_registry
+from django_components.dependencies import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from django_components.expression import (
     DynamicFilterExpression,
     Expression,
@@ -26,11 +27,6 @@ from django_components.expression import (
     is_spread_operator,
 )
 from django_components.logger import trace_msg
-from django_components.middleware import (
-    CSS_DEPENDENCY_PLACEHOLDER,
-    JS_DEPENDENCY_PLACEHOLDER,
-    is_dependency_middleware_active,
-)
 from django_components.provide import PROVIDE_NAME_KWARG, ProvideNode
 from django_components.slots import (
     SLOT_DATA_KWARG,
@@ -55,18 +51,6 @@ if TYPE_CHECKING:
 register = django.template.Library()
 
 
-def _get_components_from_registry(registry: ComponentRegistry) -> List["Component"]:
-    """Returns a list unique components from the registry."""
-
-    unique_component_classes = set(registry.all().values())
-
-    components = []
-    for component_class in unique_component_classes:
-        components.append(component_class(component_class.__name__))
-
-    return components
-
-
 def _get_components_from_preload_str(preload_str: str) -> List["Component"]:
     """Returns a list of unique components from a comma-separated str"""
 
@@ -81,55 +65,34 @@ def _get_components_from_preload_str(preload_str: str) -> List["Component"]:
     return components
 
 
-@register.simple_tag(name="component_dependencies")
-def component_dependencies(preload: str = "") -> SafeString:
+def _component_dependencies(kind: Literal["js", "css", "both"]) -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
+    content = ""
 
-    if is_dependency_middleware_active():
-        preloaded_dependencies = []
-        for component in _get_components_from_preload_str(preload):
-            preloaded_dependencies.append(RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name))
-        return mark_safe("\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER + JS_DEPENDENCY_PLACEHOLDER)
-    else:
-        rendered_dependencies = []
-        for component in _get_components_from_registry(component_registry):
-            rendered_dependencies.append(component.render_dependencies())
+    if kind in ("css", "both"):
+        content += CSS_DEPENDENCY_PLACEHOLDER
+    if kind in ("js", "both"):
+        content += JS_DEPENDENCY_PLACEHOLDER
 
-        return mark_safe("\n".join(rendered_dependencies))
+    return mark_safe(content)
+
+
+@register.simple_tag(name="component_dependencies")
+def component_dependencies() -> SafeString:
+    """Marks location where CSS link and JS script tags should be rendered."""
+    return _component_dependencies("both")
 
 
 @register.simple_tag(name="component_css_dependencies")
-def component_css_dependencies(preload: str = "") -> SafeString:
+def component_css_dependencies() -> SafeString:
     """Marks location where CSS link tags should be rendered."""
-
-    if is_dependency_middleware_active():
-        preloaded_dependencies = []
-        for component in _get_components_from_preload_str(preload):
-            preloaded_dependencies.append(RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name))
-        return mark_safe("\n".join(preloaded_dependencies) + CSS_DEPENDENCY_PLACEHOLDER)
-    else:
-        rendered_dependencies = []
-        for component in _get_components_from_registry(component_registry):
-            rendered_dependencies.append(component.render_css_dependencies())
-
-        return mark_safe("\n".join(rendered_dependencies))
+    return _component_dependencies("css")
 
 
 @register.simple_tag(name="component_js_dependencies")
-def component_js_dependencies(preload: str = "") -> SafeString:
+def component_js_dependencies() -> SafeString:
     """Marks location where JS script tags should be rendered."""
-
-    if is_dependency_middleware_active():
-        preloaded_dependencies = []
-        for component in _get_components_from_preload_str(preload):
-            preloaded_dependencies.append(RENDERED_COMMENT_TEMPLATE.format(name=component.registered_name))
-        return mark_safe("\n".join(preloaded_dependencies) + JS_DEPENDENCY_PLACEHOLDER)
-    else:
-        rendered_dependencies = []
-        for component in _get_components_from_registry(component_registry):
-            rendered_dependencies.append(component.render_js_dependencies())
-
-        return mark_safe("\n".join(rendered_dependencies))
+    return _component_dependencies("js")
 
 
 @register.tag("slot")

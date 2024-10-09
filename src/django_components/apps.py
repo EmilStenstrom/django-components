@@ -10,10 +10,11 @@ class ComponentsConfig(AppConfig):
     # to Django's INSTALLED_APPS
     def ready(self) -> None:
         from django_components.app_settings import app_settings
-        from django_components.autodiscover import autodiscover, get_dirs, import_libraries, search_dirs
+        from django_components.autodiscover import autodiscover, import_libraries
         from django_components.component_registry import registry
         from django_components.components.dynamic import DynamicComponent
-        from django_components.utils import watch_files_for_autoreload
+        from django_components.template_loader import get_component_dirs
+        from django_components.utils import search_dirs, watch_files_for_autoreload
 
         # Import modules set in `COMPONENTS.libraries` setting
         import_libraries()
@@ -25,7 +26,7 @@ class ComponentsConfig(AppConfig):
         # See https://github.com/EmilStenstrom/django-components/discussions/567#discussioncomment-10273632
         # And https://stackoverflow.com/questions/42907285/66673186#66673186
         if app_settings.RELOAD_ON_TEMPLATE_CHANGE:
-            dirs = get_dirs(include_apps=False)
+            dirs = get_component_dirs(include_apps=False)
             component_filepaths = search_dirs(dirs, "**/*")
             watch_files_for_autoreload(component_filepaths)
 

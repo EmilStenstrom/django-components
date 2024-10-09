@@ -150,7 +150,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div>lorem</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>",
+            "<!-- _RENDERED SimpleComponent_5b8d97,a1bc3e -->\n                <div>lorem</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>",  # noqa: E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -220,7 +220,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div>lorem ipsum dolor</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>\n                <div>{'a': 3}</div>",  # noqa E501
+            "<!-- _RENDERED SimpleComponent_743413,a1bc3e -->\n                <div>lorem ipsum dolor</div>\n                <div>True</div>\n                <div>[{'a': 1}, {'a': 2}]</div>\n                <div>{'a': 3}</div>",  # noqa E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -290,7 +290,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div></div>\n                <div>  abc</div>\n                <div></div>\n                <div>  </div>",  # noqa E501
+            "<!-- _RENDERED SimpleComponent_e258c0,a1bc3e -->\n                <div></div>\n                <div>  abc</div>\n                <div></div>\n                <div>  </div>",  # noqa E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -364,7 +364,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div> lorem ipsum dolor </div>\n                <div> lorem ipsum dolor [{&#x27;a&#x27;: 1}] </div>\n                <div> True </div>\n                <div> [{'a': 1}, {'a': 2}] </div>\n                <div> {'a': 3} </div>",  # noqa E501
+            "<!-- _RENDERED SimpleComponent_6c8e94,a1bc3e -->\n                <div> lorem ipsum dolor </div>\n                <div> lorem ipsum dolor [{&#x27;a&#x27;: 1}] </div>\n                <div> True </div>\n                <div> [{'a': 1}, {'a': 2}] </div>\n                <div> {'a': 3} </div>",  # noqa E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -408,7 +408,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            '<div>"</div>\n                <div>{%}</div>\n                <div>True</div>',
+            '<!-- _RENDERED SimpleComponent_c7a5c3,a1bc3e -->\n                <div>"</div>\n                <div>{%}</div>\n                <div>True</div>',  # noqa: E501
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -457,7 +457,7 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<div>\n                <div>3</div>\n                <div>True</div>\n            </div>\n                <div>True</div>",  # noqa E501
+            "<!-- _RENDERED SimpleComponent_5c8766,a1bc3e -->\n                <div><!-- _RENDERED SimpleComponent_5c8766,a1bc3f -->\n                <div>3</div>\n                <div>True</div>\n            </div>\n                <div>True</div>",  # noqa E501
         )
 
 

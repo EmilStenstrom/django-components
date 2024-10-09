@@ -31,7 +31,6 @@ from django.template.context import Context
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
 from django.utils.html import conditional_escape
-from django.utils.safestring import SafeString, mark_safe
 from django.views import View
 
 from django_components.app_settings import ContextBehavior
@@ -47,9 +46,9 @@ from django_components.context import (
     make_isolated_context_copy,
     prepare_context,
 )
+from django_components.dependencies import RenderType, cache_inlined_css, cache_inlined_js, postprocess_component_html
 from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
 from django_components.logger import trace_msg
-from django_components.middleware import is_dependency_middleware_active
 from django_components.node import BaseNode
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
@@ -76,14 +75,18 @@ from django_components.component_registry import registry as registry  # NOQA
 
 # isort: on
 
-RENDERED_COMMENT_TEMPLATE = "<!-- _RENDERED {name} -->"
 COMP_ONLY_FLAG = "only"
 
 # Define TypeVars for args and kwargs
 ArgsType = TypeVar("ArgsType", bound=tuple, contravariant=True)
 KwargsType = TypeVar("KwargsType", bound=Mapping[str, Any], contravariant=True)
-DataType = TypeVar("DataType", bound=Mapping[str, Any], covariant=True)
 SlotsType = TypeVar("SlotsType", bound=Mapping[SlotName, SlotContent])
+DataType = TypeVar("DataType", bound=Mapping[str, Any], covariant=True)
+JsDataType = TypeVar("JsDataType", bound=Mapping[str, Any])
+CssDataType = TypeVar("CssDataType", bound=Mapping[str, Any])
+
+# Rename, so we can use `type()` inside functions with kwrags of the same name
+_type = type
 
 
 @dataclass(frozen=True)
@@ -93,6 +96,8 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
     kwargs: KwargsType
     slots: SlotsType
     escape_slots_content: bool
+    type: RenderType
+    render_dependencies: bool
 
 
 @dataclass()
@@ -150,10 +155,13 @@ class ComponentView(View, metaclass=ComponentViewMeta):
         self.component = component
 
 
-class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=ComponentMeta):
-    # Either template_name or template must be set on subclass OR subclass must implement get_template() with
-    # non-null return.
-    _class_hash: ClassVar[int]
+class Component(
+    Generic[ArgsType, KwargsType, SlotsType, DataType, JsDataType, CssDataType],
+    metaclass=ComponentMeta,
+):
+    # #####################################
+    # PUBLIC API (Configurable by users)
+    # #####################################
 
     template_name: Optional[str] = None
     """
@@ -191,6 +199,9 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         """
         return None
 
+    def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
+        return cast(DataType, {})
+
     js: Optional[str] = None
     """Inlined JS associated with this component."""
     css: Optional[str] = None
@@ -202,13 +213,16 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
     NOTE: This field is generated from Component.Media class.
     """
     media_class: Media = Media
-    response_class = HttpResponse
-    """This allows to configure what class is used to generate response from `render_to_response`"""
-
     Media = ComponentMediaInput
     """Defines JS and CSS media files associated with this component."""
 
+    response_class = HttpResponse
+    """This allows to configure what class is used to generate response from `render_to_response`"""
     View = ComponentView
+
+    # #####################################
+    # PUBLIC API - HOOKS
+    # #####################################
 
     def on_render_before(self, context: Context, template: Template) -> None:
         """
@@ -230,6 +244,12 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         from this hook.
         """
         pass
+
+    # #####################################
+    # MISC
+    # #####################################
+
+    _class_hash: ClassVar[int]
 
     def __init__(
         self,
@@ -261,7 +281,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         self.registry = registry or registry_
         self._render_stack: Deque[RenderStackItem[ArgsType, KwargsType, SlotsType]] = deque()
         # None == uninitialized, False == No types, Tuple == types
-        self._types: Optional[Union[Tuple[Any, Any, Any, Any], Literal[False]]] = None
+        self._types: Optional[Union[Tuple[Any, Any, Any, Any, Any, Any], Literal[False]]] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls._class_hash = hash(inspect.getfile(cls) + cls.__name__)
@@ -304,9 +324,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             )
 
         return ctx.is_filled
-
-    def get_context_data(self, *args: Any, **kwargs: Any) -> DataType:
-        return cast(DataType, {})
 
     # NOTE: When the template is taken from a file (AKA specified via `template_name`),
     # then we leverage Django's template caching. This means that the same instance
@@ -358,32 +375,6 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         raise ImproperlyConfigured(
             f"Either 'template_name' or 'template' must be set for Component {type(self).__name__}."
         )
-
-    def render_dependencies(self) -> SafeString:
-        """Helper function to render all dependencies for a component."""
-        dependencies = []
-
-        css_deps = self.render_css_dependencies()
-        if css_deps:
-            dependencies.append(css_deps)
-
-        js_deps = self.render_js_dependencies()
-        if js_deps:
-            dependencies.append(js_deps)
-
-        return mark_safe("\n".join(dependencies))
-
-    def render_css_dependencies(self) -> SafeString:
-        """Render only CSS dependencies available in the media class or provided as a string."""
-        if self.css is not None:
-            return mark_safe(f"<style>{self.css}</style>")
-        return mark_safe("\n".join(self.media.render_css()))
-
-    def render_js_dependencies(self) -> SafeString:
-        """Render only JS dependencies available in the media class or provided as a string."""
-        if self.js is not None:
-            return mark_safe(f"<script>{self.js}</script>")
-        return mark_safe("\n".join(self.media.render_js()))
 
     def inject(self, key: str, default: Optional[Any] = None) -> Any:
         """
@@ -450,6 +441,10 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         # Allow the View class to access this component via `self.component`
         return comp.View.as_view(**initkwargs, component=comp)
 
+    # #####################################
+    # RENDERING
+    # #####################################
+
     @classmethod
     def render_to_response(
         cls,
@@ -458,6 +453,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         escape_slots_content: bool = True,
         args: Optional[ArgsType] = None,
         kwargs: Optional[KwargsType] = None,
+        type: RenderType = "document",
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -482,6 +478,10 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
           is rendered. The keys on the context can be accessed from within the template.
             - NOTE: In "isolated" mode, context is NOT accessible, and data MUST be passed via
               component's args and kwargs.
+        - `type` - Configure how to handle JS and CSS dependencies.
+            - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
+              or to the end of the `<body>` tag. CSS dependencies are inserted into
+              `{% component_css_dependencies %}`, or the end of the `<head>` tag.
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -510,6 +510,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             context=context,
             slots=slots,
             escape_slots_content=escape_slots_content,
+            type=type,
+            render_dependencies=True,
         )
         return cls.response_class(content, *response_args, **response_kwargs)
 
@@ -521,6 +523,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
+        type: RenderType = "document",
+        render_dependencies: bool = True,
     ) -> str:
         """
         Render the component into a string.
@@ -538,6 +542,11 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
           is rendered. The keys on the context can be accessed from within the template.
             - NOTE: In "isolated" mode, context is NOT accessible, and data MUST be passed via
               component's args and kwargs.
+        - `type` - Configure how to handle JS and CSS dependencies.
+            - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
+              or to the end of the `<body>` tag. CSS dependencies are inserted into
+              `{% component_css_dependencies %}`, or the end of the `<head>` tag.
+        - `render_dependencies` - Set this to `False` if you want to insert the resulting HTML into another component.
 
         Example:
         ```py
@@ -561,7 +570,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         else:
             comp = cls()
 
-        return comp._render(context, args, kwargs, slots, escape_slots_content)
+        return comp._render(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
 
     # This is the internal entrypoint for the render function
     def _render(
@@ -571,11 +580,13 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
+        type: RenderType = "document",
+        render_dependencies: bool = True,
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content)
+            return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
         except Exception as err:
-            raise type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
+            raise _type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
 
     def _render_impl(
         self,
@@ -584,6 +595,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         kwargs: Optional[KwargsType] = None,
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
+        type: RenderType = "document",
+        render_dependencies: bool = True,
     ) -> str:
         has_slots = slots is not None
 
@@ -610,6 +623,8 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
                     args=args,
                     kwargs=kwargs,
                     escape_slots_content=escape_slots_content,
+                    type=type,
+                    render_dependencies=render_dependencies,
                 ),
                 is_filled=None,
             ),
@@ -618,7 +633,11 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         self._validate_inputs()
 
         context_data = self.get_context_data(*args, **kwargs)
-        self._validate_outputs(context_data)
+        self._validate_outputs(data=context_data)
+
+        # Process JS and CSS files
+        cache_inlined_js(self.__class__, self.js or "")
+        cache_inlined_css(self.__class__, self.css or "")
 
         with _prepare_template(self, context, context_data) as template:
             # Support passing slots explicitly to `render` method
@@ -672,14 +691,20 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             ):
                 self.on_render_before(context, template)
 
-                rendered_component = template.render(context)
-                new_output = self.on_render_after(context, template, rendered_component)
-                rendered_component = new_output if new_output is not None else rendered_component
+                # Get the component's HTML
+                html_content = template.render(context)
 
-        if is_dependency_middleware_active():
-            output = RENDERED_COMMENT_TEMPLATE.format(name=self.name) + rendered_component
-        else:
-            output = rendered_component
+                # Allow to optionally override/modify the rendered content
+                new_output = self.on_render_after(context, template, html_content)
+                html_content = new_output if new_output is not None else html_content
+
+                output = postprocess_component_html(
+                    component_cls=self.__class__,
+                    component_id=self.component_id,
+                    html_content=html_content,
+                    type=type,
+                    render_dependencies=render_dependencies,
+                )
 
         # After rendering is done, remove the current state from the stack, which means
         # properties like `self.context` will no longer return the current state.
@@ -716,22 +741,22 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
             )
         return slot_fills
 
-    ######################
+    # #####################################
     # VALIDATION
-    ######################
+    # #####################################
 
-    def _get_types(self) -> Optional[Tuple[Any, Any, Any, Any]]:
+    def _get_types(self) -> Optional[Tuple[Any, Any, Any, Any, Any, Any]]:
         """
         Extract the types passed to the Component class.
 
         So if a component subclasses Component class like so
 
         ```py
-        class MyComp(Component[MyArgs, MyKwargs, Any, MySlots]):
+        class MyComp(Component[MyArgs, MyKwargs, MySlots, MyData, MyJsData, MyCssData]):
             ...
         ```
 
-        Then we want to extract the tuple (MyArgs, MyKwargs, Any, MySlots).
+        Then we want to extract the tuple (MyArgs, MyKwargs, MySlots, MyData, MyJsData, MyCssData).
 
         Returns `None` if types were not provided. That is, the class was subclassed
         as:
@@ -777,14 +802,14 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
 
         # If we got here, then we've found ourselves the typed Component class, e.g.
         #
-        # `Component(Tuple[int], MyKwargs, MySlots, Any)`
+        # `Component(Tuple[int], MyKwargs, MySlots, Any, Any, Any)`
         #
         # By accessing the __args__, we access individual types between the brackets, so
         #
-        # (Tuple[int], MyKwargs, MySlots, Any)
-        args_type, kwargs_type, data_type, slots_type = component_generics_base.__args__
+        # (Tuple[int], MyKwargs, MySlots, Any, Any, Any)
+        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type = component_generics_base.__args__
 
-        self._types = args_type, kwargs_type, data_type, slots_type
+        self._types = args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type
         return self._types
 
     def _validate_inputs(self) -> None:
@@ -792,7 +817,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         maybe_inputs = self._get_types()
         if maybe_inputs is None:
             return
-        args_type, kwargs_type, data_type, slots_type = maybe_inputs
+        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type = maybe_inputs
 
         # Validate args
         validate_typed_tuple(self.input.args, args_type, f"Component '{self.name}'", "positional argument")
@@ -805,7 +830,7 @@ class Component(Generic[ArgsType, KwargsType, DataType, SlotsType], metaclass=Co
         maybe_inputs = self._get_types()
         if maybe_inputs is None:
             return
-        args_type, kwargs_type, data_type, slots_type = maybe_inputs
+        args_type, kwargs_type, slots_type, data_type, js_data_type, css_data_type = maybe_inputs
 
         # Validate data
         validate_typed_dict(data, data_type, f"Component '{self.name}'", "data")
@@ -876,6 +901,9 @@ class ComponentNode(BaseNode):
             context=context,
             args=args,
             kwargs=kwargs,
+            # NOTE: When we render components inside the template via template tags,
+            # do NOT render deps, because this may be decided by outer component
+            render_dependencies=False,
         )
 
         trace_msg("RENDR", "COMP", self.name, self.node_id, "...Done!")

@@ -30,6 +30,8 @@ class TemplateInstrumentationTest(BaseTestCase):
 
     def setUp(self):
         """Emulate Django test instrumentation for TestCase (see setup_test_environment)"""
+        super().setUp()
+
         from django.test.utils import instrumented_test_render
 
         self.saved_render_method = Template._render

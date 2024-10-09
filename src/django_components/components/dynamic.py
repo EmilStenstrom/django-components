@@ -32,6 +32,7 @@ class DynamicComponent(Component):
 
         comp_class = self._resolve_component(comp_name_or_class, registry)
 
+        # NOTE: Slots are passed at component instantiation
         comp = comp_class(
             registered_name=self.registered_name,
             component_id=self.component_id,
@@ -44,15 +45,15 @@ class DynamicComponent(Component):
             args=args,
             kwargs=kwargs,
             escape_slots_content=self.input.escape_slots_content,
+            type=self.input.type,
+            render_dependencies=self.input.render_dependencies,
         )
 
         return {
             "output": output,
         }
 
-    template: types.django_html = """
-        {{ output }}
-    """
+    template: types.django_html = """{{ output }}"""
 
     def _resolve_component(
         self,

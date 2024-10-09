@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, MutableMapping, Opt
 from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
 
-from django_components.autodiscover import get_dirs
+from django_components.autodiscover import get_component_dirs
 from django_components.logger import logger
 
 if TYPE_CHECKING:
@@ -273,7 +273,7 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
 
     # Prepare all possible directories we need to check when searching for
     # component's template and media files
-    components_dirs = get_dirs()
+    components_dirs = get_component_dirs()
 
     # Get the directory where the component class is defined
     try:

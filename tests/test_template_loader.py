@@ -2,10 +2,9 @@ import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from django.template.engine import Engine
 from django.test import override_settings
 
-from django_components.template_loader import Loader, get_dirs
+from django_components.template_loader import get_component_dirs
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
@@ -18,9 +17,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve(),
     )
     def test_get_dirs__base_dir(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = sorted(loader.get_dirs())
+        dirs = sorted(get_component_dirs())
 
         apps_dirs = [dirs[0], dirs[2]]
         own_dirs = [dirs[1], *dirs[3:]]
@@ -43,9 +40,7 @@ class TemplateLoaderTest(BaseTestCase):
         BASE_DIR=Path(__file__).parent.resolve() / "test_structures" / "test_structure_1",  # noqa
     )
     def test_get_dirs__base_dir__complex(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = sorted(loader.get_dirs())
+        dirs = sorted(get_component_dirs())
 
         apps_dirs = dirs[:2]
         own_dirs = dirs[2:]
@@ -72,7 +67,7 @@ class TemplateLoaderTest(BaseTestCase):
     @patch("django_components.template_loader.logger.warning")
     def test_get_dirs__components_dirs(self, mock_warning: MagicMock):
         mock_warning.reset_mock()
-        dirs = sorted(get_dirs())
+        dirs = sorted(get_component_dirs())
 
         apps_dirs = [dirs[0], dirs[2]]
         own_dirs = [dirs[1], *dirs[3:]]
@@ -101,7 +96,7 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__components_dirs__empty(self):
-        dirs = sorted(get_dirs())
+        dirs = sorted(get_component_dirs())
 
         apps_dirs = dirs
 
@@ -117,10 +112,8 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__componenents_dirs__raises_on_relative_path_1(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
         with self.assertRaisesMessage(ValueError, "COMPONENTS.dirs must contain absolute paths"):
-            loader.get_dirs()
+            get_component_dirs()
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve(),
@@ -129,10 +122,8 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__component_dirs__raises_on_relative_path_2(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
         with self.assertRaisesMessage(ValueError, "COMPONENTS.dirs must contain absolute paths"):
-            loader.get_dirs()
+            get_component_dirs()
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve(),
@@ -141,9 +132,7 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__app_dirs(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = sorted(loader.get_dirs())
+        dirs = sorted(get_component_dirs())
 
         apps_dirs = dirs[1:]
         own_dirs = dirs[:1]
@@ -168,9 +157,7 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__app_dirs_empty(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = sorted(loader.get_dirs())
+        dirs = sorted(get_component_dirs())
 
         own_dirs = dirs
 
@@ -190,9 +177,7 @@ class TemplateLoaderTest(BaseTestCase):
         },
     )
     def test_get_dirs__app_dirs_not_found(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = sorted(loader.get_dirs())
+        dirs = sorted(get_component_dirs())
 
         own_dirs = dirs
 
@@ -210,9 +195,7 @@ class TemplateLoaderTest(BaseTestCase):
         INSTALLED_APPS=("django_components", "tests.test_app_nested.app"),
     )
     def test_get_dirs__nested_apps(self):
-        current_engine = Engine.get_default()
-        loader = Loader(current_engine)
-        dirs = sorted(loader.get_dirs())
+        dirs = sorted(get_component_dirs())
 
         apps_dirs = [dirs[0], *dirs[2:]]
         own_dirs = [dirs[1]]

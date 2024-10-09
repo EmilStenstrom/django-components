@@ -27,6 +27,7 @@ classifiers = [
 ]
 dependencies = [
     'Django>=4.2',
+    'selectolax>=0.3',
 ]
 license = {text = "MIT"}
 
@@ -78,6 +79,10 @@ exclude = [
   '.venv',
   '.tox',
   'build',
+]
+per-file-ignores = [
+  'tests/test_component_media.py:E501',
+  'tests/test_dependency_rendering.py:E501',
 ]
 
 [tool.mypy]
