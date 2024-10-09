@@ -32,10 +32,10 @@ from django.templatetags.static import static
 from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
-from selectolax.lexbor import LexborNode
+from selectolax.lexbor import LexborHTMLParser
 
 import django_components.types as types
-from django_components.html import insert_before_end, parse_node, transform_html_document
+from django_components.html import parse_multiroot_html, parse_node
 from django_components.utils import escape_js_string_literal, get_import_path
 
 if TYPE_CHECKING:
@@ -362,20 +362,22 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
     # then try to insert the JS scripts at the end of <body> and CSS sheets at the end
     # of <head>
     if type == "document" and (not did_find_js_placeholder or not did_find_css_placeholder):
+        tree = LexborHTMLParser(content_.decode())
         did_modify_html = False
 
-        def do_transform(head: Optional[LexborNode], body: Optional[LexborNode]) -> None:
-            nonlocal did_modify_html
+        if not did_find_css_placeholder and tree.head:
+            _, css_elems = parse_multiroot_html(css_dependencies.decode())
+            for css_elem in css_elems:
+                tree.head.insert_child(css_elem)
+            did_modify_html = True
 
-            if not did_find_css_placeholder and head:
-                insert_before_end(head, css_dependencies.decode())
-                did_modify_html = True
-            if not did_find_js_placeholder and body:
-                insert_before_end(body, js_dependencies.decode())
-                did_modify_html = True
+        if not did_find_js_placeholder and tree.body:
+            _, js_elems = parse_multiroot_html(js_dependencies.decode())
+            for js_elem in js_elems:
+                tree.body.insert_child(js_elem)
+            did_modify_html = True
 
-        transformed = transform_html_document(content_.decode(), do_transform)
-
+        transformed = cast(str, tree.html)
         if did_modify_html:
             content_ = transformed.encode()
 

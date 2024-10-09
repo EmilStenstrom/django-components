@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from django_components.html import insert_before_end, parse_node, transform_html_document
+from django_components.html import parse_multiroot_html, parse_node
 
 from .django_test_setup import setup_test_config
 
@@ -32,59 +32,57 @@ class HtmlTests(TestCase):
             """,
         )
 
-    def test_insert_before_end(self):
-        node = parse_node(
+    def test_parse_multiroot_html(self):
+        html = """
+            <div class="abc xyz" data-id="123">
+                <ul>
+                    <li>Hi</li>
+                </ul>
+            </div>
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            <span>
+                Hello
+            </span>
+        """
+        root, nodes = parse_multiroot_html(html)
+
+        self.assertHTMLEqual(
+            root.html,
+            f"""
+            <root>
+                {html}
+            </root>
+            """,
+        )
+        self.assertHTMLEqual(
+            nodes[0].html,
             """
             <div class="abc xyz" data-id="123">
                 <ul>
                     <li>Hi</li>
                 </ul>
             </div>
-            """
-        )
-
-        insert_before_end(node, '<script src="abc"></script>')
-
-        self.assertHTMLEqual(
-            node.html,
-            """
-            <div class="abc xyz" data-id="123">
-                <ul>
-                    <li>Hi</li>
-                </ul>
-                <script src="abc"></script>
-            </div>
             """,
         )
-
-    def test_transform_html_document(self):
-        def do_transform(head, body):
-            insert_before_end(head, '<link href="abc">')
-            insert_before_end(head, '<link href="abc2">')
-            insert_before_end(body, '<script src="abc"></script>')
-            insert_before_end(body, '<script src="abc2"></script>')
-
-        transformed = transform_html_document(
-            """
-            <!-- lol -->
-            <!DOCTYPE html="5678909876">
-            <html>
-                <head></head>
-                <body class="abc"></body>
-            </html>
-            dwadaw
-            """,
-            do_transform,
-        )
-
         self.assertHTMLEqual(
-            transformed,
+            nodes[1].html,
             """
-            <!doctype html="5678909876">
-            <html>
-                <head><link href="abc"></head>
-                <body class="abc"><script src="abc"></script></body>
-            </html>
-            dwadaw
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            """,
+        )
+        self.assertHTMLEqual(
+            nodes[2].html,
+            """
+            <span>
+                Hello
+            </span>
             """,
         )
