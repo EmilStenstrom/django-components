@@ -45,7 +45,7 @@ class DynamicComponent(Component):
             args=args,
             kwargs=kwargs,
             escape_slots_content=self.input.escape_slots_content,
-            kind=self.input.kind,
+            type=self.input.type,
             nested=self.input.nested,
         )
 

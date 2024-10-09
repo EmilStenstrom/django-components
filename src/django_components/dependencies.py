@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 
 ScriptType = Literal["css", "js"]
-RenderKind = Literal["document", "fragment"]
+RenderType = Literal["document", "fragment"]
 
 
 #########################################################
@@ -218,7 +218,7 @@ def postprocess_component_html(
     component_cls: Type["Component"],
     component_id: str,
     html_content: str,
-    kind: RenderKind,
+    type: RenderType,
     nested: bool,
 ) -> str:
     # NOTE: To better understand the next section, consider this:
@@ -250,7 +250,7 @@ def postprocess_component_html(
     )
 
     if not nested:
-        output = render_dependencies(output, kind)
+        output = render_dependencies(output, type)
     return output
 
 
@@ -286,7 +286,7 @@ PLACEHOLDER_REGEX = re.compile(
 )
 
 
-def render_dependencies(content: TContent, kind: RenderKind = "document") -> TContent:
+def render_dependencies(content: TContent, type: RenderType = "document") -> TContent:
     """
     Given a string that contains parts that were rendered by components,
     this function inserts all used JS and CSS.
@@ -333,7 +333,7 @@ def render_dependencies(content: TContent, kind: RenderKind = "document") -> TCo
     else:
         content_ = cast(bytes, content)
 
-    content_, js_dependencies, css_dependencies = _process_dep_declarations(content_, kind)
+    content_, js_dependencies, css_dependencies = _process_dep_declarations(content_, type)
 
     # Replace the placeholders with the actual content
     did_find_js_placeholder = False
@@ -361,7 +361,7 @@ def render_dependencies(content: TContent, kind: RenderKind = "document") -> TCo
     # By default, if user didn't specify any `{% component_dependencies %}` (or the JS/CSS variants),
     # then try to insert the JS scripts at the end of <body> and CSS sheets at the end
     # of <head>
-    if kind == "document" and (not did_find_js_placeholder or not did_find_css_placeholder):
+    if type == "document" and (not did_find_js_placeholder or not did_find_css_placeholder):
         did_modify_html = False
 
         def do_transform(head: Optional[LexborNode], body: Optional[LexborNode]) -> None:
@@ -385,7 +385,28 @@ def render_dependencies(content: TContent, kind: RenderKind = "document") -> TCo
     return cast(TContent, output)
 
 
-def _process_dep_declarations(content: bytes, kind: Literal["document", "fragment"]) -> Tuple[bytes, bytes, bytes]:
+# Overview of this function:
+# 1. We extract all HTML comments like `<!-- _RENDERED table_10bac31,1234-->`.
+# 2. We look up the corresponding component classes
+# 3. For each component class we get the component's inlined JS and CSS,
+#    and the JS and CSS from `Media.js/css`
+# 4. We add our client-side JS logic into the mix (`django_components/django_components.min.js`)
+#    - For fragments, we would skip this step.
+# 5. For all the above JS and CSS, we figure out which JS / CSS needs to be inserted directly
+#    into the HTML, and which can be loaded with the client-side manager.
+#    - Components' inlined JS is inserted directly into the HTML as `<script> ... <script>`,
+#      to avoid having to issues 10s of requests for each component separately.
+#    - Components' inlined CSS is inserted directly into the HTML as `<style> ... <style>`,
+#      to avoid a [flash of unstyled content](https://en.wikipedia.org/wiki/Flash_of_unstyled_content)
+#      that would occur if we had to load the CSS via JS request.
+#    - For CSS from `Media.css` we insert that as `<link href="...">` HTML tags, also to avoid
+#      the flash of unstyled content
+#    - For JS from `Media.js`, we let the client-side manager load that, so that, even if
+#      multiple components link to the same JS script in their `Media.js`, the linked JS
+#      will be fetched and executed only once.
+# 6. And lastly, we generate a JS script that will load / mark as loaded the JS and CSS
+#    as categorized in previous step.
+def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, bytes, bytes]:
     """
     Process a textual content that may include metadata on rendered components.
     The metadata has format like this
@@ -426,7 +447,7 @@ def _process_dep_declarations(content: bytes, kind: Literal["document", "fragmen
         inlined_component_css_tags,
         loaded_component_js_urls,
         loaded_component_css_urls,
-    ) = _prepare_tags_and_urls(comp_hashes, kind)
+    ) = _prepare_tags_and_urls(comp_hashes, type)
 
     def get_component_media(comp_cls_hash: str) -> Media:
         comp_cls = comp_hash_mapping[comp_cls_hash]
@@ -537,7 +558,7 @@ def _postprocess_media_tags(
 
 def _prepare_tags_and_urls(
     data: Iterable[str],
-    kind: RenderKind,
+    type: RenderType,
 ) -> Tuple[List[str], List[str], List[str], List[str], List[str], List[str]]:
     to_load_js_urls: List[str] = []
     to_load_css_urls: List[str] = []
@@ -546,7 +567,7 @@ def _prepare_tags_and_urls(
     loaded_js_urls: List[str] = []
     loaded_css_urls: List[str] = []
 
-    # When `kind="document"`, we insert the actual <script> and <style> tags into the HTML.
+    # When `type="document"`, we insert the actual <script> and <style> tags into the HTML.
     # But even in that case we still need to call `Components.manager.markScriptLoaded`,
     # so the client knows NOT to fetch them again.
     # So in that case we populate both `inlined` and `loaded` lists
@@ -557,7 +578,7 @@ def _prepare_tags_and_urls(
         # which means that we are NOT going to load / inline it again.
         comp_cls = comp_hash_mapping[comp_cls_hash]
 
-        if kind == "document":
+        if type == "document":
             # NOTE: Skip fetching of inlined JS/CSS if it's not defined or empty for given component
             if _is_nonempty_str(comp_cls.js):
                 inlined_js_tags.append(_get_script("js", comp_cls, type="tag"))
@@ -760,6 +781,6 @@ class ComponentDependencyMiddleware:
         if not isinstance(response, StreamingHttpResponse) and response.get("Content-Type", "").startswith(
             "text/html"
         ):
-            response.content = render_dependencies(response.content, kind="document")
+            response.content = render_dependencies(response.content, type="document")
 
         return response
