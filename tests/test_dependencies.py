@@ -124,7 +124,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         rendered_raw = SimpleComponentWithDeps.render(
             kwargs={"variable": "foo"},
-            nested=True,
+            render_dependencies=False,
         )
 
         self.assertEqual(rendered_raw.count("<script"), 1)

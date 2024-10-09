@@ -97,7 +97,7 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
     slots: SlotsType
     escape_slots_content: bool
     type: RenderType
-    nested: bool
+    render_dependencies: bool
 
 
 @dataclass()
@@ -511,7 +511,7 @@ class Component(
             slots=slots,
             escape_slots_content=escape_slots_content,
             type=type,
-            nested=False,
+            render_dependencies=True,
         )
         return cls.response_class(content, *response_args, **response_kwargs)
 
@@ -524,7 +524,7 @@ class Component(
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
         type: RenderType = "document",
-        nested: bool = False,
+        render_dependencies: bool = True,
     ) -> str:
         """
         Render the component into a string.
@@ -546,7 +546,7 @@ class Component(
             - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
-        - `nested` - Set this to `True` if you want to insert the resulting HTML into another component.
+        - `render_dependencies` - Set this to `False` if you want to insert the resulting HTML into another component.
 
         Example:
         ```py
@@ -570,7 +570,7 @@ class Component(
         else:
             comp = cls()
 
-        return comp._render(context, args, kwargs, slots, escape_slots_content, type, nested)
+        return comp._render(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
 
     # This is the internal entrypoint for the render function
     def _render(
@@ -581,10 +581,10 @@ class Component(
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
         type: RenderType = "document",
-        nested: bool = False,
+        render_dependencies: bool = True,
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, nested)
+            return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
         except Exception as err:
             raise _type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
 
@@ -596,7 +596,7 @@ class Component(
         slots: Optional[SlotsType] = None,
         escape_slots_content: bool = True,
         type: RenderType = "document",
-        nested: bool = False,
+        render_dependencies: bool = True,
     ) -> str:
         has_slots = slots is not None
 
@@ -624,7 +624,7 @@ class Component(
                     kwargs=kwargs,
                     escape_slots_content=escape_slots_content,
                     type=type,
-                    nested=nested,
+                    render_dependencies=render_dependencies,
                 ),
                 is_filled=None,
             ),
@@ -703,7 +703,7 @@ class Component(
                     component_id=self.component_id,
                     html_content=html_content,
                     type=type,
-                    nested=nested,
+                    render_dependencies=render_dependencies,
                 )
 
         # After rendering is done, remove the current state from the stack, which means
@@ -903,7 +903,7 @@ class ComponentNode(BaseNode):
             kwargs=kwargs,
             # NOTE: When we render components inside the template via template tags,
             # do NOT render deps, because this may be decided by outer component
-            nested=True,
+            render_dependencies=False,
         )
 
         trace_msg("RENDR", "COMP", self.name, self.node_id, "...Done!")

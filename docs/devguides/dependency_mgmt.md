@@ -160,7 +160,7 @@ This is how we achieve that:
 
    - If users are using `Component.render()` or `Component.render_to_response()`, these post-process the `<!-- _RENDERED -->` comments by default.
 
-     - NOTE: Users are able to opt out of the post-processing by setting `nested=True`.
+     - NOTE: Users are able to opt out of the post-processing by setting `render_dependencies=False`.
 
    - For advanced use cases, users may use `render_dependencies()` directly. This is the function that both `ComponentDependencyMiddleware` and `Component.render()` call internally.
 

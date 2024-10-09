@@ -3301,17 +3301,17 @@ when you render a component via `Component.render()`.
 API of django-components makes it possible to compose components in a "React-like" way,
 where we pre-render a piece of HTML and then insert it into a larger structure.
 
-To do this, you must add `nested=True` to the nested components:
+To do this, you must add `render_dependencies=False` to the nested components:
 
 ```py
 card_actions = CardActions.render(
     kwargs={"editable": editable},
-    nested=True,
+    render_dependencies=False,
 )
 
 card = Card.render(
     slots={"actions": card_actions},
-    nested=True,
+    render_dependencies=False,
 )
 
 page = MyPage.render(
@@ -3319,7 +3319,7 @@ page = MyPage.render(
 )
 ```
 
-Why is `nested=True` required?
+Why is `render_dependencies=False` required?
 
 As mentioned earlier, each time we call `Component.render()`, we also call `render_dependencies()`.
 
@@ -3328,7 +3328,7 @@ we extract the info on components' JS and CSS from the HTML. But the template of
 contains no `{% component_depedencies %}` tags, and nor `<head>` nor `<body>` HTML tags.
 So the component's JS and CSS will NOT be inserted, and will be lost.
 
-To work around this, you must set `nested=True` when rendering pieces of HTML with `Component.render()`
+To work around this, you must set `render_dependencies=False` when rendering pieces of HTML with `Component.render()`
 and inserting them into larger structures.
 
 ## Available settings

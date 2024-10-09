@@ -219,7 +219,7 @@ def postprocess_component_html(
     component_id: str,
     html_content: str,
     type: RenderType,
-    nested: bool,
+    render_dependencies: bool,
 ) -> str:
     # NOTE: To better understand the next section, consider this:
     #
@@ -249,8 +249,8 @@ def postprocess_component_html(
         ),
     )
 
-    if not nested:
-        output = render_dependencies(output, type)
+    if render_dependencies:
+        output = _render_dependencies(output, type)
     return output
 
 
@@ -383,6 +383,10 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
     output = content_.decode() if isinstance(content, str) else content_
     output = mark_safe(output) if is_safestring else output
     return cast(TContent, output)
+
+
+# Renamed so we can access use this function where there's kwarg of the same name
+_render_dependencies = render_dependencies
 
 
 # Overview of this function:
