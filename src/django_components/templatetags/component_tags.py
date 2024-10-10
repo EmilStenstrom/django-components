@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Union
+from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Set, Union
 
 import django.template
 from django.template.base import NodeList, Parser, Token, TokenType
@@ -9,7 +9,6 @@ from django.utils.text import smart_split
 from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY, HtmlAttrsNode
 from django_components.component import COMP_ONLY_FLAG, ComponentNode
 from django_components.component_registry import ComponentRegistry
-from django_components.component_registry import registry as component_registry
 from django_components.dependencies import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
 from django_components.expression import (
     DynamicFilterExpression,
@@ -42,27 +41,9 @@ from django_components.tag_formatter import get_tag_formatter
 from django_components.template_parser import parse_bits
 from django_components.utils import gen_id
 
-if TYPE_CHECKING:
-    from django_components.component import Component
-
-
 # NOTE: Variable name `register` is required by Django to recognize this as a template tag library
 # See https://docs.djangoproject.com/en/dev/howto/custom-template-tags
 register = django.template.Library()
-
-
-def _get_components_from_preload_str(preload_str: str) -> List["Component"]:
-    """Returns a list of unique components from a comma-separated str"""
-
-    components = []
-    for component_name in preload_str.split(","):
-        component_name = component_name.strip()
-        if not component_name:
-            continue
-        component_class = component_registry.get(component_name)
-        components.append(component_class(component_name))
-
-    return components
 
 
 def _component_dependencies(kind: Literal["js", "css", "both"]) -> SafeString:

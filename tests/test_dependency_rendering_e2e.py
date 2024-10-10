@@ -138,3 +138,80 @@ class E2eDependencyRenderingTests(BaseTestCase):
         self.assertEqual("rgb(255, 0, 0)", data["myStyle2Color"])  # AKA 'color: red'
 
         await page.close()
+
+    @with_playwright
+    async def test_renders_css_nojs_env(self):
+        single_comp_url = TEST_SERVER_URL + "/multi"
+
+        page: Page = await self.browser.new_page(java_script_enabled=False)
+        await page.goto(single_comp_url)
+
+        test_js: types.js = """() => {
+            const bodyHTML = document.body.innerHTML;
+
+            // Get the stylings defined via CSS
+            const innerEl = document.querySelector(".inner");
+            const innerFontSize = globalThis.getComputedStyle(innerEl).getPropertyValue('font-size');
+
+            const outerEl = document.querySelector(".outer");
+            const outerFontSize = globalThis.getComputedStyle(outerEl).getPropertyValue('font-size');
+
+            const otherEl = document.querySelector(".other");
+            const otherDisplay = globalThis.getComputedStyle(otherEl).getPropertyValue('display');
+
+            const myStyleEl = document.querySelector(".my-style");
+            const myStyleBg = globalThis.getComputedStyle(myStyleEl).getPropertyValue('background');
+
+            const myStyle2El = document.querySelector(".my-style2");
+            const myStyle2Color = globalThis.getComputedStyle(myStyle2El).getPropertyValue('color');
+
+            return {
+                bodyHTML,
+                component1JsMsg: globalThis.testSimpleComponent,
+                component2JsMsg: globalThis.testSimpleComponentNested,
+                component3JsMsg: globalThis.testOtherComponent,
+                scriptJs1Msg: globalThis.testMsg,
+                scriptJs2Msg: globalThis.testMsg2,
+                innerFontSize,
+                outerFontSize,
+                myStyleBg,
+                myStyle2Color,
+                otherDisplay,
+            };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        # Check that the actual HTML content was loaded
+        self.assertInHTML(
+            """
+            <div class="outer">
+                Variable: <strong class="inner">variable</strong>
+                XYZ: <strong class="other">variable_inner</strong>
+            </div>
+            <div class="my-style">123</div>
+            <div class="my-style2">xyz</div>
+            """,
+            data["bodyHTML"],
+            count=1,
+        )
+
+        # Check components' inlined JS did NOT get loaded
+        self.assertEqual(data["component1JsMsg"], None)
+        self.assertEqual(data["component2JsMsg"], None)
+        self.assertEqual(data["component3JsMsg"], None)
+
+        # Check JS from Media.js did NOT get loaded
+        self.assertEqual(data["scriptJs1Msg"], None)
+        self.assertEqual(data["scriptJs2Msg"], None)
+
+        # Check components' inlined CSS got loaded
+        self.assertEqual(data["innerFontSize"], "4px")
+        self.assertEqual(data["outerFontSize"], "40px")
+        self.assertEqual(data["otherDisplay"], "flex")
+
+        # Check CSS from Media.css got loaded
+        self.assertIn("rgb(0, 0, 255)", data["myStyleBg"])  # AKA 'background: blue'
+        self.assertEqual("rgb(255, 0, 0)", data["myStyle2Color"])  # AKA 'color: red'
+
+        await page.close()
