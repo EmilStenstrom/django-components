@@ -91,9 +91,9 @@ def is_html_parser_fragment(html: str, tree: LexborHTMLParser) -> bool:
     # TODO: Replace with fragment parser?
     #       See https://github.com/rushter/selectolax/issues/74#issuecomment-2404470344
     parsed_head_html: str = tree.head.html  # type: ignore
-    parsed_body_html: str = tree.head.html  # type: ignore
+    parsed_body_html: str = tree.body.html  # type: ignore
     head_content = parsed_head_html[len("<head>") : -len("</head>")]  # noqa: E203
-    body_content = parsed_body_html[len("<body>") : -len("<body>")]  # noqa: E203
+    body_content = parsed_body_html[len("<body>") : -len("</body>")]  # noqa: E203
     between_content = html[len(head_content) : -len(body_content)].strip()  # noqa: E203
 
     is_fragment = not html or not between_content
