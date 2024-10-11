@@ -51,16 +51,8 @@ class HtmlTests(TestCase):
                 Hello
             </span>
         """
-        root, nodes = parse_multiroot_html(html)
+        nodes = parse_multiroot_html(html)
 
-        self.assertHTMLEqual(
-            root.html,
-            f"""
-            <root>
-                {html}
-            </root>
-            """,
-        )
         self.assertHTMLEqual(
             nodes[0].html,
             """

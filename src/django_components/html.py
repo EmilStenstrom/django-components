@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union, cast
+from typing import List, Union
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
@@ -25,13 +25,13 @@ def parse_document_or_nodes(html: str) -> Union[List[LexborNode], LexborHTMLPars
     is_fragment = is_html_parser_fragment(html, tree)
 
     if is_fragment:
-        _, nodes = parse_multiroot_html(html)
+        nodes = parse_multiroot_html(html)
         return nodes
     else:
         return tree
 
 
-def parse_multiroot_html(html: str) -> Tuple[LexborNode, List[LexborNode]]:
+def parse_multiroot_html(html: str) -> List[LexborNode]:
     """
     Use this when you know the given HTML is a multiple nodes like
 
@@ -44,7 +44,7 @@ def parse_multiroot_html(html: str) -> Tuple[LexborNode, List[LexborNode]]:
     # Get all contents of the root
     root_elem = parser.css_first("root")
     elems = [*root_elem.iter()] if root_elem else []
-    return cast(LexborNode, root_elem), elems
+    return elems
 
 
 def is_html_parser_fragment(html: str, tree: LexborHTMLParser) -> bool:

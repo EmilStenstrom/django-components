@@ -368,13 +368,13 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
             did_modify_html = False
 
             if not did_find_css_placeholder and tree.head:
-                _, css_elems = parse_multiroot_html(css_dependencies.decode())
+                css_elems = parse_multiroot_html(css_dependencies.decode())
                 for css_elem in css_elems:
                     tree.head.insert_child(css_elem)  # type: ignore # TODO: Update to selectolax 0.3.25
                 did_modify_html = True
 
             if not did_find_js_placeholder and tree.body:
-                _, js_elems = parse_multiroot_html(js_dependencies.decode())
+                js_elems = parse_multiroot_html(js_dependencies.decode())
                 for js_elem in js_elems:
                     tree.body.insert_child(js_elem)  # type: ignore # TODO: Update to selectolax 0.3.25
                 did_modify_html = True
