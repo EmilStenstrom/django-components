@@ -1,101 +1,100 @@
-import re
-from typing import Dict, Optional, Protocol, Union, cast
+from typing import List, Union
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 
 def parse_node(html: str) -> LexborNode:
-    parser = LexborHTMLParser(html)
+    """
+    Use this when you know the given HTML is a single node like
+
+    `<div> Hi </div>`
+    """
+    tree = LexborHTMLParser(html)
     # NOTE: The parser automatically places <style> tags inside <head>
     # while <script> tags are inside <body>.
-    return parser.body.child or parser.head.child  # type: ignore[union-attr, return-value]
+    return tree.body.child or tree.head.child  # type: ignore[union-attr, return-value]
 
 
-# NOTE: While Selectolax offers way to insert a node before or after
-# a current one, it doesn't allow to insert one node into another.
-# See https://github.com/rushter/selectolax/issues/126
-def html_insert_before_end(html: str, insert_html: str) -> str:
-    regex = re.compile(r"<\/\w+>$")
-    return regex.sub(
-        lambda m: insert_html + m[0],
-        html.strip(),
-    )
+def parse_document_or_nodes(html: str) -> Union[List[LexborNode], LexborHTMLParser]:
+    """
+    Use this if you do NOT know whether the given HTML is a full document
+    with `<html>`, `<head>`, and `<body>` tags, or an HTML fragment.
+    """
+    html = html.strip()
+    tree = LexborHTMLParser(html)
+    is_fragment = is_html_parser_fragment(html, tree)
 
-
-def insert_before_end(node: LexborNode, insert: Union[LexborNode, str]) -> None:
-    the_insert = insert.html or "" if isinstance(insert, LexborNode) else insert
-    new_node_html = html_insert_before_end(node.html or "", the_insert)
-    new_node = parse_node(new_node_html)
-    node.replace_with(new_node)  # type: ignore[arg-type]
-    node.insert_before(new_node)  # type: ignore[arg-type]
-
-
-HTML_ROOT_TAGS_REGEX = re.compile(
-    r"<!doctype|<html|</html|<head|</head|<body|</body",
-    re.IGNORECASE,
-)
-
-HTML_ROOT_TAGS_REVERSE_REGEX = re.compile(
-    r"<doctype_|<html_|</html_|<head_|</head_|<body_|</body_",
-    re.IGNORECASE,
-)
-
-
-html_tag_escapes: Dict[str, str] = {
-    "<!doctype": "<doctype_",
-    "<html": "<html_",
-    "</html": "</html_",
-    "<head": "<head_",
-    "</head": "</head_",
-    "<body": "<body_",
-    "</body": "</body_",
-}
-html_tag_escapes_reverse = {val: key for key, val in html_tag_escapes.items()}
-
-
-class TransformHtmlCallback(Protocol):
-    def __call__(self, head: Optional[LexborNode], body: Optional[LexborNode]) -> None: ...  # noqa: #704
-
-
-# TODO: Remove `transform_html_document`, `insert_before_end`, `html_insert_before_end`
-#       Once Selectolax supports `LaxborNode.insert_child()`
-#       See https://github.com/rushter/selectolax/issues/128
-def transform_html_document(html: str, transform: TransformHtmlCallback) -> str:
-    # Escape <!doctype>, <html>, <head>, and <body> tags, because Selectolax treats them
-    # specially, which makes it impossible to edit them.
-    def on_replace_match(match: "re.Match[str]") -> str:
-        match_str = match[0].lower()
-        return html_tag_escapes[match_str]
-
-    escaped_html = HTML_ROOT_TAGS_REGEX.sub(on_replace_match, html)
-
-    # Selectolax now treats the escaped tags as custom tags, and so Selectolax wraps
-    # the whole content in extra <html><head></head><body> CONTENT </body></html>.
-    # So the actual HTML is under `.body.child`
-    wrapper_tree = LexborHTMLParser(escaped_html).body
-    escaped_tree = wrapper_tree.child if wrapper_tree else None
-    if escaped_tree:
-        body_matches = escaped_tree.css("body_")
-        head_matches = escaped_tree.css("head_")
-        body = body_matches[0] if body_matches else None
-        head = head_matches[0] if head_matches else None
+    if is_fragment:
+        nodes = parse_multiroot_html(html)
+        return nodes
     else:
-        body = None
-        head = None
+        return tree
 
-    # Finally, we can pass the actual <head> and <body> tags to be transformed
-    # The transformations happen in-place in Selectolax.
-    transform(head, body)
-    transformed_html = cast(str, escaped_tree.html) if escaped_tree else ""
 
-    # After the transformations are applied, we need to un-escape the <doctype_>, <head_>, etc tags
-    def on_reverse_replace_match(match: "re.Match[str]") -> str:
-        match_str = match[0].lower()
-        return html_tag_escapes_reverse[match_str]
+def parse_multiroot_html(html: str) -> List[LexborNode]:
+    """
+    Use this when you know the given HTML is a multiple nodes like
 
-    final_html = HTML_ROOT_TAGS_REVERSE_REGEX.sub(on_reverse_replace_match, transformed_html)
+    `<div> Hi </div> <span> Hello </span>`
+    """
+    # NOTE: HTML / XML MUST have a single root. So, to support multiple
+    # top-level elements, we wrap them in a dummy singular root.
+    parser = LexborHTMLParser(f"<root>{html}</root>")
 
-    # NOTE: Because of how we work around selectolax to enable modifying the <body> and <head>
-    # tags, selectolax also adds `</doctype_>` at the end of the content when we serialize the HTML.
-    # So we have to remove that.
-    return final_html[: -len("</doctype_>")]
+    # Get all contents of the root
+    root_elem = parser.css_first("root")
+    elems = [*root_elem.iter()] if root_elem else []
+    return elems
+
+
+def is_html_parser_fragment(html: str, tree: LexborHTMLParser) -> bool:
+    # If we pass only an HTML fragment to the parser, like `<div>123</div>`, then
+    # the parser automatically wraps it in `<html>`, `<head>`, and `<body>` tags.
+    #
+    # <html>
+    #   <head>
+    #   </head>
+    #   <body>
+    #     <div>123</div>
+    #   </body>
+    # </html>
+    #
+    # But also, as described in Lexbor (https://github.com/lexbor/lexbor/issues/183#issuecomment-1611975340),
+    # if the parser first comes across HTML tags that could go into the `<head>`,
+    # it will put them there, and then put the rest in `<body>`.
+    #
+    # So `<link href="..." /><div></div>` will be parsed as
+    #
+    # <html>
+    #   <head>
+    #     <link href="..." />
+    #   </head>
+    #   <body>
+    #     <div>123</div>
+    #   </body>
+    # </html>
+    #
+    # BUT, if we're dealing with a fragment, we want to parse it correctly as
+    # a multi-root fragment:
+    #
+    # <link href="..." />
+    # <div>123</div>
+    #
+    # The way do so is that we:
+    # 1. Take the original HTML string
+    # 2. Subtract the content of parsed `<head>` from the START of the original HTML
+    # 3. Subtract the content of parsed `<body>` from the END of the original HTML
+    # 4. Then, if we have an HTML fragment, we should be left with empty string (maybe whitespace?).
+    # 5. But if we have an HTML document, then the "space between" should contain text,
+    #    because we didn't account for the length of `<html>`, `<head>`, `<body>` tags.
+    #
+    # TODO: Replace with fragment parser?
+    #       See https://github.com/rushter/selectolax/issues/74#issuecomment-2404470344
+    parsed_head_html: str = tree.head.html  # type: ignore
+    parsed_body_html: str = tree.body.html  # type: ignore
+    head_content = parsed_head_html[len("<head>") : -len("</head>")]  # noqa: E203
+    body_content = parsed_body_html[len("<body>") : -len("</body>")]  # noqa: E203
+    between_content = html[len(head_content) : -len(body_content)].strip()  # noqa: E203
+
+    is_fragment = not html or not between_content
+    return is_fragment

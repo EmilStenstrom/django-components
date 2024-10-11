@@ -4,7 +4,6 @@ During actual rendering, the HTML is then picked up by the JS-side dependency ma
 """
 
 import re
-from unittest import skip
 
 from django.template import Template
 
@@ -165,38 +164,6 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-    @skip("Old implementation of preload no longer compatible - needs rework")
-    def test_preload_dependencies_render_when_no_components_used(self):
-        registry.register(name="test", component=SimpleComponent)
-
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies preload='test' %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-
-    @skip("Old implementation of preload no longer compatible - needs rework")
-    def test_preload_css_dependencies_render_when_no_components_used(self):
-        registry.register(name="test", component=SimpleComponent)
-
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_css_dependencies preload='test' %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-
     def test_single_component_dependencies(self):
         registry.register(name="test", component=SimpleComponent)
 
@@ -263,23 +230,6 @@ class DependencyRenderingTests(BaseTestCase):
             1,
         )
 
-    @skip("Old implementation of preload no longer compatible - needs rework")
-    def test_preload_dependencies_render_once_when_used(self):
-        registry.register(name="test", component=SimpleComponent)
-
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies preload='test' %}
-            {% component 'test' variable='foo' / %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
-        self.assertInHTML(
-            '<link href="style.css" media="all" rel="stylesheet"/>',
-            rendered,
-            count=1,
-        )
-        self.assertInHTML('<script src="script.js">', rendered, count=1)
-
     def test_single_component_placeholder_removed(self):
         registry.register(name="test", component=SimpleComponent)
 
@@ -290,17 +240,6 @@ class DependencyRenderingTests(BaseTestCase):
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
 
-        self.assertNotIn("_RENDERED", rendered)
-
-    @skip("Old implementation of preload no longer compatible - needs rework")
-    def test_placeholder_removed_when_preload_rendered(self):
-        registry.register(name="test", component=SimpleComponent)
-
-        template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies preload='test' %}
-        """
-        template = Template(template_str)
-        rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
 
     def test_single_component_css_dependencies(self):

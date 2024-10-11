@@ -1,6 +1,9 @@
-from django.test import TestCase
+from typing import List, cast
 
-from django_components.html import insert_before_end, parse_node, transform_html_document
+from django.test import TestCase
+from selectolax.lexbor import LexborHTMLParser, LexborNode
+
+from django_components.html import is_html_parser_fragment, parse_document_or_nodes, parse_multiroot_html, parse_node
 
 from .django_test_setup import setup_test_config
 
@@ -32,59 +35,228 @@ class HtmlTests(TestCase):
             """,
         )
 
-    def test_insert_before_end(self):
-        node = parse_node(
+    def test_parse_multiroot_html(self):
+        html = """
+            <div class="abc xyz" data-id="123">
+                <ul>
+                    <li>Hi</li>
+                </ul>
+            </div>
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            <span>
+                Hello
+            </span>
+        """
+        nodes = parse_multiroot_html(html)
+
+        self.assertHTMLEqual(
+            nodes[0].html,
             """
             <div class="abc xyz" data-id="123">
                 <ul>
                     <li>Hi</li>
                 </ul>
             </div>
+            """,
+        )
+        self.assertHTMLEqual(
+            nodes[1].html,
             """
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            """,
+        )
+        self.assertHTMLEqual(
+            nodes[2].html,
+            """
+            <span>
+                Hello
+            </span>
+            """,
         )
 
-        insert_before_end(node, '<script src="abc"></script>')
+    def test_is_html_parser_fragment(self):
+        fragment_html = """
+            <div class="abc xyz" data-id="123">
+                <ul>
+                    <li>Hi</li>
+                </ul>
+            </div>
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            <span>
+                Hello
+            </span>
+        """
+        fragment_tree = LexborHTMLParser(fragment_html)
+        fragment_result = is_html_parser_fragment(fragment_html, fragment_tree)
+
+        self.assertEqual(fragment_result, True)
+
+        doc_html = """
+            <!doctype html>
+            <html>
+              <head>
+                <link href="https://..." />
+              </head>
+              <body>
+                <div class="abc xyz" data-id="123">
+                    <ul>
+                        <li>Hi</li>
+                    </ul>
+                </div>
+              </body>
+            </html>
+        """
+        doc_tree = LexborHTMLParser(doc_html)
+        doc_result = is_html_parser_fragment(doc_html, doc_tree)
+
+        self.assertEqual(doc_result, False)
+
+    def test_parse_document_or_nodes__fragment(self):
+        fragment_html = """
+            <div class="abc xyz" data-id="123">
+                <ul>
+                    <li>Hi</li>
+                </ul>
+            </div>
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            <span>
+                Hello
+            </span>
+        """
+        fragment_result = cast(List[LexborNode], parse_document_or_nodes(fragment_html))
 
         self.assertHTMLEqual(
-            node.html,
+            fragment_result[0].html,
             """
             <div class="abc xyz" data-id="123">
                 <ul>
                     <li>Hi</li>
                 </ul>
-                <script src="abc"></script>
             </div>
             """,
         )
-
-    def test_transform_html_document(self):
-        def do_transform(head, body):
-            insert_before_end(head, '<link href="abc">')
-            insert_before_end(head, '<link href="abc2">')
-            insert_before_end(body, '<script src="abc"></script>')
-            insert_before_end(body, '<script src="abc2"></script>')
-
-        transformed = transform_html_document(
+        self.assertHTMLEqual(
+            fragment_result[1].html,
             """
-            <!-- lol -->
-            <!DOCTYPE html="5678909876">
-            <html>
-                <head></head>
-                <body class="abc"></body>
-            </html>
-            dwadaw
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
             """,
-            do_transform,
+        )
+        self.assertHTMLEqual(
+            fragment_result[2].html,
+            """
+            <span>
+                Hello
+            </span>
+            """,
         )
 
+    def test_parse_document_or_nodes__mixed(self):
+        fragment_html = """
+            <link href="" />
+            <div class="abc xyz" data-id="123">
+                <ul>
+                    <li>Hi</li>
+                </ul>
+            </div>
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            <span>
+                Hello
+            </span>
+        """
+        fragment_result = cast(List[LexborNode], parse_document_or_nodes(fragment_html))
+
         self.assertHTMLEqual(
-            transformed,
+            fragment_result[0].html,
             """
-            <!doctype html="5678909876">
+            <link href="" />
+            """,
+        )
+        self.assertHTMLEqual(
+            fragment_result[1].html,
+            """
+            <div class="abc xyz" data-id="123">
+                <ul>
+                    <li>Hi</li>
+                </ul>
+            </div>
+            """,
+        )
+        self.assertHTMLEqual(
+            fragment_result[2].html,
+            """
+            <main id="123" class="one">
+                <div>
+                    42
+                </div>
+            </main>
+            """,
+        )
+        self.assertHTMLEqual(
+            fragment_result[3].html,
+            """
+            <span>
+                Hello
+            </span>
+            """,
+        )
+
+    def test_parse_document_or_nodes__doc(self):
+        doc_html = """
+            <!doctype html>
             <html>
-                <head><link href="abc"></head>
-                <body class="abc"><script src="abc"></script></body>
+              <head>
+                <link href="https://..." />
+              </head>
+              <body>
+                <div class="abc xyz" data-id="123">
+                    <ul>
+                        <li>Hi</li>
+                    </ul>
+                </div>
+              </body>
             </html>
-            dwadaw
+        """
+        fragment_result = cast(LexborHTMLParser, parse_document_or_nodes(doc_html))
+
+        self.assertHTMLEqual(
+            fragment_result.html,
+            """
+            <!doctype html>
+            <html>
+              <head>
+                <link href="https://..." />
+              </head>
+              <body>
+                <div class="abc xyz" data-id="123">
+                    <ul>
+                        <li>Hi</li>
+                    </ul>
+                </div>
+              </body>
+            </html>
             """,
         )
