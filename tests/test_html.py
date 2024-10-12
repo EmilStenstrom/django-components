@@ -3,7 +3,12 @@ from typing import List, cast
 from django.test import TestCase
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from django_components.html import is_html_parser_fragment, parse_document_or_nodes, parse_multiroot_html, parse_node
+from django_components.util.html import (
+    is_html_parser_fragment,
+    parse_document_or_nodes,
+    parse_multiroot_html,
+    parse_node,
+)
 
 from .django_test_setup import setup_test_config
 
