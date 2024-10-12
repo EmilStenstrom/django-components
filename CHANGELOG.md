@@ -17,7 +17,7 @@
         a [flash of unstyled content](https://en.wikipedia.org/wiki/Flash_of_unstyled_content),
         as either JS scripts will block the rendering, or CSS will load too late.
 
-- The undocumented keyword arg `preload` of `{% component_js_dependencies %}` and `{% component_csss_dependencies %}` tags was removed.
+- The undocumented keyword arg `preload` of `{% component_js_dependencies %}` and `{% component_css_dependencies %}` tags was removed.
   This will be replaced with HTML fragment support.
 
 - Component typing signature changed from

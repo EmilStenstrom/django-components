@@ -113,7 +113,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
@@ -168,7 +170,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'test' variable='foo' / %}
         """
         template = Template(template_str)
@@ -201,7 +205,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="te-s/t", component=SimpleComponent)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'te-s/t' variable='foo' / %}
         """
         template = Template(template_str)
@@ -234,7 +240,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="test", component=SimpleComponent)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'test' variable='foo' / %}
         """
         template = Template(template_str)
@@ -299,7 +307,9 @@ class DependencyRenderingTests(BaseTestCase):
     ):
         registry.register(name="test", component=MultistyleComponent)
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'test' / %}
         """
         template = Template(template_str)
@@ -337,7 +347,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="outer", component=SimpleComponentNested)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
         """
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
@@ -360,7 +372,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="other", component=OtherComponent)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'outer' variable='variable' %}
                 {% component 'other' variable='variable_inner' / %}
             {% endcomponent %}
@@ -418,7 +432,9 @@ class DependencyRenderingTests(BaseTestCase):
         registry.register(name="test", component=SimpleComponentWithSharedDependency)
 
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'inner' variable='variable' / %}
             {% component 'outer' variable='variable' / %}
             {% component 'test' variable='variable' / %}

@@ -295,9 +295,8 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
     - CSS is inserted at the end of `<head>` (if present)
     - JS is inserted at the end of `<body>` (if present)
 
-    If you used `{% component_dependencies %}`, `{% component_js_dependencies %}`
-    or `{% component_css_dependencies %}`, then the JS and CSS will be inserted
-    only at these locations.
+    If you used `{% component_js_dependencies %}` or `{% component_css_dependencies %}`,
+    then the JS and CSS will be inserted only at these locations.
 
     Example:
     ```python
@@ -358,7 +357,7 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
 
     content_ = PLACEHOLDER_REGEX.sub(on_replace_match, content_)
 
-    # By default, if user didn't specify any `{% component_dependencies %}` (or the JS/CSS variants),
+    # By default, if user didn't specify any `{% component_dependencies %}`,
     # then try to insert the JS scripts at the end of <body> and CSS sheets at the end
     # of <head>
     if type == "document" and (not did_find_js_placeholder or not did_find_css_placeholder):

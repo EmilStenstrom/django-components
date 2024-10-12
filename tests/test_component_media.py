@@ -31,7 +31,8 @@ class InlineComponentTest(BaseTestCase):
         class TestComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
                 <div class='html-css-only'>Content</div>
             """
             css = ".html-css-only { color: blue; }"
@@ -92,7 +93,8 @@ class ComponentMediaTests(BaseTestCase):
         class SimpleComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
                 Variable: <strong>{{ variable }}</strong>
             """
 
@@ -110,7 +112,8 @@ class ComponentMediaTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -132,7 +135,8 @@ class ComponentMediaTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -153,7 +157,8 @@ class ComponentMediaTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -188,7 +193,8 @@ class ComponentMediaTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             media_class = MyMedia
@@ -221,7 +227,8 @@ class ComponentMediaTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             media_class = MyMedia
@@ -278,7 +285,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -340,7 +348,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -393,7 +402,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -441,7 +451,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -481,7 +492,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -530,7 +542,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             class Media:
@@ -605,7 +618,8 @@ class MediaStaticfilesTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             media_class = MyMedia
@@ -666,7 +680,8 @@ class MediaStaticfilesTests(BaseTestCase):
         class SimpleComponent(Component):
             template = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
             """
 
             media_class = MyMedia
@@ -756,7 +771,8 @@ class MediaRelativePathTests(BaseTestCase):
 
             template_str: types.django_html = """
                 {% load component_tags %}
-                {% component_dependencies %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
                 {% component name='relative_file_component' variable=variable / %}
             """
             template = Template(template_str)
@@ -797,7 +813,9 @@ class MediaRelativePathTests(BaseTestCase):
             registry.unregister("relative_file_pathobj_component")
 
             template_str: types.django_html = """
-                {% load component_tags %}{% component_dependencies %}
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
                 {% component 'parent_component' %}
                     {% fill 'content' %}
                         {% component name='relative_file_component' variable='hello' %}

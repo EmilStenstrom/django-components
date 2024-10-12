@@ -120,7 +120,9 @@ class RenderBenchmarks(BaseTestCase):
 
     def test_middleware_time_with_dependency_for_small_page(self):
         template_str: types.django_html = """
-            {% load component_tags %}{% component_dependencies %}
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
             {% component 'test_component' %}
                 {% slot "header" %}
                     {% component 'inner_component' variable='foo' %}{% endcomponent %}

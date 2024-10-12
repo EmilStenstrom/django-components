@@ -46,22 +46,18 @@ from django_components.utils import gen_id
 register = django.template.Library()
 
 
-def _component_dependencies(kind: Literal["js", "css", "both"]) -> SafeString:
+def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
-    content = ""
+    if type == "css":
+        placeholder = CSS_DEPENDENCY_PLACEHOLDER
+    elif type == "js":
+        placeholder = JS_DEPENDENCY_PLACEHOLDER
+    else:
+        raise TemplateSyntaxError(
+            f"Unknown dependency type in {{% component_dependencies %}}. Must be one of 'css' or 'js', got {type}"
+        )
 
-    if kind in ("css", "both"):
-        content += CSS_DEPENDENCY_PLACEHOLDER
-    if kind in ("js", "both"):
-        content += JS_DEPENDENCY_PLACEHOLDER
-
-    return mark_safe(content)
-
-
-@register.simple_tag(name="component_dependencies")
-def component_dependencies() -> SafeString:
-    """Marks location where CSS link and JS script tags should be rendered."""
-    return _component_dependencies("both")
+    return mark_safe(placeholder)
 
 
 @register.simple_tag(name="component_css_dependencies")

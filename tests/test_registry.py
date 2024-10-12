@@ -228,7 +228,6 @@ class ProtectedTagsTest(unittest.TestCase):
     @override_settings(COMPONENTS={"tag_formatter": "django_components.component_shorthand_formatter"})
     def test_raises_on_overriding_our_tags(self):
         for tag in [
-            "component_dependencies",
             "component_css_dependencies",
             "component_js_dependencies",
             "fill",
