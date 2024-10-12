@@ -15,7 +15,6 @@ from django_components.utils import find_last_index
 _FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
 _ROOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_ROOT_CTX"
 _REGISTRY_CONTEXT_KEY = "_DJANGO_COMPONENTS_REGISTRY"
-_PARENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_PARENT_COMP"
 _CURRENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_CURRENT_COMP"
 _INJECT_CONTEXT_KEY_PREFIX = "_DJANGO_COMPONENTS_INJECT__"
 
@@ -57,9 +56,6 @@ def set_component_id(context: Context, component_id: str) -> None:
     We use the Context object to pass down info on inside of which component
     we are currently rendering.
     """
-    # Store the previous component so we can detect if the current component
-    # is the top-most or not. If it is, then "_parent_component_id" is None
-    context[_PARENT_COMP_CONTEXT_KEY] = context.get(_CURRENT_COMP_CONTEXT_KEY, None)
     context[_CURRENT_COMP_CONTEXT_KEY] = component_id
 
 
