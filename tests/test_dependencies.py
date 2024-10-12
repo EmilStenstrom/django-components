@@ -131,10 +131,10 @@ class RenderDependenciesTests(BaseTestCase):
         class SimpleComponentWithDeps(SimpleComponent):
             template: types.django_html = (
                 """
-                {% load component_tags %}
-                {% component_js_dependencies %}
-                {% component_css_dependencies %}
-            """
+                    {% load component_tags %}
+                    {% component_js_dependencies %}
+                    {% component_css_dependencies %}
+                """
                 + SimpleComponent.template
             )
 
