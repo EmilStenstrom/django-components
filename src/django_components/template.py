@@ -5,7 +5,7 @@ from django.template import Origin, Template
 from django.template.base import UNKNOWN_SOURCE
 
 from django_components.app_settings import app_settings
-from django_components.utils import lazy_cache
+from django_components.util.cache import lazy_cache
 
 TTemplate = TypeVar("TTemplate", bound=Template)
 

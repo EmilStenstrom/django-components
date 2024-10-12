@@ -7,7 +7,7 @@ from django.utils.module_loading import import_string
 
 from django_components.expression import resolve_string
 from django_components.template_parser import VAR_CHARS
-from django_components.utils import is_str_wrapped_in_quotes
+from django_components.util.utils import is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry

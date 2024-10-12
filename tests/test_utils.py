@@ -1,4 +1,4 @@
-from django_components.utils import is_str_wrapped_in_quotes
+from django_components.util.utils import is_str_wrapped_in_quotes
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase

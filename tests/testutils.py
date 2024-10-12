@@ -43,7 +43,7 @@ class BaseTestCase(SimpleTestCase):
             self._gen_id_count += 1
             return hex(self._gen_id_count)[2:]
 
-        self._gen_id_patch = patch("django_components.utils.generate", side_effect=mock_gen_id)
+        self._gen_id_patch = patch("django_components.util.utils.generate", side_effect=mock_gen_id)
         self._gen_id_patch.start()
 
     def _stop_gen_id_patch(self):

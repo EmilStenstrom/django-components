@@ -47,7 +47,7 @@ from django_components.context import (
 )
 from django_components.dependencies import RenderType, cache_inlined_css, cache_inlined_js, postprocess_component_html
 from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
-from django_components.logger import trace_msg
+from django_components.util.logger import trace_msg
 from django_components.node import BaseNode
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
@@ -62,7 +62,8 @@ from django_components.slots import (
     resolve_slots,
 )
 from django_components.template import cached_template
-from django_components.utils import gen_id, validate_typed_dict, validate_typed_tuple
+from django_components.util.utils import gen_id
+from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 
 # TODO_REMOVE_IN_V1 - Users should use top-level import instead
 # isort: off

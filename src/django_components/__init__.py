@@ -41,7 +41,7 @@ from django_components.tag_formatter import (
 )
 from django_components.template import cached_template as cached_template
 import django_components.types as types
-from django_components.types import (
+from django_components.util.types import (
     EmptyTuple as EmptyTuple,
     EmptyDict as EmptyDict,
 )
