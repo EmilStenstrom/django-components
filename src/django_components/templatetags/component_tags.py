@@ -54,8 +54,7 @@ def _component_dependencies(kind: Literal["js", "css"]) -> SafeString:
         placeholder = JS_DEPENDENCY_PLACEHOLDER
     else:
         raise TemplateSyntaxError(
-            "Unknown dependency type in {% component_dependencies %}. Must be one of 'css' or 'js', "
-            f"got {type}"
+            "Unknown dependency type in {% component_dependencies %}. Must be one of 'css' or 'js', " f"got {type}"
         )
 
     return mark_safe(placeholder)
