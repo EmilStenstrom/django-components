@@ -76,7 +76,8 @@ And this is what gets rendered (plus the CSS and Javascript you've specified):
 
 ## Release notes
 
-[Click here](https://github.com/EmilStenstrom/django-components/tree/master/CHANGELOG.md) to see the full release notes.
+Read the [Release Notes](https://github.com/EmilStenstrom/django-components/tree/master/CHANGELOG.md)
+to see the latest features and fixes.
 
 ## Security notes 🚨
 
