@@ -36,9 +36,9 @@ from django_components.context import (
     _ROOT_CTX_CONTEXT_KEY,
 )
 from django_components.expression import RuntimeKwargs, is_identifier
-from django_components.util.logger import trace_msg
 from django_components.node import BaseNode, NodeTraverse, nodelist_has_content, walk_nodelist
 from django_components.util.cache import lazy_cache
+from django_components.util.logger import trace_msg
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry

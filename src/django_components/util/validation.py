@@ -2,7 +2,6 @@ import sys
 import typing
 from typing import Any, Mapping, Tuple, get_type_hints
 
-
 # Get all types that users may use from the `typing` module.
 #
 # These are the types that we do NOT try to resolve when it's a typed generic,

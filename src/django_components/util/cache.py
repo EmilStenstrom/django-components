@@ -1,7 +1,6 @@
 import functools
 from typing import Any, Callable, TypeVar, cast
 
-
 TFunc = TypeVar("TFunc", bound=Callable)
 
 

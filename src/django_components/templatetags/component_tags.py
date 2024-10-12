@@ -25,7 +25,6 @@ from django_components.expression import (
     is_kwarg,
     is_spread_operator,
 )
-from django_components.util.logger import trace_msg
 from django_components.provide import PROVIDE_NAME_KWARG, ProvideNode
 from django_components.slots import (
     SLOT_DATA_KWARG,
@@ -39,6 +38,7 @@ from django_components.slots import (
 )
 from django_components.tag_formatter import get_tag_formatter
 from django_components.template_parser import parse_bits
+from django_components.util.logger import trace_msg
 from django_components.util.utils import gen_id
 
 # NOTE: Variable name `register` is required by Django to recognize this as a template tag library
