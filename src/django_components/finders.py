@@ -10,7 +10,7 @@ from django.utils._os import safe_join
 
 from django_components.app_settings import app_settings
 from django_components.template_loader import get_component_dirs
-from django_components.utils import any_regex_match, no_regex_match
+from django_components.util.misc import any_regex_match, no_regex_match
 
 # To keep track on which directories the finder has searched the static files.
 searched_locations = []

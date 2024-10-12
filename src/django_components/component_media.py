@@ -7,7 +7,7 @@ from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
 
 from django_components.autodiscover import get_component_dirs
-from django_components.logger import logger
+from django_components.util.logger import logger
 
 if TYPE_CHECKING:
     from django_components.component import Component

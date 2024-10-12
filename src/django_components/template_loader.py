@@ -11,7 +11,7 @@ from django.template.engine import Engine
 from django.template.loaders.filesystem import Loader as FilesystemLoader
 
 from django_components.app_settings import app_settings
-from django_components.logger import logger
+from django_components.util.logger import logger
 
 
 # This is the heart of all features that deal with filesystem and file lookup.
