@@ -124,7 +124,6 @@ class SlotFill(Generic[TSlotData]):
     escaped_name: str
     is_filled: bool
     content_func: SlotFunc[TSlotData]
-    context_data: Mapping
     slot_default_var: Optional[SlotDefaultName]
     slot_data_var: Optional[SlotDataName]
 
@@ -479,7 +478,6 @@ def resolve_slots(
     context: Context,
     template: Template,
     component_name: Optional[str],
-    context_data: Mapping[str, Any],
     fill_content: Dict[SlotName, FillContent],
     is_dynamic_component: bool = False,
 ) -> Tuple[Dict[SlotId, Slot], Dict[SlotId, SlotFill]]:
@@ -497,7 +495,6 @@ def resolve_slots(
             escaped_name=_escape_slot_name(name),
             is_filled=True,
             content_func=fill.content_func,
-            context_data=context_data,
             slot_default_var=fill.slot_default_var,
             slot_data_var=fill.slot_data_var,
         )
@@ -507,6 +504,7 @@ def resolve_slots(
     slots: Dict[SlotId, Slot] = {}
     # This holds info on which slot (key) has which slots nested in it (value list)
     slot_children: Dict[SlotId, List[SlotId]] = {}
+    all_nested_slots: Set[SlotId] = set()
 
     def on_node(entry: NodeTraverse) -> None:
         node = entry.node
@@ -535,16 +533,17 @@ def resolve_slots(
         # - 0002: []
         # - 0003: [0004]
         # In other words, the data tells us that slot ID 0001 is PARENT of slot 0002.
-        curr_entry = entry.parent
-        while curr_entry and curr_entry.parent is not None:
-            if not isinstance(curr_entry.node, SlotNode):
-                curr_entry = curr_entry.parent
+        parent_slot_entry = entry.parent
+        while parent_slot_entry is not None:
+            if not isinstance(parent_slot_entry.node, SlotNode):
+                parent_slot_entry = parent_slot_entry.parent
                 continue
 
-            parent_slot_id = curr_entry.node.node_id
+            parent_slot_id = parent_slot_entry.node.node_id
             if parent_slot_id not in slot_children:
                 slot_children[parent_slot_id] = []
             slot_children[parent_slot_id].append(node.node_id)
+            all_nested_slots.add(node.node_id)
             break
 
     walk_nodelist(template.nodelist, on_node, context)
@@ -565,10 +564,7 @@ def resolve_slots(
         _report_slot_errors(slots, slot_fills, component_name)
 
     # 5. Find roots of the slot relationships
-    top_level_slot_ids: List[SlotId] = []
-    for node_id, slot in slots.items():
-        if node_id not in slot_children or not slot_children[node_id]:
-            top_level_slot_ids.append(node_id)
+    top_level_slot_ids: List[SlotId] = [node_id for node_id in slots.keys() if node_id not in all_nested_slots]
 
     # 6. Walk from out-most slots inwards, and decide whether and how
     # we will render each slot.
@@ -592,7 +588,6 @@ def resolve_slots(
                 escaped_name=_escape_slot_name(slot.name),
                 is_filled=False,
                 content_func=_nodelist_to_slot_render_func(slot.nodelist),
-                context_data=context_data,
                 slot_default_var=None,
                 slot_data_var=None,
             )
@@ -625,29 +620,30 @@ def _resolve_default_slot(
 
     # Check for errors
     for slot in slots.values():
-        if slot.is_default:
-            if default_slot_encountered:
-                raise TemplateSyntaxError(
-                    "Only one component slot may be marked as 'default'. "
-                    f"To fix, check template '{template_name}' "
-                    f"of component '{component_name}'."
-                )
-            default_slot_encountered = True
+        if not slot.is_default:
+            continue
 
-            # Here we've identified which slot the default/implicit fill belongs to
-            if default_fill:
-                # NOTE: We recreate new instance, passing all fields, instead of using
-                # `NamedTuple._replace`, because `_replace` is not typed.
-                named_fills[slot.name] = SlotFill(
-                    is_filled=default_fill.is_filled,
-                    content_func=default_fill.content_func,
-                    context_data=default_fill.context_data,
-                    slot_default_var=default_fill.slot_default_var,
-                    slot_data_var=default_fill.slot_data_var,
-                    # Updated fields
-                    name=slot.name,
-                    escaped_name=_escape_slot_name(slot.name),
-                )
+        if default_slot_encountered:
+            raise TemplateSyntaxError(
+                "Only one component slot may be marked as 'default'. "
+                f"To fix, check template '{template_name}' "
+                f"of component '{component_name}'."
+            )
+        default_slot_encountered = True
+
+        # Here we've identified which slot the default/implicit fill belongs to
+        if default_fill:
+            # NOTE: We recreate new instance, passing all fields, instead of using
+            # `NamedTuple._replace`, because `_replace` is not typed.
+            named_fills[slot.name] = SlotFill(
+                is_filled=default_fill.is_filled,
+                content_func=default_fill.content_func,
+                slot_default_var=default_fill.slot_default_var,
+                slot_data_var=default_fill.slot_data_var,
+                # Updated fields
+                name=slot.name,
+                escaped_name=_escape_slot_name(slot.name),
+            )
 
     # Check: Only component templates that include a 'default' slot
     # can be invoked with implicit filling.
@@ -725,7 +721,7 @@ def _escape_slot_name(name: str) -> str:
 
 
 def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
-    def render_func(ctx: Context, kwargs: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
+    def render_func(ctx: Context, slot_data: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         return nodelist.render(ctx)
 
     return render_func  # type: ignore[return-value]

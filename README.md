@@ -2627,6 +2627,30 @@ If you find yourself using the `only` modifier often, you can set the [context_b
 
 Components can also access the outer context in their context methods like `get_context_data` by accessing the property `self.outer_context`.
 
+### Example of Accessing Outer Context
+
+```django
+<div>
+  {% component "calender" / %}
+</div>
+```
+
+Assuming that the rendering context has variables such as `date`, you can use `self.outer_context` to access them from within `get_context_data`. Here's how you might implement it:
+
+```python
+class Calender(Component):
+    
+    ...
+
+    def get_context_data(self):
+        outer_field = self.outer_context["date"]
+        return {
+            "date": outer_fields,
+        }
+```
+
+However, as a best practice, it’s recommended not to rely on accessing the outer context directly through `self.outer_context`. Instead, explicitly pass the variables to the component. For instance, continue passing the variables in the component tag as shown in the previous examples.
+
 ## Pre-defined template variables
 
 Here is a list of all variables that are automatically available from within the component's template and `on_render_before` / `on_render_after` hooks.
