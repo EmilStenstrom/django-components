@@ -100,11 +100,14 @@ class RenderDependenciesTests(BaseTestCase):
 
     def test_component_render_renders_dependencies(self):
         class SimpleComponentWithDeps(SimpleComponent):
-            template: types.django_html = """
+            template: types.django_html = (
+                """
                 {% load component_tags %}
                 {% component_js_dependencies %}
                 {% component_css_dependencies %}
-            """ + SimpleComponent.template
+            """
+                + SimpleComponent.template
+            )
 
         registry.register(name="test", component=SimpleComponentWithDeps)
 
@@ -126,11 +129,14 @@ class RenderDependenciesTests(BaseTestCase):
 
     def test_component_render_renders_dependencies_opt_out(self):
         class SimpleComponentWithDeps(SimpleComponent):
-            template: types.django_html = """
+            template: types.django_html = (
+                """
                 {% load component_tags %}
                 {% component_js_dependencies %}
                 {% component_css_dependencies %}
-            """ + SimpleComponent.template
+            """
+                + SimpleComponent.template
+            )
 
         registry.register(name="test", component=SimpleComponentWithDeps)
 
@@ -158,11 +164,14 @@ class RenderDependenciesTests(BaseTestCase):
 
     def test_component_render_to_response_renders_dependencies(self):
         class SimpleComponentWithDeps(SimpleComponent):
-            template: types.django_html = """
+            template: types.django_html = (
+                """
                 {% load component_tags %}
                 {% component_js_dependencies %}
                 {% component_css_dependencies %}
-            """ + SimpleComponent.template
+            """
+                + SimpleComponent.template
+            )
 
         registry.register(name="test", component=SimpleComponentWithDeps)
 
