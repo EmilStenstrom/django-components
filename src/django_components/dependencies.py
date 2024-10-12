@@ -36,7 +36,7 @@ from selectolax.lexbor import LexborHTMLParser
 
 import django_components.types as types
 from django_components.util.html import parse_document_or_nodes, parse_multiroot_html, parse_node
-from django_components.util.utils import escape_js_string_literal, get_import_path
+from django_components.util.misc import escape_js_string_literal, get_import_path
 
 if TYPE_CHECKING:
     from django_components.component import Component

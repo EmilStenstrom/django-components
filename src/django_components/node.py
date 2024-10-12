@@ -6,7 +6,7 @@ from django.template.defaulttags import CommentNode
 from django.template.loader_tags import ExtendsNode, IncludeNode, construct_relative_path
 
 from django_components.expression import Expression, RuntimeKwargs
-from django_components.util.utils import gen_id
+from django_components.util.misc import gen_id
 
 
 class BaseNode(Node):

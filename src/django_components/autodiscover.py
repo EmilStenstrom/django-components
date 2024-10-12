@@ -9,7 +9,7 @@ from django.conf import settings
 from django_components.app_settings import app_settings
 from django_components.template_loader import get_component_dirs
 from django_components.util.logger import logger
-from django_components.util.utils import search_dirs
+from django_components.util.misc import search_dirs
 
 
 def autodiscover(

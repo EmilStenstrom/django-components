@@ -14,7 +14,7 @@ class ComponentsConfig(AppConfig):
         from django_components.component_registry import registry
         from django_components.components.dynamic import DynamicComponent
         from django_components.template_loader import get_component_dirs
-        from django_components.util.utils import search_dirs, watch_files_for_autoreload
+        from django_components.util.misc import search_dirs, watch_files_for_autoreload
 
         # Import modules set in `COMPONENTS.libraries` setting
         import_libraries()
