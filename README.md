@@ -3031,7 +3031,6 @@ Then, by default, the components' JS and CSS will be automatically inserted into
 
 If you want to place the dependencies elsewhere, you can override that with following Django template tags:
 
-- `{% component_dependencies %}` - Renders both JS and CSS
 - `{% component_js_dependencies %}` - Renders only JS
 - `{% component_css_dependencies %}` - Renders only CSS
 
@@ -3065,10 +3064,10 @@ class MyButton(Component):
 ```
 
 Then the inlined JS and the scripts in `Media.js` will be rendered at the default place,
-or in `{% component_dependencies %}` and `{% component_js_dependencies %}`.
+or in `{% component_js_dependencies %}`.
 
 And the inlined CSS and the styles in `Media.css` will be rendered at the default place,
-or in `{% component_dependencies %}` and `{% component_css_dependencies %}`.
+or in `{% component_css_dependencies %}`.
 
 And if you don't specify `{% component_dependencies %}` tags, it is the equivalent of:
 
