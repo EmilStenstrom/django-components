@@ -6,47 +6,47 @@
 
 - Installation changes:
 
-  - If your components include JS or CSS, you now must use the middleware and add django-components' URLs to your `urlpatterns`
+    - If your components include JS or CSS, you now must use the middleware and add django-components' URLs to your `urlpatterns`
     (See "[Adding support for JS and CSS](https://github.com/EmilStenstrom/django-components#adding-support-for-js-and-css)")
 
 - `{% component_dependencies %}` tag was removed. Instead, use `{% component_js_dependencies %}` and `{% component_css_dependencies %}`
 
-  The combined tag was removed to encourage the best practice of putting JS scripts at the end of `<body>`, and CSS styles inside `<head>`.
-  
-  On the other hand, co-locating JS script and CSS styles can lead to
-  a [flash of unstyled content](https://en.wikipedia.org/wiki/Flash_of_unstyled_content),
-  as either JS scripts will block the rendering, or CSS will load too late.  
+    - The combined tag was removed to encourage the best practice of putting JS scripts at the end of `<body>`, and CSS styles inside `<head>`.
+
+        On the other hand, co-locating JS script and CSS styles can lead to
+        a [flash of unstyled content](https://en.wikipedia.org/wiki/Flash_of_unstyled_content),
+        as either JS scripts will block the rendering, or CSS will load too late.
 
 - The undocumented keyword arg `preload` of `{% component_js_dependencies %}` and `{% component_csss_dependencies %}` tags was removed.
   This will be replaced with HTML fragment support.
 
 - Component typing signature changed from
 
-  ```py
-  Component[Args, Kwargs, Data, Slots]
-  ```
+    ```py
+    Component[Args, Kwargs, Data, Slots]
+    ```
 
-  to
+    to
 
-  ```py
-  Component[Args, Kwargs, Slots, Data, JsData, CssData]
-  ```
+    ```py
+    Component[Args, Kwargs, Slots, Data, JsData, CssData]
+    ```
 
 - If you rendered a component A with `Component.render()` and then inserted that into another component B, now you must pass `render_dependencies=False` to component A:
 
-  ```py
-  prerendered_a = CompA.render(
-      args=[...],
-      kwargs={...},
-      render_dependencies=False,
-  )
+    ```py
+    prerendered_a = CompA.render(
+        args=[...],
+        kwargs={...},
+        render_dependencies=False,
+    )
 
-  html = CompB.render(
-      kwargs={
-          content=prerendered_a,
-      },
-  )
-  ```
+    html = CompB.render(
+        kwargs={
+            content=prerendered_a,
+        },
+    )
+    ```
 
 #### Refactor
 
@@ -62,10 +62,10 @@
 
 - Installation changes:
 
-  - Instead of defining component directories in `STATICFILES_DIRS`, set them to [`COMPONENTS.dirs`](https://github.com/EmilStenstrom/django-components#dirs).
-  - You now must define `STATICFILES_FINDERS`
+    - Instead of defining component directories in `STATICFILES_DIRS`, set them to [`COMPONENTS.dirs`](https://github.com/EmilStenstrom/django-components#dirs).
+    - You now must define `STATICFILES_FINDERS`
 
-- [See here how to migrate your settings.py](https://github.com/EmilStenstrom/django-components/blob/master/docs/migrating_from_safer_staticfiles.md)
+    - [See here how to migrate your settings.py](https://github.com/EmilStenstrom/django-components/blob/master/docs/migrating_from_safer_staticfiles.md)
 
 #### Feat
 
@@ -149,36 +149,36 @@
 
 - All tags (`component`, `slot`, `fill`, ...) now support "self-closing" or "inline" form, where you can omit the closing tag:
 
-  ```django
-  {# Before #}
-  {% component "button" %}{% endcomponent %}
-  {# After #}
-  {% component "button" / %}
-  ```
+    ```django
+    {# Before #}
+    {% component "button" %}{% endcomponent %}
+    {# After #}
+    {% component "button" / %}
+    ```
 
 - All tags now support the "dictionary key" or "aggregate" syntax (`kwarg:key=val`):
 
-  ```django
-  {% component "button" attrs:class="hidden" %}
-  ```
+    ```django
+    {% component "button" attrs:class="hidden" %}
+    ```
 
 - You can change how the components are written in the template with [TagFormatter](https://github.com/EmilStenstrom/django-components#customizing-component-tags-with-tagformatter).
 
-  The default is `django_components.component_formatter`:
+    The default is `django_components.component_formatter`:
 
-  ```django
-  {% component "button" href="..." disabled %}
-      Click me!
-  {% endcomponent %}
-  ```
+    ```django
+    {% component "button" href="..." disabled %}
+        Click me!
+    {% endcomponent %}
+    ```
 
-  While `django_components.shorthand_component_formatter` allows you to write components like so:
+    While `django_components.shorthand_component_formatter` allows you to write components like so:
 
-  ```django
-  {% button href="..." disabled %}
-      Click me!
-  {% endbutton %}
-  ```
+    ```django
+    {% button href="..." disabled %}
+        Click me!
+    {% endbutton %}
+    ```
 
 ## 🚨📢 v0.85
 
@@ -186,16 +186,16 @@
 
 - Autodiscovery module resolution changed. Following undocumented behavior was removed:
 
-  - Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
+    - Previously, autodiscovery also imported any `[app]/components.py` files, and used `SETTINGS_MODULE` to search for component dirs.
 
-    - To migrate from:
+        To migrate from:
 
-      - `[app]/components.py` - Define each module in `COMPONENTS.libraries` setting,
-        or import each module inside the `AppConfig.ready()` hook in respective `apps.py` files.
+        - `[app]/components.py` - Define each module in `COMPONENTS.libraries` setting,
+            or import each module inside the `AppConfig.ready()` hook in respective `apps.py` files.
 
-      - `SETTINGS_MODULE` - Define component dirs using `STATICFILES_DIRS`
+        - `SETTINGS_MODULE` - Define component dirs using `STATICFILES_DIRS`
 
-  - Previously, autodiscovery handled relative files in `STATICFILES_DIRS`. To align with Django, `STATICFILES_DIRS` now must be full paths ([Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS)).
+    - Previously, autodiscovery handled relative files in `STATICFILES_DIRS`. To align with Django, `STATICFILES_DIRS` now must be full paths ([Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATICFILES_DIRS)).
 
 ## 🚨📢 v0.81
 
@@ -227,20 +227,20 @@
 
 - The syntax for accessing default slot content has changed from
 
-  ```django
-  {% fill "my_slot" as "alias" %}
-    {{ alias.default }}
-  {% endfill %}
+    ```django
+    {% fill "my_slot" as "alias" %}
+        {{ alias.default }}
+    {% endfill %}
 
-  ```
+    ```
 
-  to
+    to
 
-  ```django
-  {% fill "my_slot" default="alias" %}
-    {{ alias }}
-  {% endfill %}
-  ```
+    ```django
+    {% fill "my_slot" default="alias" %}
+        {{ alias }}
+    {% endfill %}
+    ```
 
 ## v0.74
 
@@ -264,15 +264,15 @@
 
 - Changed the default way how context variables are resolved in slots. See the [documentation](https://github.com/EmilStenstrom/django-components/tree/0.67#isolate-components-slots) for more details.
 
-## 🚨📢 v0.5
+## 🚨📢 v0.50
 
 #### BREAKING CHANGES
 
 - `{% component_block %}` is now `{% component %}`, and `{% component %}` blocks need an ending `{% endcomponent %}` tag.
 
-  The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use `--path` argument to point to each dir) of templates that use components to the new syntax automatically.
+    The new `python manage.py upgradecomponent` command can be used to upgrade a directory (use `--path` argument to point to each dir) of templates that use components to the new syntax automatically.
 
-  This change is done to simplify the API in anticipation of a 1.0 release of django_components. After 1.0 we intend to be stricter with big changes like this in point releases.
+    This change is done to simplify the API in anticipation of a 1.0 release of django_components. After 1.0 we intend to be stricter with big changes like this in point releases.
 
 ## v0.34
 
@@ -298,7 +298,7 @@
 
 - Changed the syntax for `{% slot %}` tags. From now on, we separate defining a slot (`{% slot %}`) from filling a slot with content (`{% fill %}`). This means you will likely need to change a lot of slot tags to fill.
 
-  We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
+    We understand this is annoying, but it's the only way we can get support for nested slots that fill in other slots, which is a very nice feature to have access to. Hoping that this will feel worth it!
 
 ## v0.22
 
@@ -306,7 +306,7 @@
 
 - All files inside components subdirectores are autoimported to simplify setup.
 
-  An existing project might start to get `AlreadyRegistered` errors because of this. To solve this, either remove your custom loading of components, or set `"autodiscover": False` in `settings.COMPONENTS`.
+    An existing project might start to get `AlreadyRegistered` errors because of this. To solve this, either remove your custom loading of components, or set `"autodiscover": False` in `settings.COMPONENTS`.
 
 ## v0.17
 
@@ -314,4 +314,4 @@
 
 - Renamed `Component.context` and `Component.template` to `get_context_data` and `get_template_name`. The old methods still work, but emit a deprecation warning.
 
-  This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
+    This change was done to sync naming with Django's class based views, and make using django-components more familiar to Django users. `Component.context` and `Component.template` will be removed when version 1.0 is released.
