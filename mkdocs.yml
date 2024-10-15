@@ -5,15 +5,14 @@ site_url: https://emilstenstrom.github.io/django-components/
 
 repo_url: https://github.com/EmilStenstrom/django-components
 repo_name: EmilStenstrom/django-components
-edit_uri: https://github.com/EmilStenstrom/django-components/edit/master/docs/
+edit_uri: https://github.com/EmilStenstrom/django-components/edit/master/src/docs/
 
 dev_addr: "127.0.0.1:9000"
 site_dir: site
-docs_dir: docs
+docs_dir: src/docs
 
 watch:
   - src
-  - docs
   - mkdocs.yml
   - README.md
   - scripts
@@ -26,7 +25,7 @@ validation:
 
 theme:
   name: "material"
-  custom_dir: docs/overrides
+  custom_dir: src/docs/overrides
   features:
     - content.action.edit
     - content.action.view
@@ -117,7 +116,7 @@ plugins:
       closing_tag: "!}"
   - gen-files:
       scripts:
-        - scripts/gen_ref_nav.py
+        - src/docs/scripts/reference.py
   - literate-nav:
       nav_file: SUMMARY.md
       tab_length: 2
@@ -175,13 +174,7 @@ plugins:
             signature_crossrefs: true
             summary: true
             unwrap_annotated: true
-            # show_root_heading: true
-            # show_signature_annotations: true
             show_if_no_docstring: false
-            # separate_signature: true
             line_length: 140
-            # merge_init_into_class: true
             show_submodules: true
             docstring_style: google
-            # docstring_options:
-            # ignore_init_summary: true
