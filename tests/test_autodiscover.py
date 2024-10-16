@@ -5,7 +5,7 @@ from unittest import TestCase, mock
 from django.conf import settings
 
 from django_components import AlreadyRegistered, registry
-from django_components.autodiscover import _filepath_to_python_module, autodiscover, import_libraries
+from django_components.autodiscovery import _filepath_to_python_module, autodiscover, import_libraries
 
 from .django_test_setup import setup_test_config
 

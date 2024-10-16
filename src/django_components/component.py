@@ -14,6 +14,7 @@ from typing import (
     List,
     Literal,
     Mapping,
+    NamedTuple,
     Optional,
     Protocol,
     Tuple,
@@ -108,6 +109,39 @@ class RenderStackItem(Generic[ArgsType, KwargsType, SlotsType]):
 
 class ViewFn(Protocol):
     def __call__(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Any: ...  # noqa: E704
+
+
+class ComponentVars(NamedTuple):
+    """
+    Type for the variables available inside the component templates.
+
+    All variables here are scoped under `component_vars.`, so e.g. attribute
+    `is_filled` on this class is accessible inside the template as:
+
+    ```django
+    {{ component_vars.is_filled }}
+    ```
+    """
+
+    is_filled: Dict[str, bool]
+    """
+    Dictonary describing which component slots are filled (`True`) or are not (`False`).
+
+    <i>New in version 0.70</i>
+
+    Use as `{{ component_vars.is_filled }}`
+
+    Example:
+
+    ```django
+    {# Render wrapping HTML only if the slot is defined #}
+    {% if component_vars.is_filled.my_slot %}
+        <div class="slot-wrapper">
+            {% slot "my_slot" / %}
+        </div>
+    {% endif %}
+    ```
+    """
 
 
 class ComponentMeta(MediaMeta):
@@ -678,9 +712,9 @@ class Component(
                     _REGISTRY_CONTEXT_KEY: self.registry,
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
-                    "component_vars": {
-                        "is_filled": slot_bools,
-                    },
+                    "component_vars": ComponentVars(
+                        is_filled=slot_bools,
+                    ),
                 }
             ):
                 self.on_render_before(context, template)
