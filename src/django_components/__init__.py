@@ -6,6 +6,7 @@ import django as _django
 # NOTE: Middleware is exposed via django_components.middleware
 # NOTE: Some of the documentation is generated based on these exports
 # isort: off
+from django_components.app_settings import ContextBehavior
 from django_components.autodiscovery import autodiscover, import_libraries
 from django_components.component import Component, ComponentVars, ComponentView
 from django_components.component_registry import (
