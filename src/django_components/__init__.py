@@ -5,7 +5,7 @@ import django as _django
 # Public API
 # NOTE: Middleware is exposed via django_components.middleware
 # NOTE: Some of the documentation is generated based on these exports
-from django_components.app_settings import ContextBehavior
+# isort: off
 from django_components.autodiscovery import autodiscover, import_libraries
 from django_components.component import Component, ComponentVars, ComponentView
 from django_components.component_registry import (
@@ -31,6 +31,7 @@ from django_components.tag_formatter import (
 from django_components.template import cached_template
 import django_components.types as types
 from django_components.util.types import EmptyTuple, EmptyDict
+# isort: on
 
 
 if _django.VERSION < (3, 2):
