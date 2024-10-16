@@ -1,4 +1,3 @@
-# flake8: noqa F401
 """Main package for Django Components."""
 
 import django as _django
@@ -8,7 +7,7 @@ import django as _django
 # NOTE: Some of the documentation is generated based on these exports
 from django_components.app_settings import ContextBehavior
 from django_components.autodiscovery import autodiscover, import_libraries
-from django_components.component import Component, ComponentView
+from django_components.component import Component, ComponentVars, ComponentView
 from django_components.component_registry import (
     AlreadyRegistered,
     ComponentRegistry,
@@ -45,6 +44,7 @@ __all__ = [
     "Component",
     "ComponentFormatter",
     "ComponentRegistry",
+    "ComponentVars",
     "ComponentView",
     "component_formatter",
     "component_shorthand_formatter",
