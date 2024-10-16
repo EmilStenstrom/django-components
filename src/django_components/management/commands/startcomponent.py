@@ -61,7 +61,7 @@ class Command(BaseCommand):
     ```
 
     This will simulate the creation of `my_component` without creating any files.
-    """
+    """  # noqa: E501
 
     help = "Create a new django component."
 
