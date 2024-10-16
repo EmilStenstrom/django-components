@@ -7,49 +7,117 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 
 class Command(BaseCommand):
-    help = "Creates a new component"
+    """
+    ### Management Command Usage
+
+    To use the command, run the following command in your terminal:
+
+    ```bash
+    python manage.py startcomponent <name> --path <path> --js <js_filename> --css <css_filename> --template <template_filename> --force --verbose --dry-run
+    ```
+
+    Replace `<name>`, `<path>`, `<js_filename>`, `<css_filename>`, and `<template_filename>` with your desired values.
+
+    ### Management Command Examples
+
+    Here are some examples of how you can use the command:
+
+    #### Creating a Component with Default Settings
+
+    To create a component with the default settings, you only need to provide the name of the component:
+
+    ```bash
+    python manage.py startcomponent my_component
+    ```
+
+    This will create a new component named `my_component` in the `components` directory of your Django project. The JavaScript, CSS, and template files will be named `script.js`, `style.css`, and `template.html`, respectively.
+
+    #### Creating a Component with Custom Settings
+
+    You can also create a component with custom settings by providing additional arguments:
+
+    ```bash
+    python manage.py startcomponent new_component --path my_components --js my_script.js --css my_style.css --template my_template.html
+    ```
+
+    This will create a new component named `new_component` in the `my_components` directory. The JavaScript, CSS, and template files will be named `my_script.js`, `my_style.css`, and `my_template.html`, respectively.
+
+    #### Overwriting an Existing Component
+
+    If you want to overwrite an existing component, you can use the `--force` option:
+
+    ```bash
+    python manage.py startcomponent my_component --force
+    ```
+
+    This will overwrite the existing `my_component` if it exists.
+
+    #### Simulating Component Creation
+
+    If you want to simulate the creation of a component without actually creating any files, you can use the `--dry-run` option:
+
+    ```bash
+    python manage.py startcomponent my_component --dry-run
+    ```
+
+    This will simulate the creation of `my_component` without creating any files.
+    """
+
+    help = "Create a new django component."
 
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument("name", type=str, help="The name of the component to create")
+        parser.add_argument(
+            "name",
+            type=str,
+            help="The name of the component to create. This is a required argument.",
+        )
         parser.add_argument(
             "--path",
             type=str,
-            help="The path to the components directory",
+            help=(
+                "The path to the component's directory. This is an optional argument. If not provided, "
+                "the command will use the `COMPONENTS.dirs` setting from your Django settings."
+            ),
             default=None,
         )
         parser.add_argument(
             "--js",
             type=str,
-            help="The name of the javascript file",
+            help="The name of the JavaScript file. This is an optional argument. The default value is `script.js`.",
             default="script.js",
         )
         parser.add_argument(
             "--css",
             type=str,
-            help="The name of the style file",
+            help="The name of the CSS file. This is an optional argument. The default value is `style.css`.",
             default="style.css",
         )
         parser.add_argument(
             "--template",
             type=str,
-            help="The name of the template file",
+            help="The name of the template file. This is an optional argument. The default value is `template.html`.",
             default="template.html",
         )
         parser.add_argument(
             "--force",
             action="store_true",
-            help="Overwrite existing files if they exist",
+            help="This option allows you to overwrite existing files if they exist. This is an optional argument.",
         )
         parser.add_argument(
             "--verbose",
             action="store_true",
-            help="Print additional information during component creation",
+            help=(
+                "This option allows the command to print additional information during component "
+                "creation. This is an optional argument."
+            ),
         )
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Simulate component creation without actually creating any files",
-            default=False,
+            help=(
+                "This option allows you to simulate component creation without actually creating any files. "
+                "This is an optional argument. The default value is `False`."
+            ),
         )
 
     def handle(self, *args: Any, **kwargs: Any) -> None:
