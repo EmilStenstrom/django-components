@@ -19,7 +19,7 @@ class DynamicComponent(Component):
             all registries are searched.
         *args: Additional data passed to the component.
         **kwargs: Additional data passed to the component.
-    
+
     **Slots:**
 
     * Any slots, depending on the actual component.

@@ -32,6 +32,7 @@ from django_components.tag_formatter import (
 from django_components.template import cached_template
 import django_components.types as types
 from django_components.util.types import EmptyTuple, EmptyDict
+
 # isort: on
 
 

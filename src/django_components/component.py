@@ -114,7 +114,7 @@ class ViewFn(Protocol):
 class ComponentVars(NamedTuple):
     """
     Type for the variables available inside the component templates.
-    
+
     All variables here are scoped under `component_vars.`, so e.g. attribute
     `is_filled` on this class is accessible inside the template as:
 
@@ -122,6 +122,7 @@ class ComponentVars(NamedTuple):
     {{ component_vars.is_filled }}
     ```
     """
+
     is_filled: Dict[str, bool]
     """
     Dictonary describing which component slots are filled (`True`) or are not (`False`).
