@@ -1,7 +1,5 @@
 """Main package for Django Components."""
 
-import django as _django
-
 # Public API
 # NOTE: Middleware is exposed via django_components.middleware
 # NOTE: Some of the documentation is generated based on these exports
@@ -35,9 +33,6 @@ from django_components.util.types import EmptyTuple, EmptyDict
 
 # isort: on
 
-
-if _django.VERSION < (3, 2):
-    default_app_config = "django_components.apps.ComponentsConfig"
 
 __all__ = [
     "AlreadyRegistered",
