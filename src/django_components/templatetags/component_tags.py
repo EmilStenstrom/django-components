@@ -15,7 +15,7 @@ import functools
 from typing import Any, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Union
 
 import django.template
-from django.template.base import NodeList, Parser, Token, TokenType, TextNode
+from django.template.base import NodeList, Parser, TextNode, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 from django.utils.text import smart_split
@@ -67,7 +67,7 @@ class TagSpec(NamedTuple):
     end_tag: Optional[str] = None
     """
     End tag.
-    
+
     E.g. `"endslot"` means anything between the start tag and `{% endslot %}`
     is considered the slot's body.
     """
@@ -82,7 +82,7 @@ class TagSpec(NamedTuple):
     keywordonly_args: Optional[Union[bool, List[str]]] = False
     """
     Parameters that MUST be given only as kwargs (not accounting for `pos_or_keyword_args`).
-    
+
     - If `False`, NO extra kwargs allowed.
     - If `True`, ANY number of extra kwargs allowed.
     - If a list of strings, e.g. `["class", "style"]`, then only those kwargs are allowed.
@@ -92,11 +92,11 @@ class TagSpec(NamedTuple):
     repeatable_kwargs: Optional[Union[bool, List[str]]] = False
     """
     Whether this tag allows all or certain kwargs to be repeated.
-    
+
     - If `False`, NO kwargs can repeat.
     - If `True`, ALL kwargs can repeat.
     - If a list of strings, e.g. `["class", "style"]`, then only those kwargs can repeat.
-    
+
     E.g. `["class"]` means one can write `{% mytag class="one" class="two" %}`
     """
     flags: Optional[List[str]] = None
@@ -143,7 +143,7 @@ def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
 def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
     """
     Marks location where CSS link tags should be rendered after the whole HTML has been generated.
-    
+
     Generally, this should be inserted into the `<head>` tag of the HTML.
 
     If the generated HTML does NOT contain any `{% component_css_dependencies %}` tags, CSS links
@@ -166,7 +166,7 @@ def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) 
 def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
     """
     Marks location where JS link tags should be rendered after the whole HTML has been generated.
-    
+
     Generally, this should be inserted at the end of the `<body>` tag of the HTML.
 
     If the generated HTML does NOT contain any `{% component_js_dependencies %}` tags, JS scripts
@@ -206,9 +206,9 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     - `default`: Optional flag. If there is a default slot, you can pass the component slot content
         without using the [`{% fill %}`](#fill) tag. See
         [Default slot](../../concepts/fundamentals/slots#default-slot)
-    - `required`: Optional flag. Will raise an error if a slot is required but not given. 
+    - `required`: Optional flag. Will raise an error if a slot is required but not given.
     - `**kwargs`: Any extra kwargs will be passed as the slot data.
-    
+
     **Example:**
 
     ```python
@@ -282,7 +282,8 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     The content between the `{% slot %}..{% endslot %}` tags is the default content that
     will be rendered if no fill is given for the slot.
 
-    This default content can then be accessed from within the [`{% fill %}`](#fill) tag using the fill's `default` kwarg.
+    This default content can then be accessed from within the [`{% fill %}`](#fill) tag using
+    the fill's `default` kwarg.
     This is useful if you need to wrap / prepend / append the original slot's content.
 
     ```python
@@ -356,7 +357,7 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
         [Accessing original content of slots](../../concepts/fundamentals/slots#accessing-original-content-of-slots)
     - `data` (str, optional): This argument allows you to access the data passed to the slot
         under the specified variable name. See [Scoped slots](../../concepts/fundamentals/slots#scoped-slots)
-    
+
     **Examples:**
 
     Basic usage:
@@ -503,7 +504,7 @@ def component(
 
     The component name must be a single- or double-quotes string and must
     be either:
-     
+
     - The first positional argument after `component`:
 
         ```django
@@ -717,7 +718,7 @@ def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode
     - `default` (str, optional): Optional dictionary that holds HTML attributes. On conflict, is overriden
         with values in the `attrs` dictionary.
     - Any extra kwargs will be appended to the corresponding keys
-    
+
     The attributes in `attrs` and `defaults` are merged and resulting dict is rendered as HTML attributes
     (`key="value"`).
 
@@ -751,7 +752,8 @@ def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode
     <div class="my-class extra-class" data-id="123">
     ```
 
-    **See more usage examples in [HTML attributes](../../concepts/fundamentals/html_attributes#examples-for-html_attrs).**
+    **See more usage examples in
+    [HTML attributes](../../concepts/fundamentals/html_attributes#examples-for-html_attrs).**
     """
     tag = _parse_tag(parser, token, tag_spec)
 
@@ -948,8 +950,7 @@ def _parse_tag(
         else:
             is_key_allowed = (
                 (tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args)  # noqa: E712
-                or
-                bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
+                or bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
             )
         if not is_key_allowed:
             is_optional = key in tag_spec.optional_kwargs if tag_spec.optional_kwargs else False
