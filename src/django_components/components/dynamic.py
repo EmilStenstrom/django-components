@@ -10,11 +10,77 @@ class DynamicComponent(Component):
     Dynamic component - This component takes inputs and renders the outputs depending on the
     `is` and `registry` arguments.
 
-    - `is` - required - The component class or registered name of the component that will be
-    rendered in this place.
+    The args, kwargs, and slot fills are all passed down to the underlying component.
 
-    - `registry` - optional - Specify the registry to search for the registered name. If omitted,
-    all registries are searched.
+    Args:
+        is (str | Type[Component]): Component that should be rendered. Either a name of a registered component,
+            or a Component class directly. Required.
+        registry (ComponentRegistry, optional): Specify the registry to search for the registered name. If omitted,
+            all registries are searched.
+        *args: Additional data passed to the component.
+        **kwargs: Additional data passed to the component.
+
+    **Slots:**
+
+    * Any slots, depending on the actual component.
+
+    **Examples:**
+
+    Django
+    ```django
+    {% component "dynamic" is=table_comp data=table_data headers=table_headers %}
+        {% fill "pagination" %}
+            {% component "pagination" / %}
+        {% endfill %}
+    {% endcomponent %}
+    ```
+
+    Python
+    ```py
+    from django_components import DynamicComponent
+
+    DynamicComponent.render(
+        kwargs={
+            "is": table_comp,
+            "data": table_data,
+            "headers": table_headers,
+        },
+        slots={
+            "pagination": PaginationComponent.render(
+                render_dependencies=False,
+            ),
+        },
+    )
+    ```
+
+    ### Use cases
+
+    Dynamic components are suitable if you are writing something like a form component. You may design
+    it such that users give you a list of input types, and you render components depending on the input types.
+
+    While you could handle this with a series of if / else statements, that's not an extensible approach.
+    Instead, you can use the dynamic component in place of normal components.
+
+    ### Component name
+
+    By default, the dynamic component is registered under the name `"dynamic"`. In case of a conflict,
+    you can set the `COMPONENTS.dynamic_component_name` setting to change the name used for the dynamic components.
+
+    ```py
+    # settings.py
+    COMPONENTS = ComponentsSettings(
+        dynamic_component_name="my_dynamic",
+    )
+    ```
+
+    After which you will be able to use the dynamic component with the new name:
+    ```django
+    {% component "my_dynamic" is=table_comp data=table_data headers=table_headers %}
+        {% fill "pagination" %}
+            {% component "pagination" / %}
+        {% endfill %}
+    {% endcomponent %}
+    ```
     """
 
     _is_dynamic_component = True

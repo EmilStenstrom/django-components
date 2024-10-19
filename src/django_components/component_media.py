@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, MutableMapping, Opt
 from django.forms.widgets import Media, MediaDefiningClass
 from django.utils.safestring import SafeData
 
-from django_components.autodiscover import get_component_dirs
+from django_components.template_loader import get_component_dirs
 from django_components.util.logger import logger
 
 if TYPE_CHECKING:
