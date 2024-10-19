@@ -761,7 +761,6 @@ def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode
     )
 
 
-# TODO - MOVE TO OWN FILE!
 class ParsedTag(NamedTuple):
     id: str
     name: str
