@@ -8,7 +8,7 @@ from django_components.expression import (
     safe_resolve_dict,
     safe_resolve_list,
 )
-from django_components.templatetags.component_tags import _parse_tag
+from django_components.templatetags.component_tags import TagSpec, _parse_tag
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -21,22 +21,28 @@ class ParserTest(BaseTestCase):
         template_str = "{% component 42 myvar key='val' key2=val2 %}"
         tokens = Lexer(template_str).tokenize()
         parser = Parser(tokens=tokens)
-        tag = _parse_tag("component", parser, parser.tokens[0], params=["num", "var"], keywordonly_kwargs=True)
+        spec = TagSpec(
+            tag="component",
+            pos_or_keyword_args=["num", "var"],
+            keywordonly_args=True,
+        )
+        tag = _parse_tag(parser, parser.tokens[0], tag_spec=spec)
 
         ctx = {"myvar": {"a": "b"}, "val2": 1}
         args = safe_resolve_list(ctx, tag.args)
         named_args = safe_resolve_dict(ctx, tag.named_args)
         kwargs = tag.kwargs.resolve(ctx)
 
-        self.assertListEqual(args, [42, {"a": "b"}])
-        self.assertDictEqual(named_args, {"num": 42, "var": {"a": "b"}})
-        self.assertDictEqual(kwargs, {"key": "val", "key2": 1})
+        self.assertListEqual(args, [])
+        self.assertDictEqual(named_args, {})
+        self.assertDictEqual(kwargs, {"num": 42, "var": {"a": "b"}, "key": "val", "key2": 1})
 
     def test_parses_special_kwargs(self):
         template_str = "{% component date=date @lol=2 na-me=bzz @event:na-me.mod=bzz #my-id=True %}"
         tokens = Lexer(template_str).tokenize()
         parser = Parser(tokens=tokens)
-        tag = _parse_tag("component", parser, parser.tokens[0], keywordonly_kwargs=True)
+        spec = TagSpec(tag="component", keywordonly_args=True)
+        tag = _parse_tag(parser, parser.tokens[0], tag_spec=spec)
 
         ctx = Context({"date": 2024, "bzz": "fzz"})
         args = safe_resolve_list(ctx, tag.args)

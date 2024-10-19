@@ -135,11 +135,11 @@ def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
     return TextNode(mark_safe(placeholder))
 
 
+@register.tag("component_css_dependencies")
 @with_tag_spec(TagSpec(
     tag="component_css_dependencies",
     end_tag=None,  # inline-only
 ))
-@register.tag("component_css_dependencies")
 def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
     """
     Marks location where CSS link tags should be rendered after the whole HTML has been generated.
@@ -158,11 +158,11 @@ def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) 
     return _component_dependencies("css")
 
 
+@register.tag(name="component_js_dependencies")
 @with_tag_spec(TagSpec(
     tag="component_js_dependencies",
     end_tag=None,  # inline-only
 ))
-@register.tag(name="component_js_dependencies")
 def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
     """
     Marks location where JS link tags should be rendered after the whole HTML has been generated.
@@ -181,6 +181,7 @@ def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -
     return _component_dependencies("js")
 
 
+@register.tag("slot")
 @with_tag_spec(TagSpec(
     tag="slot",
     end_tag="endslot",
@@ -190,7 +191,6 @@ def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -
     repeatable_kwargs=False,
     flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
 ))
-@register.tag("slot")
 def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     """
     Slot tag marks a place inside a component where content can be inserted
@@ -331,6 +331,7 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     return slot_node
 
 
+@register.tag("fill")
 @with_tag_spec(TagSpec(
     tag="fill",
     end_tag="endfill",
@@ -340,7 +341,6 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     optional_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
     repeatable_kwargs=False,
 ))
-@register.tag("fill")
 def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     """
     Use this tag to insert content into component's slots.
@@ -592,6 +592,7 @@ def component(
     return component_node
 
 
+@register.tag("provide")
 @with_tag_spec(TagSpec(
     tag="provide",
     end_tag="endprovide",
@@ -601,7 +602,6 @@ def component(
     repeatable_kwargs=False,
     flags=[],
 ))
-@register.tag("provide")
 def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     """
     The "provider" part of the [provide / inject feature](../../concepts/advanced/provide_inject).
@@ -691,6 +691,7 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     return slot_node
 
 
+@register.tag("html_attrs")
 @with_tag_spec(TagSpec(
     tag="html_attrs",
     end_tag=None,  # inline-only
@@ -701,7 +702,6 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     repeatable_kwargs=True,
     flags=[],
 ))
-@register.tag("html_attrs")
 def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode:
     """
     Generate HTML attributes (`key="value"`), combining data from multiple sources,
@@ -946,7 +946,11 @@ def _parse_tag(
         if not tag_spec.keywordonly_args:
             is_key_allowed = False
         else:
-            is_key_allowed = tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args  # noqa: E712
+            is_key_allowed = (
+                (tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args)  # noqa: E712
+                or
+                bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
+            )
         if not is_key_allowed:
             is_optional = key in tag_spec.optional_kwargs if tag_spec.optional_kwargs else False
             if not is_optional:
