@@ -62,6 +62,7 @@ register = django.template.Library()
 
 class TagSpec(NamedTuple):
     """Definition of args, kwargs, flags, etc, for a template tag."""
+
     tag: str
     """Tag name. E.g. `"slot"` means the tag is written like so `{% slot ... %}`"""
     end_tag: Optional[str] = None
@@ -111,13 +112,16 @@ class TagSpec(NamedTuple):
 
 def with_tag_spec(tag_spec: TagSpec) -> Callable:
     """"""
+
     def decorator(fn: Callable) -> Any:
         fn._tag_spec = tag_spec  # type: ignore[attr-defined]
 
         @functools.wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             return fn(*args, **kwargs, tag_spec=tag_spec)
+
         return wrapper
+
     return decorator
 
 
@@ -136,10 +140,12 @@ def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
 
 
 @register.tag("component_css_dependencies")
-@with_tag_spec(TagSpec(
-    tag="component_css_dependencies",
-    end_tag=None,  # inline-only
-))
+@with_tag_spec(
+    TagSpec(
+        tag="component_css_dependencies",
+        end_tag=None,  # inline-only
+    )
+)
 def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
     """
     Marks location where CSS link tags should be rendered after the whole HTML has been generated.
@@ -159,10 +165,12 @@ def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) 
 
 
 @register.tag(name="component_js_dependencies")
-@with_tag_spec(TagSpec(
-    tag="component_js_dependencies",
-    end_tag=None,  # inline-only
-))
+@with_tag_spec(
+    TagSpec(
+        tag="component_js_dependencies",
+        end_tag=None,  # inline-only
+    )
+)
 def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
     """
     Marks location where JS link tags should be rendered after the whole HTML has been generated.
@@ -182,15 +190,17 @@ def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -
 
 
 @register.tag("slot")
-@with_tag_spec(TagSpec(
-    tag="slot",
-    end_tag="endslot",
-    positional_only_args=[],
-    pos_or_keyword_args=[SLOT_NAME_KWARG],
-    keywordonly_args=True,
-    repeatable_kwargs=False,
-    flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
-))
+@with_tag_spec(
+    TagSpec(
+        tag="slot",
+        end_tag="endslot",
+        positional_only_args=[],
+        pos_or_keyword_args=[SLOT_NAME_KWARG],
+        keywordonly_args=True,
+        repeatable_kwargs=False,
+        flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
+    )
+)
 def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     """
     Slot tag marks a place inside a component where content can be inserted
@@ -333,15 +343,17 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
 
 
 @register.tag("fill")
-@with_tag_spec(TagSpec(
-    tag="fill",
-    end_tag="endfill",
-    positional_only_args=[],
-    pos_or_keyword_args=[SLOT_NAME_KWARG],
-    keywordonly_args=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
-    optional_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
-    repeatable_kwargs=False,
-))
+@with_tag_spec(
+    TagSpec(
+        tag="fill",
+        end_tag="endfill",
+        positional_only_args=[],
+        pos_or_keyword_args=[SLOT_NAME_KWARG],
+        keywordonly_args=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
+        optional_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
+        repeatable_kwargs=False,
+    )
+)
 def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     """
     Use this tag to insert content into component's slots.
@@ -432,15 +444,17 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     return fill_node
 
 
-@with_tag_spec(TagSpec(
-    tag="component",
-    end_tag="endcomponent",
-    positional_only_args=[],
-    positional_args_allow_extra=True,  # Allow many args
-    keywordonly_args=True,
-    repeatable_kwargs=False,
-    flags=[COMP_ONLY_FLAG],
-))
+@with_tag_spec(
+    TagSpec(
+        tag="component",
+        end_tag="endcomponent",
+        positional_only_args=[],
+        positional_args_allow_extra=True,  # Allow many args
+        keywordonly_args=True,
+        repeatable_kwargs=False,
+        flags=[COMP_ONLY_FLAG],
+    )
+)
 def component(
     parser: Parser,
     token: Token,
@@ -559,11 +573,13 @@ def component(
     tag = _parse_tag(
         parser,
         token,
-        TagSpec(**{
-            **tag_spec._asdict(),
-            "tag": tag_name,
-            "end_tag": end_tag,
-        })
+        TagSpec(
+            **{
+                **tag_spec._asdict(),
+                "tag": tag_name,
+                "end_tag": end_tag,
+            }
+        ),
     )
 
     # Check for isolated context keyword
@@ -594,15 +610,17 @@ def component(
 
 
 @register.tag("provide")
-@with_tag_spec(TagSpec(
-    tag="provide",
-    end_tag="endprovide",
-    positional_only_args=[],
-    pos_or_keyword_args=[PROVIDE_NAME_KWARG],
-    keywordonly_args=True,
-    repeatable_kwargs=False,
-    flags=[],
-))
+@with_tag_spec(
+    TagSpec(
+        tag="provide",
+        end_tag="endprovide",
+        positional_only_args=[],
+        pos_or_keyword_args=[PROVIDE_NAME_KWARG],
+        keywordonly_args=True,
+        repeatable_kwargs=False,
+        flags=[],
+    )
+)
 def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     """
     The "provider" part of the [provide / inject feature](../../concepts/advanced/provide_inject).
@@ -693,16 +711,18 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
 
 
 @register.tag("html_attrs")
-@with_tag_spec(TagSpec(
-    tag="html_attrs",
-    end_tag=None,  # inline-only
-    positional_only_args=[],
-    pos_or_keyword_args=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
-    optional_kwargs=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
-    keywordonly_args=True,
-    repeatable_kwargs=True,
-    flags=[],
-))
+@with_tag_spec(
+    TagSpec(
+        tag="html_attrs",
+        end_tag=None,  # inline-only
+        positional_only_args=[],
+        pos_or_keyword_args=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
+        optional_kwargs=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
+        keywordonly_args=True,
+        repeatable_kwargs=True,
+        flags=[],
+    )
+)
 def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode:
     """
     Generate HTML attributes (`key="value"`), combining data from multiple sources,
@@ -949,8 +969,9 @@ def _parse_tag(
             is_key_allowed = False
         else:
             is_key_allowed = (
-                (tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args)  # noqa: E712
-                or bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
+                tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args
+            ) or bool(  # noqa: E712
+                tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args
             )
         if not is_key_allowed:
             is_optional = key in tag_spec.optional_kwargs if tag_spec.optional_kwargs else False
@@ -963,8 +984,7 @@ def _parse_tag(
                 is_key_repeatable = False
             else:
                 is_key_repeatable = (
-                    tag_spec.repeatable_kwargs == True  # noqa: E712
-                    or key in tag_spec.repeatable_kwargs
+                    tag_spec.repeatable_kwargs == True or key in tag_spec.repeatable_kwargs  # noqa: E712
                 )
             if not is_key_repeatable:
                 # The keyword argument has already been supplied once
