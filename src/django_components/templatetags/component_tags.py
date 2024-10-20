@@ -973,9 +973,7 @@ def _parse_tag(
         else:
             is_key_allowed = (
                 tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args  # noqa: E712
-            ) or bool(
-                tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args
-            )
+            ) or bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
         if not is_key_allowed:
             is_optional = key in tag_spec.optional_kwargs if tag_spec.optional_kwargs else False
             if not is_optional:
