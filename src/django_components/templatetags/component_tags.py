@@ -206,9 +206,12 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     Slot tag marks a place inside a component where content can be inserted
     from outside.
 
-    Similar to [Vue's slots](https://vuejs.org/guide/components/slots.html) or React's `children`.
-
     [Learn more](../../concepts/fundamentals/slots) about using slots.
+
+    This is similar to slots as seen in
+    [Web components](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot),
+    [Vue](https://vuejs.org/guide/components/slots.html)
+    or [React's `children`](https://react.dev/learn/passing-props-to-a-component#passing-jsx-as-children).
 
     **Args:**
 
