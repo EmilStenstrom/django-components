@@ -1,7 +1,21 @@
-from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Set, Union
+# Notes on documentation:
+# - For intuitive use via Python imports, keep the tag names same as the function name.
+#   E.g. so if the tag name is `slot`, one can also do
+#   `from django_components.templatetags.component_tags import slot`
+#
+# - All tags are defined using `@register.tag`. Do NOT use `@register.simple_tag`.
+#   The reason for this is so that we use `TagSpec` and `_parse_tag`. When generating
+#   documentation, we extract the `TagSpecs` to be able to describe each tag's function signature.
+#
+# - Use `with_tag_spec` for defining `TagSpecs`. This will make it available to the function
+#   as the last argument, and will also set the `TagSpec` instance to `fn._tag_spec`.
+#   During documentation generation, we access the `fn._tag_spec`.
+
+import functools
+from typing import Any, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Union
 
 import django.template
-from django.template.base import NodeList, Parser, Token, TokenType
+from django.template.base import NodeList, Parser, TextNode, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 from django.utils.text import smart_split
@@ -46,6 +60,71 @@ from django_components.util.misc import gen_id
 register = django.template.Library()
 
 
+class TagSpec(NamedTuple):
+    """Definition of args, kwargs, flags, etc, for a template tag."""
+
+    tag: str
+    """Tag name. E.g. `"slot"` means the tag is written like so `{% slot ... %}`"""
+    end_tag: Optional[str] = None
+    """
+    End tag.
+
+    E.g. `"endslot"` means anything between the start tag and `{% endslot %}`
+    is considered the slot's body.
+    """
+    positional_only_args: Optional[List[str]] = None
+    """Arguments that MUST be given as positional args."""
+    positional_args_allow_extra: bool = False
+    """
+    If `True`, allows variable number of positional args, e.g. `{% mytag val1 1234 val2 890 ... %}`
+    """
+    pos_or_keyword_args: Optional[List[str]] = None
+    """Like regular Python kwargs, these can be given EITHER as positional OR as keyword arguments."""
+    keywordonly_args: Optional[Union[bool, List[str]]] = False
+    """
+    Parameters that MUST be given only as kwargs (not accounting for `pos_or_keyword_args`).
+
+    - If `False`, NO extra kwargs allowed.
+    - If `True`, ANY number of extra kwargs allowed.
+    - If a list of strings, e.g. `["class", "style"]`, then only those kwargs are allowed.
+    """
+    optional_kwargs: Optional[List[str]] = None
+    """Specify which kwargs can be optional."""
+    repeatable_kwargs: Optional[Union[bool, List[str]]] = False
+    """
+    Whether this tag allows all or certain kwargs to be repeated.
+
+    - If `False`, NO kwargs can repeat.
+    - If `True`, ALL kwargs can repeat.
+    - If a list of strings, e.g. `["class", "style"]`, then only those kwargs can repeat.
+
+    E.g. `["class"]` means one can write `{% mytag class="one" class="two" %}`
+    """
+    flags: Optional[List[str]] = None
+    """
+    List of allowed flags.
+
+    Flags are like kwargs, but without the value part. E.g. in `{% mytag only required %}`:
+    - `only` and `required` are treated as `only=True` and `required=True` if present
+    - and treated as `only=False` and `required=False` if omitted
+    """
+
+
+def with_tag_spec(tag_spec: TagSpec) -> Callable:
+    """"""
+
+    def decorator(fn: Callable) -> Any:
+        fn._tag_spec = tag_spec  # type: ignore[attr-defined]
+
+        @functools.wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return fn(*args, **kwargs, tag_spec=tag_spec)
+
+        return wrapper
+
+    return decorator
+
+
 def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
     """Marks location where CSS link and JS script tags should be rendered."""
     if type == "css":
@@ -57,34 +136,195 @@ def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
             f"Unknown dependency type in {{% component_dependencies %}}. Must be one of 'css' or 'js', got {type}"
         )
 
-    return mark_safe(placeholder)
+    return TextNode(mark_safe(placeholder))
 
 
-@register.simple_tag(name="component_css_dependencies")
-def component_css_dependencies() -> SafeString:
-    """Marks location where CSS link tags should be rendered."""
+@register.tag("component_css_dependencies")
+@with_tag_spec(
+    TagSpec(
+        tag="component_css_dependencies",
+        end_tag=None,  # inline-only
+    )
+)
+def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
+    """
+    Marks location where CSS link tags should be rendered after the whole HTML has been generated.
+
+    Generally, this should be inserted into the `<head>` tag of the HTML.
+
+    If the generated HTML does NOT contain any `{% component_css_dependencies %}` tags, CSS links
+    are by default inserted into the `<head>` tag of the HTML. (See
+    [JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
+
+    Note that there should be only one `{% component_css_dependencies %}` for the whole HTML document.
+    If you insert this tag multiple times, ALL CSS links will be duplicately inserted into ALL these places.
+    """
+    # Parse to check that the syntax is valid
+    _parse_tag(parser, token, tag_spec)
     return _component_dependencies("css")
 
 
-@register.simple_tag(name="component_js_dependencies")
-def component_js_dependencies() -> SafeString:
-    """Marks location where JS script tags should be rendered."""
+@register.tag(name="component_js_dependencies")
+@with_tag_spec(
+    TagSpec(
+        tag="component_js_dependencies",
+        end_tag=None,  # inline-only
+    )
+)
+def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
+    """
+    Marks location where JS link tags should be rendered after the whole HTML has been generated.
+
+    Generally, this should be inserted at the end of the `<body>` tag of the HTML.
+
+    If the generated HTML does NOT contain any `{% component_js_dependencies %}` tags, JS scripts
+    are by default inserted at the end of the `<body>` tag of the HTML. (See
+    [JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
+
+    Note that there should be only one `{% component_js_dependencies %}` for the whole HTML document.
+    If you insert this tag multiple times, ALL JS scripts will be duplicately inserted into ALL these places.
+    """
+    # Parse to check that the syntax is valid
+    _parse_tag(parser, token, tag_spec)
     return _component_dependencies("js")
 
 
 @register.tag("slot")
-def slot(parser: Parser, token: Token) -> SlotNode:
-    tag = _parse_tag(
-        "slot",
-        parser,
-        token,
-        params=[SLOT_NAME_KWARG],
-        optional_params=[SLOT_NAME_KWARG],
-        flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
-        keywordonly_kwargs=True,
-        repeatable_kwargs=False,
+@with_tag_spec(
+    TagSpec(
+        tag="slot",
         end_tag="endslot",
+        positional_only_args=[],
+        pos_or_keyword_args=[SLOT_NAME_KWARG],
+        keywordonly_args=True,
+        repeatable_kwargs=False,
+        flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
     )
+)
+def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
+    """
+    Slot tag marks a place inside a component where content can be inserted
+    from outside.
+
+    [Learn more](../../concepts/fundamentals/slots) about using slots.
+
+    This is similar to slots as seen in
+    [Web components](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot),
+    [Vue](https://vuejs.org/guide/components/slots.html)
+    or [React's `children`](https://react.dev/learn/passing-props-to-a-component#passing-jsx-as-children).
+
+    **Args:**
+
+    - `name` (str, required): Registered name of the component to render
+    - `default`: Optional flag. If there is a default slot, you can pass the component slot content
+        without using the [`{% fill %}`](#fill) tag. See
+        [Default slot](../../concepts/fundamentals/slots#default-slot)
+    - `required`: Optional flag. Will raise an error if a slot is required but not given.
+    - `**kwargs`: Any extra kwargs will be passed as the slot data.
+
+    **Example:**
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            {% slot "content" default %}
+              This is shown if not overriden!
+            {% endslot %}
+          </div>
+          <aside>
+            {% slot "sidebar" required / %}
+          </aside>
+        \"\"\"
+    ```
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          <div>
+            {% component "child" %}
+              {% fill "content" %}
+                🗞️📰
+              {% endfill %}
+
+              {% fill "sidebar" %}
+                🍷🧉🍾
+              {% endfill %}
+            {% endcomponent %}
+          </div>
+        \"\"\"
+    ```
+
+    ### Passing data to slots
+
+    Any extra kwargs will be considered as slot data, and will be accessible in the [`{% fill %}`](#fill)
+    tag via fill's `data` kwarg:
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            {# Passing data to the slot #}
+            {% slot "content" user=user %}
+              This is shown if not overriden!
+            {% endslot %}
+          </div>
+        \"\"\"
+    ```
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          {# Parent can access the slot data #}
+          {% component "child" %}
+            {% fill "content" data="data" %}
+              <div class="wrapper-class">
+                {{ data.user }}
+              </div>
+            {% endfill %}
+          {% endcomponent %}
+        \"\"\"
+    ```
+
+    ### Accessing default slot content
+
+    The content between the `{% slot %}..{% endslot %}` tags is the default content that
+    will be rendered if no fill is given for the slot.
+
+    This default content can then be accessed from within the [`{% fill %}`](#fill) tag using
+    the fill's `default` kwarg.
+    This is useful if you need to wrap / prepend / append the original slot's content.
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            {% slot "content" %}
+              This is default content!
+            {% endslot %}
+          </div>
+        \"\"\"
+    ```
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          {# Parent can access the slot's default content #}
+          {% component "child" %}
+            {% fill "content" default="default" %}
+              {{ default }}
+            {% endfill %}
+          {% endcomponent %}
+        \"\"\"
+    ```
+    """
+    tag = _parse_tag(parser, token, tag_spec)
 
     slot_name_kwarg = tag.kwargs.kwargs.get(SLOT_NAME_KWARG, None)
     trace_id = f"slot-id-{tag.id} ({slot_name_kwarg})" if slot_name_kwarg else f"slot-id-{tag.id}"
@@ -106,25 +346,89 @@ def slot(parser: Parser, token: Token) -> SlotNode:
 
 
 @register.tag("fill")
-def fill(parser: Parser, token: Token) -> FillNode:
-    """
-    Block tag whose contents 'fill' (are inserted into) an identically named
-    'slot'-block in the component template referred to by a parent component.
-    It exists to make component nesting easier.
-
-    This tag is available only within a {% component %}..{% endcomponent %} block.
-    Runtime checks should prohibit other usages.
-    """
-    tag = _parse_tag(
-        "fill",
-        parser,
-        token,
-        params=[SLOT_NAME_KWARG],
-        optional_params=[SLOT_NAME_KWARG],
-        keywordonly_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
-        repeatable_kwargs=False,
+@with_tag_spec(
+    TagSpec(
+        tag="fill",
         end_tag="endfill",
+        positional_only_args=[],
+        pos_or_keyword_args=[SLOT_NAME_KWARG],
+        keywordonly_args=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
+        optional_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
+        repeatable_kwargs=False,
     )
+)
+def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
+    """
+    Use this tag to insert content into component's slots.
+
+    `{% fill %}` tag may be used only within a `{% component %}..{% endcomponent %}` block.
+    Runtime checks should prohibit other usages.
+
+    **Args:**
+
+    - `name` (str, required): Name of the slot to insert this content into.
+    - `default` (str, optional): This argument allows you to access the original content of the slot
+        under the specified variable name. See
+        [Accessing original content of slots](../../concepts/fundamentals/slots#accessing-original-content-of-slots)
+    - `data` (str, optional): This argument allows you to access the data passed to the slot
+        under the specified variable name. See [Scoped slots](../../concepts/fundamentals/slots#scoped-slots)
+
+    **Examples:**
+
+    Basic usage:
+    ```django
+    {% component "my_table" %}
+      {% fill "pagination" %}
+        < 1 | 2 | 3 >
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    Accessing slot's default content with the `default` kwarg:
+    ```django
+    {# my_table.html #}
+    <table>
+      ...
+      {% slot "pagination" %}
+        < 1 | 2 | 3 >
+      {% endslot %}
+    </table>
+    ```
+
+    ```django
+    {% component "my_table" %}
+      {% fill "pagination" default="default_pag" %}
+        <div class="my-class">
+          {{ default_pag }}
+        </div>
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    Accessing slot's data with the `data` kwarg:
+    ```django
+    {# my_table.html #}
+    <table>
+      ...
+      {% slot "pagination" pages=pages %}
+        < 1 | 2 | 3 >
+      {% endslot %}
+    </table>
+    ```
+
+    ```django
+    {% component "my_table" %}
+      {% fill "pagination" data="slot_data" %}
+        {% for page in slot_data.pages %}
+            <a href="{{ page.link }}">
+              {{ page.index }}
+            </a>
+        {% endfor %}
+      {% endfill %}
+    {% endcomponent %}
+    ```
+    """
+    tag = _parse_tag(parser, token, tag_spec)
 
     fill_name_kwarg = tag.kwargs.kwargs.get(SLOT_NAME_KWARG, None)
     trace_id = f"fill-id-{tag.id} ({fill_name_kwarg})" if fill_name_kwarg else f"fill-id-{tag.id}"
@@ -143,18 +447,119 @@ def fill(parser: Parser, token: Token) -> FillNode:
     return fill_node
 
 
-def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_name: str) -> ComponentNode:
+@with_tag_spec(
+    TagSpec(
+        tag="component",
+        end_tag="endcomponent",
+        positional_only_args=[],
+        positional_args_allow_extra=True,  # Allow many args
+        keywordonly_args=True,
+        repeatable_kwargs=False,
+        flags=[COMP_ONLY_FLAG],
+    )
+)
+def component(
+    parser: Parser,
+    token: Token,
+    registry: ComponentRegistry,
+    tag_name: str,
+    tag_spec: TagSpec,
+) -> ComponentNode:
     """
-    To give the component access to the template context:
-        ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... %}```
+    Renders one of the components that was previously registered with
+    [`@register()`](./api.md#django_components.register)
+    decorator.
 
-    To render the component in an isolated context:
-        ```#!htmldjango {% component "name" positional_arg keyword_arg=value ... only %}```
+    **Args:**
+
+    - `name` (str, required): Registered name of the component to render
+    - All other args and kwargs are defined based on the component itself.
+
+    If you defined a component `"my_table"`
+
+    ```python
+    from django_component import Component, register
+
+    @register("my_table")
+    class MyTable(Component):
+        template = \"\"\"
+          <table>
+            <thead>
+              {% for header in headers %}
+                <th>{{ header }}</th>
+              {% endfor %}
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  {% for cell in row %}
+                    <td>{{ cell }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            <tbody>
+          </table>
+        \"\"\"
+
+        def get_context_data(self, rows: List, headers: List):
+            return {
+                "rows": rows,
+                "headers": headers,
+            }
+    ```
+
+    Then you can render this component by referring to `MyTable` via its
+    registered name `"my_table"`:
+
+    ```django
+    {% component "my_table" rows=rows headers=headers ... / %}
+    ```
+
+    ### Component input
 
     Positional and keyword arguments can be literals or template variables.
+
     The component name must be a single- or double-quotes string and must
-    be either the first positional argument or, if there are no positional
-    arguments, passed as 'name'.
+    be either:
+
+    - The first positional argument after `component`:
+
+        ```django
+        {% component "my_table" rows=rows headers=headers ... / %}
+        ```
+
+    - Passed as kwarg `name`:
+
+        ```django
+        {% component rows=rows headers=headers name="my_table" ... / %}
+        ```
+
+    ### Inserting into slots
+
+    If the component defined any [slots](../concepts/fundamentals/slots.md), you can
+    pass in the content to be placed inside those slots by inserting [`{% fill %}`](#fill) tags,
+    directly within the `{% component %}` tag:
+
+    ```django
+    {% component "my_table" rows=rows headers=headers ... / %}
+      {% fill "pagination" %}
+        < 1 | 2 | 3 >
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    ### Isolating components
+
+    By default, components behave similarly to Django's
+    [`{% include %}`](https://docs.djangoproject.com/en/5.1/ref/templates/builtins/#include),
+    and the template inside the component has access to the variables defined in the outer template.
+
+    You can selectively isolate a component, using the `only` flag, so that the inner template
+    can access only the data that was explicitly passed to it:
+
+    ```django
+    {% component "name" positional_arg keyword_arg=value ... only %}
+    ```
     """
     _fix_nested_tags(parser, token)
     bits = token.split_contents()
@@ -169,15 +574,15 @@ def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_nam
     token.contents = " ".join(bits)
 
     tag = _parse_tag(
-        tag_name,
         parser,
         token,
-        params=[],
-        extra_params=True,  # Allow many args
-        flags=[COMP_ONLY_FLAG],
-        keywordonly_kwargs=True,
-        repeatable_kwargs=False,
-        end_tag=end_tag,
+        TagSpec(
+            **{
+                **tag_spec._asdict(),
+                "tag": tag_name,
+                "end_tag": end_tag,
+            }
+        ),
     )
 
     # Check for isolated context keyword
@@ -208,19 +613,88 @@ def component(parser: Parser, token: Token, registry: ComponentRegistry, tag_nam
 
 
 @register.tag("provide")
-def provide(parser: Parser, token: Token) -> ProvideNode:
-    # e.g. {% provide <name> key=val key2=val2 %}
-    tag = _parse_tag(
-        "provide",
-        parser,
-        token,
-        params=[PROVIDE_NAME_KWARG],
-        optional_params=[PROVIDE_NAME_KWARG],
-        flags=[],
-        keywordonly_kwargs=True,
-        repeatable_kwargs=False,
+@with_tag_spec(
+    TagSpec(
+        tag="provide",
         end_tag="endprovide",
+        positional_only_args=[],
+        pos_or_keyword_args=[PROVIDE_NAME_KWARG],
+        keywordonly_args=True,
+        repeatable_kwargs=False,
+        flags=[],
     )
+)
+def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
+    """
+    The "provider" part of the [provide / inject feature](../../concepts/advanced/provide_inject).
+    Pass kwargs to this tag to define the provider's data.
+    Any components defined within the `{% provide %}..{% endprovide %}` tags will be able to access this data
+    with [`Component.inject()`](../api#django_components.Component.inject).
+
+    This is similar to React's [`ContextProvider`](https://react.dev/learn/passing-data-deeply-with-context),
+    or Vue's [`provide()`](https://vuejs.org/guide/components/provide-inject).
+
+    **Args:**
+
+    - `name` (str, required): Provider name. This is the name you will then use in
+        [`Component.inject()`](../api#django_components.Component.inject).
+    - `**kwargs`: Any extra kwargs will be passed as the provided data.
+
+    **Example:**
+
+    Provide the "user_data" in parent component:
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          <div>
+            {% provide "user_data" user=user %}
+              {% component "child" / %}
+            {% endprovide %}
+          </div>
+        \"\"\"
+
+        def get_context_data(self, user: User):
+            return {
+                "user": user,
+            }
+    ```
+
+    Since the "child" component is used within the `{% provide %} / {% endprovide %}` tags,
+    we can request the "user_data" using `Component.inject("user_data")`:
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            User is: {{ user }}
+          </div>
+        \"\"\"
+
+        def get_context_data(self):
+            user = self.inject("user_data").user
+            return {
+                "user": user,
+            }
+    ```
+
+    Notice that the keys defined on the `{% provide %}` tag are then accessed as attributes
+    when accessing them with [`Component.inject()`](../api#django_components.Component.inject).
+
+    ✅ Do this
+    ```python
+    user = self.inject("user_data").user
+    ```
+
+    ❌ Don't do this
+    ```python
+    user = self.inject("user_data")["user"]
+    ```
+    """
+    # e.g. {% provide <name> key=val key2=val2 %}
+    tag = _parse_tag(parser, token, tag_spec)
 
     name_kwarg = tag.kwargs.kwargs.get(PROVIDE_NAME_KWARG, None)
     trace_id = f"provide-id-{tag.id} ({name_kwarg})" if name_kwarg else f"fill-id-{tag.id}"
@@ -240,43 +714,71 @@ def provide(parser: Parser, token: Token) -> ProvideNode:
 
 
 @register.tag("html_attrs")
-def html_attrs(parser: Parser, token: Token) -> HtmlAttrsNode:
+@with_tag_spec(
+    TagSpec(
+        tag="html_attrs",
+        end_tag=None,  # inline-only
+        positional_only_args=[],
+        pos_or_keyword_args=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
+        optional_kwargs=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
+        keywordonly_args=True,
+        repeatable_kwargs=True,
+        flags=[],
+    )
+)
+def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode:
     """
-    This tag takes:
-    - Optional dictionary of attributes (`attrs`)
-    - Optional dictionary of defaults (`defaults`)
-    - Additional kwargs that are appended to the former two
+    Generate HTML attributes (`key="value"`), combining data from multiple sources,
+    whether its template variables or static text.
 
-    The inputs are merged and resulting dict is rendered as HTML attributes
+    It is designed to easily merge HTML attributes passed from outside with the internal.
+    See how to in [Passing HTML attributes to components](../../guides/howto/passing_html_attrs/).
+
+    **Args:**
+
+    - `attrs` (dict, optional): Optional dictionary that holds HTML attributes. On conflict, overrides
+        values in the `default` dictionary.
+    - `default` (str, optional): Optional dictionary that holds HTML attributes. On conflict, is overriden
+        with values in the `attrs` dictionary.
+    - Any extra kwargs will be appended to the corresponding keys
+
+    The attributes in `attrs` and `defaults` are merged and resulting dict is rendered as HTML attributes
     (`key="value"`).
 
-    Rules:
-    1. Both `attrs` and `defaults` can be passed as positional args or as kwargs
-    2. Both `attrs` and `defaults` are optional (can be omitted)
-    3. Both `attrs` and `defaults` are dictionaries, and we can define them the same way
-       we define dictionaries for the `component` tag. So either as `attrs=attrs` or
-       `attrs:key=value`.
-    4. All other kwargs (`key=value`) are appended and can be repeated.
+    Extra kwargs (`key=value`) are concatenated to existing keys. So if we have
 
-    Normal kwargs (`key=value`) are concatenated to existing keys. So if e.g. key
-    "class" is supplied with value "my-class", then adding `class="extra-class"`
-    will result in `class="my-class extra-class".
-
-    Example:
-    ```htmldjango
-    {% html_attrs attrs defaults:class="default-class" class="extra-class" data-id="123" %}
+    ```python
+    attrs = {"class": "my-class"}
     ```
+
+    Then
+
+    ```django
+    {% html_attrs attrs class="extra-class" %}
+    ```
+
+    will result in `class="my-class extra-class"`.
+
+    **Example:**
+    ```django
+    <div {% html_attrs
+        attrs
+        defaults:class="default-class"
+        class="extra-class"
+        data-id="123"
+    %}>
+    ```
+
+    renders
+
+    ```html
+    <div class="my-class extra-class" data-id="123">
+    ```
+
+    **See more usage examples in
+    [HTML attributes](../../concepts/fundamentals/html_attributes#examples-for-html_attrs).**
     """
-    tag = _parse_tag(
-        "html_attrs",
-        parser,
-        token,
-        params=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
-        optional_params=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
-        flags=[],
-        keywordonly_kwargs=True,
-        repeatable_kwargs=True,
-    )
+    tag = _parse_tag(parser, token, tag_spec)
 
     return HtmlAttrsNode(
         kwargs=tag.kwargs,
@@ -298,29 +800,22 @@ class ParsedTag(NamedTuple):
 
 
 def _parse_tag(
-    tag: str,
     parser: Parser,
     token: Token,
-    params: Optional[List[str]] = None,
-    extra_params: bool = False,
-    flags: Optional[List[str]] = None,
-    end_tag: Optional[str] = None,
-    optional_params: Optional[List[str]] = None,
-    keywordonly_kwargs: Optional[Union[bool, List[str]]] = False,
-    repeatable_kwargs: Optional[Union[bool, List[str]]] = False,
+    tag_spec: TagSpec,
 ) -> ParsedTag:
     # Use a unique ID to be able to tie the fill nodes with components and slots
     # NOTE: MUST be called BEFORE `parse_body()` to ensure predictable numbering
     tag_id = gen_id()
 
-    params = params or []
+    params = [*(tag_spec.positional_only_args or []), *(tag_spec.pos_or_keyword_args or [])]
 
     _fix_nested_tags(parser, token)
 
     # e.g. {% slot <name> ... %}
     tag_name, *bits = token.split_contents()
-    if tag_name != tag:
-        raise TemplateSyntaxError(f"Start tag parser received tag '{tag_name}', expected '{tag}'")
+    if tag_name != tag_spec.tag:
+        raise TemplateSyntaxError(f"Start tag parser received tag '{tag_name}', expected '{tag_spec.tag}'")
 
     # Decide if the template tag is inline or block and strip the trailing slash
     last_token = bits[-1] if len(bits) else None
@@ -329,9 +824,9 @@ def _parse_tag(
         is_inline = True
     else:
         # If no end tag was given, we assume that the tag is inline-only
-        is_inline = not end_tag
+        is_inline = not tag_spec.end_tag
 
-    parsed_flags = {flag: False for flag in (flags or [])}
+    parsed_flags = {flag: False for flag in (tag_spec.flags or [])}
     bits_without_flags: List[str] = []
     seen_kwargs: Set[str] = set()
     seen_agg_keys: Set[str] = set()
@@ -408,7 +903,7 @@ def _parse_tag(
             break
 
         param = params_to_sort.pop(0)
-        if optional_params and param in optional_params:
+        if tag_spec.pos_or_keyword_args and param in tag_spec.pos_or_keyword_args:
             mark_kwarg_key(param, False)
             new_kwargs.append(f"{param}={bit}")
             continue
@@ -419,14 +914,14 @@ def _parse_tag(
     params = [*new_params, *params_to_sort]
 
     # Remove any remaining optional positional args if they were not given
-    if optional_params:
-        params = [param for param in params_to_sort if param not in optional_params]
+    if tag_spec.pos_or_keyword_args:
+        params = [param for param in params_to_sort if param not in tag_spec.pos_or_keyword_args]
 
     # Parse args/kwargs that will be passed to the fill
     raw_args, raw_kwarg_pairs = parse_bits(
         parser=parser,
         bits=bits,
-        params=[] if extra_params else params,
+        params=[] if tag_spec.positional_args_allow_extra else params,
         name=tag_name,
     )
 
@@ -457,7 +952,7 @@ def _parse_tag(
             kwarg_pairs.append((key, val))
 
     # Allow only as many positional args as given
-    if not extra_params and len(args) > len(params):  # noqa F712
+    if not tag_spec.positional_args_allow_extra and len(args) > len(params):  # noqa F712
         raise TemplateSyntaxError(f"Tag '{tag_name}' received unexpected positional arguments: {args[len(params):]}")
 
     # For convenience, allow to access named args by their name instead of index
@@ -473,21 +968,25 @@ def _parse_tag(
             continue
 
         # Check if key allowed
-        if not keywordonly_kwargs:
+        if not tag_spec.keywordonly_args:
             is_key_allowed = False
         else:
-            is_key_allowed = keywordonly_kwargs == True or key in keywordonly_kwargs  # noqa: E712
+            is_key_allowed = (
+                tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args  # noqa: E712
+            ) or bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
         if not is_key_allowed:
-            is_optional = key in optional_params if optional_params else False
+            is_optional = key in tag_spec.optional_kwargs if tag_spec.optional_kwargs else False
             if not is_optional:
                 extra_keywords.add(key)
 
         # Check for repeated keys
         if key in kwargs:
-            if not repeatable_kwargs:
+            if not tag_spec.repeatable_kwargs:
                 is_key_repeatable = False
             else:
-                is_key_repeatable = repeatable_kwargs == True or key in repeatable_kwargs  # noqa: E712
+                is_key_repeatable = (
+                    tag_spec.repeatable_kwargs == True or key in tag_spec.repeatable_kwargs  # noqa: E712
+                )
             if not is_key_repeatable:
                 # The keyword argument has already been supplied once
                 raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
@@ -511,7 +1010,7 @@ def _parse_tag(
         # loggers before the parsing. This is because, if the body contains any other
         # tags, it will trigger their tag handlers. So the code called AFTER
         # `parse_body()` is already after all the nested tags were processed.
-        parse_body=lambda: _parse_tag_body(parser, end_tag, is_inline) if end_tag else NodeList(),
+        parse_body=lambda: _parse_tag_body(parser, tag_spec.end_tag, is_inline) if tag_spec.end_tag else NodeList(),
         is_inline=is_inline,
     )
 
@@ -623,3 +1122,14 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
 
             expects_text = True
             continue
+
+
+__all__ = [
+    "component",
+    "component_css_dependencies",
+    "component_js_dependencies",
+    "fill",
+    "html_attrs",
+    "provide",
+    "slot",
+]
