@@ -736,6 +736,20 @@ class Component(
     ) -> Dict[SlotName, SlotFunc]:
         # Preprocess slots to escape content if `escape_content=True`
         norm_fills = {}
+
+        # NOTE: Standalone function so that the `content` variable is captured,
+        #       because otherwise it changes with each loop iteration.
+        def wrap_content_func(content: SlotFunc) -> SlotFunc:
+            def content_func(  # type: ignore[misc]
+                ctx: Context,
+                slot_data: Dict[str, Any],
+                slot_ref: SlotRef,
+            ) -> SlotResult:
+                rendered = content(ctx, slot_data, slot_ref)
+                return conditional_escape(rendered) if escape_content else rendered
+
+            return content_func
+
         for slot_name, content in fills.items():
             if not callable(content):
                 content_func = _nodelist_to_slot_render_func(
@@ -745,14 +759,7 @@ class Component(
                     default_var=None,
                 )
             else:
-
-                def content_func(  # type: ignore[misc]
-                    ctx: Context,
-                    kwargs: Dict[str, Any],
-                    slot_ref: SlotRef,
-                ) -> SlotResult:
-                    rendered = content(ctx, kwargs, slot_ref)
-                    return conditional_escape(rendered) if escape_content else rendered
+                content_func = wrap_content_func(content)
 
             norm_fills[slot_name] = content_func
 

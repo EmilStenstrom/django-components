@@ -697,7 +697,7 @@ def _nodelist_to_slot_render_func(
 
         # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
         # the context, so users can refer to the default slot from within the fill content.
-        if data_var:
+        if default_var:
             ctx[default_var] = slot_ref
 
         return nodelist.render(ctx)
