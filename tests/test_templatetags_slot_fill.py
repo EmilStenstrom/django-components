@@ -312,6 +312,57 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_multiple_default_slots_with_same_name(self):
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <main>{% slot "main" default %}1{% endslot %}</main>
+                    <div>{% slot "main" default %}2{% endslot %}</div>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test_comp' %}
+              {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        expected = """
+            <div>
+            <main><p>This fills the 'main' slot.</p></main>
+            <div><p>This fills the 'main' slot.</p></div>
+            </div>
+        """
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_multiple_default_slots_with_different_names(self):
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <main>{% slot "main" default %}1{% endslot %}</main>
+                    <div>{% slot "other" default %}2{% endslot %}</div>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test_comp' %}
+              {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(TemplateSyntaxError, "Only one component slot may be marked as 'default', found 'other' and 'main'"):
+            template.render(Context({}))
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_error_raised_when_default_and_required_slot_not_filled(self):
         @register("test_comp")
         class ComponentWithDefaultAndRequiredSlot(Component):

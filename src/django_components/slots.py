@@ -568,20 +568,25 @@ def _resolve_default_slot(
     else:
         default_fill = None
 
-    default_slot_encountered: bool = False
+    default_slot_name: Optional[str] = None
 
     # Check for errors
     for slot in slots.values():
         if not slot.is_default:
             continue
 
-        if default_slot_encountered:
+        # NOTE: Allow one slot to be marked as 'default', or multiple slots but with
+        # the same name. If there is multiple 'default' slots with different names, raise.
+        if default_slot_name and slot.name != default_slot_name:
             raise TemplateSyntaxError(
-                "Only one component slot may be marked as 'default'. "
+                "Only one component slot may be marked as 'default', "
+                f"found '{default_slot_name}' and '{slot.name}'. "
                 f"To fix, check template '{template_name}' "
                 f"of component '{component_name}'."
             )
-        default_slot_encountered = True
+
+        if not default_slot_name:
+            default_slot_name = slot.name
 
         # Here we've identified which slot the default/implicit fill belongs to
         if default_fill:
@@ -597,7 +602,7 @@ def _resolve_default_slot(
 
     # Check: Only component templates that include a 'default' slot
     # can be invoked with implicit filling.
-    if default_fill and not default_slot_encountered and not is_dynamic_component:
+    if default_fill and not default_slot_name and not is_dynamic_component:
         raise TemplateSyntaxError(
             f"Component '{component_name}' passed default fill content '{default_fill.name}'"
             f"(i.e. without explicit 'fill' tag), "
