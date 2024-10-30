@@ -359,7 +359,9 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        with self.assertRaisesMessage(TemplateSyntaxError, "Only one component slot may be marked as 'default', found 'other' and 'main'"):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "Only one component slot may be marked as 'default', found 'other' and 'main'"
+        ):
             template.render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
