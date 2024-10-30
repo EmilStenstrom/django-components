@@ -103,13 +103,13 @@ class DynamicComponent(Component):
             registered_name=self.registered_name,
             component_id=self.component_id,
             outer_context=self.outer_context,
-            fill_content=self.fill_content,
             registry=self.registry,
         )
         output = comp.render(
             context=self.input.context,
             args=args,
             kwargs=kwargs,
+            slots=self.input.slots,
             escape_slots_content=self.input.escape_slots_content,
             type=self.input.type,
             render_dependencies=self.input.render_dependencies,

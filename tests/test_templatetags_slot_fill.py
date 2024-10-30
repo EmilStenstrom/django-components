@@ -1647,3 +1647,45 @@ class SlotBehaviorTests(BaseTestCase):
             </custom-template>
             """,
         )
+
+
+class SlotInputTests(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slots_accessible_when_python_render(self):
+        slots: Dict = {}
+
+        @register("test")
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <header>{% slot "header" %}Default header{% endslot %}</header>
+                <main>{% slot "main" %}Default main header{% endslot %}</main>
+                <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+            """
+
+            def get_context_data(self, input: Optional[int] = None) -> Dict[str, Any]:
+                nonlocal slots
+                slots = self.input.slots
+                return {}
+
+        self.assertEqual(slots, {})
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" input=1 %}
+                {% fill "header" data="data1" %}
+                    data1_in_slot1: {{ data1|safe }}
+                {% endfill %}
+                {% fill "main" / %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        template.render(Context())
+
+        self.assertListEqual(
+            list(slots.keys()),
+            ["header", "main"],
+        )
+        self.assertTrue(callable(slots["header"]))
+        self.assertTrue(callable(slots["main"]))
+        self.assertTrue("footer" not in slots)

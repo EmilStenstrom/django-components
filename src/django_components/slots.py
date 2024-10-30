@@ -67,29 +67,6 @@ SlotContent = Union[SlotResult, SlotFunc[TSlotData]]
 # Internal type aliases
 SlotId = str
 SlotName = str
-SlotDefaultName = str
-SlotDataName = str
-
-
-@dataclass(frozen=True)
-class FillContent(Generic[TSlotData]):
-    """
-    This represents content set with the `{% fill %}` tag, e.g.:
-
-    ```django
-    {% component "my_comp" %}
-        {% fill "first_slot" %} <--- This
-            hi
-            {{ my_var }}
-            hello
-        {% endfill %}
-    {% endcomponent %}
-    ```
-    """
-
-    content_func: SlotFunc[TSlotData]
-    slot_default_var: Optional[SlotDefaultName]
-    slot_data_var: Optional[SlotDataName]
 
 
 class Slot(NamedTuple):
@@ -124,8 +101,6 @@ class SlotFill(Generic[TSlotData]):
     escaped_name: str
     is_filled: bool
     content_func: SlotFunc[TSlotData]
-    slot_default_var: Optional[SlotDefaultName]
-    slot_data_var: Optional[SlotDataName]
 
 
 class SlotRef:
@@ -195,27 +170,7 @@ class SlotNode(BaseNode):
             if key.startswith(_INJECT_CONTEXT_KEY_PREFIX):
                 extra_context[key] = value
 
-        # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
-        # the context, so users can refer to the default slot from within the fill content.
         slot_ref = SlotRef(self, context)
-        default_var = slot_fill.slot_default_var
-        if default_var:
-            if not default_var.isidentifier():
-                raise TemplateSyntaxError(
-                    f"Slot default alias in fill '{name}' must be a valid identifier. Got '{default_var}'"
-                )
-            extra_context[default_var] = slot_ref
-
-        # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
-        # are made available through a variable name that was set on the `{% fill %}`
-        # tag.
-        data_var = slot_fill.slot_data_var
-        if data_var:
-            if not data_var.isidentifier():
-                raise TemplateSyntaxError(
-                    f"Slot data alias in fill '{name}' must be a valid identifier. Got '{data_var}'"
-                )
-            extra_context[data_var] = kwargs
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
@@ -441,8 +396,8 @@ def resolve_fill_nodes(
     context: Context,
     fill_nodes: List[FillNode],
     component_name: str,
-) -> Dict[str, FillContent]:
-    fill_content: Dict[str, FillContent] = {}
+) -> Dict[str, SlotFunc]:
+    fill_content: Dict[str, SlotFunc] = {}
     for fill_node in fill_nodes:
         # Note that outer component context is used to resolve variables in
         # fill tag.
@@ -461,10 +416,11 @@ def resolve_fill_nodes(
                 f"Detected duplicate fill tag name '{fill_name}'."
             )
 
-        fill_content[fill_name] = FillContent(
-            content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
-            slot_default_var=fill_kwargs[SLOT_DEFAULT_KWARG],
-            slot_data_var=fill_kwargs[SLOT_DATA_KWARG],
+        fill_content[fill_name] = _nodelist_to_slot_render_func(
+            fill_name,
+            fill_node.nodelist,
+            data_var=fill_kwargs[SLOT_DATA_KWARG],
+            default_var=fill_kwargs[SLOT_DEFAULT_KWARG],
         )
     return fill_content
 
@@ -478,7 +434,7 @@ def resolve_slots(
     context: Context,
     template: Template,
     component_name: Optional[str],
-    fill_content: Dict[SlotName, FillContent],
+    fills: Dict[SlotName, SlotFunc],
     is_dynamic_component: bool = False,
 ) -> Tuple[Dict[SlotId, Slot], Dict[SlotId, SlotFill]]:
     """
@@ -494,11 +450,9 @@ def resolve_slots(
             name=name,
             escaped_name=_escape_slot_name(name),
             is_filled=True,
-            content_func=fill.content_func,
-            slot_default_var=fill.slot_default_var,
-            slot_data_var=fill.slot_data_var,
+            content_func=slot_fn,
         )
-        for name, fill in fill_content.items()
+        for name, slot_fn in fills.items()
     }
 
     slots: Dict[SlotId, Slot] = {}
@@ -587,9 +541,7 @@ def resolve_slots(
                 name=slot.name,
                 escaped_name=_escape_slot_name(slot.name),
                 is_filled=False,
-                content_func=_nodelist_to_slot_render_func(slot.nodelist),
-                slot_default_var=None,
-                slot_data_var=None,
+                content_func=_nodelist_to_slot_render_func(slot.name, slot.nodelist, None, None),
             )
             # Since the slot's default CAN include other slots (because it's defined in
             # the same template), we need to enqueue the slot's children
@@ -638,8 +590,6 @@ def _resolve_default_slot(
             named_fills[slot.name] = SlotFill(
                 is_filled=default_fill.is_filled,
                 content_func=default_fill.content_func,
-                slot_default_var=default_fill.slot_default_var,
-                slot_data_var=default_fill.slot_data_var,
                 # Updated fields
                 name=slot.name,
                 escaped_name=_escape_slot_name(slot.name),
@@ -720,8 +670,36 @@ def _escape_slot_name(name: str) -> str:
     return escaped_name
 
 
-def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
+def _nodelist_to_slot_render_func(
+    slot_name: str,
+    nodelist: NodeList,
+    data_var: Optional[str] = None,
+    default_var: Optional[str] = None,
+) -> SlotFunc:
+    if data_var:
+        if not data_var.isidentifier():
+            raise TemplateSyntaxError(
+                f"Slot data alias in fill '{slot_name}' must be a valid identifier. Got '{data_var}'"
+            )
+
+    if default_var:
+        if not default_var.isidentifier():
+            raise TemplateSyntaxError(
+                f"Slot default alias in fill '{slot_name}' must be a valid identifier. Got '{default_var}'"
+            )
+
     def render_func(ctx: Context, slot_data: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
+        # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
+        # are made available through a variable name that was set on the `{% fill %}`
+        # tag.
+        if data_var:
+            ctx[data_var] = slot_data
+
+        # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
+        # the context, so users can refer to the default slot from within the fill content.
+        if default_var:
+            ctx[default_var] = slot_ref
+
         return nodelist.render(ctx)
 
     return render_func  # type: ignore[return-value]

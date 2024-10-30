@@ -51,9 +51,9 @@ from django_components.expression import Expression, RuntimeKwargs, safe_resolve
 from django_components.node import BaseNode
 from django_components.slots import (
     DEFAULT_SLOT_KEY,
-    FillContent,
     FillNode,
     SlotContent,
+    SlotFunc,
     SlotName,
     SlotRef,
     SlotResult,
@@ -290,7 +290,6 @@ class Component(
         registered_name: Optional[str] = None,
         component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
-        fill_content: Optional[Dict[str, FillContent]] = None,
         registry: Optional[ComponentRegistry] = None,  # noqa F811
     ):
         # When user first instantiates the component class before calling
@@ -310,7 +309,6 @@ class Component(
 
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
-        self.fill_content = fill_content or {}
         self.component_id = component_id or gen_id()
         self.registry = registry or registry_
         self._render_stack: Deque[RenderStackItem[ArgsType, KwargsType, SlotsType]] = deque()
@@ -632,8 +630,6 @@ class Component(
         type: RenderType = "document",
         render_dependencies: bool = True,
     ) -> str:
-        has_slots = slots is not None
-
         # Allow to provide no args/kwargs/slots/context
         args = cast(ArgsType, args or ())
         kwargs = cast(KwargsType, kwargs or {})
@@ -674,20 +670,13 @@ class Component(
         cache_inlined_css(self.__class__, self.css or "")
 
         with _prepare_template(self, context, context_data) as template:
-            # Support passing slots explicitly to `render` method
-            if has_slots:
-                fill_content = self._fills_from_slots_data(
-                    slots,
-                    escape_slots_content,
-                )
-            else:
-                fill_content = self.fill_content
+            fills = self._escape_slot_fills(slots, escape_slots_content)
 
             _, resolved_fills = resolve_slots(
                 context,
                 template,
                 component_name=self.name,
-                fill_content=fill_content,
+                fills=fills,
                 # Dynamic component has a special mark so it doesn't raise certain errors
                 is_dynamic_component=getattr(self, "_is_dynamic_component", False),
             )
@@ -740,34 +729,41 @@ class Component(
 
         return output
 
-    def _fills_from_slots_data(
+    def _escape_slot_fills(
         self,
-        slots_data: Mapping[SlotName, SlotContent],
+        fills: Mapping[SlotName, SlotContent],
         escape_content: bool = True,
-    ) -> Dict[SlotName, FillContent]:
-        """Fill component slots outside of template rendering."""
-        slot_fills = {}
-        for slot_name, content in slots_data.items():
+    ) -> Dict[SlotName, SlotFunc]:
+        # Preprocess slots to escape content if `escape_content=True`
+        norm_fills = {}
+
+        # NOTE: Standalone function so that the `content` variable is captured,
+        #       because otherwise it changes with each loop iteration.
+        def wrap_content_func(content: SlotFunc) -> SlotFunc:
+            def content_func(  # type: ignore[misc]
+                ctx: Context,
+                slot_data: Dict[str, Any],
+                slot_ref: SlotRef,
+            ) -> SlotResult:
+                rendered = content(ctx, slot_data, slot_ref)
+                return conditional_escape(rendered) if escape_content else rendered
+
+            return content_func
+
+        for slot_name, content in fills.items():
             if not callable(content):
                 content_func = _nodelist_to_slot_render_func(
-                    NodeList([TextNode(conditional_escape(content) if escape_content else content)])
+                    slot_name,
+                    NodeList([TextNode(conditional_escape(content) if escape_content else content)]),
+                    data_var=None,
+                    default_var=None,
                 )
             else:
+                content_func = wrap_content_func(content)
 
-                def content_func(  # type: ignore[misc]
-                    ctx: Context,
-                    kwargs: Dict[str, Any],
-                    slot_ref: SlotRef,
-                ) -> SlotResult:
-                    rendered = content(ctx, kwargs, slot_ref)
-                    return conditional_escape(rendered) if escape_content else rendered
+            norm_fills[slot_name] = content_func
 
-            slot_fills[slot_name] = FillContent(
-                content_func=content_func,
-                slot_default_var=None,
-                slot_data_var=None,
-            )
-        return slot_fills
+        return norm_fills
 
     # #####################################
     # VALIDATION
@@ -903,20 +899,20 @@ class ComponentNode(BaseNode):
 
         is_default_slot = len(self.fill_nodes) == 1 and self.fill_nodes[0].is_implicit
         if is_default_slot:
-            fill_content: Dict[str, FillContent] = {
-                DEFAULT_SLOT_KEY: FillContent(
-                    content_func=_nodelist_to_slot_render_func(self.fill_nodes[0].nodelist),
-                    slot_data_var=None,
-                    slot_default_var=None,
+            slots: Dict[str, SlotFunc] = {
+                DEFAULT_SLOT_KEY: _nodelist_to_slot_render_func(
+                    "<default>",
+                    self.fill_nodes[0].nodelist,
+                    data_var=None,
+                    default_var=None,
                 ),
             }
         else:
-            fill_content = resolve_fill_nodes(context, self.fill_nodes, self.name)
+            slots = resolve_fill_nodes(context, self.fill_nodes, self.name)
 
         component: Component = component_cls(
             registered_name=self.name,
             outer_context=context,
-            fill_content=fill_content,
             component_id=self.node_id,
             registry=self.registry,
         )
@@ -929,6 +925,7 @@ class ComponentNode(BaseNode):
             context=context,
             args=args,
             kwargs=kwargs,
+            slots=slots,
             # NOTE: When we render components inside the template via template tags,
             # do NOT render deps, because this may be decided by outer component
             render_dependencies=False,
