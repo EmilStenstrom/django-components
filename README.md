@@ -2687,7 +2687,7 @@ Click me!
 
 You can change this behaviour in the settings under the [`COMPONENTS.tag_formatter`](#tag-formatter-setting).
 
-For example, if you set the tag formatter to `django_components.shorthand_component_formatter`, the components will use their name as the template tags:
+For example, if you set the tag formatter to `django_components.component_shorthand_formatter`, the components will use their name as the template tags:
 
 ```django
 {% button href="..." disabled %}
@@ -2723,7 +2723,7 @@ django_components provides following predefined TagFormatters:
     {% component "button" href="..." / %}
     ```
 
-- **`ShorthandComponentFormatter` (`django_components.shorthand_component_formatter`)**
+- **`ShorthandComponentFormatter` (`django_components.component_shorthand_formatter`)**
 
     Uses the component name as start tag, and `end<component_name>`
     as an end tag.
