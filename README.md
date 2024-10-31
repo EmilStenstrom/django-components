@@ -1124,8 +1124,8 @@ NOTE: The Library instance can be accessed under `library` attribute of `Compone
 When you are creating an instance of `ComponentRegistry`, you can define the components' behavior within the template.
 
 The registry accepts these settings:
-- `CONTEXT_BEHAVIOR`
-- `TAG_FORMATTER`
+- `context_behavior`
+- `tag_formatter`
 
 ```py
 from django.template import Library
@@ -1135,8 +1135,8 @@ register = library = django.template.Library()
 comp_registry = ComponentRegistry(
     library=library,
     settings=RegistrySettings(
-        CONTEXT_BEHAVIOR="isolated",
-        TAG_FORMATTER="django_components.component_formatter",
+        context_behavior="isolated",
+        tag_formatter="django_components.component_formatter",
     ),
 )
 ```
@@ -3741,17 +3741,17 @@ You can publish and share your components for others to use. Here are the steps 
     comp_registry = ComponentRegistry(
         library=library,
         settings=RegistrySettings(
-            CONTEXT_BEHAVIOR="isolated",
-            TAG_FORMATTER="django_components.component_formatter",
+            context_behavior="isolated",
+            tag_formatter="django_components.component_formatter",
         ),
     )
     ```
 
     As you can see above, this is also the place where we configure how our components should behave, using the `settings` argument. If omitted, default settings are used.
 
-    For library authors, we recommend setting `CONTEXT_BEHAVIOR` to `"isolated"`, so that the state cannot leak into the components, and so the components' behavior is configured solely through the inputs. This means that the components will be more predictable and easier to debug.
+    For library authors, we recommend setting `context_behavior` to `"isolated"`, so that the state cannot leak into the components, and so the components' behavior is configured solely through the inputs. This means that the components will be more predictable and easier to debug.
 
-    Next, you can decide how will others use your components by settingt the `TAG_FORMATTER` options.
+    Next, you can decide how will others use your components by settingt the `tag_formatter` options.
 
     If omitted or set to `"django_components.component_formatter"`,
     your components will be used like this:

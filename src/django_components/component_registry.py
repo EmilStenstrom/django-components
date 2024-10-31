@@ -1,15 +1,21 @@
-from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Type, Union
 
 from django.template import Library
 
-from django_components.app_settings import ContextBehavior, app_settings
+from django_components.app_settings import ContextBehaviorType, app_settings
 from django_components.library import is_tag_protected, mark_protected_tags, register_tag_from_formatter
 from django_components.tag_formatter import TagFormatterABC, get_tag_formatter
 
 if TYPE_CHECKING:
-    from django_components.component import Component
-
-_TComp = TypeVar("_TComp", bound=Type["Component"])
+    from django_components.component import (
+        ArgsType,
+        Component,
+        CssDataType,
+        DataType,
+        JsDataType,
+        KwargsType,
+        SlotsType,
+    )
 
 
 class AlreadyRegistered(Exception):
@@ -35,13 +41,13 @@ class ComponentRegistryEntry(NamedTuple):
 
 
 class RegistrySettings(NamedTuple):
-    CONTEXT_BEHAVIOR: Optional[ContextBehavior] = None
-    TAG_FORMATTER: Optional[Union["TagFormatterABC", str]] = None
+    context_behavior: Optional[ContextBehaviorType] = None
+    tag_formatter: Optional[Union["TagFormatterABC", str]] = None
 
 
 class InternalRegistrySettings(NamedTuple):
-    CONTEXT_BEHAVIOR: ContextBehavior
-    TAG_FORMATTER: Union["TagFormatterABC", str]
+    context_behavior: ContextBehaviorType
+    tag_formatter: Union["TagFormatterABC", str]
 
 
 # We keep track of all registries that exist so that, when users want to
@@ -137,9 +143,9 @@ class ComponentRegistry:
                     settings_input = self._settings_input
 
                 return InternalRegistrySettings(
-                    CONTEXT_BEHAVIOR=(settings_input and settings_input.CONTEXT_BEHAVIOR)
-                    or app_settings.CONTEXT_BEHAVIOR,
-                    TAG_FORMATTER=(settings_input and settings_input.TAG_FORMATTER) or app_settings.TAG_FORMATTER,
+                    context_behavior=(settings_input and settings_input.context_behavior)
+                    or app_settings.CONTEXT_BEHAVIOR.value,
+                    tag_formatter=(settings_input and settings_input.tag_formatter) or app_settings.TAG_FORMATTER,
                 )
 
             self._settings = get_settings
@@ -330,7 +336,10 @@ registry.clear()
 _the_registry = registry
 
 
-def register(name: str, registry: Optional[ComponentRegistry] = None) -> Callable[[_TComp], _TComp]:
+def register(name: str, registry: Optional[ComponentRegistry] = None) -> Callable[
+    [Type["Component[ArgsType, KwargsType, SlotsType, DataType, JsDataType, CssDataType]"]],
+    Type["Component[ArgsType, KwargsType, SlotsType, DataType, JsDataType, CssDataType]"],
+]:
     """
     Class decorator to register a component.
 
@@ -357,7 +366,9 @@ def register(name: str, registry: Optional[ComponentRegistry] = None) -> Callabl
     if registry is None:
         registry = _the_registry
 
-    def decorator(component: _TComp) -> _TComp:
+    def decorator(
+        component: Type["Component[ArgsType, KwargsType, SlotsType, DataType, JsDataType, CssDataType]"],
+    ) -> Type["Component[ArgsType, KwargsType, SlotsType, DataType, JsDataType, CssDataType]"]:
         registry.register(name=name, component=component)
         return component
 

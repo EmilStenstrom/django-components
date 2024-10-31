@@ -48,6 +48,11 @@
     )
     ```
 
+- The [`ComponentRegistry`](../api#django_components.ComponentRegistry) settings [`RegistrySettings`](../api#django_components.RegistrySettings) were lowercased
+  to align with the global settings:
+  - `RegistrySettings.CONTEXT_BEHAVIOR` -> `RegistrySettings.context_behavior`
+  - `RegistrySettings.TAG_FORMATTER` -> `RegistrySettings.tag_formatter`
+
 #### Fix
 
 - Slots defined with `{% fill %}` tags are now properly accessible via `self.input.slots` in `get_context_data()`

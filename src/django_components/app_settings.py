@@ -1,12 +1,14 @@
 import re
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Tuple, Union
 
 from django.conf import settings
 
 if TYPE_CHECKING:
     from django_components.tag_formatter import TagFormatterABC
+
+ContextBehaviorType = Literal["django", "isolated"]
 
 
 class ContextBehavior(str, Enum):

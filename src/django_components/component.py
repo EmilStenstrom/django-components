@@ -918,7 +918,7 @@ class ComponentNode(BaseNode):
         )
 
         # Prevent outer context from leaking into the template of the component
-        if self.isolated_context or self.registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
+        if self.isolated_context or self.registry.settings.context_behavior == ContextBehavior.ISOLATED:
             context = make_isolated_context_copy(context)
 
         output = component._render(
