@@ -29,9 +29,9 @@ class TagResult(NamedTuple):
     component_name: str
     """
     Component name extracted from the template tag
-    
+
     For example, if we had tag
-    
+
     ```django
     {% component "my_comp" key=val key2=val2 %}
     ```
@@ -42,9 +42,9 @@ class TagResult(NamedTuple):
     tokens: List[str]
     """
     Remaining tokens (words) that were passed to the tag, with component name removed
-    
+
     For example, if we had tag
-    
+
     ```django
     {% component "my_comp" key=val key2=val2 %}
     ```
