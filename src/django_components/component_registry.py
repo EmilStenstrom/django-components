@@ -24,6 +24,7 @@ class AlreadyRegistered(Exception):
     but it's already registered with given
     [ComponentRegistry](../api#django_components.ComponentRegistry).
     """
+
     pass
 
 
@@ -33,6 +34,7 @@ class NotRegistered(Exception):
     but it's NOT registered with given
     [ComponentRegistry](../api#django_components.ComponentRegistry).
     """
+
     pass
 
 
@@ -346,7 +348,7 @@ class ComponentRegistry:
 
         Returns:
             Type[Component]: The component class registered under the given name.
-        
+
         **Raises:**
 
         - [`NotRegistered`](../exceptions#django_components.NotRegistered)
