@@ -268,7 +268,7 @@ class ComponentTagTests(BaseTestCase):
         cases=["django", "isolated"],
         settings={
             "COMPONENTS": {
-                "tag_formatter": SlashEndTagFormatter,
+                "tag_formatter": SlashEndTagFormatter(),
             },
         },
     )
