@@ -179,7 +179,7 @@ pymdown-extensions==10.11.2
     #   markdown-exec
     #   mkdocs-material
     #   mkdocstrings
-pyparsing==3.1.4
+pyparsing==3.2.0
     # via mike
 python-dateutil==2.9.0.post0
     # via ghp-import
