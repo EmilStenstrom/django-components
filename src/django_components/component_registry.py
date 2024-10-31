@@ -72,19 +72,23 @@ class RegistrySettings(NamedTuple):
 
     context_behavior: Optional[ContextBehaviorType] = None
     """
-    Same as the global [`COMPONENTS.context_behavior`](../settings#django_components.app_settings.ComponentsSettings.context_behavior)
+    Same as the global
+    [`COMPONENTS.context_behavior`](../settings#django_components.app_settings.ComponentsSettings.context_behavior)
     setting, but for this registry.
 
-    If omitted, defaults to the global [`COMPONENTS.context_behavior`](../settings#django_components.app_settings.ComponentsSettings.context_behavior)
+    If omitted, defaults to the global
+    [`COMPONENTS.context_behavior`](../settings#django_components.app_settings.ComponentsSettings.context_behavior)
     setting.
     """
 
     tag_formatter: Optional[Union["TagFormatterABC", str]] = None
     """
-    Same as the global [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
+    Same as the global
+    [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
     setting, but for this registry.
 
-    If omitted, defaults to the global [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
+    If omitted, defaults to the global
+    [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
     setting.
     """
 
@@ -121,7 +125,8 @@ class ComponentRegistry:
     See [Registering components](../../concepts/advanced/component_registry).
 
     Args:
-        library (Library, optional): Django [`Library`](https://docs.djangoproject.com/en/5.1/howto/custom-template-tags/#code-layout)\
+        library (Library, optional): Django\
+            [`Library`](https://docs.djangoproject.com/en/5.1/howto/custom-template-tags/#code-layout)\
             associated with this registry. If omitted, the default Library instance from django_components is used.
         settings (Union[RegistrySettings, Callable[[ComponentRegistry], RegistrySettings]], optional): Configure\
             how the components registered with this registry will behave when rendered.\
@@ -156,24 +161,24 @@ class ComponentRegistry:
     # Using registry to share components
 
     You can use component registry for isolating or "packaging" components:
-     
+
     1. Create new instance of `ComponentRegistry` and Library:
         ```django
         my_comps = Library()
-        my_comps_reg = ComponentRegistry(library=my_comps)    
+        my_comps_reg = ComponentRegistry(library=my_comps)
         ```
-    
+
     2. Register components to the registry:
         ```django
         my_comps_reg.register("my_button", ButtonComponent)
         my_comps_reg.register("my_card", CardComponent)
         ```
-    
+
     3. In your target project, load the Library associated with the registry:
         ```django
         {% load my_comps %}
         ```
-        
+
     4. Use the registered components in your templates:
         ```django
         {% component "button" %}
@@ -477,7 +482,7 @@ def register(name: str, registry: Optional[ComponentRegistry] = None) -> Callabl
             from within a template when using the [`{% component %}`](../template_tags#component) tag. Required.
         registry (ComponentRegistry, optional): Specify the [registry](./#django_components.ComponentRegistry)\
             to which to register this component. If omitted, component is registered to the default registry.
-            
+
     Raises:
         AlreadyRegistered: If there is already a component registered under the same name.
 
