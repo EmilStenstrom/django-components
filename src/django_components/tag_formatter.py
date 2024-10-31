@@ -22,7 +22,7 @@ TAG_RE = re.compile(r"^[{chars}]+$".format(chars=TAG_CHARS))
 class TagResult(NamedTuple):
     """
     The return value from [`TagFormatter.parse()`](../api#django_components.TagFormatterABC.parse).
-    
+
     Read more about [Tag formatter](../../concepts/advanced/tag_formatter).
     """
 
@@ -64,12 +64,12 @@ class TagFormatterABC(abc.ABC):
     For example, with the default tag formatter
     ([`ComponentFormatter`](../tag_formatters#django_components.tag_formatter.ComponentFormatter)),
     components are written as:
-    
+
     ```django
     {% component "comp_name" %}
     {% endcomponent %}
     ```
-    
+
     While with the shorthand tag formatter
     ([`ShorthandComponentFormatter`](../tag_formatters#django_components.tag_formatter.ShorthandComponentFormatter)),
     components are written as:
