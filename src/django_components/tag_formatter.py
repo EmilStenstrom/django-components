@@ -13,7 +13,10 @@ if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry
 
 
-TAG_RE = re.compile(r"^[{chars}]+$".format(chars=VAR_CHARS))
+# Forward slash is added so it's possible to define components like
+# `{% MyComp %}..{% /MyComp %}`
+TAG_CHARS = VAR_CHARS + r"/"
+TAG_RE = re.compile(r"^[{chars}]+$".format(chars=TAG_CHARS))
 
 
 class TagResult(NamedTuple):
@@ -98,7 +101,7 @@ class InternalTagFormatter:
         if not TAG_RE.match(tag):
             raise ValueError(
                 f"{self.tag_formatter.__class__.__name__} returned an invalid tag for {tag_type}: '{tag}'."
-                f" Tag must contain only following chars: {VAR_CHARS}"
+                f" Tag must contain only following chars: {TAG_CHARS}"
             )
 
 
