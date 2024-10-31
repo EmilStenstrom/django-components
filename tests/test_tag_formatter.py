@@ -19,6 +19,11 @@ class MultiwordBlockEndTagFormatter(ShorthandComponentFormatter):
         return f"end {name}"
 
 
+class SlashEndTagFormatter(ShorthandComponentFormatter):
+    def end_tag(self, name):
+        return f"/{name}"
+
+
 # Create a TagFormatter class to validate the public interface
 def create_validator_tag_formatter(tag_name: str):
     class ValidatorTagFormatter(ShorthandComponentFormatter):
@@ -245,6 +250,46 @@ class ComponentTagTests(BaseTestCase):
             {% simple %}
                 OVERRIDEN!
             {% endsimple %}
+        """
+        )
+        rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            hello1
+            <div>
+                OVERRIDEN!
+            </div>
+            hello2
+            """,
+        )
+
+    @parametrize_context_behavior(
+        cases=["django", "isolated"],
+        settings={
+            "COMPONENTS": {
+                "tag_formatter": SlashEndTagFormatter(),
+            },
+        },
+    )
+    def test_forward_slash_in_end_tag(self):
+        @register("simple")
+        class SimpleComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                hello1
+                <div>
+                    {% slot "content" default %} SLOT_DEFAULT {% endslot %}
+                </div>
+                hello2
+            """
+
+        template = Template(
+            """
+            {% load component_tags %}
+            {% simple %}
+                OVERRIDEN!
+            {% /simple %}
         """
         )
         rendered = template.render(Context())

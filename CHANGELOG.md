@@ -52,6 +52,11 @@
 
 - Slots defined with `{% fill %}` tags are now properly accessible via `self.input.slots` in `get_context_data()`
 
+- Do not raise error if multiple slots with same name are flagged as default
+
+- Allow using forward slash (`/`) when defining custom TagFormatter,
+  e.g. `{% MyComp %}..{% /MyComp %}`.
+
 #### Refactor
 
 - `{% component_dependencies %}` tags are now OPTIONAL - If your components use JS and CSS, but you don't use `{% component_dependencies %}` tags, the JS and CSS will now be, by default, inserted at the end of `<body>` and at the end of `<head>` respectively.
