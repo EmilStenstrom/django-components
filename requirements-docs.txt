@@ -146,7 +146,7 @@ mkdocstrings==0.26.2
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
-mkdocstrings-python==1.12.1
+mkdocstrings-python==1.12.2
     # via hatch.envs.docs
 mypy-extensions==1.0.0
     # via black
