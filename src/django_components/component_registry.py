@@ -81,8 +81,36 @@ class RegistrySettings(NamedTuple):
     setting.
     """
 
+    # TODO_REMOVE_IN_V1
+    CONTEXT_BEHAVIOR: Optional[ContextBehaviorType] = None
+    """
+    _Deprecated. Use `context_behavior` instead. Will be removed in v1._
+
+    Same as the global
+    [`COMPONENTS.context_behavior`](../settings#django_components.app_settings.ComponentsSettings.context_behavior)
+    setting, but for this registry.
+
+    If omitted, defaults to the global
+    [`COMPONENTS.context_behavior`](../settings#django_components.app_settings.ComponentsSettings.context_behavior)
+    setting.
+    """
+
     tag_formatter: Optional[Union["TagFormatterABC", str]] = None
     """
+    Same as the global
+    [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
+    setting, but for this registry.
+
+    If omitted, defaults to the global
+    [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
+    setting.
+    """
+
+    # TODO_REMOVE_IN_V1
+    TAG_FORMATTER: Optional[Union["TagFormatterABC", str]] = None
+    """
+    _Deprecated. Use `tag_formatter` instead. Will be removed in v1._
+
     Same as the global
     [`COMPONENTS.tag_formatter`](../settings#django_components.app_settings.ComponentsSettings.tag_formatter)
     setting, but for this registry.
@@ -243,10 +271,16 @@ class ComponentRegistry:
                 else:
                     settings_input = self._settings_input
 
+                if settings_input:
+                    context_behavior = settings_input.context_behavior or settings_input.CONTEXT_BEHAVIOR
+                    tag_formatter = settings_input.tag_formatter or settings_input.TAG_FORMATTER
+                else:
+                    context_behavior = None
+                    tag_formatter = None
+
                 return InternalRegistrySettings(
-                    context_behavior=(settings_input and settings_input.context_behavior)
-                    or app_settings.CONTEXT_BEHAVIOR.value,
-                    tag_formatter=(settings_input and settings_input.tag_formatter) or app_settings.TAG_FORMATTER,
+                    context_behavior=context_behavior or app_settings.CONTEXT_BEHAVIOR.value,
+                    tag_formatter=tag_formatter or app_settings.TAG_FORMATTER,
                 )
 
             self._settings = get_settings

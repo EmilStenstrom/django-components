@@ -48,11 +48,6 @@
     )
     ```
 
-- The [`ComponentRegistry`](../api#django_components.ComponentRegistry) settings [`RegistrySettings`](../api#django_components.RegistrySettings) were lowercased
-  to align with the global settings:
-  - `RegistrySettings.CONTEXT_BEHAVIOR` -> `RegistrySettings.context_behavior`
-  - `RegistrySettings.TAG_FORMATTER` -> `RegistrySettings.tag_formatter`
-
 #### Fix
 
 - Slots defined with `{% fill %}` tags are now properly accessible via `self.input.slots` in `get_context_data()`
@@ -67,6 +62,13 @@
 - `{% component_dependencies %}` tags are now OPTIONAL - If your components use JS and CSS, but you don't use `{% component_dependencies %}` tags, the JS and CSS will now be, by default, inserted at the end of `<body>` and at the end of `<head>` respectively.
 
 - For advanced use cases, use can omit the middleware and instead manage component JS and CSS dependencies yourself with [`render_dependencies`](https://github.com/EmilStenstrom/django-components#render_dependencies-and-deep-dive-into-rendering-js--css-without-the-middleware)
+
+- The [`ComponentRegistry`](../api#django_components.ComponentRegistry) settings [`RegistrySettings`](../api#django_components.RegistrySettings)
+  were lowercased to align with the global settings:
+  - `RegistrySettings.CONTEXT_BEHAVIOR` -> `RegistrySettings.context_behavior`
+  - `RegistrySettings.TAG_FORMATTER` -> `RegistrySettings.tag_formatter`
+
+  The old uppercase settings `CONTEXT_BEHAVIOR` and `TAG_FORMATTER` are deprecated and will be removed in v1.
 
 ## 🚨📢 v0.100
 
