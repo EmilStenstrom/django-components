@@ -37,6 +37,7 @@ class TagProtectedError(Exception):
     Thus, this exception is raised when a component is attempted to be registered under
     a forbidden name, such that it would overwrite one of django_component's own template tags.
     """
+
     pass
 
 

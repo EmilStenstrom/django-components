@@ -78,7 +78,7 @@ class EmptyDict(TypedDict):
     You can use this to define a [Component](../api#django_components.Component)
     that accepts NO kwargs, or NO slots, or returns NO data from
     [`Component.get_context_data()`](../api#django_components.Component.get_context_data)
-    / 
+    /
     [`Component.get_js_data()`](../api#django_components.Component.get_js_data)
     /
     [`Component.get_css_data()`](../api#django_components.Component.get_css_data):
