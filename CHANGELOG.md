@@ -63,6 +63,13 @@
 
 - For advanced use cases, use can omit the middleware and instead manage component JS and CSS dependencies yourself with [`render_dependencies`](https://github.com/EmilStenstrom/django-components#render_dependencies-and-deep-dive-into-rendering-js--css-without-the-middleware)
 
+- The [`ComponentRegistry`](../api#django_components.ComponentRegistry) settings [`RegistrySettings`](../api#django_components.RegistrySettings)
+  were lowercased to align with the global settings:
+  - `RegistrySettings.CONTEXT_BEHAVIOR` -> `RegistrySettings.context_behavior`
+  - `RegistrySettings.TAG_FORMATTER` -> `RegistrySettings.tag_formatter`
+
+  The old uppercase settings `CONTEXT_BEHAVIOR` and `TAG_FORMATTER` are deprecated and will be removed in v1.
+
 ## 🚨📢 v0.100
 
 #### BREAKING CHANGES

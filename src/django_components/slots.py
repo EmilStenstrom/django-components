@@ -193,12 +193,12 @@ class SlotNode(BaseNode):
             return context
 
         registry: "ComponentRegistry" = context[_REGISTRY_CONTEXT_KEY]
-        if registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.DJANGO:
+        if registry.settings.context_behavior == ContextBehavior.DJANGO:
             return context
-        elif registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
+        elif registry.settings.context_behavior == ContextBehavior.ISOLATED:
             return context[_ROOT_CTX_CONTEXT_KEY]
         else:
-            raise ValueError(f"Unknown value for CONTEXT_BEHAVIOR: '{registry.settings.CONTEXT_BEHAVIOR}'")
+            raise ValueError(f"Unknown value for context_behavior: '{registry.settings.context_behavior}'")
 
     def resolve_kwargs(
         self,

@@ -312,7 +312,7 @@ class ShorthandComponentFormatter(TagFormatterABC):
 def get_tag_formatter(registry: "ComponentRegistry") -> InternalTagFormatter:
     """Returns an instance of the currently configured component tag formatter."""
     # Allow users to configure the component TagFormatter
-    formatter_cls_or_str = registry.settings.TAG_FORMATTER
+    formatter_cls_or_str = registry.settings.tag_formatter
 
     if isinstance(formatter_cls_or_str, str):
         tag_formatter: TagFormatterABC = import_string(formatter_cls_or_str)
