@@ -7,16 +7,16 @@ from django_components.component_registry import all_registries
 
 class DynamicComponent(Component):
     """
-    Dynamic component - This component takes inputs and renders the outputs depending on the
-    `is` and `registry` arguments.
+    This component is given a registered name or a reference to another component,
+    and behaves as if the other component was in its place.
 
     The args, kwargs, and slot fills are all passed down to the underlying component.
 
     Args:
-        is (str | Type[Component]): Component that should be rendered. Either a name of a registered component,
-            or a Component class directly. Required.
-        registry (ComponentRegistry, optional): Specify the registry to search for the registered name. If omitted,
-            all registries are searched.
+        is (str | Type[Component]): Component that should be rendered. Either a registered name of a component,
+            or a [Component](../api#django_components.Component) class directly. Required.
+        registry (ComponentRegistry, optional): Specify the [registry](../api#django_components.ComponentRegistry)\
+            to search for the registered name. If omitted, all registries are searched until the first match.
         *args: Additional data passed to the component.
         **kwargs: Additional data passed to the component.
 
@@ -53,7 +53,7 @@ class DynamicComponent(Component):
     )
     ```
 
-    ### Use cases
+    # Use cases
 
     Dynamic components are suitable if you are writing something like a form component. You may design
     it such that users give you a list of input types, and you render components depending on the input types.
@@ -61,10 +61,12 @@ class DynamicComponent(Component):
     While you could handle this with a series of if / else statements, that's not an extensible approach.
     Instead, you can use the dynamic component in place of normal components.
 
-    ### Component name
+    # Component name
 
     By default, the dynamic component is registered under the name `"dynamic"`. In case of a conflict,
-    you can set the `COMPONENTS.dynamic_component_name` setting to change the name used for the dynamic components.
+    you can set the
+    [`COMPONENTS.dynamic_component_name`](../settings#django_components.app_settings.ComponentsSettings.dynamic_component_name)
+    setting to change the name used for the dynamic components.
 
     ```py
     # settings.py

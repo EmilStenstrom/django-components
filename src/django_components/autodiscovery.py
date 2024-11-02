@@ -16,13 +16,20 @@ def autodiscover(
     map_module: Optional[Callable[[str], str]] = None,
 ) -> List[str]:
     """
-    Search for component files and import them. Returns a list of module
-    paths of imported files.
+    Search for all python files in
+    [`COMPONENTS.dirs`](../settings#django_components.app_settings.ComponentsSettings.dirs)
+    and
+    [`COMPONENTS.app_dirs`](../settings#django_components.app_settings.ComponentsSettings.app_dirs)
+    and import them.
 
-    Autodiscover searches in the locations as defined by `Loader.get_dirs`.
+    See [Autodiscovery](../../concepts/fundamentals/autodiscovery).
 
-    You can map the module paths with `map_module` function. This serves
-    as an escape hatch for when you need to use this function in tests.
+    Args:
+        map_module (Callable[[str], str], optional): Map the module paths with `map_module` function.\
+        This serves as an escape hatch for when you need to use this function in tests.
+
+    Returns:
+        List[str]: A list of module paths of imported files.
     """
     dirs = get_component_dirs(include_apps=False)
     component_filepaths = search_dirs(dirs, "**/*.py")
@@ -79,10 +86,36 @@ def import_libraries(
     map_module: Optional[Callable[[str], str]] = None,
 ) -> List[str]:
     """
-    Import modules set in `COMPONENTS.libraries` setting.
+    Import modules set in
+    [`COMPONENTS.libraries`](../settings#django_components.app_settings.ComponentsSettings.libraries)
+    setting.
 
-    You can map the module paths with `map_module` function. This serves
-    as an escape hatch for when you need to use this function in tests.
+    See [Autodiscovery](../../concepts/fundamentals/autodiscovery).
+
+    Args:
+        map_module (Callable[[str], str], optional): Map the module paths with `map_module` function.\
+        This serves as an escape hatch for when you need to use this function in tests.
+
+    Returns:
+        List[str]: A list of module paths of imported files.
+
+    **Examples:**
+
+    Normal usage - load libraries after Django has loaded
+    ```python
+    from django_components import import_libraries
+    
+    class MyAppConfig(AppConfig):
+        def ready(self):
+            import_libraries()
+    ```
+
+    Potential usage in tests
+    ```python
+    from django_components import import_libraries
+    
+    import_libraries(lambda path: path.replace("tests.", "myapp."))
+    ```
     """
     from django_components.app_settings import app_settings
 
