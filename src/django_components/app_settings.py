@@ -1,12 +1,32 @@
 import re
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Literal, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Generic,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from django.conf import settings
 
+from django_components.util.misc import default
+
 if TYPE_CHECKING:
     from django_components.tag_formatter import TagFormatterABC
+
+
+T = TypeVar("T")
+
 
 ContextBehaviorType = Literal["django", "isolated"]
 
@@ -93,95 +113,134 @@ class ContextBehavior(str, Enum):
     """
 
 
-class AppSettings:
+# This is the source of truth for the settings that are available. If the documentation
+# or the defaults do NOT match this, they should be updated.
+class ComponentsSettings(NamedTuple):
+    autodiscover: Optional[bool] = None
+    dirs: Optional[Sequence[Union[str, Tuple[str, str]]]] = None
+    app_dirs: Optional[Sequence[str]] = None
+    context_behavior: Optional[ContextBehaviorType] = None
+    dynamic_component_name: Optional[str] = None
+    libraries: Optional[List[str]] = None
+    multiline_tags: Optional[bool] = None
+    reload_on_file_change: Optional[bool] = None
+    static_files_allowed: Optional[List[Union[str, re.Pattern]]] = None
+    forbidden_static_files: Optional[List[Union[str, re.Pattern]]] = None
+    tag_formatter: Optional[Union["TagFormatterABC", str]] = None
+    template_cache_size: Optional[int] = None
+
+
+# NOTE: Some defaults depend on the Django settings, which may not yet be
+# initialized at the time that these settings are generated. For such cases
+# we define the defaults as a factory function, and use the `Dynamic` class to
+# mark such fields.
+@dataclass(frozen=True)
+class Dynamic(Generic[T]):
+    getter: Callable[[], T]
+
+
+# This is the source of truth for the settings defaults. If the documentation
+# does NOT match it, the documentation should be updated.
+#
+# NOTE: Because we need to access Django settings to generate default dirs
+#       for `COMPONENTS.dirs`, we do it lazily.
+# NOTE 2: We show the defaults in the documentation, together with the comments
+#        (except for the `Dynamic` instances and comments like `type: ignore`).
+#        So `fmt: off` turns off Black formatting and `--snippet:defaults--` allows
+#        us to extract the snippet from the file.
+#
+# fmt: off
+# --snippet:defaults--
+defaults = ComponentsSettings(
+    autodiscover=True,
+    context_behavior=ContextBehavior.DJANGO.value, # "django" | "isolated"
+    # Root-level "components" dirs, e.g. `/path/to/proj/components/`
+    dirs=Dynamic(lambda: [Path(settings.BASE_DIR) / "components"]),  # type: ignore[arg-type]
+    # App-level "components" dirs, e.g. `[app]/components/`
+    app_dirs=["components"],
+    dynamic_component_name="dynamic",
+    libraries=[],  # E.g. ["mysite.components.forms", ...]
+    multiline_tags=True,
+    reload_on_file_change=False,
+    static_files_allowed=[
+        ".css",
+        ".js", ".jsx", ".ts", ".tsx",
+        # Images
+        ".apng", ".png", ".avif", ".gif", ".jpg",
+        ".jpeg",  ".jfif", ".pjpeg", ".pjp", ".svg",
+        ".webp", ".bmp", ".ico", ".cur", ".tif", ".tiff",
+        # Fonts
+        ".eot", ".ttf", ".woff", ".otf", ".svg",
+    ],
+    forbidden_static_files=[
+        # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
+        ".html", ".django", ".dj", ".tpl",
+        # Python files
+        ".py", ".pyc",
+    ],
+    tag_formatter="django_components.component_formatter",
+    template_cache_size=128,
+)
+# --endsnippet:defaults--
+# fmt: on
+
+
+class InternalSettings:
     @property
-    def settings(self) -> Dict:
-        return getattr(settings, "COMPONENTS", {})
+    def _settings(self) -> ComponentsSettings:
+        data = getattr(settings, "COMPONENTS", {})
+        return ComponentsSettings(**data) if not isinstance(data, ComponentsSettings) else data
 
     @property
     def AUTODISCOVER(self) -> bool:
-        return self.settings.get("autodiscover", True)
+        return default(self._settings.autodiscover, cast(bool, defaults.autodiscover))
 
     @property
-    def DIRS(self) -> List[Union[str, Tuple[str, str]]]:
-        base_dir_path = Path(settings.BASE_DIR)
-        return self.settings.get("dirs", [base_dir_path / "components"])
+    def DIRS(self) -> Sequence[Union[str, Tuple[str, str]]]:
+        # For DIRS we use a getter, because default values uses Django settings,
+        # which may not yet be initialized at the time these settings are generated.
+        default_fn = cast(Dynamic[Sequence[str | tuple[str, str]]], defaults.dirs)
+        default_dirs = default_fn.getter()
+        return default(self._settings.dirs, default_dirs)
 
     @property
-    def APP_DIRS(self) -> List[str]:
-        return self.settings.get("app_dirs", ["components"])
+    def APP_DIRS(self) -> Sequence[str]:
+        return default(self._settings.app_dirs, cast(List[str], defaults.app_dirs))
 
     @property
     def DYNAMIC_COMPONENT_NAME(self) -> str:
-        return self.settings.get("dynamic_component_name", "dynamic")
+        return default(self._settings.dynamic_component_name, cast(str, defaults.dynamic_component_name))
 
     @property
     def LIBRARIES(self) -> List[str]:
-        return self.settings.get("libraries", [])
+        return default(self._settings.libraries, cast(List[str], defaults.libraries))
 
     @property
     def MULTILINE_TAGS(self) -> bool:
-        return self.settings.get("multiline_tags", True)
+        return default(self._settings.multiline_tags, cast(bool, defaults.multiline_tags))
 
     @property
-    def RELOAD_ON_TEMPLATE_CHANGE(self) -> bool:
-        return self.settings.get("reload_on_template_change", False)
+    def RELOAD_ON_FILE_CHANGE(self) -> bool:
+        return default(self._settings.reload_on_file_change, cast(bool, defaults.reload_on_file_change))
 
     @property
     def TEMPLATE_CACHE_SIZE(self) -> int:
-        return self.settings.get("template_cache_size", 128)
+        return default(self._settings.template_cache_size, cast(int, defaults.template_cache_size))
 
     @property
-    def STATIC_FILES_ALLOWED(self) -> List[Union[str, re.Pattern]]:
-        default_static_files = [
-            ".css",
-            ".js",
-            # Images - See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types#common_image_file_types  # noqa: E501
-            ".apng",
-            ".png",
-            ".avif",
-            ".gif",
-            ".jpg",
-            ".jpeg",
-            ".jfif",
-            ".pjpeg",
-            ".pjp",
-            ".svg",
-            ".webp",
-            ".bmp",
-            ".ico",
-            ".cur",
-            ".tif",
-            ".tiff",
-            # Fonts - See https://stackoverflow.com/q/30572159/9788634
-            ".eot",
-            ".ttf",
-            ".woff",
-            ".otf",
-            ".svg",
-        ]
-        return self.settings.get("static_files_allowed", default_static_files)
+    def STATIC_FILES_ALLOWED(self) -> Sequence[Union[str, re.Pattern]]:
+        return default(self._settings.static_files_allowed, cast(List[str], defaults.static_files_allowed))
 
     @property
-    def STATIC_FILES_FORBIDDEN(self) -> List[Union[str, re.Pattern]]:
-        default_forbidden_static_files = [
-            ".html",
-            # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
-            ".django",
-            ".dj",
-            ".tpl",
-            # Python files
-            ".py",
-            ".pyc",
-        ]
-        return self.settings.get("forbidden_static_files", default_forbidden_static_files)
+    def STATIC_FILES_FORBIDDEN(self) -> Sequence[Union[str, re.Pattern]]:
+        return default(self._settings.forbidden_static_files, cast(List[str], defaults.forbidden_static_files))
 
     @property
     def CONTEXT_BEHAVIOR(self) -> ContextBehavior:
-        raw_value = self.settings.get("context_behavior", ContextBehavior.DJANGO.value)
+        raw_value = cast(str, default(self._settings.context_behavior, defaults.context_behavior))
         return self._validate_context_behavior(raw_value)
 
-    def _validate_context_behavior(self, raw_value: ContextBehavior) -> ContextBehavior:
+    def _validate_context_behavior(self, raw_value: Union[ContextBehavior, str]) -> ContextBehavior:
         try:
             return ContextBehavior(raw_value)
         except ValueError:
@@ -190,7 +249,8 @@ class AppSettings:
 
     @property
     def TAG_FORMATTER(self) -> Union["TagFormatterABC", str]:
-        return self.settings.get("tag_formatter", "django_components.component_formatter")
+        tag_formatter = default(self._settings.tag_formatter, cast(str, defaults.tag_formatter))
+        return cast(Union["TagFormatterABC", str], tag_formatter)
 
 
-app_settings = AppSettings()
+app_settings = InternalSettings()

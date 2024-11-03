@@ -1,12 +1,15 @@
 import glob
 import re
 from pathlib import Path
-from typing import Any, Callable, List, Sequence, Type, Union
+from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Union
 
 from django.template.defaultfilters import escape
 from django.utils.autoreload import autoreload_started
 
 from django_components.util.nanoid import generate
+
+
+T = TypeVar("T")
 
 
 # Based on nanoid implementation from
@@ -90,3 +93,7 @@ def escape_js_string_literal(js: str) -> str:
 
     escaped_js = JS_STRING_LITERAL_SPECIAL_CHARS_REGEX.sub(on_replace_match, escaped_js)
     return escaped_js
+
+
+def default(val: Optional[T], default: T) -> T:
+    return val if val is not None else default
