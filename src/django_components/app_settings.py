@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass
 from enum import Enum
+from os import PathLike
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -117,7 +118,7 @@ class ContextBehavior(str, Enum):
 # or the defaults do NOT match this, they should be updated.
 class ComponentsSettings(NamedTuple):
     autodiscover: Optional[bool] = None
-    dirs: Optional[Sequence[Union[str, Tuple[str, str]]]] = None
+    dirs: Optional[Sequence[Union[str, PathLike, Tuple[str, str], Tuple[str, PathLike]]]] = None
     app_dirs: Optional[Sequence[str]] = None
     context_behavior: Optional[ContextBehaviorType] = None
     dynamic_component_name: Optional[str] = None
@@ -196,7 +197,7 @@ class InternalSettings:
         return default(self._settings.autodiscover, cast(bool, defaults.autodiscover))
 
     @property
-    def DIRS(self) -> Sequence[Union[str, Tuple[str, str]]]:
+    def DIRS(self) -> Sequence[Union[str, PathLike, Tuple[str, str], Tuple[str, PathLike]]]:
         # For DIRS we use a getter, because default values uses Django settings,
         # which may not yet be initialized at the time these settings are generated.
         default_fn = cast(Dynamic[Sequence[str | tuple[str, str]]], defaults.dirs)
