@@ -147,7 +147,7 @@ class Dynamic(Generic[T]):
 #       for `COMPONENTS.dirs`, we do it lazily.
 # NOTE 2: We show the defaults in the documentation, together with the comments
 #        (except for the `Dynamic` instances and comments like `type: ignore`).
-#        So `fmt: off` turns off Black formatting and `--snippet:defaults--` allows
+#        So `fmt: off` turns off Black formatting and `snippet:defaults` allows
 #        us to extract the snippet from the file.
 #
 # fmt: off
