@@ -39,7 +39,8 @@ def cached_template(
             [`Template`](https://docs.djangoproject.com/en/5.1/topics/templates/#template). Required.
         template_cls (Type[Template], optional): Specify the Template class that should be instantiated.\
             Defaults to Django's [`Template`](https://docs.djangoproject.com/en/5.1/topics/templates/#template) class.
-        origin (Type[Origin], optional): Sets [`Template.Origin`](https://docs.djangoproject.com/en/5.1/howto/custom-template-backend/#origin-api-and-3rd-party-integration).
+        origin (Type[Origin], optional): Sets \
+            [`Template.Origin`](https://docs.djangoproject.com/en/5.1/howto/custom-template-backend/#origin-api-and-3rd-party-integration).
         name (Type[str], optional): Sets `Template.name`
         engine (Type[Any], optional): Sets `Template.engine`
 
@@ -60,7 +61,7 @@ def cached_template(
         engine=...
     )
     ```
-    """
+    """  # noqa: E501
     template = _create_template(template_cls or Template, template_string, engine)
 
     # Assign the origin and name separately, so the caching doesn't depend on them

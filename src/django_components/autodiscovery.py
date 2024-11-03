@@ -104,7 +104,7 @@ def import_libraries(
     Normal usage - load libraries after Django has loaded
     ```python
     from django_components import import_libraries
-    
+
     class MyAppConfig(AppConfig):
         def ready(self):
             import_libraries()
@@ -113,7 +113,7 @@ def import_libraries(
     Potential usage in tests
     ```python
     from django_components import import_libraries
-    
+
     import_libraries(lambda path: path.replace("tests.", "myapp."))
     ```
     """
