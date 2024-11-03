@@ -154,7 +154,7 @@ class Dynamic(Generic[T]):
 # --snippet:defaults--
 defaults = ComponentsSettings(
     autodiscover=True,
-    context_behavior=ContextBehavior.DJANGO.value, # "django" | "isolated"
+    context_behavior=ContextBehavior.DJANGO.value,  # "django" | "isolated"
     # Root-level "components" dirs, e.g. `/path/to/proj/components/`
     dirs=Dynamic(lambda: [Path(settings.BASE_DIR) / "components"]),  # type: ignore[arg-type]
     # App-level "components" dirs, e.g. `[app]/components/`
@@ -168,7 +168,7 @@ defaults = ComponentsSettings(
         ".js", ".jsx", ".ts", ".tsx",
         # Images
         ".apng", ".png", ".avif", ".gif", ".jpg",
-        ".jpeg",  ".jfif", ".pjpeg", ".pjp", ".svg",
+        ".jpeg", ".jfif", ".pjpeg", ".pjp", ".svg",
         ".webp", ".bmp", ".ico", ".cur", ".tif", ".tiff",
         # Fonts
         ".eot", ".ttf", ".woff", ".otf", ".svg",

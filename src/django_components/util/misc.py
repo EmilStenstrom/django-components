@@ -8,7 +8,6 @@ from django.utils.autoreload import autoreload_started
 
 from django_components.util.nanoid import generate
 
-
 T = TypeVar("T")
 
 
