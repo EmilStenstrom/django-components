@@ -2,12 +2,13 @@ from pathlib import Path
 
 from django.test import override_settings
 
+from django_components import ComponentsSettings
 from django_components.app_settings import app_settings
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
 
-setup_test_config()
+setup_test_config(components={"autodiscover": False})
 
 
 class SettingsTestCase(BaseTestCase):
@@ -27,3 +28,11 @@ class SettingsTestCase(BaseTestCase):
     @override_settings(BASE_DIR=Path("base_dir"))
     def test_works_when_base_dir_is_path(self):
         self.assertEqual(app_settings.DIRS, [Path("base_dir/components")])
+
+    @override_settings(COMPONENTS={"context_behavior": "isolated"})
+    def test_settings_as_dict(self):
+        self.assertEqual(app_settings.CONTEXT_BEHAVIOR, "isolated")
+
+    @override_settings(COMPONENTS=ComponentsSettings(context_behavior="isolated"))
+    def test_settings_as_instance(self):
+        self.assertEqual(app_settings.CONTEXT_BEHAVIOR, "isolated")

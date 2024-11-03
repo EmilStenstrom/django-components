@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from typing import List
 
+from django_components import ComponentsSettings
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -88,14 +90,14 @@ STATICFILES_FINDERS = [
 
 WSGI_APPLICATION = "sampleproject.wsgi.application"
 
-COMPONENTS = {
-    #    "autodiscover": True,
-    "dirs": [BASE_DIR / "components"],
-    #    "app_dirs": ["components"],
-    #    "libraries": [],
-    #    "template_cache_size": 128,
-    #    "context_behavior": "isolated",  # "django" | "isolated"
-}
+COMPONENTS = ComponentsSettings(
+    #    autodiscover=True,
+    dirs=[BASE_DIR / "components"],
+    #    app_dirs=["components"],
+    #    libraries=[],
+    #    template_cache_size=128,
+    #    context_behavior="isolated",  # "django" | "isolated"
+)
 
 
 # Database

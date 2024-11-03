@@ -48,6 +48,22 @@
     )
     ```
 
+#### Feat
+
+- Intellisense and mypy validation for settings:
+  
+  Instead of defining the `COMPONENTS` settings as a plain dict, you can use `ComponentsSettings`:
+
+  ```py
+  # settings.py
+  from django_components import ComponentsSettings
+
+  COMPONENTS = ComponentsSettings(
+      autodiscover=True,
+      ...
+  )
+  ```
+
 #### Fix
 
 - Slots defined with `{% fill %}` tags are now properly accessible via `self.input.slots` in `get_context_data()`
