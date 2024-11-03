@@ -200,7 +200,7 @@ class InternalSettings:
     def DIRS(self) -> Sequence[Union[str, PathLike, Tuple[str, str], Tuple[str, PathLike]]]:
         # For DIRS we use a getter, because default values uses Django settings,
         # which may not yet be initialized at the time these settings are generated.
-        default_fn = cast(Dynamic[Sequence[str | tuple[str, str]]], defaults.dirs)
+        default_fn = cast(Dynamic[Sequence[Union[str, Tuple[str, str]]]], defaults.dirs)
         default_dirs = default_fn.getter()
         return default(self._settings.dirs, default_dirs)
 
