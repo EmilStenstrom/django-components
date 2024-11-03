@@ -124,7 +124,7 @@ class ComponentsSettings(NamedTuple):
     dynamic_component_name: Optional[str] = None
     libraries: Optional[List[str]] = None
     multiline_tags: Optional[bool] = None
-    reload_on_file_change: Optional[bool] = None
+    reload_on_template_change: Optional[bool] = None
     static_files_allowed: Optional[List[Union[str, re.Pattern]]] = None
     forbidden_static_files: Optional[List[Union[str, re.Pattern]]] = None
     tag_formatter: Optional[Union["TagFormatterABC", str]] = None
@@ -162,7 +162,7 @@ defaults = ComponentsSettings(
     dynamic_component_name="dynamic",
     libraries=[],  # E.g. ["mysite.components.forms", ...]
     multiline_tags=True,
-    reload_on_file_change=False,
+    reload_on_template_change=False,
     static_files_allowed=[
         ".css",
         ".js", ".jsx", ".ts", ".tsx",
@@ -221,8 +221,8 @@ class InternalSettings:
         return default(self._settings.multiline_tags, cast(bool, defaults.multiline_tags))
 
     @property
-    def RELOAD_ON_FILE_CHANGE(self) -> bool:
-        return default(self._settings.reload_on_file_change, cast(bool, defaults.reload_on_file_change))
+    def RELOAD_ON_TEMPLATE_CHANGE(self) -> bool:
+        return default(self._settings.reload_on_template_change, cast(bool, defaults.reload_on_template_change))
 
     @property
     def TEMPLATE_CACHE_SIZE(self) -> int:
