@@ -3,8 +3,8 @@ import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from django.test import override_settings
 from django.conf import settings
+from django.test import override_settings
 
 from django_components.util.loader import _filepath_to_python_module, get_component_dirs, get_component_files
 
@@ -230,33 +230,33 @@ class ComponentFilesTest(BaseTestCase):
         self.assertEqual(
             dot_paths,
             [
-                'components',
-                'components.multi_file.multi_file',
-                'components.relative_file.relative_file',
-                'components.relative_file_pathobj.relative_file_pathobj',
-                'components.single_file',
-                'components.staticfiles.staticfiles',
-                'components.urls',
-                'django_components.components',
-                'django_components.components.dynamic',
-                'tests.test_app.components.app_lvl_comp.app_lvl_comp',
-            ]
+                "components",
+                "components.multi_file.multi_file",
+                "components.relative_file.relative_file",
+                "components.relative_file_pathobj.relative_file_pathobj",
+                "components.single_file",
+                "components.staticfiles.staticfiles",
+                "components.urls",
+                "django_components.components",
+                "django_components.components.dynamic",
+                "tests.test_app.components.app_lvl_comp.app_lvl_comp",
+            ],
         )
 
         self.assertEqual(
             [
-                file_paths[0].endswith('tests/components/__init__.py'),
-                file_paths[1].endswith('tests/components/multi_file/multi_file.py'),
-                file_paths[2].endswith('tests/components/relative_file/relative_file.py'),
-                file_paths[3].endswith('tests/components/relative_file_pathobj/relative_file_pathobj.py'),
-                file_paths[4].endswith('tests/components/single_file.py'),
-                file_paths[5].endswith('tests/components/staticfiles/staticfiles.py'),
-                file_paths[6].endswith('tests/components/urls.py'),
-                file_paths[7].endswith('django_components/components/__init__.py'),
-                file_paths[8].endswith('django_components/components/dynamic.py'),
-                file_paths[9].endswith('tests/test_app/components/app_lvl_comp/app_lvl_comp.py'),
+                file_paths[0].endswith("tests/components/__init__.py"),
+                file_paths[1].endswith("tests/components/multi_file/multi_file.py"),
+                file_paths[2].endswith("tests/components/relative_file/relative_file.py"),
+                file_paths[3].endswith("tests/components/relative_file_pathobj/relative_file_pathobj.py"),
+                file_paths[4].endswith("tests/components/single_file.py"),
+                file_paths[5].endswith("tests/components/staticfiles/staticfiles.py"),
+                file_paths[6].endswith("tests/components/urls.py"),
+                file_paths[7].endswith("django_components/components/__init__.py"),
+                file_paths[8].endswith("django_components/components/dynamic.py"),
+                file_paths[9].endswith("tests/test_app/components/app_lvl_comp/app_lvl_comp.py"),
             ],
-            [True for _ in range(len(file_paths))]
+            [True for _ in range(len(file_paths))],
         )
 
     @override_settings(
@@ -273,21 +273,21 @@ class ComponentFilesTest(BaseTestCase):
         self.assertEqual(
             dot_paths,
             [
-                'components.relative_file.relative_file',
-                'components.relative_file_pathobj.relative_file_pathobj',
-                'components.staticfiles.staticfiles',
-                'tests.test_app.components.app_lvl_comp.app_lvl_comp',
-            ]
+                "components.relative_file.relative_file",
+                "components.relative_file_pathobj.relative_file_pathobj",
+                "components.staticfiles.staticfiles",
+                "tests.test_app.components.app_lvl_comp.app_lvl_comp",
+            ],
         )
 
         self.assertEqual(
             [
-                file_paths[0].endswith('tests/components/relative_file/relative_file.js'),
-                file_paths[1].endswith('tests/components/relative_file_pathobj/relative_file_pathobj.js'),
-                file_paths[2].endswith('tests/components/staticfiles/staticfiles.js'),
-                file_paths[3].endswith('tests/test_app/components/app_lvl_comp/app_lvl_comp.js'),
+                file_paths[0].endswith("tests/components/relative_file/relative_file.js"),
+                file_paths[1].endswith("tests/components/relative_file_pathobj/relative_file_pathobj.js"),
+                file_paths[2].endswith("tests/components/staticfiles/staticfiles.js"),
+                file_paths[3].endswith("tests/test_app/components/app_lvl_comp/app_lvl_comp.js"),
             ],
-            [True for _ in range(len(file_paths))]
+            [True for _ in range(len(file_paths))],
         )
 
 
