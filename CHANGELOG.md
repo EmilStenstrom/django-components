@@ -91,7 +91,7 @@ importing them.
 
 - The setting `reload_on_template_change` was renamed to
   [`reload_on_file_change`](../settings#django_components.app_settings.ComponentsSettings#reload_on_file_change).
-  And now it triggers server reload when any file in `BASE_DIR` changes. The old name `reload_on_template_change`
+  And now it properly triggers server reload when any file in the component dirs change. The old name `reload_on_template_change`
   is deprecated and will be removed in v1.
 
 - The setting `forbidden_static_files` was renamed to
