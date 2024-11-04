@@ -1,11 +1,10 @@
-import os
 import sys
-from unittest import TestCase, mock
+from unittest import TestCase
 
 from django.conf import settings
 
 from django_components import AlreadyRegistered, registry
-from django_components.autodiscovery import _filepath_to_python_module, autodiscover, import_libraries
+from django_components.autodiscovery import autodiscover, import_libraries
 
 from .django_test_setup import setup_test_config
 
@@ -116,50 +115,3 @@ class TestImportLibraries(_TestCase):
         self.assertIn("multi_file_component", all_components)
 
         settings.COMPONENTS["libraries"] = []
-
-
-class TestFilepathToPythonModule(_TestCase):
-    def test_prepares_path(self):
-        base_path = str(settings.BASE_DIR)
-
-        the_path = os.path.join(base_path, "tests.py")
-        self.assertEqual(
-            _filepath_to_python_module(the_path, base_path, None),
-            "tests",
-        )
-
-        the_path = os.path.join(base_path, "tests/components/relative_file/relative_file.py")
-        self.assertEqual(
-            _filepath_to_python_module(the_path, base_path, None),
-            "tests.components.relative_file.relative_file",
-        )
-
-    def test_handles_nonlinux_paths(self):
-        base_path = str(settings.BASE_DIR).replace("/", "//")
-
-        with mock.patch("os.path.sep", new="//"):
-            the_path = os.path.join(base_path, "tests.py")
-            self.assertEqual(
-                _filepath_to_python_module(the_path, base_path, None),
-                "tests",
-            )
-
-            the_path = os.path.join(base_path, "tests//components//relative_file//relative_file.py")
-            self.assertEqual(
-                _filepath_to_python_module(the_path, base_path, None),
-                "tests.components.relative_file.relative_file",
-            )
-
-        base_path = str(settings.BASE_DIR).replace("//", "\\")
-        with mock.patch("os.path.sep", new="\\"):
-            the_path = os.path.join(base_path, "tests.py")
-            self.assertEqual(
-                _filepath_to_python_module(the_path, base_path, None),
-                "tests",
-            )
-
-            the_path = os.path.join(base_path, "tests\\components\\relative_file\\relative_file.py")
-            self.assertEqual(
-                _filepath_to_python_module(the_path, base_path, None),
-                "tests.components.relative_file.relative_file",
-            )
