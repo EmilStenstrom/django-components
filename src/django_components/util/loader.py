@@ -6,8 +6,8 @@ from typing import List, NamedTuple, Optional, Set, Union
 from django.apps import apps
 from django.conf import settings
 
-from django_components.util.logger import logger
 from django_components.app_settings import app_settings
+from django_components.util.logger import logger
 
 
 def get_component_dirs(include_apps: bool = True) -> List[Path]:
@@ -102,6 +102,7 @@ def get_component_dirs(include_apps: bool = True) -> List[Path]:
 
 class ComponentFileEntry(NamedTuple):
     """Result returned by [`get_component_files()`](../api#django_components.get_component_files)."""
+
     dot_path: str
     """The python import path for the module. E.g. `app.components.mycomp`"""
     filepath: Path
@@ -118,7 +119,7 @@ def get_component_files(suffix: Optional[str] = None) -> List[ComponentFileEntry
     Args:
         suffix (Optional[str], optional): The suffix to search for. E.g. `.py`, `.js`, `.css`.\
             Defaults to `None`, which will search for all files.
-    
+
     Returns:
         List[ComponentFileEntry] A list of entries that contain both the filesystem path and \
             the python import path (dot path).

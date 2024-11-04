@@ -1,6 +1,6 @@
 import re
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 from django.apps import AppConfig
 from django.utils.autoreload import file_changed, trigger_reload
