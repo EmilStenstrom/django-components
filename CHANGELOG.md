@@ -64,6 +64,9 @@
   )
   ```
 
+- Use `get_component_dirs()` and `get_component_files()` to get the same list of dirs / files that would be imported by `autodiscover()`, but without actually
+importing them.
+
 #### Fix
 
 - Slots defined with `{% fill %}` tags are now properly accessible via `self.input.slots` in `get_context_data()`
@@ -85,6 +88,17 @@
   - `RegistrySettings.TAG_FORMATTER` -> `RegistrySettings.tag_formatter`
 
   The old uppercase settings `CONTEXT_BEHAVIOR` and `TAG_FORMATTER` are deprecated and will be removed in v1.
+
+- The setting `reload_on_template_change` was renamed to
+  [`reload_on_file_change`](../settings#django_components.app_settings.ComponentsSettings#reload_on_file_change).
+  And now it triggers server reload when any file in `BASE_DIR` changes. The old name `reload_on_template_change`
+  is deprecated and will be removed in v1.
+
+- The setting `forbidden_static_files` was renamed to
+  [`static_files_forbidden`](../settings#django_components.app_settings.ComponentsSettings#static_files_forbidden)
+  to align with [`static_files_allowed`](../settings#django_components.app_settings.ComponentsSettings#static_files_allowed)
+  The old name `forbidden_static_files` is deprecated and will be removed in v1.
+
 
 ## 🚨📢 v0.100
 

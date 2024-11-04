@@ -1,15 +1,8 @@
 import importlib
-import os
-from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional
 
-from django.apps import apps
-from django.conf import settings
-
-from django_components.app_settings import app_settings
-from django_components.template_loader import get_component_dirs
+from django_components.util.loader import get_component_files
 from django_components.util.logger import logger
-from django_components.util.misc import search_dirs
 
 
 def autodiscover(
@@ -30,56 +23,19 @@ def autodiscover(
 
     Returns:
         List[str]: A list of module paths of imported files.
+
+    To get the same list of modules that `autodiscover()` would return, but without importing them, use
+    [`get_component_files()`](../api#django_components.get_component_files):
+
+    ```python
+    from django_components import get_component_files
+
+    modules = get_component_files(".py")
+    ```
     """
-    dirs = get_component_dirs(include_apps=False)
-    component_filepaths = search_dirs(dirs, "**/*.py")
-    logger.debug(f"Autodiscover found {len(component_filepaths)} files in component directories.")
-
-    if hasattr(settings, "BASE_DIR") and settings.BASE_DIR:
-        project_root = str(settings.BASE_DIR)
-    else:
-        # Fallback for getting the root dir, see https://stackoverflow.com/a/16413955/9788634
-        project_root = os.path.abspath(os.path.dirname(__name__))
-
-    modules: List[str] = []
-
-    # We handle dirs from `COMPONENTS.dirs` and from individual apps separately.
-    #
-    # Because for dirs in `COMPONENTS.dirs`, we assume they will be nested under `BASE_DIR`,
-    # and that `BASE_DIR` is the current working dir (CWD). So the path relatively to `BASE_DIR`
-    # is ALSO the python import path.
-    for filepath in component_filepaths:
-        module_path = _filepath_to_python_module(filepath, project_root, None)
-        # Ignore files starting with dot `.` or files in dirs that start with dot.
-        #
-        # If any of the parts of the path start with a dot, e.g. the filesystem path
-        # is `./abc/.def`, then this gets converted to python module as `abc..def`
-        #
-        # NOTE: This approach also ignores files:
-        #   - with two dots in the middle (ab..cd.py)
-        #   - an extra dot at the end (abcd..py)
-        #   - files outside of the parent component (../abcd.py).
-        # But all these are NOT valid python modules so that's fine.
-        if ".." in module_path:
-            continue
-
-        modules.append(module_path)
-
-    # For for apps, the directories may be outside of the project, e.g. in case of third party
-    # apps. So we have to resolve the python import path relative to the package name / the root
-    # import path for the app.
-    # See https://github.com/EmilStenstrom/django-components/issues/669
-    for conf in apps.get_app_configs():
-        for app_dir in app_settings.APP_DIRS:
-            comps_path = Path(conf.path).joinpath(app_dir)
-            if not comps_path.exists():
-                continue
-            app_component_filepaths = search_dirs([comps_path], "**/*.py")
-            for filepath in app_component_filepaths:
-                app_component_module = _filepath_to_python_module(filepath, conf.path, conf.name)
-                modules.append(app_component_module)
-
-    return _import_modules(modules, map_module)
+    modules = get_component_files(".py")
+    logger.debug(f"Autodiscover found {len(modules)} files in component directories.")
+    return _import_modules([entry.dot_path for entry in modules], map_module)
 
 
 def import_libraries(
@@ -137,43 +93,3 @@ def _import_modules(
         importlib.import_module(module_name)
         imported_modules.append(module_name)
     return imported_modules
-
-
-def _filepath_to_python_module(
-    file_path: Union[Path, str],
-    root_fs_path: Union[str, Path],
-    root_module_path: Optional[str],
-) -> str:
-    """
-    Derive python import path from the filesystem path.
-
-    Example:
-    - If project root is `/path/to/project`
-    - And file_path is `/path/to/project/app/components/mycomp.py`
-    - Then the path relative to project root is `app/components/mycomp.py`
-    - Which we then turn into python import path `app.components.mycomp`
-    """
-    rel_path = os.path.relpath(file_path, start=root_fs_path)
-    rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
-
-    # NOTE: `Path` normalizes paths to use `/` as separator, while `os.path`
-    # uses `os.path.sep`.
-    sep = os.path.sep if os.path.sep in rel_path_without_suffix else "/"
-    module_name = rel_path_without_suffix.replace(sep, ".")
-
-    # Combine with the base module path
-    full_module_name = f"{root_module_path}.{module_name}" if root_module_path else module_name
-    if full_module_name.endswith(".__init__"):
-        full_module_name = full_module_name[:-9]  # Remove the trailing `.__init__
-
-    return full_module_name
-
-
-def get_component_filepaths() -> List[Path]:
-    """
-    Get a list of filepaths that MAY contain component definitions.
-
-    These are all Python files (`.py`) that are found in `COMPONENT.dirs`.
-    """
-    dirs = get_component_dirs()
-    return search_dirs(dirs, "**/*.py")

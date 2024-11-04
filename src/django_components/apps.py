@@ -1,6 +1,9 @@
 import re
+from typing import Any
+from pathlib import Path
 
 from django.apps import AppConfig
+from django.utils.autoreload import file_changed, trigger_reload
 
 
 class ComponentsConfig(AppConfig):
@@ -13,8 +16,6 @@ class ComponentsConfig(AppConfig):
         from django_components.autodiscovery import autodiscover, import_libraries
         from django_components.component_registry import registry
         from django_components.components.dynamic import DynamicComponent
-        from django_components.template_loader import get_component_dirs
-        from django_components.util.misc import search_dirs, watch_files_for_autoreload
 
         # Import modules set in `COMPONENTS.libraries` setting
         import_libraries()
@@ -22,13 +23,10 @@ class ComponentsConfig(AppConfig):
         if app_settings.AUTODISCOVER:
             autodiscover()
 
-        # Watch template files for changes, so Django dev server auto-reloads
+        # Auto-reload Django dev server when any component files changes
         # See https://github.com/EmilStenstrom/django-components/discussions/567#discussioncomment-10273632
-        # And https://stackoverflow.com/questions/42907285/66673186#66673186
-        if app_settings.RELOAD_ON_TEMPLATE_CHANGE:
-            dirs = get_component_dirs(include_apps=False)
-            component_filepaths = search_dirs(dirs, "**/*")
-            watch_files_for_autoreload(component_filepaths)
+        if app_settings.RELOAD_ON_FILE_CHANGE:
+            _watch_component_files_for_autoreload()
 
         # Allow tags to span multiple lines. This makes it easier to work with
         # components inside Django templates, allowing us syntax like:
@@ -49,3 +47,19 @@ class ComponentsConfig(AppConfig):
 
         # Register the dynamic component under the name as given in settings
         registry.register(app_settings.DYNAMIC_COMPONENT_NAME, DynamicComponent)
+
+
+# See https://github.com/EmilStenstrom/django-components/issues/586#issue-2472678136
+def _watch_component_files_for_autoreload() -> None:
+    from django_components.util.loader import get_component_dirs
+
+    component_dirs = set(get_component_dirs())
+
+    def template_changed(sender: Any, file_path: Path, **kwargs: Any) -> None:
+        # Reload dev server if any of the file within `COMPONENTS.dirs` or `COMPONENTS.app_dirs` changed
+        for dir_path in file_path.parents:
+            if dir_path in component_dirs:
+                trigger_reload(file_path)
+                return
+
+    file_changed.connect(template_changed)

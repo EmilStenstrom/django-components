@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import override_settings
 
-from django_components.template_loader import get_component_dirs
+from django_components.util.loader import get_component_dirs, get_component_files
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase
@@ -12,7 +12,7 @@ from .testutils import BaseTestCase
 setup_test_config({"autodiscover": False})
 
 
-class TemplateLoaderTest(BaseTestCase):
+class ComponentDirsTest(BaseTestCase):
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve(),
     )
@@ -64,7 +64,7 @@ class TemplateLoaderTest(BaseTestCase):
             ("with_not_str_alias", 3),
         ],  # noqa
     )
-    @patch("django_components.template_loader.logger.warning")
+    @patch("django_components.util.loader.logger.warning")
     def test_get_dirs__components_dirs(self, mock_warning: MagicMock):
         mock_warning.reset_mock()
         dirs = sorted(get_component_dirs())
@@ -212,4 +212,78 @@ class TemplateLoaderTest(BaseTestCase):
                 Path(__file__).parent.resolve()
                 / "components",
             ],
+        )
+
+
+class ComponentFilesTest(BaseTestCase):
+    @override_settings(
+        BASE_DIR=Path(__file__).parent.resolve(),
+    )
+    def test_get_files__py(self):
+        files = sorted(get_component_files(".py"))
+
+        dot_paths = [f.dot_path for f in files]
+        file_paths = [str(f.filepath) for f in files]
+
+        self.assertEqual(
+            dot_paths,
+            [
+                'components',
+                'components.multi_file.multi_file',
+                'components.relative_file.relative_file',
+                'components.relative_file_pathobj.relative_file_pathobj',
+                'components.single_file',
+                'components.staticfiles.staticfiles',
+                'components.urls',
+                'django_components.components',
+                'django_components.components.dynamic',
+                'tests.test_app.components.app_lvl_comp.app_lvl_comp',
+            ]
+        )
+
+        self.assertEqual(
+            [
+                file_paths[0].endswith('tests/components/__init__.py'),
+                file_paths[1].endswith('tests/components/multi_file/multi_file.py'),
+                file_paths[2].endswith('tests/components/relative_file/relative_file.py'),
+                file_paths[3].endswith('tests/components/relative_file_pathobj/relative_file_pathobj.py'),
+                file_paths[4].endswith('tests/components/single_file.py'),
+                file_paths[5].endswith('tests/components/staticfiles/staticfiles.py'),
+                file_paths[6].endswith('tests/components/urls.py'),
+                file_paths[7].endswith('django_components/components/__init__.py'),
+                file_paths[8].endswith('django_components/components/dynamic.py'),
+                file_paths[9].endswith('tests/test_app/components/app_lvl_comp/app_lvl_comp.py'),
+            ],
+            [True for _ in range(len(file_paths))]
+        )
+
+    @override_settings(
+        BASE_DIR=Path(__file__).parent.resolve(),
+    )
+    def test_get_files__js(self):
+        files = sorted(get_component_files(".js"))
+
+        dot_paths = [f.dot_path for f in files]
+        file_paths = [str(f.filepath) for f in files]
+
+        print(file_paths)
+
+        self.assertEqual(
+            dot_paths,
+            [
+                'components.relative_file.relative_file',
+                'components.relative_file_pathobj.relative_file_pathobj',
+                'components.staticfiles.staticfiles',
+                'tests.test_app.components.app_lvl_comp.app_lvl_comp',
+            ]
+        )
+
+        self.assertEqual(
+            [
+                file_paths[0].endswith('tests/components/relative_file/relative_file.js'),
+                file_paths[1].endswith('tests/components/relative_file_pathobj/relative_file_pathobj.js'),
+                file_paths[2].endswith('tests/components/staticfiles/staticfiles.js'),
+                file_paths[3].endswith('tests/test_app/components/app_lvl_comp/app_lvl_comp.js'),
+            ],
+            [True for _ in range(len(file_paths))]
         )

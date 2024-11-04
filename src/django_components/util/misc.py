@@ -1,10 +1,7 @@
-import glob
 import re
-from pathlib import Path
-from typing import Any, Callable, List, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, List, Optional, Type, TypeVar
 
 from django.template.defaultfilters import escape
-from django.utils.autoreload import autoreload_started
 
 from django_components.util.nanoid import generate
 
@@ -36,35 +33,12 @@ def is_str_wrapped_in_quotes(s: str) -> bool:
     return s.startswith(('"', "'")) and s[0] == s[-1] and len(s) >= 2
 
 
-# See https://github.com/EmilStenstrom/django-components/issues/586#issue-2472678136
-def watch_files_for_autoreload(watch_list: Sequence[Union[str, Path]]) -> None:
-    def autoreload_hook(sender: Any, *args: Any, **kwargs: Any) -> None:
-        watch = sender.extra_files.add
-        for file in watch_list:
-            watch(Path(file))
-
-    autoreload_started.connect(autoreload_hook)
-
-
 def any_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
     return any(p.search(string) is not None for p in patterns)
 
 
 def no_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
     return all(p.search(string) is None for p in patterns)
-
-
-def search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:
-    """
-    Search the directories for the given glob pattern. Glob search results are returned
-    as a flattened list.
-    """
-    matched_files: List[Path] = []
-    for directory in dirs:
-        for path in glob.iglob(str(Path(directory) / search_glob), recursive=True):
-            matched_files.append(Path(path))
-
-    return matched_files
 
 
 # See https://stackoverflow.com/a/2020083/9788634
