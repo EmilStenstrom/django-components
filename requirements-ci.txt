@@ -42,7 +42,7 @@ pyproject-api==1.8.0
     # via tox
 requests==2.32.3
     # via -r requirements-ci.in
-tox==4.21.2
+tox==4.23.2
     # via
     #   -r requirements-ci.in
     #   tox-gh-actions
