@@ -91,7 +91,7 @@ markdown==3.7
     #   pymdown-extensions
 markdown-exec==1.9.3
     # via hatch.envs.docs
-markupsafe==2.1.5
+markupsafe==3.0.2
     # via
     #   jinja2
     #   mkdocs
