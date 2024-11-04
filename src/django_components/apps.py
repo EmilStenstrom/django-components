@@ -56,7 +56,7 @@ def _watch_component_files_for_autoreload() -> None:
     component_dirs = set(get_component_dirs())
 
     def template_changed(sender: Any, file_path: Path, **kwargs: Any) -> None:
-        # Reload dev server if any of the file within `COMPONENTS.dirs` or `COMPONENTS.app_dirs` changed
+        # Reload dev server if any of the files within `COMPONENTS.dirs` or `COMPONENTS.app_dirs` changed
         for dir_path in file_path.parents:
             if dir_path in component_dirs:
                 trigger_reload(file_path)

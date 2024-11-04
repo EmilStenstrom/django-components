@@ -48,7 +48,7 @@ def get_component_dirs(include_apps: bool = True) -> List[Path]:
     # TODO_REMOVE_IN_V1
     is_legacy_paths = (
         # Use value of `STATICFILES_DIRS` ONLY if `COMPONENT.dirs` not set
-        getattr(settings, "COMPONENTS", {}).get("dirs", None) is None
+        not app_settings.DIRS
         and hasattr(settings, "STATICFILES_DIRS")
         and settings.STATICFILES_DIRS
     )
