@@ -6,7 +6,7 @@ from typing import List, NamedTuple, Optional, Set, Union
 from django.apps import apps
 from django.conf import settings
 
-from django_components.app_settings import app_settings
+from django_components.app_settings import ComponentsSettings, app_settings
 from django_components.util.logger import logger
 
 
@@ -46,9 +46,17 @@ def get_component_dirs(include_apps: bool = True) -> List[Path]:
     component_dirs = app_settings.DIRS
 
     # TODO_REMOVE_IN_V1
+    raw_component_settings = getattr(settings, "COMPONENTS", {})
+    if isinstance(raw_component_settings, dict):
+        raw_dirs_value = raw_component_settings.get("dirs", None)
+    elif isinstance(raw_component_settings, ComponentsSettings):
+        raw_dirs_value = raw_component_settings.dirs
+    else:
+        raw_dirs_value = None
+    is_component_dirs_set = raw_dirs_value is not None
     is_legacy_paths = (
         # Use value of `STATICFILES_DIRS` ONLY if `COMPONENT.dirs` not set
-        not app_settings.DIRS
+        not is_component_dirs_set
         and hasattr(settings, "STATICFILES_DIRS")
         and settings.STATICFILES_DIRS
     )
@@ -56,6 +64,8 @@ def get_component_dirs(include_apps: bool = True) -> List[Path]:
         # NOTE: For STATICFILES_DIRS, we use the defaults even for empty list.
         # We don't do this for COMPONENTS.dirs, so user can explicitly specify "NO dirs".
         component_dirs = settings.STATICFILES_DIRS or [settings.BASE_DIR / "components"]
+    # END TODO_REMOVE_IN_V1
+
     source = "STATICFILES_DIRS" if is_legacy_paths else "COMPONENTS.dirs"
 
     logger.debug(
