@@ -124,7 +124,7 @@ class StaticFilesFinderTests(SimpleTestCase):
             "static_files_allowed": [
                 ".js",
             ],
-            "forbidden_static_files": [],
+            "static_files_forbidden": [],
         },
         STATICFILES_FINDERS=[
             # Default finders
@@ -153,7 +153,7 @@ class StaticFilesFinderTests(SimpleTestCase):
             "static_files_allowed": [
                 re.compile(r".*"),
             ],
-            "forbidden_static_files": [
+            "static_files_forbidden": [
                 re.compile(r"\.(?:js)$"),
             ],
         },
@@ -185,7 +185,7 @@ class StaticFilesFinderTests(SimpleTestCase):
                 ".js",
                 ".css",
             ],
-            "forbidden_static_files": [
+            "static_files_forbidden": [
                 ".js",
             ],
         },

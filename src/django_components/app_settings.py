@@ -124,9 +124,17 @@ class ComponentsSettings(NamedTuple):
     dynamic_component_name: Optional[str] = None
     libraries: Optional[List[str]] = None
     multiline_tags: Optional[bool] = None
+    # TODO_REMOVE_IN_V1
     reload_on_template_change: Optional[bool] = None
+    """Deprecated. Use `reload_on_file_change` instead."""
+
+    reload_on_file_change: Optional[bool] = None
     static_files_allowed: Optional[List[Union[str, re.Pattern]]] = None
+    # TODO_REMOVE_IN_V1
     forbidden_static_files: Optional[List[Union[str, re.Pattern]]] = None
+    """Deprecated. Use `static_files_forbidden` instead."""
+
+    static_files_forbidden: Optional[List[Union[str, re.Pattern]]] = None
     tag_formatter: Optional[Union["TagFormatterABC", str]] = None
     template_cache_size: Optional[int] = None
 
@@ -162,7 +170,7 @@ defaults = ComponentsSettings(
     dynamic_component_name="dynamic",
     libraries=[],  # E.g. ["mysite.components.forms", ...]
     multiline_tags=True,
-    reload_on_template_change=False,
+    reload_on_file_change=False,
     static_files_allowed=[
         ".css",
         ".js", ".jsx", ".ts", ".tsx",
@@ -173,7 +181,7 @@ defaults = ComponentsSettings(
         # Fonts
         ".eot", ".ttf", ".woff", ".otf", ".svg",
     ],
-    forbidden_static_files=[
+    static_files_forbidden=[
         # See https://marketplace.visualstudio.com/items?itemName=junstyle.vscode-django-support
         ".html", ".django", ".dj", ".tpl",
         # Python files
@@ -221,8 +229,13 @@ class InternalSettings:
         return default(self._settings.multiline_tags, cast(bool, defaults.multiline_tags))
 
     @property
-    def RELOAD_ON_TEMPLATE_CHANGE(self) -> bool:
-        return default(self._settings.reload_on_template_change, cast(bool, defaults.reload_on_template_change))
+    def RELOAD_ON_FILE_CHANGE(self) -> bool:
+        val = self._settings.reload_on_file_change
+        # TODO_REMOVE_IN_V1
+        if val is None:
+            val = self._settings.reload_on_template_change
+
+        return default(val, cast(bool, defaults.reload_on_file_change))
 
     @property
     def TEMPLATE_CACHE_SIZE(self) -> int:
@@ -234,7 +247,12 @@ class InternalSettings:
 
     @property
     def STATIC_FILES_FORBIDDEN(self) -> Sequence[Union[str, re.Pattern]]:
-        return default(self._settings.forbidden_static_files, cast(List[str], defaults.forbidden_static_files))
+        val = self._settings.static_files_forbidden
+        # TODO_REMOVE_IN_V1
+        if val is None:
+            val = self._settings.forbidden_static_files
+
+        return default(val, cast(List[str], defaults.static_files_forbidden))
 
     @property
     def CONTEXT_BEHAVIOR(self) -> ContextBehavior:

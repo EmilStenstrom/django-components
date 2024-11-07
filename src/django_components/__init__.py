@@ -29,6 +29,7 @@ from django_components.tag_formatter import (
 )
 from django_components.template import cached_template
 import django_components.types as types
+from django_components.util.loader import ComponentFileEntry, get_component_dirs, get_component_files
 from django_components.util.types import EmptyTuple, EmptyDict
 
 # isort: on
@@ -41,6 +42,7 @@ __all__ = [
     "ContextBehavior",
     "ComponentsSettings",
     "Component",
+    "ComponentFileEntry",
     "ComponentFormatter",
     "ComponentRegistry",
     "ComponentVars",
@@ -50,6 +52,8 @@ __all__ = [
     "DynamicComponent",
     "EmptyTuple",
     "EmptyDict",
+    "get_component_dirs",
+    "get_component_files",
     "import_libraries",
     "NotRegistered",
     "register",
