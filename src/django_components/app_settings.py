@@ -147,7 +147,7 @@ class ComponentsSettings(NamedTuple):
     autodiscover: Optional[bool] = None
     """
     Toggle whether to run [autodiscovery](../../concepts/fundamentals/autodiscovery) at the Django server startup.
-    
+
     Defaults to `True`
 
     ```python
@@ -272,7 +272,7 @@ class ComponentsSettings(NamedTuple):
     This may be useful if you are not using the [autodiscovery feature](../../concepts/fundamentals/autodiscovery),
     or you need to load components from non-standard locations. Thus you can have
     a structure of components that is independent from your apps.
-    
+
     Expects a list of python module paths. Defaults to empty list.
 
     **Example:**
@@ -360,9 +360,9 @@ class ComponentsSettings(NamedTuple):
     Defaults to `False`.
 
     !!! warning
-    
+
         This setting should be enabled only for the dev environment!
-    """
+    """  # noqa: E501
 
     static_files_allowed: Optional[List[Union[str, re.Pattern]]] = None
     """
@@ -374,7 +374,8 @@ class ComponentsSettings(NamedTuple):
 
     If a file is matched against any of the patterns, it's considered a static file. Such files are collected
     when running [`collectstatic`](https://docs.djangoproject.com/en/5.1/ref/contrib/staticfiles/#collectstatic),
-    and can be accessed under the [static file endpoint](https://docs.djangoproject.com/en/5.1/ref/settings/#static-url).
+    and can be accessed under the
+    [static file endpoint](https://docs.djangoproject.com/en/5.1/ref/settings/#static-url).
 
     You can also pass in compiled regexes ([`re.Pattern`](https://docs.python.org/3/library/re.html#re.Pattern))
     for more advanced patterns.
@@ -449,7 +450,7 @@ class ComponentsSettings(NamedTuple):
     """
     Configure what syntax is used inside Django templates to render components.
     See the [available tag formatters](../tag_formatters).
-    
+
     Defaults to `"django_components.component_formatter"`.
 
     Learn more about [Customizing component tags with TagFormatter](../../concepts/advanced/tag_formatter).
@@ -493,7 +494,7 @@ class ComponentsSettings(NamedTuple):
         ```
 
     - `django_components.component_shorthand_formatter`
-        
+
         Set
 
         ```python
@@ -533,7 +534,7 @@ class ComponentsSettings(NamedTuple):
         template_cache_size=256,
     )
     ```
-    
+
     To remove the cache limit altogether and cache everything, set `template_cache_size` to `None`.
 
     ```python
