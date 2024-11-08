@@ -23,21 +23,41 @@ Potential benefits:
 
 Django-components can be particularly useful for larger Django projects that require a more structured approach to UI development, without necessitating a shift to a separate frontend framework.
 
-## Summary
+## Quickstart
 
-It lets you create "template components", that contains both the template, the Javascript and the CSS needed to generate the front end code you need for a modern app. Use components like this:
+django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app. 
+
+Define a component in `components/calendar/calendar.py` like this:
+```python
+@register("calendar")
+class Calendar(Component):
+    template_name = "template.html"
+
+    def get_context_data(self, date):
+        return {"date": date}
+```
+
+With this `template.html` file:
 
 ```htmldjango
-{% component "calendar" date="2015-06-19" %}{% endcomponent %}
+<div class="calendar-component">Today's date is <span>{{ date }}</span></div>
 ```
 
-And this is what gets rendered (plus the CSS and Javascript you've specified):
+Use the component like this:
+
+```htmldjango
+{% component "calendar" date="2024-11-06" %}{% endcomponent %}
+```
+
+And this is what gets rendered:
 
 ```html
-<div class="calendar-component">Today's date is <span>2015-06-19</span></div>
+<div class="calendar-component">Today's date is <span>2024-11-06</span></div>
 ```
 
-[See the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject) or read on to learn about the details!
+Read on to learn about all the exciting details and configuration possibilities!
+
+(If you instead prefer to jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
 
 ## Table of Contents
 
