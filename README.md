@@ -55,7 +55,9 @@ And this is what gets rendered:
 <div class="calendar-component">Today's date is <span>2024-11-06</span></div>
 ```
 
-Read on to learn about the details!
+Read on to learn about all the exciting details and configuration possibilities!
+
+(If you instead prefer to jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
 
 ## Table of Contents
 
