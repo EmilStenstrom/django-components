@@ -214,7 +214,7 @@ urllib3==2.2.3
     # via requests
 verspec==0.1.0
     # via mike
-watchdog==5.0.3
+watchdog==6.0.0
     # via mkdocs
 wcmatch==10.0
     # via mkdocs-include-markdown-plugin
