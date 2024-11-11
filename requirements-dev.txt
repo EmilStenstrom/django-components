@@ -95,7 +95,7 @@ sqlparse==0.5.0
     # via django
 tox==4.23.2
     # via -r requirements-dev.in
-types-requests==2.32.0.20240914
+types-requests==2.32.0.20241016
     # via -r requirements-dev.in
 typing-extensions==4.10.0
     # via
