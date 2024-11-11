@@ -27,7 +27,7 @@ babel==2.16.0
     # via
     #   mkdocs-git-revision-date-localized-plugin
     #   mkdocs-material
-black==24.8.0
+black==24.10.0
     # via hatch.envs.docs
 bracex==2.5.post1
     # via wcmatch
