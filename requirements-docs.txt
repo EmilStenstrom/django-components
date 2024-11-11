@@ -150,7 +150,7 @@ mkdocstrings-python==1.12.2
     # via hatch.envs.docs
 mypy-extensions==1.0.0
     # via black
-packaging==24.1
+packaging==24.2
     # via
     #   black
     #   mkdocs
