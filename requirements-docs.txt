@@ -204,7 +204,7 @@ six==1.16.0
     # via python-dateutil
 smmap==5.0.1
     # via gitdb
-sqlparse==0.5.1
+sqlparse==0.5.2
     # via django
 tinycss2==1.4.0
     # via
