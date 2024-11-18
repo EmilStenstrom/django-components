@@ -147,7 +147,6 @@ class ComponentSlotContext:
     is_dynamic_component: bool
     default_slot: Optional[str]
     fills: Dict[SlotName, Slot]
-    slots: List[str]
 
     def post_render_validation(self) -> None:
         if self.is_dynamic_component:
@@ -296,11 +295,9 @@ class SlotNode(BaseNode):
                 f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
                 f"yet no fill is provided. Check template.'"
             )
-            remaining_fills = [
-                fill_name for fill_name in component_ctx.fills.keys() if fill_name not in component_ctx.slots
-            ]
-            if remaining_fills:
-                fuzzy_fill_name_matches = difflib.get_close_matches(fill_name, remaining_fills, n=1, cutoff=0.7)
+            fill_names = list(component_ctx.fills.keys())
+            if fill_names:
+                fuzzy_fill_name_matches = difflib.get_close_matches(fill_name, fill_names, n=1, cutoff=0.7)
                 if fuzzy_fill_name_matches:
                     msg += f"\nDid you mean '{fuzzy_fill_name_matches[0]}'?"
             raise TemplateSyntaxError(msg)

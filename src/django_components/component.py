@@ -680,13 +680,10 @@ class Component(
                 template_name=template.name,
                 fills=slots_untyped,
                 is_dynamic_component=getattr(self, "_is_dynamic_component", False),
-                # These two fields will be modified from within `SlotNodes.render()`:
-                # 1. All slots will be added to the `slots` list so at the end of the rendering
-                #    we can check if all slots were filled.
-                # 2. The `default_slot` will be set to the first slot that has the `default` attribute set.
-                #    If multiple slots have the `default` attribute set, yet have different name, then
-                #    we will raise an error.
-                slots=[],
+                # This field will be modified from within `SlotNodes.render()`:
+                # - The `default_slot` will be set to the first slot that has the `default` attribute set.
+                #   If multiple slots have the `default` attribute set, yet have different name, then
+                #   we will raise an error.
                 default_slot=None,
             )
 
