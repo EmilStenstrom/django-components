@@ -385,7 +385,7 @@ class ComponentSlotTests(BaseTestCase):
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "Slot 'title' of component 'test' was filled twice: once explicitly and once implicitly as 'default'"
+            "Slot 'title' of component 'test' was filled twice: once explicitly and once implicitly as 'default'",
         ):
             template.render(Context())
 
@@ -700,7 +700,7 @@ class ComponentSlotDefaultTests(BaseTestCase):
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "Component 'test_comp' passed default fill content (i.e. without explicit \'name\' kwarg), "
+            "Component 'test_comp' passed default fill content (i.e. without explicit 'name' kwarg), "
             "even though none of its slots is marked as 'default'",
         ):
             template.render(Context())
@@ -846,9 +846,7 @@ class PassthroughSlotsTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        with self.assertRaisesMessage(
-            TemplateSyntaxError, "Illegal content passed to component 'test'"
-        ):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Illegal content passed to component 'test'"):
             template.render(Context({"slot_names": ["header", "main"]}))
 
     @parametrize_context_behavior(["django", "isolated"])

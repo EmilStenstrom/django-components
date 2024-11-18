@@ -879,8 +879,7 @@ class ComponentRenderTest(BaseTestCase):
             """
 
         with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Slot 'first' is marked as 'required' (i.e. non-optional), yet no fill is provided."
+            TemplateSyntaxError, "Slot 'first' is marked as 'required' (i.e. non-optional), yet no fill is provided."
         ):
             SimpleComponent.render()
 
