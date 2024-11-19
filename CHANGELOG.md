@@ -211,6 +211,53 @@ importing them.
 
 #### Refactor
 
+- When you define multiple slots with the same name inside a template,
+  you now have set the `default` and `required` flags individually.
+  
+  ```htmldjango
+  <div class="calendar-component">
+      <div class="header">
+          {% slot "image" default required %}Image here{% endslot %}
+      </div>
+      <div class="body">
+          {% slot "image" default required %}Image here{% endslot %}
+      </div>
+  </div>
+  ```
+  
+  This means you can also have multiple slots with the same name but
+  different conditions.
+
+  E.g. in this example, we have a component that renders a user avatar
+  - a small circular image with a profile picture of name initials.
+
+  If the component is given `image_src` or `name_initials` variables,
+  the `image` slot is optional. But if neither of those are provided,
+  you MUST fill the `image` slot.
+
+  ```htmldjango
+  <div class="avatar">
+      {% if image_src %}
+          {% slot "image" default %}
+              <img src="{{ image_src }}" />
+          {% endslot %}
+      {% elif name_initials %}
+          {% slot "image" default required %}
+              <div style="
+                  border-radius: 25px;
+                  width: 50px;
+                  height: 50px;
+                  background: blue;
+              ">
+                  {{ name_initials }}
+              </div>
+          {% endslot %}
+      {% else %}
+          {% slot "image" default required / %}
+      {% endif %}
+  </div>
+  ```
+
 - The slot fills that were passed to a component and which can be accessed as `Component.input.slots`
   can now be passed through the Django template, e.g. as inputs to other tags.
 

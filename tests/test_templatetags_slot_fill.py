@@ -418,6 +418,67 @@ class ComponentSlotTests(BaseTestCase):
             template.render(Context())
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_multiple_slots_with_same_name_different_flags(self):
+        class TestComp(Component):
+            def get_context_data(self, required: bool) -> Any:
+                return {"required": required}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% if required %}
+                        <main>{% slot "main" required %}1{% endslot %}</main>
+                    {% endif %}
+                    <div>{% slot "main" default %}2{% endslot %}</div>
+                </div>
+            """
+
+        # 1. Specify the non-required slot by its name
+        rendered1 = TestComp.render(
+            kwargs={"required": False},
+            slots={
+                "main": "MAIN",
+            },
+            render_dependencies=False,
+        )
+
+        # 2. Specify the non-required slot by the "default" name
+        rendered2 = TestComp.render(
+            kwargs={"required": False},
+            slots={
+                "default": "MAIN",
+            },
+            render_dependencies=False,
+        )
+
+        self.assertInHTML(rendered1, "<div><div>MAIN</div></div>")
+        self.assertInHTML(rendered2, "<div><div>MAIN</div></div>")
+
+        # 3. Specify the required slot by its name
+        rendered3 = TestComp.render(
+            kwargs={"required": True},
+            slots={
+                "main": "MAIN",
+            },
+            render_dependencies=False,
+        )
+        self.assertInHTML(rendered3, "<div><main>MAIN</main><div>MAIN</div></div>")
+
+        # 4. RAISES: Specify the required slot by the "default" name
+        #    This raises because the slot that is marked as 'required' is NOT marked as 'default'.
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Slot 'main' is marked as 'required'",
+        ):
+            TestComp.render(
+                kwargs={"required": True},
+                slots={
+                    "default": "MAIN",
+                },
+                render_dependencies=False,
+            )
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_slot_in_include(self):
         @register("slotted")
         class SlottedWithIncludeComponent(Component):
