@@ -185,6 +185,8 @@ class ComponentSlotContext:
 
 
 class SlotNode(BaseNode):
+    """Node corresponding to `{% slot %}`"""
+
     def __init__(
         self,
         nodelist: NodeList,
@@ -383,11 +385,7 @@ class SlotNode(BaseNode):
 
 
 class FillNode(BaseNode):
-    """
-    Set when a `component` tag pair is passed template content that
-    excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
-    as 'default'.
-    """
+    """Node corresponding to `{% fill %}`"""
 
     def __init__(
         self,
