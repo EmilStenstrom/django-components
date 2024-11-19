@@ -478,7 +478,6 @@ class FillNode(BaseNode):
         return context.get(FILL_GEN_CONTEXT_KEY, None) is not None
 
     def _extract_fill(self, context: Context) -> None:
-        # This is part of the support for using for-loops and if / else for generating slot fills.
         # `FILL_GEN_CONTEXT_KEY` is only ever set when we are rendering content between the
         # `{% component %}...{% endcomponent %}` tags. This is done in order to collect all fill tags.
         # E.g.
