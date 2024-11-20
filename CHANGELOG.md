@@ -121,8 +121,8 @@ importing them.
   {% endcomponent %}
   ```
 
-- If you need to access the data or the default content of a default fill, you can omit
-  the `name` kwarg, or set it to `"default"`.
+- If you need to access the data or the default content of a default fill, you can
+  set the `name` kwarg to `"default"`.
 
   Previously, a default fill would be defined simply by omitting the `{% fill %}` tags:
 
@@ -143,15 +143,9 @@ importing them.
   {% endcomponent %}
   ```
 
-  Now, you can specify default tag by either omitting the `name` kwarg, or using `name="default"`:
+  Now, you can specify default tag by using `name="default"`:
 
   ```django
-  {% component "child" %}
-    {% fill data="data" %}
-      Hello {{ data.user.name }}
-    {% endfill %}
-  {% endcomponent %}
-
   {% component "child" %}
     {% fill name="default" data="data" %}
       Hello {{ data.user.name }}
@@ -212,7 +206,7 @@ importing them.
 #### Refactor
 
 - When you define multiple slots with the same name inside a template,
-  you now have set the `default` and `required` flags individually.
+  you now have to set the `default` and `required` flags individually.
   
   ```htmldjango
   <div class="calendar-component">

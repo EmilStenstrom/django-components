@@ -418,19 +418,6 @@ class FillNode(BaseNode):
         default_var = self._process_kwarg(kwargs, SLOT_DEFAULT_KWARG)
         data_var = self._process_kwarg(kwargs, SLOT_DATA_KWARG)
 
-        # Allow to target the default slot by not providing a name, but still using `{% fill %}`
-        # tag, so one can access the `data` and `default` vars.
-        # E.g.
-        # ```django
-        # {% component "mytable" %}
-        #   {% fill default="default" data="data" %}
-        #     {{ data.some_var }}
-        #   {% endfill %}
-        # {% endcomponent %}
-        # ```
-        if name is None:
-            name = DEFAULT_SLOT_KEY
-
         if not isinstance(name, str):
             raise TemplateSyntaxError(f"Fill tag '{SLOT_NAME_KWARG}' kwarg must resolve to a string, got {name}")
 

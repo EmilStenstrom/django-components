@@ -352,7 +352,7 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
         positional_only_args=[],
         pos_or_keyword_args=[SLOT_NAME_KWARG],
         keywordonly_args=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
-        optional_kwargs=[SLOT_NAME_KWARG, SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
+        optional_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
         repeatable_kwargs=False,
     )
 )
@@ -365,8 +365,8 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
 
     **Args:**
 
-    - `name` (str, optional): Name of the slot to insert this content into. If omitted, this slot
-        will be inserted into the default slot.
+    - `name` (str, required): Name of the slot to insert this content into. Use `"default"` for
+        the default slot.
     - `default` (str, optional): This argument allows you to access the original content of the slot
         under the specified variable name. See
         [Accessing original content of slots](../../concepts/fundamentals/slots#accessing-original-content-of-slots)
@@ -433,11 +433,11 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     ### Accessing slot data and default content on the default slot
 
     To access slot data and the default slot content on the default slot,
-    use `{% fill %}` without the `name` kwarg:
+    use `{% fill %}` with `name` set to `"default"`:
 
     ```django
     {% component "button" %}
-      {% fill data="slot_data" default="default_slot" %}
+      {% fill name="default" data="slot_data" default="default_slot" %}
         You clicked me {{ slot_data.count }} times!
         {{ default_slot }}
       {% endfill %}

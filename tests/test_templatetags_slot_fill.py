@@ -377,7 +377,7 @@ class ComponentSlotTests(BaseTestCase):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
-                {% fill %}Custom title{% endfill %}
+                {% fill "default" %}Custom title{% endfill %}
                 {% fill "title" %}Another title{% endfill %}
             {% endcomponent %}
         """
@@ -404,7 +404,7 @@ class ComponentSlotTests(BaseTestCase):
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test' %}
-                {% fill %}Custom title{% endfill %}
+                {% fill "default" %}Custom title{% endfill %}
                 {% fill "default" %}Another title{% endfill %}
             {% endcomponent %}
         """
@@ -1587,7 +1587,7 @@ class ScopedSlotTest(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             {% component "test" %}
-                {% fill data="slot_data_in_fill" default="slot_var" %}
+                {% fill name="default" data="slot_data_in_fill" default="slot_var" %}
                     {{ slot_data_in_fill.abc }}
                     {{ slot_var }}
                     {{ slot_data_in_fill.var123 }}
