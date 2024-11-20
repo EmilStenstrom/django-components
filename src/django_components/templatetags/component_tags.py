@@ -18,7 +18,6 @@ import django.template
 from django.template.base import NodeList, Parser, TextNode, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
-from django.utils.text import smart_split
 
 from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY, HtmlAttrsNode
 from django_components.component import COMP_ONLY_FLAG, ComponentNode
@@ -53,6 +52,7 @@ from django_components.tag_formatter import get_tag_formatter
 from django_components.template_parser import parse_bits
 from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
+from django_components.util.tag_parser import parse_tag_attrs
 
 # NOTE: Variable name `register` is required by Django to recognize this as a template tag library
 # See https://docs.djangoproject.com/en/dev/howto/custom-template-tags
@@ -1035,8 +1035,29 @@ def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
 
 
 def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
+    # Since the nested tags MUST be wrapped in quotes, e.g.
+    # `{% component 'test' "{% lorem var_a w %}" %}`
+    # `{% component 'test' key="{% lorem var_a w %}" %}`
+    #
+    # We can parse the tag's tokens so we can find the last one, and so we consider
+    # the unclosed `{%` only for the last bit.
+    _, attrs = parse_tag_attrs(block_token.contents)
+
+    # If there are no attributes, then there are no nested tags
+    if not attrs:
+        return
+
+    last_attr = attrs[-1]
+    last_token = last_attr.value
+
+    # User probably forgot to wrap the nested tag in quotes, or this is the end of the input.
+    # `{% component ... key={% nested %} %}`
+    # `{% component ... key= %}`
+    if not last_token:
+        return
+
     # When our template tag contains a nested tag, e.g.:
-    # `{% component 'test' "{% lorem var_a w %}"`
+    # `{% component 'test' "{% lorem var_a w %}" %}`
     #
     # Django parses this into:
     # `TokenType.BLOCK: 'component 'test'     "{% lorem var_a w'`
@@ -1044,7 +1065,7 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     # Above you can see that the token ends at the end of the NESTED tag,
     # and includes `{%`. So that's what we use to identify if we need to fix
     # nested tags or not.
-    has_unclosed_tag = block_token.contents.count("{%") > block_token.contents.count("%}")
+    has_unclosed_tag = last_token.count("{%") > last_token.count("%}")
 
     # Moreover we need to also check for unclosed quotes for this edge case:
     # `{% component 'test' "{%}" %}`
@@ -1060,9 +1081,7 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     #
     # There is 3 double quotes, but if the contents get split at the first `%}`
     # then there will be a single unclosed double quote in the last bit.
-    # Hence, for this we use Django's `smart_split()`, which can detect quoted text.
-    last_bit = list(smart_split(block_token.contents))[-1]
-    has_unclosed_quote = last_bit.count("'") % 2 or last_bit.count('"') % 2
+    has_unclosed_quote = not last_attr.quoted and last_token and last_token[0] in ('"', "'")
 
     needs_fixing = has_unclosed_tag or has_unclosed_quote
 
