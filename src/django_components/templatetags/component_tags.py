@@ -1065,25 +1065,28 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     # Above you can see that the token ends at the end of the NESTED tag,
     # and includes `{%`. So that's what we use to identify if we need to fix
     # nested tags or not.
-    has_unclosed_tag = last_token.count("{%") > last_token.count("%}")
+    has_unclosed_tag = (
+        (last_token.count("{%") > last_token.count("%}"))
+        # Moreover we need to also check for unclosed quotes for this edge case:
+        # `{% component 'test' "{%}" %}`
+        #
+        # Which Django parses this into:
+        # `TokenType.BLOCK: 'component 'test'  "{'`
+        #
+        # Here we cannot see any unclosed tags, but there is an unclosed double quote at the end.
+        #
+        # But we cannot naively search the full contents for unclosed quotes, but
+        # only within the last 'bit'. Consider this:
+        # `{% component 'test' '"' "{%}" %}`
+        #
+        or (last_token in ("'{", '"{'))
+    )
 
-    # Moreover we need to also check for unclosed quotes for this edge case:
-    # `{% component 'test' "{%}" %}`
-    #
-    # Which Django parses this into:
-    # `TokenType.BLOCK: 'component 'test'  "{'`
-    #
-    # Here we cannot see any unclosed tags, but there is an unclosed double quote at the end.
-    #
-    # But we cannot naively search the full contents for unclosed quotes, but
-    # only within the last 'bit'. Consider this:
-    # `{% component 'test' '"' "{%}" %}`
-    #
     # There is 3 double quotes, but if the contents get split at the first `%}`
     # then there will be a single unclosed double quote in the last bit.
     has_unclosed_quote = not last_attr.quoted and last_token and last_token[0] in ('"', "'")
 
-    needs_fixing = has_unclosed_tag or has_unclosed_quote
+    needs_fixing = has_unclosed_tag and has_unclosed_quote
 
     if not needs_fixing:
         return
