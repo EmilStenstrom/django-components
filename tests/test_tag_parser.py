@@ -9,64 +9,86 @@ setup_test_config({"autodiscover": False})
 class TagParserTests(BaseTestCase):
     def test_tag_parser(self):
         _, attrs = parse_tag_attrs("component 'my_comp' key=val key2='val2 two' ")
-        self.assertEqual(attrs, [
-            TagAttr(key=None, value='component', start_index=0, quoted=False),
-            TagAttr(key=None, value='my_comp', start_index=10, quoted=True),
-            TagAttr(key='key', value='val', start_index=20, quoted=False),
-            TagAttr(key='key2', value='val2 two', start_index=28, quoted=True),
-        ])
+        self.assertEqual(
+            attrs,
+            [
+                TagAttr(key=None, value="component", start_index=0, quoted=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
+                TagAttr(key="key", value="val", start_index=20, quoted=False),
+                TagAttr(key="key2", value="val2 two", start_index=28, quoted=True),
+            ],
+        )
 
     def test_tag_parser_nested_quotes(self):
         _, attrs = parse_tag_attrs("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" ")
-        self.assertEqual(attrs, [
-            TagAttr(key=None, value='component', start_index=0, quoted=False),
-            TagAttr(key=None, value='my_comp', start_index=10, quoted=True),
-            TagAttr(key='key', value='val', start_index=20, quoted=False),
-            TagAttr(key='key2', value='val2 "two"', start_index=28, quoted=True),
-            TagAttr(key='text', value="organisation's", start_index=46, quoted=True)
-        ])
+        self.assertEqual(
+            attrs,
+            [
+                TagAttr(key=None, value="component", start_index=0, quoted=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
+                TagAttr(key="key", value="val", start_index=20, quoted=False),
+                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted=True),
+                TagAttr(key="text", value="organisation's", start_index=46, quoted=True),
+            ],
+        )
 
     def test_tag_parser_trailing_quote_single(self):
         _, attrs = parse_tag_attrs("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" 'abc")
 
-        self.assertEqual(attrs, [
-            TagAttr(key=None, value='component', start_index=0, quoted=False),
-            TagAttr(key=None, value='my_comp', start_index=10, quoted=True),
-            TagAttr(key='key', value='val', start_index=20, quoted=False),
-            TagAttr(key='key2', value='val2 "two"', start_index=28, quoted=True),
-            TagAttr(key='text', value="organisation's", start_index=46, quoted=True),
-            TagAttr(key=None, value="'abc", start_index=68, quoted=False),
-        ])
+        self.assertEqual(
+            attrs,
+            [
+                TagAttr(key=None, value="component", start_index=0, quoted=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
+                TagAttr(key="key", value="val", start_index=20, quoted=False),
+                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted=True),
+                TagAttr(key="text", value="organisation's", start_index=46, quoted=True),
+                TagAttr(key=None, value="'abc", start_index=68, quoted=False),
+            ],
+        )
 
     def test_tag_parser_trailing_quote_double(self):
         _, attrs = parse_tag_attrs('component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' "abc')
-        self.assertEqual(attrs, [
-            TagAttr(key=None, value='component', start_index=0, quoted=False),
-            TagAttr(key=None, value='my_comp', start_index=10, quoted=True),
-            TagAttr(key='key', value='val', start_index=20, quoted=False),
-            TagAttr(key='key2', value="val2 'two'", start_index=28, quoted=True),
-            TagAttr(key='text', value='organisation"s', start_index=46, quoted=True),
-            TagAttr(key=None, value='"abc', start_index=68, quoted=False),
-        ])
+        self.assertEqual(
+            attrs,
+            [
+                TagAttr(key=None, value="component", start_index=0, quoted=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
+                TagAttr(key="key", value="val", start_index=20, quoted=False),
+                TagAttr(key="key2", value="val2 'two'", start_index=28, quoted=True),
+                TagAttr(key="text", value='organisation"s', start_index=46, quoted=True),
+                TagAttr(key=None, value='"abc', start_index=68, quoted=False),
+            ],
+        )
 
     def test_tag_parser_trailing_quote_as_value_single(self):
-        _, attrs = parse_tag_attrs("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" value='abc")
-        self.assertEqual(attrs, [
-            TagAttr(key=None, value='component', start_index=0, quoted=False),
-            TagAttr(key=None, value='my_comp', start_index=10, quoted=True),
-            TagAttr(key='key', value='val', start_index=20, quoted=False),
-            TagAttr(key='key2', value='val2 "two"', start_index=28, quoted=True),
-            TagAttr(key='text', value="organisation's", start_index=46, quoted=True),
-            TagAttr(key="value", value="'abc", start_index=68, quoted=False),
-        ])
+        _, attrs = parse_tag_attrs(
+            "component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" value='abc"
+        )
+        self.assertEqual(
+            attrs,
+            [
+                TagAttr(key=None, value="component", start_index=0, quoted=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
+                TagAttr(key="key", value="val", start_index=20, quoted=False),
+                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted=True),
+                TagAttr(key="text", value="organisation's", start_index=46, quoted=True),
+                TagAttr(key="value", value="'abc", start_index=68, quoted=False),
+            ],
+        )
 
     def test_tag_parser_trailing_quote_as_value_double(self):
-        _, attrs = parse_tag_attrs('component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' value="abc')
-        self.assertEqual(attrs, [
-            TagAttr(key=None, value='component', start_index=0, quoted=False),
-            TagAttr(key=None, value='my_comp', start_index=10, quoted=True),
-            TagAttr(key='key', value='val', start_index=20, quoted=False),
-            TagAttr(key='key2', value="val2 'two'", start_index=28, quoted=True),
-            TagAttr(key='text', value='organisation"s', start_index=46, quoted=True),
-            TagAttr(key='value', value='"abc', start_index=68, quoted=False),
-        ])
+        _, attrs = parse_tag_attrs(
+            'component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' value="abc'
+        )
+        self.assertEqual(
+            attrs,
+            [
+                TagAttr(key=None, value="component", start_index=0, quoted=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
+                TagAttr(key="key", value="val", start_index=20, quoted=False),
+                TagAttr(key="key2", value="val2 'two'", start_index=28, quoted=True),
+                TagAttr(key="text", value='organisation"s', start_index=46, quoted=True),
+                TagAttr(key="value", value='"abc', start_index=68, quoted=False),
+            ],
+        )

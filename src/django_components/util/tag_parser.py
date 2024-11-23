@@ -71,11 +71,7 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
     # tag_name = take_until([" ", "\t", "\n", "\r", "\f", ">", "/>"])
     def take_until(
         tokens: Sequence[Union[str, Tuple[str, ...]]],
-        ignore: Optional[
-            Sequence[
-                Union[str, Tuple[str, ...]],
-            ]
-        ] = None,
+        ignore: Optional[Sequence[Union[str, Tuple[str, ...]],]] = None,
     ) -> str:
         nonlocal index
         nonlocal text
