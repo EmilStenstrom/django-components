@@ -64,7 +64,7 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
 
     def taken_n(n: int) -> str:
         nonlocal index
-        result = text[index : index + n]
+        result = text[index : index + n]  # noqa: E203
         add_token(result)
         return result
 
@@ -156,7 +156,7 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
         # for the quotes.
         if is_next_token("'", '"', '_("', "_('"):
             # NOTE: Strings may be wrapped in `_()` to allow for translation.
-            # See https://docs.djangoproject.com/en/5.1/topics/i18n/translation/#string-literals-passed-to-tags-and-filters
+            # See https://docs.djangoproject.com/en/5.1/topics/i18n/translation/#string-literals-passed-to-tags-and-filters  # noqa: E501
             if is_next_token("_("):
                 taken_n(2)  # _(
                 is_translation = True
