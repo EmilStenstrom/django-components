@@ -48,7 +48,6 @@ from django_components.slots import (
     SLOT_REQUIRED_KEYWORD,
     FillNode,
     SlotNode,
-    parse_slot_fill_nodes_from_component_nodelist,
 )
 from django_components.tag_formatter import get_tag_formatter
 from django_components.template_parser import parse_bits
@@ -366,7 +365,8 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
 
     **Args:**
 
-    - `name` (str, required): Name of the slot to insert this content into.
+    - `name` (str, required): Name of the slot to insert this content into. Use `"default"` for
+        the default slot.
     - `default` (str, optional): This argument allows you to access the original content of the slot
         under the specified variable name. See
         [Accessing original content of slots](../../concepts/fundamentals/slots#accessing-original-content-of-slots)
@@ -384,7 +384,8 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     {% endcomponent %}
     ```
 
-    Accessing slot's default content with the `default` kwarg:
+    ### Accessing slot's default content with the `default` kwarg
+
     ```django
     {# my_table.html #}
     <table>
@@ -405,7 +406,8 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     {% endcomponent %}
     ```
 
-    Accessing slot's data with the `data` kwarg:
+    ### Accessing slot's data with the `data` kwarg
+
     ```django
     {# my_table.html #}
     <table>
@@ -424,6 +426,20 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
               {{ page.index }}
             </a>
         {% endfor %}
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    ### Accessing slot data and default content on the default slot
+
+    To access slot data and the default slot content on the default slot,
+    use `{% fill %}` with `name` set to `"default"`:
+
+    ```django
+    {% component "button" %}
+      {% fill name="default" data="slot_data" default="default_slot" %}
+        You clicked me {{ slot_data.count }} times!
+        {{ default_slot }}
       {% endfill %}
     {% endcomponent %}
     ```
@@ -591,19 +607,13 @@ def component(
     trace_msg("PARSE", "COMP", result.component_name, tag.id)
 
     body = tag.parse_body()
-    fill_nodes = parse_slot_fill_nodes_from_component_nodelist(tuple(body), ignored_nodes=(ComponentNode,))
-
-    # Tag all fill nodes as children of this particular component instance
-    for node in fill_nodes:
-        trace_msg("ASSOC", "FILL", node.trace_id, node.node_id, component_id=tag.id)
-        node.component_id = tag.id
 
     component_node = ComponentNode(
         name=result.component_name,
         args=tag.args,
         kwargs=tag.kwargs,
         isolated_context=isolated_context,
-        fill_nodes=fill_nodes,
+        nodelist=body,
         node_id=tag.id,
         registry=registry,
     )
@@ -702,7 +712,7 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     trace_msg("PARSE", "PROVIDE", trace_id, tag.id)
 
     body = tag.parse_body()
-    slot_node = ProvideNode(
+    provide_node = ProvideNode(
         nodelist=body,
         node_id=tag.id,
         kwargs=tag.kwargs,
@@ -710,7 +720,7 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     )
 
     trace_msg("PARSE", "PROVIDE", trace_id, tag.id, "...Done!")
-    return slot_node
+    return provide_node
 
 
 @register.tag("html_attrs")

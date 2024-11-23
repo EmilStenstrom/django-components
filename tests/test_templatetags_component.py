@@ -429,7 +429,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_raises_on_invalid_slots(self):
+    def test_ignores_invalid_slots(self):
         class SimpleSlottedComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
@@ -461,11 +461,15 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-
-        with self.assertRaisesMessage(
-            TemplateSyntaxError, "Component \\'dynamic\\' passed fill that refers to undefined slot: \\'three\\'"
-        ):
-            template.render(Context({}))
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong>variable</strong>
+            Slot 1: HELLO_FROM_SLOT_1
+            Slot 2:
+            """,
+        )
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_raises_on_invalid_args(self):
@@ -664,7 +668,7 @@ class ComponentTemplateSyntaxErrorTests(BaseTestCase):
         Template(template_str)
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_text_outside_fill_tag_is_not_error(self):
+    def test_text_outside_fill_tag_is_not_error_when_no_fill_tags(self):
         # As of v0.28 this is valid, provided the component registered under "test"
         # contains a slot tag marked as 'default'. This is verified outside
         # template compilation time.
@@ -677,21 +681,28 @@ class ComponentTemplateSyntaxErrorTests(BaseTestCase):
         Template(template_str)
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_nonfill_block_outside_fill_tag_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
-            template_str: types.django_html = """
-                {% load component_tags %}
-                {% component "test" %}
-                    {% if True %}
-                        {% fill "header" %}{% endfill %}
-                    {% endif %}
-                {% endcomponent %}
-            """
-            Template(template_str)
+    def test_text_outside_fill_tag_is_error_when_fill_tags(self):
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% lorem 3 w random %}
+                {% fill "header" %}{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Illegal content passed to component 'test'. Explicit 'fill' tags cannot occur alongside other text",
+        ):
+            template.render(Context())
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_unclosed_component_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Unclosed tag on line 3: 'component'",
+        ):
             template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}

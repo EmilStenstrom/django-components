@@ -1220,7 +1220,7 @@ This behavior is similar to [slots in Vue](https://vuejs.org/guide/components/sl
 In the example below we introduce two block tags that work hand in hand to make this work. These are...
 
 - `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
-- `{% fill <name> %}`/`{% endfill %}`: (Used inside a `component` tag pair.) Fills a declared slot with the specified content.
+- `{% fill <name> %}`/`{% endfill %}`: (Used inside a `{% component %}` tag pair.) Fills a declared slot with the specified content.
 
 Let's update our calendar component to support more customization. We'll add `slot` tag pairs to its template, _template.html_.
 
@@ -1239,7 +1239,9 @@ When using the component, you specify which slots you want to fill and where you
 
 ```htmldjango
 {% component "calendar" date="2020-06-06" %}
-    {% fill "body" %}Can you believe it's already <span>{{ date }}</span>??{% endfill %}
+    {% fill "body" %}
+        Can you believe it's already <span>{{ date }}</span>??
+    {% endfill %}
 {% endcomponent %}
 ```
 
@@ -1256,13 +1258,53 @@ Since the 'header' fill is unspecified, it's taken from the base template. If yo
 </div>
 ```
 
+### Named slots
+
+As seen in the previouse section, you can use `{% fill slot_name %}` to insert content into a specific
+slot.
+
+You can define fills for multiple slot simply by defining them all within the `{% component %} {% endcomponent %}`
+tags:
+
+```htmldjango
+{% component "calendar" date="2020-06-06" %}
+    {% fill "header" %}
+        Hi this is header!
+    {% endfill %}
+    {% fill "body" %}
+        Can you believe it's already <span>{{ date }}</span>??
+    {% endfill %}
+{% endcomponent %}
+```
+
+You can also use `{% for %}`, `{% with %}`, or other tags (even `{% include %}`)
+to construct the `{% fill %}` tags, **as long as these other tags do not leave any text behind!**
+
+```django
+{% component "table" %}
+  {% for slot_name in slots %}
+    {% fill name=slot_name %}
+      {{ slot_name }}
+    {% endfill %}
+  {% endfor %}
+
+  {% with slot_name="abc" %}
+    {% fill name=slot_name %}
+      {{ slot_name }}
+    {% endfill %}
+  {% endwith %}
+{% endcomponent %}
+```
+
 ### Default slot
 
 _Added in version 0.28_
 
 As you can see, component slots lets you write reusable containers that you fill in when you use a component. This makes for highly reusable components that can be used in different circumstances.
 
-It can become tedious to use `fill` tags everywhere, especially when you're using a component that declares only one slot. To make things easier, `slot` tags can be marked with an optional keyword: `default`. When added to the end of the tag (as shown below), this option lets you pass filling content directly in the body of a `component` tag pair – without using a `fill` tag. Choose carefully, though: a component template may contain at most one slot that is marked as `default`. The `default` option can be combined with other slot options, e.g. `required`.
+It can become tedious to use `fill` tags everywhere, especially when you're using a component that declares only one slot. To make things easier, `slot` tags can be marked with an optional keyword: `default`.
+
+When added to the tag (as shown below), this option lets you pass filling content directly in the body of a `component` tag pair – without using a `fill` tag. Choose carefully, though: a component template may contain at most one slot that is marked as `default`. The `default` option can be combined with other slot options, e.g. `required`.
 
 Here's the same example as before, except with default slots and implicit filling.
 
@@ -1296,7 +1338,7 @@ The rendered result (exactly the same as before):
 </div>
 ```
 
-You may be tempted to combine implicit fills with explicit `fill` tags. This will not work. The following component template will raise an error when compiled.
+You may be tempted to combine implicit fills with explicit `fill` tags. This will not work. The following component template will raise an error when rendered.
 
 ```htmldjango
 {# DON'T DO THIS #}
@@ -1306,26 +1348,33 @@ You may be tempted to combine implicit fills with explicit `fill` tags. This wil
 {% endcomponent %}
 ```
 
-By contrast, it is permitted to use `fill` tags in nested components, e.g.:
+Instead, you can use a named fill with name `default` to target the default fill:
 
 ```htmldjango
+{# THIS WORKS #}
 {% component "calendar" date="2020-06-06" %}
-    {% component "beautiful-box" %}
-        {% fill "content" %} Can you believe it's already <span>{{ date }}</span>?? {% endfill %}
-    {% endcomponent %}
+    {% fill "header" %}Totally new header!{% endfill %}
+    {% fill "default" %}
+        Can you believe it's already <span>{{ date }}</span>??
+    {% endfill %}
 {% endcomponent %}
 ```
 
-This is fine too:
+NOTE: If you doubly-fill a slot, that is, that both `{% fill "default" %}` and `{% fill "header" %}`
+would point to the same slot, this will raise an error when rendered.
 
-```htmldjango
-{% component "calendar" date="2020-06-06" %}
-    {% fill "header" %}
-        {% component "calendar-header" %}
-            Super Special Calendar Header
-        {% endcomponent %}
-    {% endfill %}
-{% endcomponent %}
+#### Accessing default slot in Python
+
+Since the default slot is stored under the slot name `default`, you can access the default slot
+like so:
+
+```py
+class MyTable(Component):
+    def get_context_data(self, *args, **kwargs):
+        default_slot = self.input.slots["default"]
+        return {
+            "default_slot": default_slot,
+        }
 ```
 
 ### Render fill in multiple places
@@ -1372,9 +1421,7 @@ This renders:
 #### Default and required slots
 
 If you use a slot multiple times, you can still mark the slot as `default` or `required`.
-For that, you must mark ONLY ONE of the identical slots.
-
-We recommend to mark the first occurence for consistency, e.g.:
+For that, you must mark each slot individually, e.g.:
 
 ```htmldjango
 <div class="calendar-component">
@@ -1382,17 +1429,50 @@ We recommend to mark the first occurence for consistency, e.g.:
         {% slot "image" default required %}Image here{% endslot %}
     </div>
     <div class="body">
-        {% slot "image" %}Image here{% endslot %}
+        {% slot "image" default required %}Image here{% endslot %}
     </div>
 </div>
 ```
 
-Which you can then use are regular default slot:
+Which you can then use as regular default slot:
 
 ```htmldjango
 {% component "calendar" date="2020-06-06" %}
     <img src="..." />
 {% endcomponent %}
+```
+
+Since each slot is tagged individually, you can have multiple slots
+with the same name but different conditions.
+
+E.g. in this example, we have a component that renders a user avatar
+- a small circular image with a profile picture of name initials.
+
+If the component is given `image_src` or `name_initials` variables,
+the `image` slot is optional. But if neither of those are provided,
+you MUST fill the `image` slot.
+
+```htmldjango
+<div class="avatar">
+    {% if image_src %}
+        {% slot "image" default %}
+            <img src="{{ image_src }}" />
+        {% endslot %}
+    {% elif name_initials %}
+        {% slot "image" default %}
+            <div style="
+                border-radius: 25px;
+                width: 50px;
+                height: 50px;
+                background: blue;
+            ">
+                {{ name_initials }}
+            </div>
+        {% endslot %}
+    {% else %}
+        {% slot "image" default required / %}
+    {% endif %}
+</div>
 ```
 
 ### Accessing original content of slots
@@ -1436,6 +1516,16 @@ This produces:
         Today's date is <span>2020-06-06</span>. Have a great day!
     </div>
 </div>
+```
+
+To access the original content of a default slot, set the name to `default`:
+
+```htmldjango
+{% component "calendar" date="2020-06-06" %}
+    {% fill "default" default="slot_default" %}
+        {{ slot_default }}. Have a great day!
+    {% endfill %}
+{% endcomponent %}
 ```
 
 ### Conditional slots
@@ -1529,6 +1619,20 @@ However, you can still define slots with other special characters. In such case,
 
 So a slot named `"my super-slot :)"` will be available as `component_vars.is_filled.my_super_slot___`.
 
+Same applies when you are accessing `is_filled` from within the Python, e.g.:
+
+```py
+class MyTable(Component):
+    def on_render_before(self, context, template) -> None:
+        # ✅ Works
+        if self.is_filled["my_super_slot___"]:
+            # Do something
+
+        # ❌ Does not work
+        if self.is_filled["my super-slot :)"]:
+            # Do something
+```
+
 ### Scoped slots
 
 _Added in version 0.76_:
@@ -1590,8 +1694,8 @@ the slot data. In the example below, we set it to `data`:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" data="data" %}
-        {{ data.input }}
+    {% fill "content" data="slot_data" %}
+        {{ slot_data.input }}
     {% endfill %}
 {% endcomponent %}
 ```
@@ -1602,8 +1706,8 @@ So this works:
 
 ```django
 {% component "my_comp" %}
-    {% fill "content" data="data" %}
-        {{ data.input }}
+    {% fill "default" data="slot_data" %}
+        {{ slot_data.input }}
     {% endfill %}
 {% endcomponent %}
 ```
@@ -1698,6 +1802,31 @@ So it's possible to define a `name` key on a dictionary, and then spread that on
 {% slot ...slot_props / %}
 ```
 
+### Pass through all the slots
+
+You can dynamically pass all slots to a child component. This is similar to
+[passing all slots in Vue](https://vue-land.github.io/faq/forwarding-slots#passing-all-slots):
+
+```py
+class MyTable(Component):
+    def get_context_data(self, *args, **kwargs):
+        return {
+            "slots": self.input.slots,
+        }
+
+    template: """
+    <div>
+      {% component "child" %}
+        {% for slot_name in slots %}
+          {% fill name=slot_name data="data" %}
+            {% slot name=slot_name ...data / %}
+          {% endfill %}
+        {% endfor %}
+      {% endcomponent %}
+    </div>
+    """
+```
+
 ## Accessing data passed to the component
 
 When you call `Component.render` or `Component.render_to_response`, the inputs to these methods can be accessed from within the instance under `self.input`.
@@ -1706,6 +1835,8 @@ This means that you can use `self.input` inside:
 - `get_context_data`
 - `get_template_name`
 - `get_template`
+- `on_render_before`
+- `on_render_after`
 
 `self.input` is only defined during the execution of `Component.render`, and raises a `RuntimeError` when called outside of this context.
 
@@ -1716,7 +1847,7 @@ class TestComponent(Component):
     def get_context_data(self, var1, var2, variable, another, **attrs):
         assert self.input.args == (123, "str")
         assert self.input.kwargs == {"variable": "test", "another": 1}
-        assert self.input.slots == {"my_slot": "MY_SLOT"}
+        assert self.input.slots == {"my_slot": ...}
         assert isinstance(self.input.context, Context)
 
         return {
@@ -1729,6 +1860,8 @@ rendered = TestComponent.render(
     slots={"my_slot": "MY_SLOT"},
 )
 ```
+
+NOTE: The slots in `self.input.slots` are normalized to slot functions.
 
 ## Rendering HTML attributes
 
@@ -2667,6 +2800,16 @@ Here is a list of all variables that are automatically available from within the
     {% if component_vars.is_filled.my_slot %}
         {% slot "my_slot" / %}
     {% endif %}
+    ```
+
+    This is equivalent to checking if a given key is among the slot fills:
+
+    ```py
+    class MyTable(Component):
+        def get_context_data(self, *args, **kwargs):
+            return {
+                "my_slot_filled": "my_slot" in self.input.slots
+            }
     ```
 
 ## Customizing component tags with TagFormatter

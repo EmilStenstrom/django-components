@@ -75,134 +75,149 @@ This doc serves as a primer on how component slots and fills are resolved.
    | -------
    ```
 
-5. I want to render the slots with `{% fill %}` tag that were defined OUTSIDE of this template. How do I do that?
+6. The names of the slots and fills may be defined using variables
+   ```django
+   | -- {% slot slot_name %} ---
+   | ---- STU {{ my_var }}
+   | -- {% endslot %} ---
+   | -------
+   ```
 
-   1. Traverse the template to collect ALL slots
-      - NOTE: I will also look inside `{% slot %}` and `{% fill %}` tags, since they are all still
-      defined within the same TEMPLATE.
+7. The slot and fill names may be defined using for loops or other variables defined within the template (e.g. `{% with %}` tag or `{% ... as var %}` syntax)
+   ```django
+   | -- {% for slot_name in slots %} ---
+   | ---- {% slot slot_name %} ---
+   | ------ STU {{ slot_name }}
+   | ---- {% endslot %} ---
+   | -- {% endfor %} ---
+   | -------
+   ```
+
+8. Variables for names and for loops allow us implement "passthrough slots" - that is, taking all slots that our component received, and passing them to a child component, dynamically.
+   ```django
+   | -- {% component "mycomp" %} ---
+   | ---- {% for slot_name in slots %} ---
+   | ------ {% fill slot_name %} ---
+   | -------- {% slot slot_name %} ---
+   | ---------- XYZ {{ slot_name }}
+   | --------- {% endslot %}
+   | ------- {% endfill %}
+   | ---- {% endfor %} ---
+   | -- {% endcomponent %} ---
+   | ----
+   ```
+
+9. Putting that all together, a document may look like this:
+   ```django
+   | -- {{ my_var }} --
+   | -- ABC
+   | -- {% slot "myslot" %}---
+   | ----- DEF {{ my_var }}
+   | ----- {% slot "myslot_inner" %}
+   | -------- GHI {{ my_var }}
+   | ----- {% endslot %}
+   | -- {% endslot %} ---
+   | ------
+   | -- {% component "mycomp" %} ---
+   | ---- {% slot "myslot" %} ---
+   | ------- JKL {{ my_var }}
+   | ------- {% slot "myslot_inner" %}
+   | ---------- MNO {{ my_var }}
+   | ------- {% endslot %}
+   | ---- {% endslot %} ---
+   | -- {% endcomponent %} ---
+   | ----
+   | -- {% slot "myslot2" %} ---
+   | ---- PQR {{ my_var }}
+   | -- {% endslot %} ---
+   | -------
+   | -- {% for slot_name in slots %} ---
+   | ---- {% component "mycomp" %} ---
+   | ------- {% slot slot_name %}
+   | ---------- STU {{ slot_name }}
+   | ------- {% endslot %}
+   | ---- {% endcomponent %} ---
+   | -- {% endfor %} ---
+   | ----
+   | -- {% component "mycomp" %} ---
+   | ---- {% for slot_name in slots %} ---
+   | ------ {% fill slot_name %} ---
+   | -------- {% slot slot_name %} ---
+   | ---------- XYZ {{ slot_name }}
+   | --------- {% endslot %}
+   | ------- {% endfill %}
+   | ---- {% endfor %} ---
+   | -- {% endcomponent %} ---
+   | -------
+   ```
+
+10. Given the above, we want to render the slots with `{% fill %}` tag that were defined OUTSIDE of this template. How do I do that?
+
+    > _NOTE: Before v0.110, slots were resolved statically, by walking down the Django Template and Nodes. However, this did not allow for using for loops or other variables defined in the template._
+
+    Currently, this consists of 2 steps:
+
+    1. If a component is rendered within a template using `{% component %}` tag, determine the given `{% fill %}` tags in the component's body (the content in between `{% component %}` and `{% endcomponent %}`).
     
-      I should end up with a list like this:
-      ```txt
-      - Name: "myslot"
-         ID 0001
-         Content:
-         | ----- DEF {{ my_var }}
-         | ----- {% slot "myslot_inner" %}
-         | -------- GHI {{ my_var }}
-         | ----- {% endslot %}
-      - Name: "myslot_inner"
-         ID 0002
-         Content:
-         | -------- GHI {{ my_var }}
-      - Name: "myslot"
-         ID 0003
-         Content:
-         | ------- JKL {{ my_var }}
-         | ------- {% slot "myslot_inner" %}
-         | ---------- MNO {{ my_var }}
-         | ------- {% endslot %}
-      - Name: "myslot_inner"
-         ID 0004
-         Content:
-         | ---------- MNO {{ my_var }}
-      - Name: "myslot2"
-         ID 0005
-         Content:
-         | ---- PQR {{ my_var }}
-      ```
+        After this step, we know about all the fills that were passed to the component.
 
-   2. Note the relationships - which slot is nested in which one
+    2. Then we simply render the template as usual. And then we reach the `{% slot %}` tag, we search the context for the available fills.
     
-      I should end up with a graph-like data like:
-      ```txt
-      - 0001: [0002]
-      - 0002: []
-      - 0003: [0004]
-      - 0004: []
-      - 0005: []
-      ```
+        - If there IS a fill with the same name as the slot, we render the fill.
+        - If the slot is marked `default`, and there is a fill named `default`, then we render that.
+        - Otherwise, we render the slot's default content.
 
-      In other words, the data tells us that slot ID `0001` is PARENT of slot `0002`.
+11. Obtaining the fills from `{% fill %}`.
 
-      This is important, because, IF parent template provides slot fill for slot 0001,
-      then we DON'T NEED TO render it's children, AKA slot 0002.
+    When a component is rendered with `{% component %}` tag, and it has some content in between `{% component %}` and `{% endcomponent %}`, we want to figure out if that content is a default slot (no `{% fill %}` used), or if there is a collection of named `{% fill %}` tags:
 
-   3. Find roots of the slot relationships
+    Default slot:
 
-      The data from previous step can be understood also as a collection of
-      directled acyclig graphs (DAG), e.g.:
+    ```django
+    | -- {% component "mycomp" %} ---
+    | ---- STU {{ slot_name }}
+    | -- {% endcomponent %} ---
+    ```
 
-      ```txt
-      0001 --> 0002
-      0003 --> 0004
-      0005
-      ```
+    Named slots:
 
-      So we find the roots (`0001`, `0003`, `0005`), AKA slots that are NOT nested in other slots.
-      We do so by going over ALL entries from previous step. Those IDs which are NOT
-      mentioned in ANY of the lists are the roots.
+    ```django
+    | -- {% component "mycomp" %} ---
+    | ---- {% fill "slot_a" %}
+    | ------ STU
+    | ---- {% endslot %}
+    | ---- {% fill "slot_b" %}
+    | ------ XYZ
+    | ---- {% endslot %}
+    | -- {% endcomponent %} ---
+    ```
 
-      Because of the nature of nested structures, there cannot be any cycles.
+    To respect any forloops or other variables defined within the template to which the fills may have access,
+    we:
 
-   4. Recursively render slots, starting from roots.      
-      1. First we take each of the roots.
+    1. Render the content between `{% component %}` and `{% endcomponent %}` using the context
+       outside of the component.
+    2. When we reach a `{% fill %}` tag, we capture any variables that were created between
+       the `{% component %}` and `{% fill %}` tags.
+    3. When we reach `{% fill %}` tag, we do not continue rendering deeper. Instead we
+       make a record that we found the fill tag with given name, kwargs, etc.
+    4. After the rendering is done, we check if we've encountered any fills.
+       If yes, we expect only named fills. If no, we assume that the the component's body
+       is a default slot.
+    5. Lastly we process the found fills, and make them available to the context, so any
+       slots inside the component may access these fills.
 
-      2. Then we check if there is a slot fill for given slot name.
+12. Rendering slots
 
-      3. If YES we replace the slot node with the fill node.
-         - Note: We assume slot fills are ALREADY RENDERED!
-         ```django
-         | ----- {% slot "myslot_inner" %}
-         | -------- GHI {{ my_var }}
-         | ----- {% endslot %}
-         ```
-         becomes
-         ```django
-         | ----- Bla bla
-         | -------- Some Other Content
-         | ----- ...
-         ```
-         We don't continue further, because inner slots have been overriden!
+    Slot rendering works similarly to collecting fills, in a sense that we do not search
+    for the slots ahead of the time, but instead let Django handle the rendering of the template,
+    and we step in only when Django come across as `{% slot %}` tag.
 
-      4. If NO, then we will replace slot nodes with their children, e.g.:
-         ```django
-         | ---- {% slot "myslot" %} ---
-         | ------- JKL {{ my_var }}
-         | ------- {% slot "myslot_inner" %}
-         | ---------- MNO {{ my_var }}
-         | ------- {% endslot %}
-         | ---- {% endslot %} ---
-         ```
-         Becomes
-         ```django
-         | ------- JKL {{ my_var }}
-         | ------- {% slot "myslot_inner" %}
-         | ---------- MNO {{ my_var }}
-         | ------- {% endslot %}
-         ```
-
-      5. We check if the slot includes any children `{% slot %}` tags. If YES, then continue with step 4. for them, and wait until they finish.
-
-   5. At this point, ALL slots should be rendered and we should have something like this:
-      ```django
-      | -- {{ my_var }} --
-      | -- ABC
-      | ----- DEF {{ my_var }}
-      | -------- GHI {{ my_var }}
-      | ------
-      | -- {% component "mycomp" %} ---
-      | ------- JKL {{ my_var }}
-      | ---- {% component "mycomp" %} ---
-      | ---------- MNO {{ my_var }}
-      | ---- {% endcomponent %} ---
-      | -- {% endcomponent %} ---
-      | ----
-      | -- {% component "mycomp2" %} ---
-      | ---- PQR {{ my_var }}
-      | -- {% endcomponent %} ---
-      | ----
-      ```
-      - NOTE: Inserting fills into {% slots %} should NOT introduce new {% slots %}, as the fills should be already rendered!
+    When we reach a slot tag, we search the context for the available fills.
+  
+      - If there IS a fill with the same name as the slot, we render the fill.
+      - If the slot is marked `default`, and there is a fill named `default`, then we render that.
+      - Otherwise, we render the slot's default content.
 
 ## Using the correct context in {% slot/fill %} tags
 

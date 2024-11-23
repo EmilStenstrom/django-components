@@ -544,12 +544,17 @@ class ContextVarsIsFilledTests(BaseTestCase):
         template: types.django_html = """
             {% load component_tags %}
             <div class="frontmatter-component">
-                {% slot "title" default %}{% endslot %}
-                {% slot "my_title" %}{% endslot %}
-                {% slot "my title 1" %}{% endslot %}
-                {% slot "my-title-2" %}{% endslot %}
-                {% slot "escape this: #$%^*()" %}{% endslot %}
-                {{ component_vars.is_filled|safe }}
+                {% slot "title" default / %}
+                {% slot "my-title" / %}
+                {% slot "my-title-1" / %}
+                {% slot "my-title-2" / %}
+                {% slot "escape this: #$%^*()" / %}
+
+                title: {{ component_vars.is_filled.title }}
+                my_title: {{ component_vars.is_filled.my_title }}
+                my_title_1: {{ component_vars.is_filled.my_title_1 }}
+                my_title_2: {{ component_vars.is_filled.my_title_2 }}
+                escape_this_________: {{ component_vars.is_filled.escape_this_________ }}
             </div>
         """
 
@@ -586,7 +591,6 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        registry.register("is_filled_vars", self.IsFilledVarsComponent)
         registry.register("conditional_slots", self.ComponentWithConditionalSlots)
         registry.register(
             "complex_conditional_slots",
@@ -595,28 +599,34 @@ class ContextVarsIsFilledTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_is_filled_vars(self):
+        registry.register("is_filled_vars", self.IsFilledVarsComponent)
+
         template: types.django_html = """
             {% load component_tags %}
             {% component "is_filled_vars" %}
-                {% fill "title" %}{% endfill %}
-                {% fill "my-title-2" %}{% endfill %}
-                {% fill "escape this: #$%^*()" %}{% endfill %}
+                {% fill "title" / %}
+                {% fill "my-title-2" / %}
+                {% fill "escape this: #$%^*()" / %}
             {% endcomponent %}
         """
+
         rendered = Template(template).render(Context())
+
         expected = """
             <div class="frontmatter-component">
-                {'title': True,
-                'my_title': False,
-                'my_title_1': False,
-                'my_title_2': True,
-                'escape_this_________': True}
+                title: True
+                my_title: False
+                my_title_1: False
+                my_title_2: True
+                escape_this_________: True
             </div>
         """
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_is_filled_vars_default(self):
+        registry.register("is_filled_vars", self.IsFilledVarsComponent)
+
         template: types.django_html = """
             {% load component_tags %}
             {% component "is_filled_vars" %}
@@ -627,11 +637,11 @@ class ContextVarsIsFilledTests(BaseTestCase):
         expected = """
             <div class="frontmatter-component">
                 bla bla
-                {'title': True,
-                'my_title': False,
-                'my_title_1': False,
-                'my_title_2': False,
-                'escape_this_________': False}
+                title: False
+                my_title: False
+                my_title_1: False
+                my_title_2: False
+                escape_this_________: False
             </div>
         """
         self.assertHTMLEqual(rendered, expected)
@@ -769,12 +779,6 @@ class ContextVarsIsFilledTests(BaseTestCase):
         """
         Template(template).render(Context())
 
-        expected = {
-            "title": True,
-            "my_title": False,
-            "my_title_1": False,
-            "my_title_2": False,
-            "escape_this_________": False,
-        }
+        expected = {"default": True}
         self.assertEqual(captured_before, expected)
         self.assertEqual(captured_after, expected)

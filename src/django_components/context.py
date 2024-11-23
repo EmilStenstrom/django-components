@@ -12,24 +12,10 @@ from django.template import Context, TemplateSyntaxError
 
 from django_components.util.misc import find_last_index
 
-_FILLED_SLOTS_CONTENT_CONTEXT_KEY = "_DJANGO_COMPONENTS_FILLED_SLOTS"
+_COMPONENT_SLOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_COMPONENT_SLOT_CTX"
 _ROOT_CTX_CONTEXT_KEY = "_DJANGO_COMPONENTS_ROOT_CTX"
 _REGISTRY_CONTEXT_KEY = "_DJANGO_COMPONENTS_REGISTRY"
-_CURRENT_COMP_CONTEXT_KEY = "_DJANGO_COMPONENTS_CURRENT_COMP"
 _INJECT_CONTEXT_KEY_PREFIX = "_DJANGO_COMPONENTS_INJECT__"
-
-
-def prepare_context(
-    context: Context,
-    component_id: str,
-) -> None:
-    """Initialize the internal context state."""
-    # Initialize mapping dicts within this rendering run.
-    # This is shared across the whole render chain, thus we set it only once.
-    if _FILLED_SLOTS_CONTENT_CONTEXT_KEY not in context:
-        context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = {}
-
-    set_component_id(context, component_id)
 
 
 def make_isolated_context_copy(context: Context) -> Context:
@@ -37,7 +23,6 @@ def make_isolated_context_copy(context: Context) -> Context:
     copy_forloop_context(context, context_copy)
 
     # Pass through our internal keys
-    context_copy[_FILLED_SLOTS_CONTENT_CONTEXT_KEY] = context.get(_FILLED_SLOTS_CONTENT_CONTEXT_KEY, {})
     context_copy[_REGISTRY_CONTEXT_KEY] = context.get(_REGISTRY_CONTEXT_KEY, None)
     if _ROOT_CTX_CONTEXT_KEY in context:
         context_copy[_ROOT_CTX_CONTEXT_KEY] = context[_ROOT_CTX_CONTEXT_KEY]
@@ -49,14 +34,6 @@ def make_isolated_context_copy(context: Context) -> Context:
             context_copy[key] = context[key]
 
     return context_copy
-
-
-def set_component_id(context: Context, component_id: str) -> None:
-    """
-    We use the Context object to pass down info on inside of which component
-    we are currently rendering.
-    """
-    context[_CURRENT_COMP_CONTEXT_KEY] = component_id
 
 
 def copy_forloop_context(from_context: Context, to_context: Context) -> None:

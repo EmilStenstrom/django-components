@@ -70,3 +70,10 @@ def escape_js_string_literal(js: str) -> str:
 
 def default(val: Optional[T], default: T) -> T:
     return val if val is not None else default
+
+
+def get_last_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
+    for index, item in enumerate(reversed(lst)):
+        if key(item):
+            return len(lst) - 1 - index
+    return None

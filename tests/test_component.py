@@ -24,7 +24,7 @@ from django.test import Client
 from django.urls import path
 from django.utils.safestring import SafeString
 
-from django_components import Component, ComponentView, SlotFunc, register, registry, types
+from django_components import Component, ComponentView, Slot, SlotFunc, register, registry, types
 from django_components.slots import SlotRef
 from django_components.urls import urlpatterns as dc_urlpatterns
 
@@ -58,7 +58,7 @@ class CompData(TypedDict):
 
 
 class CompSlots(TypedDict):
-    my_slot: Union[str, int]
+    my_slot: Union[str, int, Slot]
     my_slot2: SlotFunc
 
 
@@ -283,7 +283,8 @@ class ComponentTest(BaseTestCase):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
                 tester.assertIsInstance(self.input.context, Context)
-                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+                tester.assertEqual(list(self.input.slots.keys()), ["my_slot"])
+                tester.assertEqual(self.input.slots["my_slot"](Context(), None, None), "MY_SLOT")
 
                 return {
                     "variable": variable,
@@ -294,7 +295,8 @@ class ComponentTest(BaseTestCase):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
                 tester.assertIsInstance(self.input.context, Context)
-                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+                tester.assertEqual(list(self.input.slots.keys()), ["my_slot"])
+                tester.assertEqual(self.input.slots["my_slot"](Context(), None, None), "MY_SLOT")
 
                 template_str: types.django_html = """
                     {% load component_tags %}
@@ -427,7 +429,7 @@ class ComponentValidationTest(BaseTestCase):
 
         with self.assertRaisesMessage(
             TypeError,
-            "Component 'TestComponent' expected slot 'my_slot' to be typing.Union[str, int], got 123.5 of type <class 'float'>",  # noqa: E501
+            "Component 'TestComponent' expected slot 'my_slot' to be typing.Union[str, int, django_components.slots.Slot], got 123.5 of type <class 'float'>",  # noqa: E501
         ):
             TestComponent.render(
                 kwargs={"variable": "abc", "another": 1},
@@ -876,7 +878,9 @@ class ComponentRenderTest(BaseTestCase):
                 {% endslot %}
             """
 
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "Slot 'first' is marked as 'required' (i.e. non-optional), yet no fill is provided."
+        ):
             SimpleComponent.render()
 
         SimpleComponent.render(
