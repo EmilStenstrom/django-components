@@ -1085,6 +1085,20 @@ Instead, you can use **dynamic components**. Dynamic components are used in plac
 {% endcomponent %}
 ```
 
+or in case you use the `django_components.component_shorthand_formatter` tag formatter:
+
+```django
+{% dynamic is=component_name title="Cat Museu" %}
+    {% fill "content" %}
+        HELLO_FROM_SLOT_1
+    {% endfill %}
+    {% fill "sidebar" %}
+        HELLO_FROM_SLOT_2
+    {% endfill %}
+{% enddynamic %}
+```
+
+
 These behave same way as regular components. You pass it the same args, kwargs, and slots as you would
 to the component that you want to render.
 
