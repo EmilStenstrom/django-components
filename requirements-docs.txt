@@ -173,7 +173,7 @@ pycparser==2.22
     # via cffi
 pygments==2.18.0
     # via mkdocs-material
-pymdown-extensions==10.11.2
+pymdown-extensions==10.12
     # via
     #   hatch.envs.docs
     #   markdown-exec
