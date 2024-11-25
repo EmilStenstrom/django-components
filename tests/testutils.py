@@ -2,7 +2,7 @@ import contextlib
 import functools
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from django.template import Context, Node
 from django.template.loader import engines
@@ -10,7 +10,7 @@ from django.template.response import TemplateResponse
 from django.test import SimpleTestCase, override_settings
 
 from django_components.app_settings import ContextBehavior
-from django_components.autodiscover import autodiscover
+from django_components.autodiscovery import autodiscover
 from django_components.component_registry import registry
 from django_components.middleware import ComponentDependencyMiddleware
 
@@ -20,13 +20,35 @@ middleware = ComponentDependencyMiddleware(get_response=lambda _: response_stash
 
 
 class BaseTestCase(SimpleTestCase):
-    def tearDown(self) -> None:
+    def setUp(self):
+        super().setUp()
+        self._start_gen_id_patch()
+
+    def tearDown(self):
+        self._stop_gen_id_patch()
+
         super().tearDown()
         registry.clear()
 
         from django_components.template import _create_template
 
         _create_template.cache_remove()  # type: ignore[attr-defined]
+
+    # Mock the `generate` function used inside `gen_id` so it returns deterministic IDs
+    def _start_gen_id_patch(self):
+        # Random number so that the generated IDs are "hex-looking", e.g. a1bc3d
+        self._gen_id_count = 10599485
+
+        def mock_gen_id(*args, **kwargs):
+            self._gen_id_count += 1
+            return hex(self._gen_id_count)[2:]
+
+        self._gen_id_patch = patch("django_components.util.misc.generate", side_effect=mock_gen_id)
+        self._gen_id_patch.start()
+
+    def _stop_gen_id_patch(self):
+        self._gen_id_patch.stop()
+        self._gen_id_count = 10599485
 
 
 request = Mock()
@@ -142,11 +164,15 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
         # Because of this, we need to clear the loader cache, and, on error, we need to
         # propagate the info on which test case failed.
         @functools.wraps(test_func)
-        def wrapper(*args, **kwargs):
+        def wrapper(self: BaseTestCase, *args, **kwargs):
             for case in cases:
                 # Clear loader cache, see https://stackoverflow.com/a/77531127/9788634
                 for engine in engines.all():
                     engine.engine.template_loaders[0].reset()
+
+                # Reset gen_id
+                self._stop_gen_id_patch()
+                self._start_gen_id_patch()
 
                 case_has_data = not isinstance(case, str)
 
@@ -169,9 +195,9 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
                     # Call the test function with the fixture as an argument
                     try:
                         if case_has_data:
-                            test_func(*args, context_behavior_data=fixture, **kwargs)
+                            test_func(self, *args, context_behavior_data=fixture, **kwargs)
                         else:
-                            test_func(*args, **kwargs)
+                            test_func(self, *args, **kwargs)
                     except Exception as err:
                         # Give a hint on which iteration the test failed
                         raise RuntimeError(

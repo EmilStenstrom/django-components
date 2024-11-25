@@ -5,7 +5,7 @@ from django.template import Origin, Template
 from django.template.base import UNKNOWN_SOURCE
 
 from django_components.app_settings import app_settings
-from django_components.utils import lazy_cache
+from django_components.util.cache import lazy_cache
 
 TTemplate = TypeVar("TTemplate", bound=Template)
 
@@ -29,7 +29,39 @@ def cached_template(
     name: Optional[str] = None,
     engine: Optional[Any] = None,
 ) -> Template:
-    """Create a Template instance that will be cached as per the `TEMPLATE_CACHE_SIZE` setting."""
+    """
+    Create a Template instance that will be cached as per the
+    [`COMPONENTS.template_cache_size`](../settings#django_components.app_settings.ComponentsSettings.template_cache_size)
+    setting.
+
+    Args:
+        template_string (str): Template as a string, same as the first argument to Django's\
+            [`Template`](https://docs.djangoproject.com/en/5.1/topics/templates/#template). Required.
+        template_cls (Type[Template], optional): Specify the Template class that should be instantiated.\
+            Defaults to Django's [`Template`](https://docs.djangoproject.com/en/5.1/topics/templates/#template) class.
+        origin (Type[Origin], optional): Sets \
+            [`Template.Origin`](https://docs.djangoproject.com/en/5.1/howto/custom-template-backend/#origin-api-and-3rd-party-integration).
+        name (Type[str], optional): Sets `Template.name`
+        engine (Type[Any], optional): Sets `Template.engine`
+
+    ```python
+    from django_components import cached_template
+
+    template = cached_template("Variable: {{ variable }}")
+
+    # You can optionally specify Template class, and other Template inputs:
+    class MyTemplate(Template):
+        pass
+
+    template = cached_template(
+        "Variable: {{ variable }}",
+        template_cls=MyTemplate,
+        name=...
+        origin=...
+        engine=...
+    )
+    ```
+    """  # noqa: E501
     template = _create_template(template_cls or Template, template_string, engine)
 
     # Assign the origin and name separately, so the caching doesn't depend on them

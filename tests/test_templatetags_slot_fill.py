@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from django.template import Context, Template, TemplateSyntaxError
 
-from django_components import Component, register, registry, types
+from django_components import Component, Slot, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -31,7 +31,7 @@ class SlottedComponentWithContext(SlottedComponent):
 #######################
 
 
-class ComponentSlottedTemplateTagTest(BaseTestCase):
+class ComponentSlotTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_basic(self):
         registry.register(name="test1", component=SlottedComponent)
@@ -255,9 +255,284 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        with self.assertRaises(TemplateSyntaxError):
-            template.render(Context({}))
+        with self.assertRaisesMessage(TemplateSyntaxError, "Slot 'title' is marked as 'required'"):
+            template.render(Context())
 
+    # NOTE: This is relevant only for the "isolated" mode
+    @parametrize_context_behavior(["isolated"])
+    def test_slots_of_top_level_comps_can_access_full_outer_ctx(self):
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <main>{% slot "main" default %}Easy to override{% endslot %}</main>
+                </div>
+            """
+
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                }
+
+        registry.register("test", SlottedComponent)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            <body>
+                {% component "test" %}
+                    ABC: {{ name }} {{ some }}
+                {% endcomponent %}
+            </body>
+        """
+        self.template = Template(template_str)
+
+        nested_ctx = Context()
+        # Check that the component can access vars across different context layers
+        nested_ctx.push({"some": "var"})
+        nested_ctx.push({"name": "carl"})
+        rendered = self.template.render(nested_ctx)
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <body>
+                <div>
+                    <main> ABC: carl var </main>
+                </div>
+            </body>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_target_default_slot_as_named(self):
+        @register("test")
+        class Comp(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <h1>{% slot "title" default %}Default title{% endslot %}</h1>
+                    <h2>{% slot "subtitle" %}Default subtitle{% endslot %}</h2>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' %}
+                {% fill "default" %}Custom title{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                <h1> Custom title </h1>
+                <h2> Default subtitle </h2>
+            </div>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_doubly_filled_slot__same_name(self):
+        @register("test")
+        class Comp(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div class="header-box">
+                    <h1>{% slot "title" default %}Default title{% endslot %}</h1>
+                    <h2>{% slot "subtitle" %}Default subtitle{% endslot %}</h2>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' %}
+                {% fill "title" %}Custom title{% endfill %}
+                {% fill "title" %}Another title{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Multiple fill tags cannot target the same slot name in component 'test': "
+            "Detected duplicate fill tag name 'title'",
+        ):
+            template.render(Context())
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_doubly_filled_slot__named_and_default(self):
+        @register("test")
+        class Comp(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div class="header-box">
+                    <h1>{% slot "title" default %}Default title{% endslot %}</h1>
+                    <h2>{% slot "subtitle" %}Default subtitle{% endslot %}</h2>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' %}
+                {% fill "default" %}Custom title{% endfill %}
+                {% fill "title" %}Another title{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Slot 'title' of component 'test' was filled twice: once explicitly and once implicitly as 'default'",
+        ):
+            template.render(Context())
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_raises_on_doubly_filled_slot__named_and_default_2(self):
+        @register("test")
+        class Comp(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div class="header-box">
+                    <h1>{% slot "default" default %}Default title{% endslot %}</h1>
+                    <h2>{% slot "subtitle" %}Default subtitle{% endslot %}</h2>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' %}
+                {% fill "default" %}Custom title{% endfill %}
+                {% fill "default" %}Another title{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Multiple fill tags cannot target the same slot name in component 'test': "
+            "Detected duplicate fill tag name 'default'",
+        ):
+            template.render(Context())
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_multiple_slots_with_same_name_different_flags(self):
+        class TestComp(Component):
+            def get_context_data(self, required: bool) -> Any:
+                return {"required": required}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% if required %}
+                        <main>{% slot "main" required %}1{% endslot %}</main>
+                    {% endif %}
+                    <div>{% slot "main" default %}2{% endslot %}</div>
+                </div>
+            """
+
+        # 1. Specify the non-required slot by its name
+        rendered1 = TestComp.render(
+            kwargs={"required": False},
+            slots={
+                "main": "MAIN",
+            },
+            render_dependencies=False,
+        )
+
+        # 2. Specify the non-required slot by the "default" name
+        rendered2 = TestComp.render(
+            kwargs={"required": False},
+            slots={
+                "default": "MAIN",
+            },
+            render_dependencies=False,
+        )
+
+        self.assertInHTML(rendered1, "<div><div>MAIN</div></div>")
+        self.assertInHTML(rendered2, "<div><div>MAIN</div></div>")
+
+        # 3. Specify the required slot by its name
+        rendered3 = TestComp.render(
+            kwargs={"required": True},
+            slots={
+                "main": "MAIN",
+            },
+            render_dependencies=False,
+        )
+        self.assertInHTML(rendered3, "<div><main>MAIN</main><div>MAIN</div></div>")
+
+        # 4. RAISES: Specify the required slot by the "default" name
+        #    This raises because the slot that is marked as 'required' is NOT marked as 'default'.
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Slot 'main' is marked as 'required'",
+        ):
+            TestComp.render(
+                kwargs={"required": True},
+                slots={
+                    "default": "MAIN",
+                },
+                render_dependencies=False,
+            )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_in_include(self):
+        @register("slotted")
+        class SlottedWithIncludeComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% include 'slotted_template.html' %}
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "slotted" %}
+                {% fill "header" %}Custom header{% endfill %}
+                {% fill "main" %}Custom main{% endfill %}
+                {% fill "footer" %}Custom footer{% endfill %}
+            {% endcomponent %}
+        """
+
+        rendered = Template(template_str).render(Context({}))
+
+        expected = """
+            <custom-template>
+                <header>Custom header</header>
+                <main>Custom main</main>
+                <footer>Custom footer</footer>
+            </custom-template>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_in_include_raises_if_isolated(self):
+        @register("broken_component")
+        class BrokenComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% include 'slotted_template.html' with context=None only %}
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "broken_component" %}
+                {% fill "header" %}Custom header {% endfill %}
+                {% fill "main" %}Custom main{% endfill %}
+                {% fill "footer" %}Custom footer{% endfill %}
+            {% endcomponent %}
+        """
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Encountered a SlotNode outside of a ComponentNode context.",
+        ):
+            Template(template_str).render(Context({}))
+
+
+class ComponentSlotDefaultTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_default_slot_is_fillable_by_implicit_fill_content(self):
         @register("test_comp")
@@ -312,6 +587,59 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_multiple_default_slots_with_same_name(self):
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <main>{% slot "main" default %}1{% endslot %}</main>
+                    <div>{% slot "main" default %}2{% endslot %}</div>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test_comp' %}
+              {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        expected = """
+            <div>
+            <main><p>This fills the 'main' slot.</p></main>
+            <div><p>This fills the 'main' slot.</p></div>
+            </div>
+        """
+        rendered = template.render(Context({}))
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_multiple_default_slots_with_different_names(self):
+        @register("test_comp")
+        class ComponentWithDefaultSlot(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <main>{% slot "main" default %}1{% endslot %}</main>
+                    <div>{% slot "other" default %}2{% endslot %}</div>
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test_comp' %}
+              {% fill "main" %}<p>This fills the 'main' slot.</p>{% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "Only one component slot may be marked as 'default', found 'main' and 'other'"
+        ):
+            template.render(Context({}))
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_error_raised_when_default_and_required_slot_not_filled(self):
         @register("test_comp")
         class ComponentWithDefaultAndRequiredSlot(Component):
@@ -330,8 +658,8 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        with self.assertRaises(TemplateSyntaxError):
-            template.render(Context({}))
+        with self.assertRaisesMessage(TemplateSyntaxError, "Slot 'main' is marked as 'required'"):
+            template.render(Context())
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_fill_tag_can_occur_within_component_nested_in_implicit_fill(self):
@@ -382,7 +710,10 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                 </div>
             """
 
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Illegal content passed to component 'test_comp'. Explicit 'fill' tags cannot occur alongside other text",
+        ):
             template_str: types.django_html = """
                 {% load component_tags %}
                 {% component 'test_comp' %}
@@ -390,7 +721,7 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                   <p>And add this too!</p>
                 {% endcomponent %}
             """
-            Template(template_str)
+            Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_comments_permitted_inside_implicit_fill_content(self):
@@ -428,63 +759,26 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
         """
         template = Template(template_str)
 
-        with self.assertRaises(TemplateSyntaxError):
-            template.render(Context({}))
-
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_component_template_cannot_have_multiple_default_slots(self):
-        class BadComponent(Component):
-            def get_template(self, context):
-                template_str: types.django_html = """
-                    {% load django_components %}
-                    <div>
-                        {% slot "icon" %} {% endslot default %}
-                        {% slot "description" %} {% endslot default %}
-                    </div>
-                """
-                return Template(template_str)
-
-        c = BadComponent("name")
-
-        with self.assertRaises(TemplateSyntaxError):
-            c.render(Context({}))
-
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_slot_name_fill_typo_gives_helpful_error_message(self):
-        registry.register(name="test1", component=SlottedComponent)
-
-        template_str: types.django_html = """
-            {% load component_tags %}
-            {% component "test1" %}
-                {% fill "haeder" %}
-                    Custom header
-                {% endfill %}
-                {% fill "main" %}
-                    main content
-                {% endfill %}
-            {% endcomponent %}
-        """
-        template = Template(template_str)
-
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            (
-                "Component 'test1' passed fill that refers to undefined slot: 'haeder'.\\n"
-                "Unfilled slot names are: ['footer', 'header'].\\n"
-                "Did you mean 'header'?"
-            ),
+            "Component 'test_comp' passed default fill content (i.e. without explicit 'name' kwarg), "
+            "even though none of its slots is marked as 'default'",
         ):
-            template.render(Context({}))
+            template.render(Context())
 
-    # NOTE: This is relevant only for the "isolated" mode
-    @parametrize_context_behavior(["isolated"])
-    def test_slots_of_top_level_comps_can_access_full_outer_ctx(self):
+
+class PassthroughSlotsTest(BaseTestCase):
+    @parametrize_context_behavior(["isolated", "django"])
+    def test_if_for(self):
+        @register("test")
         class SlottedComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
-                <div>
-                    <main>{% slot "main" default %}Easy to override{% endslot %}</main>
-                </div>
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
             """
 
             def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
@@ -492,34 +786,270 @@ class ComponentSlottedTemplateTagTest(BaseTestCase):
                     "name": name,
                 }
 
-        registry.register("test", SlottedComponent)
-
         template_str: types.django_html = """
             {% load component_tags %}
-            <body>
-                {% component "test" %}
-                    ABC: {{ name }} {{ some }}
-                {% endcomponent %}
-            </body>
+            {% component "test" %}
+                {% if slot_names %}
+                    {% for slot in slot_names %}
+                        {% fill name=slot default="default" %}
+                            OVERRIDEN_SLOT "{{ slot }}" - INDEX {{ forloop.counter0 }} - ORIGINAL "{{ default }}"
+                        {% endfill %}
+                    {% endfor %}
+                {% endif %}
+
+                {% if 1 > 2 %}
+                    {% fill "footer" %}
+                        FOOTER
+                    {% endfill %}
+                {% endif %}
+            {% endcomponent %}
         """
-        self.template = Template(template_str)
+        template = Template(template_str)
 
-        nested_ctx = Context()
-        # Check that the component can access vars across different context layers
-        nested_ctx.push({"some": "var"})
-        nested_ctx.push({"name": "carl"})
-        rendered = self.template.render(nested_ctx)
-
+        rendered = template.render(Context({"slot_names": ["header", "main"]}))
         self.assertHTMLEqual(
             rendered,
             """
-            <body>
-                <div>
-                    <main> ABC: carl var </main>
-                </div>
-            </body>
+            <custom-template>
+                <header>
+                    OVERRIDEN_SLOT "header" - INDEX 0 - ORIGINAL "Default header"
+                </header>
+                <main>
+                    OVERRIDEN_SLOT "main" - INDEX 1 - ORIGINAL "Default main"
+                </main>
+                <footer>
+                    Default footer
+                </footer>
+            </custom-template>
             """,
         )
+
+    @parametrize_context_behavior(["isolated", "django"])
+    def test_with(self):
+        @register("test")
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
+
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                }
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% with slot="header" %}
+                    {% fill name=slot default="default" %}
+                        OVERRIDEN_SLOT "{{ slot }}" - ORIGINAL "{{ default }}"
+                    {% endfill %}
+                {% endwith %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>
+                    OVERRIDEN_SLOT "header" - ORIGINAL "Default header"
+                </header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
+
+    @parametrize_context_behavior(["isolated", "django"])
+    def test_if_for_raises_on_content_outside_fill(self):
+        @register("test")
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    <header>{% slot "header" %}Default header{% endslot %}</header>
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
+
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                }
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% if slot_names %}
+                    {% for slot in slot_names %}
+                        {{ forloop.counter0 }}
+                        {% fill name=slot default="default" %}
+                            OVERRIDEN_SLOT
+                        {% endfill %}
+                    {% endfor %}
+                {% endif %}
+
+                {% if 1 > 2 %}
+                    {% fill "footer" %}
+                        FOOTER
+                    {% endfill %}
+                {% endif %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+
+        with self.assertRaisesMessage(TemplateSyntaxError, "Illegal content passed to component 'test'"):
+            template.render(Context({"slot_names": ["header", "main"]}))
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slots_inside_loops(self):
+        @register("test_comp")
+        class OuterComp(Component):
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "slots": ["header", "main", "footer"],
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                {% for slot_name in slots %}
+                    <div>
+                        {% slot name=slot_name %}
+                            {{ slot_name }}
+                        {% endslot %}
+                    </div>
+                {% endfor %}
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test_comp" %}
+                {% fill "header" %}
+                    CUSTOM HEADER
+                {% endfill %}
+                {% fill "main" %}
+                    CUSTOM MAIN
+                {% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context())
+
+        expected = """
+            <div>CUSTOM HEADER</div>
+            <div>CUSTOM MAIN</div>
+            <div>footer</div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_passthrough_slots(self):
+        registry.register("slotted", SlottedComponent)
+
+        @register("test_comp")
+        class OuterComp(Component):
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "slots": self.input.slots,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% component "slotted" %}
+                        {% for slot_name in slots %}
+                            {% fill name=slot_name %}
+                                {% slot name=slot_name / %}
+                            {% endfill %}
+                        {% endfor %}
+                    {% endcomponent %}
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test_comp" %}
+                {% fill "header" %}
+                    CUSTOM HEADER
+                {% endfill %}
+                {% fill "main" %}
+                    CUSTOM MAIN
+                {% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context())
+
+        expected = """
+            <div>
+                <custom-template>
+                <header>CUSTOM HEADER</header>
+                <main>CUSTOM MAIN</main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    # NOTE: Ideally we'd (optionally) raise an error / warning here, but it's not possible
+    # with current implementation. So this tests serves as a documentation of the current behavior.
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_passthrough_slots_unknown_fills_ignored(self):
+        registry.register("slotted", SlottedComponent)
+
+        @register("test_comp")
+        class OuterComp(Component):
+            def get_context_data(self, name: Optional[str] = None) -> Dict[str, Any]:
+                return {
+                    "slots": self.input.slots,
+                }
+
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    {% component "slotted" %}
+                        {% for slot_name in slots %}
+                            {% fill name=slot_name %}
+                                {% slot name=slot_name / %}
+                            {% endfill %}
+                        {% endfor %}
+                    {% endcomponent %}
+                </div>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test_comp" %}
+                {% fill "header1" %}
+                    CUSTOM HEADER
+                {% endfill %}
+                {% fill "main" %}
+                    CUSTOM MAIN
+                {% endfill %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context())
+
+        expected = """
+            <div>
+                <custom-template>
+                <header>Default header</header>
+                <main>CUSTOM MAIN</main>
+                <footer>Default footer</footer>
+                </custom-template>
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
 
 
 # See https://github.com/EmilStenstrom/django-components/issues/698
@@ -1037,6 +1567,43 @@ class ScopedSlotTest(BaseTestCase):
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_slot_data_and_default_on_default_slot(self):
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                    <b>{% slot "slot_a" abc=abc var123=var123 %} Default text A {% endslot %}</b>
+                    <b>{% slot "slot_b" abc=abc var123=var123 default %} Default text B {% endslot %}</b>
+                </div>
+            """
+
+            def get_context_data(self):
+                return {
+                    "abc": "xyz",
+                    "var123": 456,
+                }
+
+        template: types.django_html = """
+            {% load component_tags %}
+            {% component "test" %}
+                {% fill name="default" data="slot_data_in_fill" default="slot_var" %}
+                    {{ slot_data_in_fill.abc }}
+                    {{ slot_var }}
+                    {{ slot_data_in_fill.var123 }}
+                {% endfill %}
+            {% endcomponent %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <div>
+                <b>Default text A</b>
+                <b>xyz Default text B 456</b>
+            </div>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_slot_data_raises_on_slot_data_and_slot_default_same_var(self):
         @register("test")
         class TestComponent(Component):
@@ -1482,7 +2049,10 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_fill_with_no_parent_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "FillNode.render() (AKA {% fill ... %} block) cannot be rendered outside of a Component context",
+        ):
             template_str: types.django_html = """
                 {% load component_tags %}
                 {% fill "header" %}contents{% endfill %}
@@ -1490,29 +2060,12 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
             Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_isolated_slot_is_error(self):
-        @register("broken_component")
-        class BrokenComponent(Component):
-            template: types.django_html = """
-                {% load component_tags %}
-                {% include 'slotted_template.html' with context=None only %}
-            """
-
-        template_str: types.django_html = """
-            {% load component_tags %}
-            {% component "broken_component" %}
-                {% fill "header" %}Custom header {% endfill %}
-                {% fill "main" %}Custom main{% endfill %}
-                {% fill "footer" %}Custom footer{% endfill %}
-            {% endcomponent %}
-        """
-
-        with self.assertRaises(KeyError):
-            Template(template_str).render(Context({}))
-
-    @parametrize_context_behavior(["django", "isolated"])
     def test_non_unique_fill_names_is_error(self):
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Multiple fill tags cannot target the same slot name in component 'test': "
+            "Detected duplicate fill tag name 'header'",
+        ):
             template_str: types.django_html = """
                 {% load component_tags %}
                 {% component "test" %}
@@ -1524,7 +2077,11 @@ class SlotFillTemplateSyntaxErrorTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_non_unique_fill_names_is_error_via_vars(self):
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Multiple fill tags cannot target the same slot name in component 'test': "
+            "Detected duplicate fill tag name 'header'",
+        ):
             template_str: types.django_html = """
                 {% load component_tags %}
                 {% with var1="header" var2="header" %}
@@ -1647,3 +2204,86 @@ class SlotBehaviorTests(BaseTestCase):
             </custom-template>
             """,
         )
+
+
+class SlotInputTests(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slots_accessible_when_python_render(self):
+        slots: Dict = {}
+
+        @register("test")
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <header>{% slot "header" %}Default header{% endslot %}</header>
+                <main>{% slot "main" %}Default main header{% endslot %}</main>
+                <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+            """
+
+            def get_context_data(self, input: Optional[int] = None) -> Dict[str, Any]:
+                nonlocal slots
+                slots = self.input.slots
+                return {}
+
+        self.assertEqual(slots, {})
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test" input=1 %}
+                {% fill "header" data="data1" %}
+                    data1_in_slot1: {{ data1|safe }}
+                {% endfill %}
+                {% fill "main" / %}
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        template.render(Context())
+
+        self.assertListEqual(
+            list(slots.keys()),
+            ["header", "main"],
+        )
+        self.assertTrue(callable(slots["header"]))
+        self.assertTrue(callable(slots["main"]))
+        self.assertTrue("footer" not in slots)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_slots_normalized_as_slot_instances(self):
+        slots: Dict[str, Slot] = {}
+
+        @register("test")
+        class SlottedComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <header>{% slot "header" %}Default header{% endslot %}</header>
+                <main>{% slot "main" %}Default main header{% endslot %}</main>
+                <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+            """
+
+            def get_context_data(self, input: Optional[int] = None) -> Dict[str, Any]:
+                nonlocal slots
+                slots = self.input.slots
+                return {}
+
+        self.assertEqual(slots, {})
+
+        header_slot = Slot(lambda *a, **kw: "HEADER_SLOT")
+        main_slot_str = "MAIN_SLOT"
+        footer_slot_fn = lambda *a, **kw: "FOOTER_SLOT"  # noqa: E731
+
+        SlottedComponent.render(
+            slots={
+                "header": header_slot,
+                "main": main_slot_str,
+                "footer": footer_slot_fn,
+            }
+        )
+
+        self.assertIsInstance(slots["header"], Slot)
+        self.assertEqual(slots["header"](Context(), None, None), "HEADER_SLOT")  # type: ignore[arg-type]
+
+        self.assertIsInstance(slots["main"], Slot)
+        self.assertEqual(slots["main"](Context(), None, None), "MAIN_SLOT")  # type: ignore[arg-type]
+
+        self.assertIsInstance(slots["footer"], Slot)
+        self.assertEqual(slots["footer"](Context(), None, None), "FOOTER_SLOT")  # type: ignore[arg-type]

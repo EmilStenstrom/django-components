@@ -24,8 +24,9 @@ from django.test import Client
 from django.urls import path
 from django.utils.safestring import SafeString
 
-from django_components import Component, ComponentView, SlotFunc, register, registry, types
+from django_components import Component, ComponentView, Slot, SlotFunc, register, registry, types
 from django_components.slots import SlotRef
+from django_components.urls import urlpatterns as dc_urlpatterns
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -40,7 +41,7 @@ class CustomClient(Client):
 
         if urlpatterns:
             urls_module = types.ModuleType("urls")
-            urls_module.urlpatterns = urlpatterns  # type: ignore
+            urls_module.urlpatterns = urlpatterns + dc_urlpatterns  # type: ignore
             settings.ROOT_URLCONF = urls_module
         else:
             settings.ROOT_URLCONF = __name__
@@ -57,7 +58,7 @@ class CompData(TypedDict):
 
 
 class CompSlots(TypedDict):
-    my_slot: Union[str, int]
+    my_slot: Union[str, int, Slot]
     my_slot2: SlotFunc
 
 
@@ -282,7 +283,8 @@ class ComponentTest(BaseTestCase):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
                 tester.assertIsInstance(self.input.context, Context)
-                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+                tester.assertEqual(list(self.input.slots.keys()), ["my_slot"])
+                tester.assertEqual(self.input.slots["my_slot"](Context(), None, None), "MY_SLOT")
 
                 return {
                     "variable": variable,
@@ -293,7 +295,8 @@ class ComponentTest(BaseTestCase):
                 tester.assertEqual(self.input.args, (123, "str"))
                 tester.assertEqual(self.input.kwargs, {"variable": "test", "another": 1})
                 tester.assertIsInstance(self.input.context, Context)
-                tester.assertEqual(self.input.slots, {"my_slot": "MY_SLOT"})
+                tester.assertEqual(list(self.input.slots.keys()), ["my_slot"])
+                tester.assertEqual(self.input.slots["my_slot"](Context(), None, None), "MY_SLOT")
 
                 template_str: types.django_html = """
                     {% load component_tags %}
@@ -318,7 +321,7 @@ class ComponentTest(BaseTestCase):
 
 class ComponentValidationTest(BaseTestCase):
     def test_validate_input_passes(self):
-        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+        class TestComponent(Component[CompArgs, CompKwargs, CompSlots, CompData, Any, Any]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 return {
                     "variable": variable,
@@ -351,7 +354,7 @@ class ComponentValidationTest(BaseTestCase):
 
     @skipIf(sys.version_info < (3, 11), "Requires >= 3.11")
     def test_validate_input_fails(self):
-        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+        class TestComponent(Component[CompArgs, CompKwargs, CompSlots, CompData, Any, Any]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 return {
                     "variable": variable,
@@ -426,7 +429,7 @@ class ComponentValidationTest(BaseTestCase):
 
         with self.assertRaisesMessage(
             TypeError,
-            "Component 'TestComponent' expected slot 'my_slot' to be typing.Union[str, int], got 123.5 of type <class 'float'>",  # noqa: E501
+            "Component 'TestComponent' expected slot 'my_slot' to be typing.Union[str, int, django_components.slots.Slot], got 123.5 of type <class 'float'>",  # noqa: E501
         ):
             TestComponent.render(
                 kwargs={"variable": "abc", "another": 1},
@@ -447,7 +450,7 @@ class ComponentValidationTest(BaseTestCase):
             )
 
     def test_validate_input_skipped(self):
-        class TestComponent(Component[Any, CompKwargs, CompData, Any]):
+        class TestComponent(Component[Any, CompKwargs, Any, CompData, Any, Any]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 return {
                     "variable": variable,
@@ -479,7 +482,7 @@ class ComponentValidationTest(BaseTestCase):
         )
 
     def test_validate_output_passes(self):
-        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+        class TestComponent(Component[CompArgs, CompKwargs, CompSlots, CompData, Any, Any]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 return {
                     "variable": variable,
@@ -511,7 +514,7 @@ class ComponentValidationTest(BaseTestCase):
         )
 
     def test_validate_output_fails(self):
-        class TestComponent(Component[CompArgs, CompKwargs, CompData, CompSlots]):
+        class TestComponent(Component[CompArgs, CompKwargs, CompSlots, CompData, Any, Any]):
             def get_context_data(self, var1, var2, variable, another, **attrs):
                 return {
                     "variable": variable,
@@ -543,7 +546,7 @@ class ComponentValidationTest(BaseTestCase):
             one: Union[str, int]
             self: "InnerComp"  # type: ignore[misc]
 
-        InnerComp = Component[Any, InnerKwargs, InnerData, Any]  # type: ignore[misc]
+        InnerComp = Component[Any, InnerKwargs, Any, InnerData, Any, Any]  # type: ignore[misc]
 
         class Inner(InnerComp):
             def get_context_data(self, one):
@@ -564,7 +567,7 @@ class ComponentValidationTest(BaseTestCase):
             self: "TodoComp"  # type: ignore[misc]
             inner: str
 
-        TodoComp = Component[TodoArgs, TodoKwargs, TodoData, Any]  # type: ignore[misc]
+        TodoComp = Component[TodoArgs, TodoKwargs, Any, TodoData, Any, Any]  # type: ignore[misc]
 
         # NOTE: Since we're using ForwardRef for "TodoComp" and "InnerComp", we need
         # to ensure that the actual types are set as globals, so the ForwardRef class
@@ -615,7 +618,7 @@ class ComponentValidationTest(BaseTestCase):
             three: List[str]
             four: Tuple[int, Union[str, int]]
 
-        TodoComp = Component[TodoArgs, TodoKwargs, TodoData, Any]
+        TodoComp = Component[TodoArgs, TodoKwargs, Any, TodoData, Any, Any]
 
         # NOTE: Since we're using ForwardRef for "TodoComp", we need
         # to ensure that the actual types are set as globals, so the ForwardRef class
@@ -875,7 +878,9 @@ class ComponentRenderTest(BaseTestCase):
                 {% endslot %}
             """
 
-        with self.assertRaises(TemplateSyntaxError):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "Slot 'first' is marked as 'required' (i.e. non-optional), yet no fill is provided."
+        ):
             SimpleComponent.render()
 
         SimpleComponent.render(
@@ -1014,7 +1019,7 @@ class ComponentRenderTest(BaseTestCase):
                 {% endblock %}
             """
 
-        rendered = SimpleComponent.render()
+        rendered = SimpleComponent.render(render_dependencies=False)
         self.assertHTMLEqual(
             rendered,
             """
@@ -1028,7 +1033,6 @@ class ComponentRenderTest(BaseTestCase):
                 </main>
             </body>
             </html>
-
             """,
         )
 

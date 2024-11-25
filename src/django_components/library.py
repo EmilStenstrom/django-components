@@ -12,11 +12,36 @@ if TYPE_CHECKING:
 
 
 class TagProtectedError(Exception):
+    """
+    The way the [`TagFormatter`](../../concepts/advanced/tag_formatter) works is that,
+    based on which start and end tags are used for rendering components,
+    the [`ComponentRegistry`](../api#django_components.ComponentRegistry) behind the scenes
+    [un-/registers the template tags](https://docs.djangoproject.com/en/5.1/howto/custom-template-tags/#registering-the-tag)
+    with the associated instance of Django's
+    [`Library`](https://docs.djangoproject.com/en/5.1/howto/custom-template-tags/#code-layout).
+
+    In other words, if I have registered a component `"table"`, and I use the shorthand
+    syntax:
+
+    ```django
+    {% table ... %}
+    {% endtable %}
+    ```
+
+    Then [`ComponentRegistry`](../api#django_components.ComponentRegistry)
+    registers the tag `table` onto the Django's Library instance.
+
+    However, that means that if we registered a component `"slot"`, then we would overwrite
+    the [`{% slot %}`](../template_tags#slot) tag from django_components.
+
+    Thus, this exception is raised when a component is attempted to be registered under
+    a forbidden name, such that it would overwrite one of django_component's own template tags.
+    """  # noqa: E501
+
     pass
 
 
 PROTECTED_TAGS = [
-    "component_dependencies",
     "component_css_dependencies",
     "component_js_dependencies",
     "fill",

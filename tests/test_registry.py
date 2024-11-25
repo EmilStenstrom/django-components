@@ -150,8 +150,8 @@ class MultipleComponentRegistriesTest(BaseTestCase):
         registry_a = ComponentRegistry(
             library=library_a,
             settings=RegistrySettings(
-                CONTEXT_BEHAVIOR=ContextBehavior.ISOLATED,
-                TAG_FORMATTER=component_shorthand_formatter,
+                context_behavior=ContextBehavior.ISOLATED.value,
+                tag_formatter=component_shorthand_formatter,
             ),
         )
 
@@ -159,8 +159,8 @@ class MultipleComponentRegistriesTest(BaseTestCase):
         registry_b = ComponentRegistry(
             library=library_b,
             settings=RegistrySettings(
-                CONTEXT_BEHAVIOR=ContextBehavior.DJANGO,
-                TAG_FORMATTER=component_formatter,
+                context_behavior=ContextBehavior.DJANGO.value,
+                tag_formatter=component_formatter,
             ),
         )
 
@@ -228,7 +228,6 @@ class ProtectedTagsTest(unittest.TestCase):
     @override_settings(COMPONENTS={"tag_formatter": "django_components.component_shorthand_formatter"})
     def test_raises_on_overriding_our_tags(self):
         for tag in [
-            "component_dependencies",
             "component_css_dependencies",
             "component_js_dependencies",
             "fill",

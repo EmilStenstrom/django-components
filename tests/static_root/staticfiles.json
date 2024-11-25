@@ -5,7 +5,8 @@
 
     "paths": {
         "calendar/script.js": "calendar/script.e1815e23e0ec.js",
-        "calendar/style.css": "calendar/style.0eeb72042b59.css"
+        "calendar/style.css": "calendar/style.0eeb72042b59.css",
+        "django_components/django_components.min.js": "django_components/django_components.min.js"
     },
     "version": "1.1",
     "hash": "f53e7ffd18c4"

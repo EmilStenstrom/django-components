@@ -9,12 +9,12 @@ from django.test import override_settings
 from django.utils.html import format_html, html_safe
 from django.utils.safestring import mark_safe
 
-from django_components import Component, registry, types
+from django_components import Component, registry, render_dependencies, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, autodiscover_with_cleanup
 
-setup_test_config()
+setup_test_config({"autodiscover": False})
 
 
 class InlineComponentTest(BaseTestCase):
@@ -22,102 +22,35 @@ class InlineComponentTest(BaseTestCase):
         class InlineHTMLComponent(Component):
             template = "<div class='inline'>Hello Inline</div>"
 
-        comp = InlineHTMLComponent("inline_html_component")
         self.assertHTMLEqual(
-            comp.render(Context({})),
+            InlineHTMLComponent.render(),
             "<div class='inline'>Hello Inline</div>",
         )
 
-    def test_html_and_css(self):
-        class HTMLCSSComponent(Component):
-            template = "<div class='html-css-only'>Content</div>"
+    def test_inlined_js_and_css(self):
+        class TestComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+                <div class='html-css-only'>Content</div>
+            """
             css = ".html-css-only { color: blue; }"
+            js = "console.log('HTML and JS only');"
 
-        comp = HTMLCSSComponent("html_css_component")
-        self.assertHTMLEqual(
-            comp.render(Context({})),
+        rendered = TestComponent.render()
+
+        self.assertInHTML(
             "<div class='html-css-only'>Content</div>",
+            rendered,
         )
-        self.assertHTMLEqual(
-            comp.render_css_dependencies(),
+        self.assertInHTML(
             "<style>.html-css-only { color: blue; }</style>",
+            rendered,
         )
-
-    def test_html_and_js(self):
-        class HTMLJSComponent(Component):
-            template = "<div class='html-js-only'>Content</div>"
-            js = "console.log('HTML and JS only');"
-
-        comp = HTMLJSComponent("html_js_component")
-        self.assertHTMLEqual(
-            comp.render(Context({})),
-            "<div class='html-js-only'>Content</div>",
-        )
-        self.assertHTMLEqual(
-            comp.render_js_dependencies(),
-            "<script>console.log('HTML and JS only');</script>",
-        )
-
-    def test_html_inline_and_css_js_files(self):
-        class HTMLStringFileCSSJSComponent(Component):
-            template = "<div class='html-string-file'>Content</div>"
-
-            class Media:
-                css = "path/to/style.css"
-                js = "path/to/script.js"
-
-        comp = HTMLStringFileCSSJSComponent("html_string_file_css_js_component")
-        self.assertHTMLEqual(
-            comp.render(Context({})),
-            "<div class='html-string-file'>Content</div>",
-        )
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <script src="path/to/script.js"></script>
-            """,
-        )
-
-    def test_html_js_inline_and_css_file(self):
-        class HTMLStringFileCSSJSComponent(Component):
-            template = "<div class='html-string-file'>Content</div>"
-            js = "console.log('HTML and JS only');"
-
-            class Media:
-                css = "path/to/style.css"
-
-        comp = HTMLStringFileCSSJSComponent("html_string_file_css_js_component")
-        self.assertHTMLEqual(
-            comp.render(Context({})),
-            "<div class='html-string-file'>Content</div>",
-        )
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <script>console.log('HTML and JS only');</script>
-            """,
-        )
-
-    def test_html_css_inline_and_js_file(self):
-        class HTMLStringFileCSSJSComponent(Component):
-            template = "<div class='html-string-file'>Content</div>"
-            css = ".html-string-file { color: blue; }"
-
-            class Media:
-                js = "path/to/script.js"
-
-        comp = HTMLStringFileCSSJSComponent("html_string_file_css_js_component")
-        self.assertHTMLEqual(
-            comp.render(Context({})),
-            "<div class='html-string-file'>Content</div>",
-        )
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <style>.html-string-file { color: blue; }</style><script src="path/to/script.js"></script>
-            """,
+        self.assertInHTML(
+            "<script>eval(Components.unescapeJs(`console.log(&#x27;HTML and JS only&#x27;);`))</script>",
+            rendered,
         )
 
     def test_html_variable(self):
@@ -156,117 +89,78 @@ class InlineComponentTest(BaseTestCase):
 
 
 class ComponentMediaTests(BaseTestCase):
-    def test_css_and_js(self):
-        class SimpleComponent(Component):
-            template: types.django_html = """
-                Variable: <strong>{{ variable }}</strong>
-            """
-
-            class Media:
-                css = "style.css"
-                js = "script.js"
-
-        comp = SimpleComponent("simple_component")
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-                <link href="style.css" media="all" rel="stylesheet">
-                <script src="script.js"></script>
-            """,
-        )
-
-    def test_css_only(self):
-        class SimpleComponent(Component):
-            template: types.django_html = """
-                Variable: <strong>{{ variable }}</strong>
-            """
-
-            class Media:
-                css = "style.css"
-
-        comp = SimpleComponent("simple_component")
-
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="style.css" media="all" rel="stylesheet">
-            """,
-        )
-
-    def test_js_only(self):
-        class SimpleComponent(Component):
-            template: types.django_html = """
-                Variable: <strong>{{ variable }}</strong>
-            """
-
-            class Media:
-                js = "script.js"
-
-        comp = SimpleComponent("simple_component")
-
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <script src="script.js"></script>
-            """,
-        )
-
     def test_empty_media(self):
         class SimpleComponent(Component):
             template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
                 Variable: <strong>{{ variable }}</strong>
             """
 
             class Media:
                 pass
 
-        comp = SimpleComponent("simple_component")
+        rendered = SimpleComponent.render()
 
-        self.assertHTMLEqual(comp.render_dependencies(), "")
+        self.assertEqual(rendered.count("<style"), 0)
+        self.assertEqual(rendered.count("<link"), 0)
 
-    def test_missing_media(self):
-        class SimpleComponent(Component):
-            template: types.django_html = """
-                Variable: <strong>{{ variable }}</strong>
-            """
-
-        comp = SimpleComponent("simple_component")
-
-        self.assertHTMLEqual(comp.render_dependencies(), "")
+        self.assertEqual(rendered.count("<script"), 2)  # 2 Boilerplate scripts
 
     def test_css_js_as_lists(self):
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = ["path/to/style.css", "path/to/style2.css"]
                 js = ["path/to/script.js"]
 
-        comp = SimpleComponent("")
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <link href="path/to/style2.css" media="all" rel="stylesheet">
-            <script src="path/to/script.js"></script>
-            """,
+        rendered = SimpleComponent.render()
+
+        self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style2.css" media="all" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_css_js_as_string(self):
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = "path/to/style.css"
                 js = "path/to/script.js"
 
-        comp = SimpleComponent("")
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <script src="path/to/script.js"></script>
-            """,
+        rendered = SimpleComponent.render()
+
+        self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_css_as_dict(self):
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = {
                     "all": "path/to/style.css",
@@ -275,15 +169,16 @@ class ComponentMediaTests(BaseTestCase):
                 }
                 js = ["path/to/script.js"]
 
-        comp = SimpleComponent("")
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <link href="path/to/style2.css" media="print" rel="stylesheet">
-            <link href="path/to/style3.css" media="screen" rel="stylesheet">
-            <script src="path/to/script.js"></script>
-            """,
+        rendered = SimpleComponent.render()
+
+        self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style2.css" media="print" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style3.css" media="screen" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_media_custom_render_js(self):
@@ -292,22 +187,31 @@ class ComponentMediaTests(BaseTestCase):
                 tags: list[str] = []
                 for path in self._js:  # type: ignore[attr-defined]
                     abs_path = self.absolute_path(path)  # type: ignore[attr-defined]
-                    tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
+                    tags.append(f'<script defer src="{abs_path}"></script>')
                 return tags
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             media_class = MyMedia
 
             class Media:
                 js = ["path/to/script.js", "path/to/script2.js"]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <my_script_tag src="path/to/script.js"></my_script_tag>
-            <my_script_tag src="path/to/script2.js"></my_script_tag>
-            """,
+        rendered = SimpleComponent.render()
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_media_custom_render_css(self):
@@ -317,10 +221,16 @@ class ComponentMediaTests(BaseTestCase):
                 media = sorted(self._css)  # type: ignore[attr-defined]
                 for medium in media:
                     for path in self._css[medium]:  # type: ignore[attr-defined]
-                        tags.append(f'<my_link href="{path}" media="{medium}" rel="stylesheet" />')
+                        tags.append(f'<link abc href="{path}" media="{medium}" rel="stylesheet" />')
                 return tags
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             media_class = MyMedia
 
             class Media:
@@ -330,15 +240,11 @@ class ComponentMediaTests(BaseTestCase):
                     "screen": "path/to/style3.css",
                 }
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <my_link href="path/to/style.css" media="all" rel="stylesheet" />
-            <my_link href="path/to/style2.css" media="print" rel="stylesheet" />
-            <my_link href="path/to/style3.css" media="screen" rel="stylesheet" />
-            """,
-        )
+        rendered = SimpleComponent.render()
+
+        self.assertInHTML('<link abc href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link abc href="path/to/style2.css" media="print" rel="stylesheet">', rendered)
+        self.assertInHTML('<link abc href="path/to/style3.css" media="screen" rel="stylesheet">', rendered)
 
 
 class MediaPathAsObjectTests(BaseTestCase):
@@ -377,6 +283,12 @@ class MediaPathAsObjectTests(BaseTestCase):
                 return format_html('<script type="module" src="{}"></script>', static(self.static_path))
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = {
                     "all": [
@@ -395,20 +307,29 @@ class MediaPathAsObjectTests(BaseTestCase):
                     "path/to/script4.js",  # Formatted by Media.render_js
                 ]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link css_tag href="path/to/style.css" rel="stylesheet" />
-            <link hi href="path/to/style2.css" rel="stylesheet" />
-            <link css_tag href="path/to/style3.css" rel="stylesheet" />
-            <link href="path/to/style4.css" media="screen" rel="stylesheet">
+        rendered = SimpleComponent.render()
 
-            <script js_tag src="path/to/script.js" type="module"></script>
-            <script hi src="path/to/script2.js"></script>
-            <script type="module" src="path/to/script3.js"></script>
-            <script src="path/to/script4.js"></script>
-            """,
+        self.assertInHTML('<link css_tag href="path/to/style.css" rel="stylesheet" />', rendered)
+        self.assertInHTML('<link hi href="path/to/style2.css" rel="stylesheet" />', rendered)
+        self.assertInHTML('<link css_tag href="path/to/style3.css" rel="stylesheet" />', rendered)
+        self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script js_tag src=&amp;quot;path/to/script.js&amp;quot; type=&amp;quot;module&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script hi src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script type=&amp;quot;module&amp;quot; src=&amp;quot;path/to/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script4.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_pathlike(self):
@@ -425,6 +346,12 @@ class MediaPathAsObjectTests(BaseTestCase):
                 return self.path
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = {
                     "all": [
@@ -442,19 +369,25 @@ class MediaPathAsObjectTests(BaseTestCase):
                     "path/to/script3.js",
                 ]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <link href="path/to/style2.css" media="all" rel="stylesheet">
-            <link href="path/to/style3.css" media="print" rel="stylesheet">
-            <link href="path/to/style4.css" media="screen" rel="stylesheet">
+        rendered = SimpleComponent.render()
 
-            <script src="path/to/script.js"></script>
-            <script src="path/to/script2.js"></script>
-            <script src="path/to/script3.js"></script>
-            """,
+        self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style3.css" media="print" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_str(self):
@@ -467,6 +400,12 @@ class MediaPathAsObjectTests(BaseTestCase):
             pass
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = {
                     "all": [
@@ -483,18 +422,21 @@ class MediaPathAsObjectTests(BaseTestCase):
                     "path/to/script2.js",
                 ]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <link href="path/to/style2.css" media="all" rel="stylesheet">
-            <link href="path/to/style3.css" media="print" rel="stylesheet">
-            <link href="path/to/style4.css" media="screen" rel="stylesheet">
+        rendered = SimpleComponent.render()
 
-            <script src="path/to/script.js"></script>
-            <script src="path/to/script2.js"></script>
-            """,
+        self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style3.css" media="print" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_bytes(self):
@@ -507,6 +449,12 @@ class MediaPathAsObjectTests(BaseTestCase):
             pass
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = {
                     "all": [
@@ -523,22 +471,31 @@ class MediaPathAsObjectTests(BaseTestCase):
                     "path/to/script2.js",
                 ]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="path/to/style.css" media="all" rel="stylesheet">
-            <link href="path/to/style2.css" media="all" rel="stylesheet">
-            <link href="path/to/style3.css" media="print" rel="stylesheet">
-            <link href="path/to/style4.css" media="screen" rel="stylesheet">
+        rendered = SimpleComponent.render()
 
-            <script src="path/to/script.js"></script>
-            <script src="path/to/script2.js"></script>
-            """,
+        self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style3.css" media="print" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     def test_function(self):
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = [
                     lambda: mark_safe('<link hi href="calendar/style.css" rel="stylesheet" />'),  # Literal
@@ -553,20 +510,29 @@ class MediaPathAsObjectTests(BaseTestCase):
                     lambda: b"calendar/script3.js",
                 ]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link hi href="calendar/style.css" rel="stylesheet" />
-            <link href="calendar/style1.css" media="all" rel="stylesheet">
-            <link href="calendar/style2.css" media="all" rel="stylesheet">
-            <link href="calendar/style3.css" media="all" rel="stylesheet">
+        rendered = SimpleComponent.render()
 
-            <script hi src="calendar/script.js"></script>
-            <script src="calendar/script1.js"></script>
-            <script src="calendar/script2.js"></script>
-            <script src="calendar/script3.js"></script>
-            """,
+        self.assertInHTML('<link hi href="calendar/style.css" rel="stylesheet" />', rendered)
+        self.assertInHTML('<link href="calendar/style1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="calendar/style2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="calendar/style3.css" media="all" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script hi src=&amp;quot;calendar/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;calendar/script1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;calendar/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;calendar/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     @override_settings(STATIC_URL="static/")
@@ -574,6 +540,12 @@ class MediaPathAsObjectTests(BaseTestCase):
         """Test that all the different ways of defining media files works with Django's staticfiles"""
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             class Media:
                 css = [
                     mark_safe(f'<link hi href="{static("calendar/style.css")}" rel="stylesheet" />'),  # Literal
@@ -590,22 +562,30 @@ class MediaPathAsObjectTests(BaseTestCase):
                     lambda: "calendar/script4.js",
                 ]
 
-        comp = SimpleComponent()
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link hi href="/static/calendar/style.css" rel="stylesheet" />
-            <link href="/static/calendar/style1.css" media="all" rel="stylesheet">
-            <link href="/static/calendar/style2.css" media="all" rel="stylesheet">
-            <link href="/static/calendar/style3.css" media="all" rel="stylesheet">
-            <link href="/static/calendar/style4.css" media="all" rel="stylesheet">
+        rendered = SimpleComponent.render()
 
-            <script hi src="/static/calendar/script.js"></script>
-            <script src="/static/calendar/script1.js"></script>
-            <script src="/static/calendar/script2.js"></script>
-            <script src="/static/calendar/script3.js"></script>
-            <script src="/static/calendar/script4.js"></script>
-            """,
+        self.assertInHTML('<link hi href="/static/calendar/style.css" rel="stylesheet" />', rendered)
+        self.assertInHTML('<link href="/static/calendar/style1.css" media="all" rel="stylesheet" />', rendered)
+        self.assertInHTML('<link href="/static/calendar/style1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="/static/calendar/style2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="/static/calendar/style3.css" media="all" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script hi src=&amp;quot;/static/calendar/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;/static/calendar/script1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;/static/calendar/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
+        )
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;/static/calendar/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
 
@@ -632,26 +612,32 @@ class MediaStaticfilesTests(BaseTestCase):
                 tags: list[str] = []
                 for path in self._js:  # type: ignore[attr-defined]
                     abs_path = self.absolute_path(path)  # type: ignore[attr-defined]
-                    tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
+                    tags.append(f'<script defer src="{abs_path}"></script>')
                 return tags
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             media_class = MyMedia
 
             class Media:
                 css = "calendar/style.css"
                 js = "calendar/script.js"
 
-        comp = SimpleComponent()
+        rendered = SimpleComponent.render()
 
         # NOTE: Since we're using the default storage class for staticfiles, the files should
         # be searched as specified above (e.g. `calendar/script.js`) inside `static_root` dir.
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="/static/calendar/style.css" media="all" rel="stylesheet">
-            <my_script_tag src="/static/calendar/script.js"></my_script_tag>
-            """,
+        self.assertInHTML('<link href="/static/calendar/style.css" media="all" rel="stylesheet">', rendered)
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;/static/calendar/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
     # For context see https://github.com/EmilStenstrom/django-components/issues/522
@@ -688,26 +674,34 @@ class MediaStaticfilesTests(BaseTestCase):
                 tags: list[str] = []
                 for path in self._js:  # type: ignore[attr-defined]
                     abs_path = self.absolute_path(path)  # type: ignore[attr-defined]
-                    tags.append(f'<my_script_tag src="{abs_path}"></my_script_tag>')
+                    tags.append(f'<script defer src="{abs_path}"></script>')
                 return tags
 
         class SimpleComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
             media_class = MyMedia
 
             class Media:
                 css = "calendar/style.css"
                 js = "calendar/script.js"
 
-        comp = SimpleComponent()
+        rendered = SimpleComponent.render()
 
         # NOTE: Since we're using ManifestStaticFilesStorage, we expect the rendered media to link
         # to the files as defined in staticfiles.json
-        self.assertHTMLEqual(
-            comp.render_dependencies(),
-            """
-            <link href="/static/calendar/style.0eeb72042b59.css" media="all" rel="stylesheet">
-            <my_script_tag src="/static/calendar/script.e1815e23e0ec.js"></my_script_tag>
-            """,
+        self.assertInHTML(
+            '<link href="/static/calendar/style.0eeb72042b59.css" media="all" rel="stylesheet">', rendered
+        )
+
+        # Command to load the JS from Media.js
+        self.assertIn(
+            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;/static/calendar/script.e1815e23e0ec.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
+            rendered,
         )
 
 
@@ -776,22 +770,30 @@ class MediaRelativePathTests(BaseTestCase):
                 registry.unregister(comp_name)
 
             template_str: types.django_html = """
-                {% load component_tags %}{% component_dependencies %}
-                {% component name='relative_file_component' variable=variable %}
-                {% endcomponent %}
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+                {% component name='relative_file_component' variable=variable / %}
             """
             template = Template(template_str)
-            rendered = template.render(Context({"variable": "test"}))
-            self.assertHTMLEqual(
-                rendered,
+            rendered = render_dependencies(template.render(Context({"variable": "test"})))
+
+            self.assertInHTML('<link href="relative_file/relative_file.css" media="all" rel="stylesheet">', rendered)
+
+            self.assertInHTML(
                 """
-                <link href="relative_file/relative_file.css" media="all" rel="stylesheet">
-                <script src="relative_file/relative_file.js"></script>
                 <form method="post">
                     <input type="text" name="variable" value="test">
                     <input type="submit">
                 </form>
                 """,
+                rendered,
+            )
+
+            # Command to load the JS from Media.js
+            self.assertIn(
+                "Components.unescapeJs(\\`&amp;lt;link href=&amp;quot;relative_file/relative_file.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\\`)",
+                rendered,
             )
 
     # Settings required for autodiscover to work
@@ -811,7 +813,9 @@ class MediaRelativePathTests(BaseTestCase):
             registry.unregister("relative_file_pathobj_component")
 
             template_str: types.django_html = """
-                {% load component_tags %}{% component_dependencies %}
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
                 {% component 'parent_component' %}
                     {% fill 'content' %}
                         {% component name='relative_file_component' variable='hello' %}
@@ -848,17 +852,19 @@ class MediaRelativePathTests(BaseTestCase):
 
         # Fix the paths, since the "components" dir is nested
         with autodiscover_with_cleanup(map_module=lambda p: f"tests.{p}" if p.startswith("components") else p):
-            # Mark the PathObj instances of 'relative_file_pathobj_component' so they won raise
-            # error PathObj.__str__ is triggered.
+            # Mark the PathObj instances of 'relative_file_pathobj_component' so they won't raise
+            # error if PathObj.__str__ is triggered.
             CompCls = registry.get("relative_file_pathobj_component")
             CompCls.Media.js[0].throw_on_calling_str = False  # type: ignore
             CompCls.Media.css["all"][0].throw_on_calling_str = False  # type: ignore
 
-            rendered = CompCls().render_dependencies()
-            self.assertHTMLEqual(
+            rendered = CompCls.render(kwargs={"variable": "abc"})
+
+            self.assertInHTML('<input type="text" name="variable" value="abc">', rendered)
+            self.assertInHTML('<link href="relative_file_pathobj.css" rel="stylesheet">', rendered)
+
+            # Command to load the JS from Media.js
+            self.assertIn(
+                "Components.unescapeJs(\\`&amp;lt;script type=&amp;quot;module&amp;quot; src=&amp;quot;relative_file_pathobj.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
                 rendered,
-                """
-                <script type="module" src="relative_file_pathobj.css"></script>
-                <script type="module" src="relative_file_pathobj.js"></script>
-                """,
             )

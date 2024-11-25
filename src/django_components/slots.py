@@ -1,51 +1,49 @@
 import difflib
-import json
 import re
-from collections import deque
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     Generic,
     List,
+    Literal,
     Mapping,
     NamedTuple,
     Optional,
     Protocol,
     Set,
     Tuple,
-    Type,
     TypeVar,
     Union,
+    cast,
     runtime_checkable,
 )
 
-from django.template import Context, Template
-from django.template.base import FilterExpression, Node, NodeList, Parser, TextNode
-from django.template.defaulttags import CommentNode
+from django.template import Context
+from django.template.base import NodeList, TextNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.app_settings import ContextBehavior, app_settings
+from django_components.app_settings import ContextBehavior
 from django_components.context import (
-    _FILLED_SLOTS_CONTENT_CONTEXT_KEY,
+    _COMPONENT_SLOT_CTX_CONTEXT_KEY,
     _INJECT_CONTEXT_KEY_PREFIX,
     _REGISTRY_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
 )
 from django_components.expression import RuntimeKwargs, is_identifier
-from django_components.logger import trace_msg
-from django_components.node import BaseNode, NodeTraverse, nodelist_has_content, walk_nodelist
-from django_components.utils import lazy_cache
+from django_components.node import BaseNode
+from django_components.util.logger import trace_msg
+from django_components.util.misc import get_last_index
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry
 
 TSlotData = TypeVar("TSlotData", bound=Mapping, contravariant=True)
 
-DEFAULT_SLOT_KEY = "_DJANGO_COMPONENTS_DEFAULT_SLOT"
+DEFAULT_SLOT_KEY = "default"
+FILL_GEN_CONTEXT_KEY = "_DJANGO_COMPONENTS_GEN_FILL"
 SLOT_DATA_KWARG = "data"
 SLOT_NAME_KWARG = "name"
 SLOT_DEFAULT_KWARG = "default"
@@ -62,54 +60,37 @@ class SlotFunc(Protocol, Generic[TSlotData]):
     def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult: ...  # noqa E704
 
 
-SlotContent = Union[SlotResult, SlotFunc[TSlotData]]
-
-# Internal type aliases
-SlotId = str
-SlotName = str
-SlotDefaultName = str
-SlotDataName = str
+SlotContent = Union[SlotResult, SlotFunc[TSlotData], "Slot[TSlotData]"]
 
 
-@dataclass(frozen=True)
-class FillContent(Generic[TSlotData]):
-    """
-    This represents content set with the `{% fill %}` tag, e.g.:
-
-    ```django
-    {% component "my_comp" %}
-        {% fill "first_slot" %} <--- This
-            hi
-            {{ my_var }}
-            hello
-        {% endfill %}
-    {% endcomponent %}
-    ```
-    """
+@dataclass
+class Slot(Generic[TSlotData]):
+    """This class holds the slot content function along with related metadata."""
 
     content_func: SlotFunc[TSlotData]
-    slot_default_var: Optional[SlotDefaultName]
-    slot_data_var: Optional[SlotDataName]
+
+    def __post_init__(self) -> None:
+        if not callable(self.content_func):
+            raise ValueError(f"Slot content must be a callable, got: {self.content_func}")
+
+        # Allow passing Slot instances as content functions
+        if isinstance(self.content_func, Slot):
+            inner_slot = self.content_func
+            self.content_func = inner_slot.content_func
+
+    # Allow to treat the instances as functions
+    def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult:
+        return self.content_func(ctx, slot_data, slot_ref)
+
+    # Make Django pass the instances of this class within the templates without calling
+    # the instances as a function.
+    @property
+    def do_not_call_in_templates(self) -> bool:
+        return True
 
 
-class Slot(NamedTuple):
-    """
-    This represents content set with the `{% slot %}` tag, e.g.:
-
-    ```django
-    {% slot "my_comp" default %} <--- This
-        hi
-        {{ my_var }}
-        hello
-    {% endslot %}
-    ```
-    """
-
-    id: str
-    name: str
-    is_default: bool
-    is_required: bool
-    nodelist: NodeList
+# Internal type aliases
+SlotName = str
 
 
 @dataclass(frozen=True)
@@ -117,15 +98,14 @@ class SlotFill(Generic[TSlotData]):
     """
     SlotFill describes what WILL be rendered.
 
-    It is a Slot that has been resolved against FillContents passed to a Component.
+    The fill may be provided by the user from the outside (`is_filled=True`),
+    or it may be the default content of the slot (`is_filled=False`).
     """
 
     name: str
-    escaped_name: str
+    """Name of the slot."""
     is_filled: bool
-    content_func: SlotFunc[TSlotData]
-    slot_default_var: Optional[SlotDefaultName]
-    slot_data_var: Optional[SlotDataName]
+    slot: Slot[TSlotData]
 
 
 class SlotRef:
@@ -147,7 +127,66 @@ class SlotRef:
         return mark_safe(self._slot.nodelist.render(self._context))
 
 
+class SlotIsFilled(dict):
+    """
+    Dictionary that returns `True` if the slot is filled (key is found), `False` otherwise.
+    """
+
+    def __init__(self, fills: Dict, *args: Any, **kwargs: Any) -> None:
+        escaped_fill_names = {_escape_slot_name(fill_name): True for fill_name in fills.keys()}
+        super().__init__(escaped_fill_names, *args, **kwargs)
+
+    def __missing__(self, key: Any) -> bool:
+        return False
+
+
+@dataclass
+class ComponentSlotContext:
+    component_name: str
+    template_name: str
+    is_dynamic_component: bool
+    default_slot: Optional[str]
+    fills: Dict[SlotName, Slot]
+
+    def post_render_validation(self) -> None:
+        if self.is_dynamic_component:
+            return
+
+        default_fill = self.fills.get(DEFAULT_SLOT_KEY, None)
+
+        # Check: Only component templates that include a 'default' slot
+        # can be invoked with implicit filling.
+        if default_fill and not self.default_slot:
+            raise TemplateSyntaxError(
+                f"Component '{self.component_name}' passed default fill content "
+                f"(i.e. without explicit 'name' kwarg), "
+                f"even though none of its slots is marked as 'default'."
+            )
+
+        # NOTE:
+        # In the current implementation, the slots are resolved only at the render time.
+        # So when we are rendering Django's Nodes, and we come across a SlotNode, only
+        # at that point we check if we have the fill for it.
+        #
+        # That means that we can use variables, and we can place slots in loops.
+        #
+        # However, because the slot names are dynamic, we cannot know all the slot names
+        # that will be rendered ahead of the time.
+        #
+        # Moreover, user may define a slot whose default content has more slots inside it.
+        #
+        # Previously, there was an error raised if there were unfilled slots or extra fills.
+        #
+        # But now this is only a message. Because:
+        # 1. We don't know about ALL slots, just about the rendered ones, so we CANNOT check
+        #    for unfilled slots (rendered slots WILL raise an error if the fill is missing).
+        # 2. User may provide extra fills, but these may belong to slots we haven't
+        #    encountered in this render run. So we CANNOT say which ones are extra.
+
+
 class SlotNode(BaseNode):
+    """Node corresponding to `{% slot %}`"""
+
     def __init__(
         self,
         nodelist: NodeList,
@@ -177,13 +216,119 @@ class SlotNode(BaseNode):
 
     def render(self, context: Context) -> SafeString:
         trace_msg("RENDR", "SLOT", self.trace_id, self.node_id)
-        slots: Dict[SlotId, "SlotFill"] = context[_FILLED_SLOTS_CONTENT_CONTEXT_KEY]
-        # NOTE: Slot entry MUST be present. If it's missing, there was an issue upstream.
-        slot_fill = slots[self.node_id]
 
-        name, kwargs = self.resolve_kwargs(context)
+        if _COMPONENT_SLOT_CTX_CONTEXT_KEY not in context or not context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]:
+            raise TemplateSyntaxError(
+                "Encountered a SlotNode outside of a ComponentNode context. "
+                "Make sure that all {% slot %} tags are nested within {% component %} tags.\n"
+                f"SlotNode: {self.__repr__()}"
+            )
+
+        component_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
+        slot_name, kwargs = self.resolve_kwargs(context, component_ctx.component_name)
+
+        # Check for errors
+        if self.is_default and not component_ctx.is_dynamic_component:
+            # Allow one slot to be marked as 'default', or multiple slots but with
+            # the same name. If there is multiple 'default' slots with different names, raise.
+            default_slot_name = component_ctx.default_slot
+            if default_slot_name is not None and slot_name != default_slot_name:
+                raise TemplateSyntaxError(
+                    "Only one component slot may be marked as 'default', "
+                    f"found '{default_slot_name}' and '{slot_name}'. "
+                    f"To fix, check template '{component_ctx.template_name}' "
+                    f"of component '{component_ctx.component_name}'."
+                )
+
+            if default_slot_name is None:
+                component_ctx.default_slot = slot_name
+
+            # If the slot is marked as 'default', check if user didn't double-fill it
+            # by specifying the fill both by explicit slot name and implicitly as 'default'.
+            if (
+                slot_name != DEFAULT_SLOT_KEY
+                and component_ctx.fills.get(slot_name, False)
+                and component_ctx.fills.get(DEFAULT_SLOT_KEY, False)
+            ):
+                raise TemplateSyntaxError(
+                    f"Slot '{slot_name}' of component '{component_ctx.component_name}' was filled twice: "
+                    "once explicitly and once implicitly as 'default'."
+                )
+
+        # If slot is marked as 'default', we use the name 'default' for the fill,
+        # IF SUCH FILL EXISTS. Otherwise, we use the slot's name.
+        if self.is_default and DEFAULT_SLOT_KEY in component_ctx.fills:
+            fill_name = DEFAULT_SLOT_KEY
+        else:
+            fill_name = slot_name
+
+        if fill_name in component_ctx.fills:
+            slot_fill_fn = component_ctx.fills[fill_name]
+            slot_fill = SlotFill(
+                name=slot_name,
+                is_filled=True,
+                slot=slot_fill_fn,
+            )
+        else:
+            # No fill was supplied, render the slot's default content
+            slot_fill = SlotFill(
+                name=slot_name,
+                is_filled=False,
+                slot=_nodelist_to_slot_render_func(
+                    slot_name=slot_name,
+                    nodelist=self.nodelist,
+                    data_var=None,
+                    default_var=None,
+                ),
+            )
+
+        # Check: If a slot is marked as 'required', it must be filled.
+        #
+        # To help with easy-to-overlook typos, we fuzzy match unresolvable fills to
+        # those slots for which no matching fill was encountered. In the event of
+        # a close match, we include the name of the matched unfilled slot as a
+        # hint in the error message.
+        #
+        # Note: Finding a good `cutoff` value may require further trial-and-error.
+        # Higher values make matching stricter. This is probably preferable, as it
+        # reduces false positives.
+        if self.is_required and not slot_fill.is_filled and not component_ctx.is_dynamic_component:
+            msg = (
+                f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
+                f"yet no fill is provided. Check template.'"
+            )
+            fill_names = list(component_ctx.fills.keys())
+            if fill_names:
+                fuzzy_fill_name_matches = difflib.get_close_matches(fill_name, fill_names, n=1, cutoff=0.7)
+                if fuzzy_fill_name_matches:
+                    msg += f"\nDid you mean '{fuzzy_fill_name_matches[0]}'?"
+            raise TemplateSyntaxError(msg)
 
         extra_context: Dict[str, Any] = {}
+
+        # NOTE: If a user defines a `{% slot %}` tag inside a `{% fill %}` tag, two things
+        # may happen based on the context mode:
+        # 1. In the "isolated" mode, the context inside the fill is the same as outside of the component
+        #    so any slots fill be filled with that same (parent) context.
+        # 2. In the "django" mode, the context inside the fill is the same as the one inside the component,
+        #
+        # The "django" mode is problematic, because if we define a fill with the same name as the slot,
+        # then we will enter an endless loop. E.g.:
+        # ```django
+        # {% component "mycomponent" %}
+        #   {% slot "content" %}
+        #     {% fill "content" %}
+        #       ...
+        #     {% endfill %}
+        #   {% endslot %}
+        # {% endcomponent %}
+        # ```
+        #
+        # Hence, even in the "django" mode, we MUST use slots of the context of the parent component.
+        all_ctxs = [d for d in context.dicts if _COMPONENT_SLOT_CTX_CONTEXT_KEY in d]
+        if len(all_ctxs) > 1:
+            second_to_last_ctx = all_ctxs[-2]
+            extra_context[_COMPONENT_SLOT_CTX_CONTEXT_KEY] = second_to_last_ctx[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
 
         # Irrespective of which context we use ("root" context or the one passed to this
         # render function), pass down the keys used by inject/provide feature. This makes it
@@ -195,27 +340,7 @@ class SlotNode(BaseNode):
             if key.startswith(_INJECT_CONTEXT_KEY_PREFIX):
                 extra_context[key] = value
 
-        # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
-        # the context, so users can refer to the default slot from within the fill content.
         slot_ref = SlotRef(self, context)
-        default_var = slot_fill.slot_default_var
-        if default_var:
-            if not default_var.isidentifier():
-                raise TemplateSyntaxError(
-                    f"Slot default alias in fill '{name}' must be a valid identifier. Got '{default_var}'"
-                )
-            extra_context[default_var] = slot_ref
-
-        # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
-        # are made available through a variable name that was set on the `{% fill %}`
-        # tag.
-        data_var = slot_fill.slot_data_var
-        if data_var:
-            if not data_var.isidentifier():
-                raise TemplateSyntaxError(
-                    f"Slot data alias in fill '{name}' must be a valid identifier. Got '{data_var}'"
-                )
-            extra_context[data_var] = kwargs
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
@@ -224,7 +349,7 @@ class SlotNode(BaseNode):
             # Render slot as a function
             # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
             #       the render function ALWAYS receives them.
-            output = slot_fill.content_func(used_ctx, kwargs, slot_ref)
+            output = slot_fill.slot(used_ctx, kwargs, slot_ref)
 
         trace_msg("RENDR", "SLOT", self.trace_id, self.node_id, msg="...Done!")
         return output
@@ -238,12 +363,12 @@ class SlotNode(BaseNode):
             return context
 
         registry: "ComponentRegistry" = context[_REGISTRY_CONTEXT_KEY]
-        if registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.DJANGO:
+        if registry.settings.context_behavior == ContextBehavior.DJANGO:
             return context
-        elif registry.settings.CONTEXT_BEHAVIOR == ContextBehavior.ISOLATED:
+        elif registry.settings.context_behavior == ContextBehavior.ISOLATED:
             return context[_ROOT_CTX_CONTEXT_KEY]
         else:
-            raise ValueError(f"Unknown value for CONTEXT_BEHAVIOR: '{registry.settings.CONTEXT_BEHAVIOR}'")
+            raise ValueError(f"Unknown value for context_behavior: '{registry.settings.context_behavior}'")
 
     def resolve_kwargs(
         self,
@@ -260,11 +385,7 @@ class SlotNode(BaseNode):
 
 
 class FillNode(BaseNode):
-    """
-    Set when a `component` tag pair is passed template content that
-    excludes `fill` tags. Nodes of this type contribute their nodelists to slots marked
-    as 'default'.
-    """
+    """Node corresponding to `{% fill %}`"""
 
     def __init__(
         self,
@@ -272,75 +393,167 @@ class FillNode(BaseNode):
         kwargs: RuntimeKwargs,
         trace_id: str,
         node_id: Optional[str] = None,
-        is_implicit: bool = False,
     ):
         super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
 
-        self.is_implicit = is_implicit
         self.trace_id = trace_id
-        self.component_id: Optional[str] = None
 
     def render(self, context: Context) -> str:
+        if self._is_extracting_fill(context):
+            self._extract_fill(context)
+            return ""
+
         raise TemplateSyntaxError(
-            "{% fill ... %} block cannot be rendered directly. "
-            "You are probably seeing this because you have used one outside "
-            "a {% component %} context."
+            "FillNode.render() (AKA {% fill ... %} block) cannot be rendered outside of a Component context. "
+            "Make sure that the {% fill %} tags are nested within {% component %} tags."
         )
 
     def __repr__(self) -> str:
-        return f"<{type(self)} ID: {self.node_id}. Contents: {repr(self.nodelist)}.>"
+        return f"<{self.__class__.__name__} ID: {self.node_id}. Contents: {repr(self.nodelist)}.>"
 
-    def resolve_kwargs(self, context: Context, component_name: Optional[str] = None) -> Dict[str, Optional[str]]:
+    def resolve_kwargs(self, context: Context) -> "FillWithData":
         kwargs = self.kwargs.resolve(context)
 
-        name = self._resolve_kwarg(kwargs, SLOT_NAME_KWARG, "slot name", component_name, identifier=False)
-        default_key = self._resolve_kwarg(kwargs, SLOT_DEFAULT_KWARG, "slot default", component_name)
-        data_key = self._resolve_kwarg(kwargs, SLOT_DATA_KWARG, "slot data", component_name)
+        name = self._process_kwarg(kwargs, SLOT_NAME_KWARG, identifier=False)
+        default_var = self._process_kwarg(kwargs, SLOT_DEFAULT_KWARG)
+        data_var = self._process_kwarg(kwargs, SLOT_DATA_KWARG)
+
+        if not isinstance(name, str):
+            raise TemplateSyntaxError(f"Fill tag '{SLOT_NAME_KWARG}' kwarg must resolve to a string, got {name}")
+
+        if data_var is not None and not isinstance(data_var, str):
+            raise TemplateSyntaxError(f"Fill tag '{SLOT_DATA_KWARG}' kwarg must resolve to a string, got {data_var}")
+
+        if default_var is not None and not isinstance(default_var, str):
+            raise TemplateSyntaxError(
+                f"Fill tag '{SLOT_DEFAULT_KWARG}' kwarg must resolve to a string, got {default_var}"
+            )
 
         # data and default cannot be bound to the same variable
-        if data_key and default_key and data_key == default_key:
+        if data_var and default_var and data_var == default_var:
             raise RuntimeError(
                 f"Fill '{name}' received the same string for slot default ({SLOT_DEFAULT_KWARG}=...)"
                 f" and slot data ({SLOT_DATA_KWARG}=...)"
             )
 
-        return {
-            SLOT_NAME_KWARG: name,
-            SLOT_DEFAULT_KWARG: default_key,
-            SLOT_DATA_KWARG: data_key,
-        }
+        return FillWithData(
+            fill=self,
+            name=name,
+            default_var=default_var,
+            data_var=data_var,
+            extra_context={},
+        )
 
-    def _resolve_kwarg(
+    def _process_kwarg(
         self,
         kwargs: Dict[str, Any],
         key: str,
-        name: str,
-        component_name: Optional[str] = None,
         identifier: bool = True,
-    ) -> Optional[str]:
+    ) -> Optional[Any]:
         if key not in kwargs:
             return None
 
         value = kwargs[key]
         if identifier and not is_identifier(value):
-            raise RuntimeError(
-                f"Fill tag {name} in component {component_name}"
-                f"does not resolve to a valid Python identifier, got '{value}'"
-            )
-        elif not identifier and not value:
-            raise RuntimeError(f"Fill tag {name} is missing value in component {component_name}")
+            raise RuntimeError(f"Fill tag kwarg '{key}' does not resolve to a valid Python identifier, got '{value}'")
 
         return value
 
+    def _is_extracting_fill(self, context: Context) -> bool:
+        return context.get(FILL_GEN_CONTEXT_KEY, None) is not None
 
-# NOTE: There may be more components per template, so using `app_settings.TEMPLATE_CACHE_SIZE`
-# is not entirely correct. However, for now it's not worth it adding a separate setting
-# to control this cache separately. So we use `TEMPLATE_CACHE_SIZE` so the cache is bounded.
-@lazy_cache(lambda: lru_cache(maxsize=app_settings.TEMPLATE_CACHE_SIZE))
-def parse_slot_fill_nodes_from_component_nodelist(
-    nodes: Tuple[Node, ...],
-    ignored_nodes: Tuple[Type[Node]],
-) -> List[FillNode]:
+    def _extract_fill(self, context: Context) -> None:
+        # `FILL_GEN_CONTEXT_KEY` is only ever set when we are rendering content between the
+        # `{% component %}...{% endcomponent %}` tags. This is done in order to collect all fill tags.
+        # E.g.
+        #   {% for slot_name in exposed_slots %}
+        #     {% fill name=slot_name %}
+        #       ...
+        #     {% endfill %}
+        #   {% endfor %}
+        collected_fills: List[FillWithData] = context.get(FILL_GEN_CONTEXT_KEY, None)
+
+        if collected_fills is None:
+            return
+
+        # NOTE: It's important that we use the context given to the fill tag, so it accounts
+        #       for any variables set via e.g. for-loops.
+        data = self.resolve_kwargs(context)
+
+        # To allow using variables which were defined within the template and to which
+        # the `{% fill %}` tag has access, we need to capture those variables too.
+        #
+        # E.g.
+        # ```django
+        # {% component "three_slots" %}
+        #     {% with slot_name="header" %}
+        #         {% fill name=slot_name %}
+        #             OVERRIDEN: {{ slot_name }}
+        #         {% endfill %}
+        #     {% endwith %}
+        # {% endcomponent %}
+        # ```
+        #
+        # NOTE: We want to capture only variables that were defined WITHIN
+        # `{% component %} ... {% endcomponent %}`. Hence we search for the last
+        # index of `FILL_GEN_CONTEXT_KEY`.
+        index_of_new_layers = get_last_index(context.dicts, lambda d: FILL_GEN_CONTEXT_KEY in d)
+        for dict_layer in context.dicts[index_of_new_layers:]:
+            for key, value in dict_layer.items():
+                if not key.startswith("_"):
+                    data.extra_context[key] = value
+
+        # To allow using the variables from the forloops inside the fill tags, we need to
+        # capture those variables too.
+        #
+        # E.g.
+        # {% component "three_slots" %}
+        #     {% for outer in outer_loop %}
+        #         {% for slot_name in the_slots %}
+        #             {% fill name=slot_name|add:outer %}
+        #                 OVERRIDEN: {{ slot_name }} - {{ outer }}
+        #             {% endfill %}
+        #         {% endfor %}
+        #     {% endfor %}
+        # {% endcomponent %}
+        #
+        # When we get to {% fill %} tag, the {% for %} tags have added extra info to the context.
+        # This loop info can be identified by having key `forloop` in it.
+        # There will be as many "forloop" dicts as there are for-loops.
+        #
+        # So `Context.dicts` may look like this:
+        # [
+        #   {'True': True, 'False': False, 'None': None},  # Default context
+        #   {'forloop': {'parentloop': {...}, 'counter0': 2, 'counter': 3, ... }, 'outer': 2},
+        #   {'forloop': {'parentloop': {...}, 'counter0': 1, 'counter': 2, ... }, 'slot_name': 'slot2'}
+        # ]
+        for layer in context.dicts:
+            if "forloop" in layer:
+                layer = layer.copy()
+                layer["forloop"] = layer["forloop"].copy()
+                data.extra_context.update(layer)
+
+        collected_fills.append(data)
+
+
+#######################################
+# EXTRACTING {% fill %} FROM TEMPLATES
+#######################################
+
+
+class FillWithData(NamedTuple):
+    fill: FillNode
+    name: str
+    default_var: Optional[str]
+    data_var: Optional[str]
+    extra_context: Dict[str, Any]
+
+
+def resolve_fills(
+    context: Context,
+    nodelist: NodeList,
+    component_name: str,
+) -> Dict[SlotName, Slot]:
     """
     Given a component body (`django.template.NodeList`), find all slot fills,
     whether defined explicitly with `{% fill %}` or implicitly.
@@ -356,349 +569,118 @@ def parse_slot_fill_nodes_from_component_nodelist(
         {% endfill %}
     {% endcomponent %}
     ```
-    Then this function returns the nodes (`django.template.Node`) for `fill "first_fill"`
-    and `fill "second_fill"`.
+
+    Then this function finds 2 fill nodes: "first_fill" and "second_fill",
+    and formats them as slot functions, returning:
+
+    ```python
+    {
+        "first_fill": SlotFunc(...),
+        "second_fill": SlotFunc(...),
+    }
+    ```
+
+    If no fill nodes are found, then the content is treated as default slot content.
+
+    ```python
+    {
+        DEFAULT_SLOT_KEY: SlotFunc(...),
+    }
+    ```
+
+    This function also handles for-loops, if/else statements, or include tags to generate fill tags:
+
+    ```django
+    {% component "mycomponent" %}
+        {% for slot_name in slots %}
+            {% fill name=slot_name %}
+                {% slot name=slot_name / %}
+            {% endfill %}
+        {% endfor %}
+    {% endcomponent %}
+    ```
     """
-    fill_nodes: List[FillNode] = []
-    if nodelist_has_content(nodes):
-        for parse_fn in (
-            _try_parse_as_default_fill,
-            _try_parse_as_named_fill_tag_set,
-        ):
-            curr_fill_nodes = parse_fn(nodes, ignored_nodes)
-            if curr_fill_nodes:
-                fill_nodes = curr_fill_nodes
-                break
-        else:
-            raise TemplateSyntaxError(
-                "Illegal content passed to 'component' tag pair. "
-                "Possible causes: 1) Explicit 'fill' tags cannot occur alongside other "
-                "tags except comment tags; 2) Default (default slot-targeting) content "
-                "is mixed with explict 'fill' tags."
+    slots: Dict[SlotName, Slot] = {}
+
+    if not nodelist:
+        return slots
+
+    maybe_fills = _extract_fill_content(nodelist, context, component_name)
+
+    # The content has no fills, so treat it as default slot, e.g.:
+    # {% component "mycomponent" %}
+    #   Hello!
+    #   {% if True %} 123 {% endif %}
+    # {% endcomponent %}
+    if maybe_fills is False:
+        # Ignore empty content between `{% component %} ... {% endcomponent %}` tags
+        nodelist_is_empty = not len(nodelist) or all(
+            isinstance(node, TextNode) and not node.s.strip() for node in nodelist
+        )
+
+        if not nodelist_is_empty:
+            slots[DEFAULT_SLOT_KEY] = _nodelist_to_slot_render_func(
+                DEFAULT_SLOT_KEY,
+                nodelist,
+                data_var=None,
+                default_var=None,
             )
-    return fill_nodes
 
-
-def _try_parse_as_named_fill_tag_set(
-    nodes: Tuple[Node, ...],
-    ignored_nodes: Tuple[Type[Node]],
-) -> List[FillNode]:
-    result = []
-    seen_names: Set[str] = set()
-    for node in nodes:
-        if isinstance(node, FillNode):
-            # If the fill name was defined statically, then check for no duplicates.
-            maybe_fill_name = node.kwargs.kwargs.get(SLOT_NAME_KWARG)
-            if isinstance(maybe_fill_name, FilterExpression):
-                if maybe_fill_name.token in seen_names:
-                    raise TemplateSyntaxError(
-                        f"Multiple fill tags cannot target the same slot name: "
-                        f"Detected duplicate fill tag name '{maybe_fill_name.token}'."
-                    )
-                seen_names.add(maybe_fill_name.token)
-            result.append(node)
-        elif isinstance(node, CommentNode):
-            pass
-        elif isinstance(node, TextNode) and node.s.isspace():
-            pass
-        else:
-            return []
-    return result
-
-
-def _try_parse_as_default_fill(
-    nodes: Tuple[Node, ...],
-    ignored_nodes: Tuple[Type[Node]],
-) -> List[FillNode]:
-    nodes_stack: List[Node] = list(nodes)
-    while nodes_stack:
-        node = nodes_stack.pop()
-        if isinstance(node, FillNode):
-            return []
-        elif isinstance(node, ignored_nodes):
-            # Stop searching here, as fill tags are permitted inside component blocks
-            # embedded within a default fill node.
-            continue
-        for nodelist_attr_name in node.child_nodelists:
-            nodes_stack.extend(getattr(node, nodelist_attr_name, []))
+    # The content has fills
     else:
-        return [
-            FillNode(
-                nodelist=NodeList(nodes),
-                kwargs=RuntimeKwargs(
-                    {
-                        # Wrap the default slot name in quotes so it's treated as FilterExpression
-                        SLOT_NAME_KWARG: FilterExpression(json.dumps(DEFAULT_SLOT_KEY), Parser("")),
-                    }
-                ),
-                is_implicit=True,
-                trace_id="default",
+        # NOTE: If slot fills are explicitly defined, we use them even if they are empty (or only whitespace).
+        #       This is different from the default slot, where we ignore empty content.
+        for fill in maybe_fills:
+            slots[fill.name] = _nodelist_to_slot_render_func(
+                slot_name=fill.name,
+                nodelist=fill.fill.nodelist,
+                data_var=fill.data_var,
+                default_var=fill.default_var,
+                extra_context=fill.extra_context,
             )
-        ]
+
+    return slots
 
 
-def resolve_fill_nodes(
+def _extract_fill_content(
+    nodes: NodeList,
     context: Context,
-    fill_nodes: List[FillNode],
     component_name: str,
-) -> Dict[str, FillContent]:
-    fill_content: Dict[str, FillContent] = {}
-    for fill_node in fill_nodes:
-        # Note that outer component context is used to resolve variables in
-        # fill tag.
-        fill_kwargs = fill_node.resolve_kwargs(context, component_name)
-        fill_name = fill_kwargs.get(SLOT_NAME_KWARG)
+) -> Union[List[FillWithData], Literal[False]]:
+    # When, during rendering of this tree, we encounter a {% fill %} node, instead of rendering content,
+    # it will add itself into captured_fills, because `FILL_GEN_CONTEXT_KEY` is defined.
+    captured_fills: List[FillWithData] = []
+    with context.update({FILL_GEN_CONTEXT_KEY: captured_fills}):
+        content = mark_safe(nodes.render(context).strip())
 
-        if SLOT_NAME_KWARG not in fill_kwargs:
-            raise TemplateSyntaxError("Fill tag is missing the 'name' kwarg")
+    # If we did not encounter any fills (not accounting for those nested in other
+    # {% componenet %} tags), then we treat the content as default slot.
+    if not captured_fills:
+        return False
 
-        if not isinstance(fill_name, str):
-            raise TemplateSyntaxError(f"Fill tag 'name' kwarg must resolve to a string, got {fill_name}")
-
-        if fill_name in fill_content:
-            raise TemplateSyntaxError(
-                f"Multiple fill tags cannot target the same slot name: "
-                f"Detected duplicate fill tag name '{fill_name}'."
-            )
-
-        fill_content[fill_name] = FillContent(
-            content_func=_nodelist_to_slot_render_func(fill_node.nodelist),
-            slot_default_var=fill_kwargs[SLOT_DEFAULT_KWARG],
-            slot_data_var=fill_kwargs[SLOT_DATA_KWARG],
-        )
-    return fill_content
-
-
-####################
-# SLOT RESOLUTION
-####################
-
-
-def resolve_slots(
-    context: Context,
-    template: Template,
-    component_name: Optional[str],
-    fill_content: Dict[SlotName, FillContent],
-    is_dynamic_component: bool = False,
-) -> Tuple[Dict[SlotId, Slot], Dict[SlotId, SlotFill]]:
-    """
-    Search the template for all SlotNodes, and associate the slots
-    with the given fills.
-
-    Returns tuple of:
-    - Slots defined in the component's Template with `{% slot %}` tag
-    - SlotFills (AKA slots matched with fills) describing what will be rendered for each slot.
-    """
-    slot_fills = {
-        name: SlotFill(
-            name=name,
-            escaped_name=_escape_slot_name(name),
-            is_filled=True,
-            content_func=fill.content_func,
-            slot_default_var=fill.slot_default_var,
-            slot_data_var=fill.slot_data_var,
-        )
-        for name, fill in fill_content.items()
-    }
-
-    slots: Dict[SlotId, Slot] = {}
-    # This holds info on which slot (key) has which slots nested in it (value list)
-    slot_children: Dict[SlotId, List[SlotId]] = {}
-    all_nested_slots: Set[SlotId] = set()
-
-    def on_node(entry: NodeTraverse) -> None:
-        node = entry.node
-        if not isinstance(node, SlotNode):
-            return
-
-        slot_name, _ = node.resolve_kwargs(context, component_name)
-
-        # 1. Collect slots
-        # Basically we take all the important info form the SlotNode, so the logic is
-        # less coupled to Django's Template/Node. Plain tuples should also help with
-        # troubleshooting.
-        slot = Slot(
-            id=node.node_id,
-            name=slot_name,
-            nodelist=node.nodelist,
-            is_default=node.is_default,
-            is_required=node.is_required,
-        )
-        slots[node.node_id] = slot
-
-        # 2. Figure out which Slots are nested in other Slots, so we can render
-        # them from outside-inwards, so we can skip inner Slots if fills are provided.
-        # We should end up with a graph-like data like:
-        # - 0001: [0002]
-        # - 0002: []
-        # - 0003: [0004]
-        # In other words, the data tells us that slot ID 0001 is PARENT of slot 0002.
-        parent_slot_entry = entry.parent
-        while parent_slot_entry is not None:
-            if not isinstance(parent_slot_entry.node, SlotNode):
-                parent_slot_entry = parent_slot_entry.parent
-                continue
-
-            parent_slot_id = parent_slot_entry.node.node_id
-            if parent_slot_id not in slot_children:
-                slot_children[parent_slot_id] = []
-            slot_children[parent_slot_id].append(node.node_id)
-            all_nested_slots.add(node.node_id)
-            break
-
-    walk_nodelist(template.nodelist, on_node, context)
-
-    # 3. Figure out which slot the default/implicit fill belongs to
-    slot_fills = _resolve_default_slot(
-        template_name=template.name,
-        component_name=component_name,
-        slots=slots,
-        slot_fills=slot_fills,
-        is_dynamic_component=is_dynamic_component,
-    )
-
-    # 4. Detect any errors with slots/fills
-    # NOTE: We ignore errors for the dynamic component, as the underlying component
-    # will deal with it
-    if not is_dynamic_component:
-        _report_slot_errors(slots, slot_fills, component_name)
-
-    # 5. Find roots of the slot relationships
-    top_level_slot_ids: List[SlotId] = [node_id for node_id in slots.keys() if node_id not in all_nested_slots]
-
-    # 6. Walk from out-most slots inwards, and decide whether and how
-    # we will render each slot.
-    resolved_slots: Dict[SlotId, SlotFill] = {}
-    slot_ids_queue = deque([*top_level_slot_ids])
-    while len(slot_ids_queue):
-        slot_id = slot_ids_queue.pop()
-        slot = slots[slot_id]
-
-        # Check if there is a slot fill for given slot name
-        if slot.name in slot_fills:
-            # If yes, we remember which slot we want to replace with already-rendered fills
-            resolved_slots[slot_id] = slot_fills[slot.name]
-            # Since the fill cannot include other slots, we can leave this path
-            continue
-        else:
-            # If no, then the slot is NOT filled, and we will render the slot's default (what's
-            # between the slot tags)
-            resolved_slots[slot_id] = SlotFill(
-                name=slot.name,
-                escaped_name=_escape_slot_name(slot.name),
-                is_filled=False,
-                content_func=_nodelist_to_slot_render_func(slot.nodelist),
-                slot_default_var=None,
-                slot_data_var=None,
-            )
-            # Since the slot's default CAN include other slots (because it's defined in
-            # the same template), we need to enqueue the slot's children
-            if slot_id in slot_children and slot_children[slot_id]:
-                slot_ids_queue.extend(slot_children[slot_id])
-
-    # By the time we get here, we should know, for each slot, how it will be rendered
-    # -> Whether it will be replaced with a fill, or whether we render slot's defaults.
-    return slots, resolved_slots
-
-
-def _resolve_default_slot(
-    template_name: str,
-    component_name: Optional[str],
-    slots: Dict[SlotId, Slot],
-    slot_fills: Dict[SlotName, SlotFill],
-    is_dynamic_component: bool,
-) -> Dict[SlotName, SlotFill]:
-    """Figure out which slot the default fill refers to, and perform checks."""
-    named_fills = slot_fills.copy()
-
-    if DEFAULT_SLOT_KEY in named_fills:
-        default_fill = named_fills.pop(DEFAULT_SLOT_KEY)
-    else:
-        default_fill = None
-
-    default_slot_encountered: bool = False
-
-    # Check for errors
-    for slot in slots.values():
-        if not slot.is_default:
-            continue
-
-        if default_slot_encountered:
-            raise TemplateSyntaxError(
-                "Only one component slot may be marked as 'default'. "
-                f"To fix, check template '{template_name}' "
-                f"of component '{component_name}'."
-            )
-        default_slot_encountered = True
-
-        # Here we've identified which slot the default/implicit fill belongs to
-        if default_fill:
-            # NOTE: We recreate new instance, passing all fields, instead of using
-            # `NamedTuple._replace`, because `_replace` is not typed.
-            named_fills[slot.name] = SlotFill(
-                is_filled=default_fill.is_filled,
-                content_func=default_fill.content_func,
-                slot_default_var=default_fill.slot_default_var,
-                slot_data_var=default_fill.slot_data_var,
-                # Updated fields
-                name=slot.name,
-                escaped_name=_escape_slot_name(slot.name),
-            )
-
-    # Check: Only component templates that include a 'default' slot
-    # can be invoked with implicit filling.
-    if default_fill and not default_slot_encountered and not is_dynamic_component:
+    elif content:
         raise TemplateSyntaxError(
-            f"Component '{component_name}' passed default fill content '{default_fill.name}'"
-            f"(i.e. without explicit 'fill' tag), "
-            f"even though none of its slots is marked as 'default'."
+            f"Illegal content passed to component '{component_name}'. "
+            "Explicit 'fill' tags cannot occur alongside other text. "
+            "The component body rendered content: {content}"
         )
 
-    return named_fills
-
-
-def _report_slot_errors(
-    slots: Dict[SlotId, Slot],
-    slot_fills: Dict[SlotName, SlotFill],
-    registered_name: Optional[str],
-) -> None:
-    slots_by_name = {slot.name: slot for slot in slots.values()}
-    unfilled_slots: Set[str] = {slot.name for slot in slots.values() if slot.name not in slot_fills}
-    unmatched_fills: Set[str] = {
-        slot_fill.name for slot_fill in slot_fills.values() if slot_fill.name not in slots_by_name
-    }
-    required_slot_names: Set[str] = set([slot.name for slot in slots.values() if slot.is_required])
-
-    # Check that 'required' slots are filled.
-    for slot_name in unfilled_slots:
-        if slot_name in required_slot_names:
-            msg = (
-                f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
-                f"yet no fill is provided. Check template.'"
+    # Check for any duplicates
+    seen_names: Set[str] = set()
+    for fill in captured_fills:
+        if fill.name in seen_names:
+            raise TemplateSyntaxError(
+                f"Multiple fill tags cannot target the same slot name in component '{component_name}': "
+                f"Detected duplicate fill tag name '{fill.name}'."
             )
-            if unmatched_fills:
-                msg = f"{msg}\nPossible typo in unresolvable fills: {unmatched_fills}."
-            raise TemplateSyntaxError(msg)
+        seen_names.add(fill.name)
 
-    # Check that all fills can be matched to a slot on the component template.
-    # To help with easy-to-overlook typos, we fuzzy match unresolvable fills to
-    # those slots for which no matching fill was encountered. In the event of
-    # a close match, we include the name of the matched unfilled slot as a
-    # hint in the error message.
-    #
-    # Note: Finding a good `cutoff` value may require further trial-and-error.
-    # Higher values make matching stricter. This is probably preferable, as it
-    # reduces false positives.
-    for fill_name in unmatched_fills:
-        fuzzy_slot_name_matches = difflib.get_close_matches(fill_name, unfilled_slots, n=1, cutoff=0.7)
-        msg = (
-            f"Component '{registered_name}' passed fill that refers to undefined slot:"
-            f" '{fill_name}'."
-            f"\nUnfilled slot names are: {sorted(unfilled_slots)}."
-        )
-        if fuzzy_slot_name_matches:
-            msg += f"\nDid you mean '{fuzzy_slot_name_matches[0]}'?"
-        raise TemplateSyntaxError(msg)
+    return captured_fills
+
+
+#######################################
+# MISC
+#######################################
 
 
 name_escape_re = re.compile(r"[^\w]")
@@ -720,8 +702,76 @@ def _escape_slot_name(name: str) -> str:
     return escaped_name
 
 
-def _nodelist_to_slot_render_func(nodelist: NodeList) -> SlotFunc:
-    def render_func(ctx: Context, slot_data: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
-        return nodelist.render(ctx)
+def _nodelist_to_slot_render_func(
+    slot_name: str,
+    nodelist: NodeList,
+    data_var: Optional[str] = None,
+    default_var: Optional[str] = None,
+    extra_context: Optional[Dict[str, Any]] = None,
+) -> Slot:
+    if data_var:
+        if not data_var.isidentifier():
+            raise TemplateSyntaxError(
+                f"Slot data alias in fill '{slot_name}' must be a valid identifier. Got '{data_var}'"
+            )
 
-    return render_func  # type: ignore[return-value]
+    if default_var:
+        if not default_var.isidentifier():
+            raise TemplateSyntaxError(
+                f"Slot default alias in fill '{slot_name}' must be a valid identifier. Got '{default_var}'"
+            )
+
+    def render_func(ctx: Context, slot_data: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
+        # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
+        # are made available through a variable name that was set on the `{% fill %}`
+        # tag.
+        if data_var:
+            ctx[data_var] = slot_data
+
+        # If slot fill is using `{% fill "myslot" default="abc" %}`, then set the "abc" to
+        # the context, so users can refer to the default slot from within the fill content.
+        if default_var:
+            ctx[default_var] = slot_ref
+
+        # NOTE: If a `{% fill %}` tag inside a `{% component %}` tag is inside a forloop,
+        # the `extra_context` contains the forloop variables. We want to make these available
+        # to the slot fill content.
+        #
+        # However, we cannot simply append the `extra_context` to the Context as the latest stack layer
+        # because then the forloop variables override the slot fill variables. Instead, we have to put
+        # the `extra_context` into the correct layer.
+        #
+        # Currently the `extra_context` is set only in `FillNode._extract_fill()` method
+        # that is run when we render a `{% component %}` tag inside a template, and we need
+        # to extract the fills from the tag's body.
+        #
+        # Thus, when we get here and `extra_context` is not None, it means that the component
+        # is being rendered from within the template. And so we know that we're inside `Component._render()`.
+        # And that means that the context MUST contain our internal context keys like `_ROOT_CTX_CONTEXT_KEY`.
+        #
+        # And so we want to put the `extra_context` into the same layer that contains `_ROOT_CTX_CONTEXT_KEY`.
+        #
+        # HOWEVER, the layer with `_ROOT_CTX_CONTEXT_KEY` also contains user-defined data from `get_context_data()`.
+        # Data from `get_context_data()` should take precedence over `extra_context`. So we have to insert
+        # the forloop variables BEFORE that.
+        index_of_last_component_layer = get_last_index(ctx.dicts, lambda d: _ROOT_CTX_CONTEXT_KEY in d)
+        if index_of_last_component_layer is None:
+            index_of_last_component_layer = 0
+
+        # TODO: Currently there's one more layer before the `_ROOT_CTX_CONTEXT_KEY` layer, which is
+        #       pushed in `_prepare_template()` in `component.py`.
+        #       That layer should be removed when `Component.get_template()` is removed, after which
+        #       the following line can be removed.
+        index_of_last_component_layer -= 1
+
+        # Insert the `extra_context` into the correct layer of the context stack
+        ctx.dicts.insert(index_of_last_component_layer, extra_context or {})
+
+        rendered = nodelist.render(ctx)
+
+        # After the rendering is done, remove the `extra_context` from the context stack
+        ctx.dicts.pop(index_of_last_component_layer)
+
+        return rendered
+
+    return Slot(content_func=cast(SlotFunc, render_func))

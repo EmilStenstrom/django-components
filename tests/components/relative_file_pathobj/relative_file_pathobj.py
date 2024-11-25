@@ -18,7 +18,10 @@ class PathObj:
         if self.throw_on_calling_str:
             raise RuntimeError("__str__ method of 'relative_file_pathobj_component' was triggered when not allow to")
 
-        return format_html('<script type="module" src="{}"></script>', static(self.static_path))
+        if self.static_path.endswith(".js"):
+            return format_html('<script type="module" src="{}"></script>', static(self.static_path))
+        else:
+            return format_html('<link href="{}" rel="stylesheet">', static(self.static_path))
 
 
 @register("relative_file_pathobj_component")

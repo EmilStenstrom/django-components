@@ -9,8 +9,8 @@ from django.core.files.storage import FileSystemStorage
 from django.utils._os import safe_join
 
 from django_components.app_settings import app_settings
-from django_components.template_loader import get_dirs
-from django_components.utils import any_regex_match, no_regex_match
+from django_components.util.loader import get_component_dirs
+from django_components.util.misc import any_regex_match, no_regex_match
 
 # To keep track on which directories the finder has searched the static files.
 searched_locations = []
@@ -29,12 +29,12 @@ class ComponentsFileSystemFinder(BaseFinder):
     Differences:
     - This finder uses `COMPONENTS.dirs` setting to locate files instead of `STATICFILES_DIRS`.
     - Whether a file within `COMPONENTS.dirs` is considered a STATIC file is configured
-      by `COMPONENTS.static_files_allowed` and `COMPONENTS.forbidden_static_files`.
+      by `COMPONENTS.static_files_allowed` and `COMPONENTS.static_files_forbidden`.
     - If `COMPONENTS.dirs` is not set, defaults to `settings.BASE_DIR / "components"`
     """
 
     def __init__(self, app_names: Any = None, *args: Any, **kwargs: Any) -> None:
-        component_dirs = [str(p) for p in get_dirs()]
+        component_dirs = [str(p) for p in get_component_dirs()]
 
         # NOTE: The rest of the __init__ is the same as `django.contrib.staticfiles.finders.FileSystemFinder`,
         # but using our locations instead of STATICFILES_DIRS.

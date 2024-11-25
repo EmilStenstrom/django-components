@@ -1,3 +1,6 @@
+{% load component_tags %}
+{% component_js_dependencies %}
+{% component_css_dependencies %}
 <form method="post">
   {% csrf_token %}
   <input type="text" name="variable" value="{{ variable }}">

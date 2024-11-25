@@ -91,6 +91,8 @@ pyyaml==6.0.1
     # via pre-commit
 requests==2.32.3
     # via -r requirements-dev.in
+selectolax==0.3.21
+    # via -r requirements-dev.in
 sqlparse==0.5.0
     # via django
 tox==4.23.2

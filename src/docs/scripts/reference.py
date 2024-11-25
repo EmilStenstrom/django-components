@@ -15,7 +15,7 @@ import mkdocs_gen_files
 nav = mkdocs_gen_files.Nav()
 mod_symbol = '<code class="doc-symbol doc-symbol-nav doc-symbol-module"></code>'
 
-root = Path(__file__).parent.parent
+root = Path(__file__).parent.parent.parent.parent
 src = root / "src"
 
 for path in sorted(src.rglob("*.py")):

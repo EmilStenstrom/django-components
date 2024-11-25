@@ -6,9 +6,9 @@ from django.utils.safestring import SafeString
 
 from django_components.context import set_provided_context_var
 from django_components.expression import RuntimeKwargs
-from django_components.logger import trace_msg
 from django_components.node import BaseNode
-from django_components.utils import gen_id
+from django_components.util.logger import trace_msg
+from django_components.util.misc import gen_id
 
 PROVIDE_NAME_KWARG = "name"
 
