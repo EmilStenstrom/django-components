@@ -56,7 +56,7 @@ cssselect2==0.7.0
     # via cairosvg
 defusedxml==0.7.1
     # via cairosvg
-django==5.1.2
+django==5.1.3
     # via hatch.envs.docs
 ghp-import==2.1.0
     # via mkdocs
