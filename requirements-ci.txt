@@ -20,7 +20,7 @@ filelock==3.16.1
     # via
     #   tox
     #   virtualenv
-greenlet==3.0.3
+greenlet==3.1.1
     # via playwright
 idna==3.10
     # via requests
@@ -32,7 +32,7 @@ platformdirs==4.3.6
     # via
     #   tox
     #   virtualenv
-playwright==1.47.0
+playwright==1.48.0
     # via -r requirements-ci.in
 pluggy==1.5.0
     # via tox
@@ -42,13 +42,13 @@ pyproject-api==1.8.0
     # via tox
 requests==2.32.3
     # via -r requirements-ci.in
-tox==4.21.2
+tox==4.23.2
     # via
     #   -r requirements-ci.in
     #   tox-gh-actions
 tox-gh-actions==3.2.0
     # via -r requirements-ci.in
-types-requests==2.32.0.20240914
+types-requests==2.32.0.20241016
     # via -r requirements-ci.in
 typing-extensions==4.12.2
     # via pyee
