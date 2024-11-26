@@ -433,7 +433,9 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
 
     content = COMPONENT_COMMENT_REGEX.sub(on_replace_match, content)
 
-    comp_hashes: Set[str] = set()
+    # NOTE: Python's set does NOT preserve order
+    seen_comp_hashes: Set[str] = set()
+    comp_hashes: List[str] = []
 
     # Process individual parts. Each part is like a CSV row of `name,id`.
     # E.g. something like this:
@@ -445,7 +447,11 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
             raise RuntimeError("Malformed dependencies data")
 
         comp_cls_hash = part_match.group("comp_cls_hash").decode("utf-8")
-        comp_hashes.add(comp_cls_hash)
+        if comp_cls_hash in seen_comp_hashes:
+            continue
+
+        comp_hashes.append(comp_cls_hash)
+        seen_comp_hashes.add(comp_cls_hash)
 
     (
         to_load_component_js_urls,
@@ -534,7 +540,7 @@ def _postprocess_media_tags(
     script_type: ScriptType,
     tags: List[str],
 ) -> Tuple[List[str], List[str]]:
-    deduped_urls: Set[str] = set()
+    urls: List[str] = []
     tags_by_url: Dict[str, str] = {}
 
     for tag in tags:
@@ -549,15 +555,16 @@ def _postprocess_media_tags(
                 f"value for attribute '{attr}'. Got:\n{tag}"
             )
 
+        url = cast(str, maybe_url)
+
         # Skip duplicates
-        if maybe_url in deduped_urls:
+        if url in tags_by_url:
             continue
 
-        url = cast(str, maybe_url)
         tags_by_url[url] = tag
-        deduped_urls.add(url)
+        urls.append(url)
 
-    urls = sorted(deduped_urls)
+    # Ensure consistent order
     tags = [tags_by_url[url] for url in urls]
 
     return tags, urls
