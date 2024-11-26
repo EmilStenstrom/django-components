@@ -1,4 +1,5 @@
 from typing import Any
+
 from django.template import Context, Template, TemplateSyntaxError
 
 from django_components import Component, register, types
