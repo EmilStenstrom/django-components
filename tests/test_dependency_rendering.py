@@ -329,12 +329,16 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(
             rendered.count("const loadedCssScripts = [&quot;style.css&quot;, &quot;style2.css&quot;];"), 1
         )
+
+        # JS ORDER - "script.js", "script2.js"
         self.assertEqual(
             rendered.count(
                 r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
             ),
             1,
         )
+
+        # CSS ORDER - "style.css", "style2.css"
         self.assertEqual(
             rendered.count(
                 r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
@@ -413,12 +417,22 @@ class DependencyRenderingTests(BaseTestCase):
             ),
             1,
         )
+
+        # JS ORDER:
+        # - "script2.js" (from SimpleComponentNested)
+        # - "script.js" (from SimpleComponent inside SimpleComponentNested)
+        # - "xyz1.js" (from OtherComponent inserted into SimpleComponentNested)
         self.assertEqual(
             rendered.count(
-                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;xyz1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
+                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;xyz1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
             ),
             1,
         )
+
+        # CSS ORDER:
+        # - "style.css", "style2.css" (from SimpleComponentNested)
+        # - "style.css" (from SimpleComponent inside SimpleComponentNested)
+        # - "xyz1.css" (from OtherComponent inserted into SimpleComponentNested)
         self.assertEqual(
             rendered.count(
                 r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;xyz1.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
