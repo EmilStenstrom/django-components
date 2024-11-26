@@ -716,10 +716,6 @@ class Component(
                 # Get the component's HTML
                 html_content = template.render(context)
 
-                # After we've rendered the contents, we now know what slots were there,
-                # and thus we can validate that.
-                component_slot_ctx.post_render_validation()
-
                 # Allow to optionally override/modify the rendered content
                 new_output = self.on_render_after(context, template, html_content)
                 html_content = new_output if new_output is not None else html_content
