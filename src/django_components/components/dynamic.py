@@ -35,16 +35,6 @@ class DynamicComponent(Component):
     {% endcomponent %}
     ```
 
-    Or in case you use the `django_components.component_shorthand_formatter` tag formatter:
-
-    ```django
-    {% dynamic is=table_comp data=table_data headers=table_headers %}
-        {% fill "pagination" %}
-            {% component "pagination" / %}
-        {% endfill %}
-    {% enddynamic %}
-    ```
-
     Python
     ```py
     from django_components import DynamicComponent
