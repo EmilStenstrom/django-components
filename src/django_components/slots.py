@@ -148,41 +148,6 @@ class ComponentSlotContext:
     default_slot: Optional[str]
     fills: Dict[SlotName, Slot]
 
-    def post_render_validation(self) -> None:
-        if self.is_dynamic_component:
-            return
-
-        default_fill = self.fills.get(DEFAULT_SLOT_KEY, None)
-
-        # Check: Only component templates that include a 'default' slot
-        # can be invoked with implicit filling.
-        if default_fill and not self.default_slot:
-            raise TemplateSyntaxError(
-                f"Component '{self.component_name}' passed default fill content "
-                f"(i.e. without explicit 'name' kwarg), "
-                f"even though none of its slots is marked as 'default'."
-            )
-
-        # NOTE:
-        # In the current implementation, the slots are resolved only at the render time.
-        # So when we are rendering Django's Nodes, and we come across a SlotNode, only
-        # at that point we check if we have the fill for it.
-        #
-        # That means that we can use variables, and we can place slots in loops.
-        #
-        # However, because the slot names are dynamic, we cannot know all the slot names
-        # that will be rendered ahead of the time.
-        #
-        # Moreover, user may define a slot whose default content has more slots inside it.
-        #
-        # Previously, there was an error raised if there were unfilled slots or extra fills.
-        #
-        # But now this is only a message. Because:
-        # 1. We don't know about ALL slots, just about the rendered ones, so we CANNOT check
-        #    for unfilled slots (rendered slots WILL raise an error if the fill is missing).
-        # 2. User may provide extra fills, but these may belong to slots we haven't
-        #    encountered in this render run. So we CANNOT say which ones are extra.
-
 
 class SlotNode(BaseNode):
     """Node corresponding to `{% slot %}`"""
@@ -214,6 +179,27 @@ class SlotNode(BaseNode):
     def __repr__(self) -> str:
         return f"<Slot Node: {self.node_id}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
 
+    # NOTE:
+    # In the current implementation, the slots are resolved only at the render time.
+    # So when we are rendering Django's Nodes, and we come across a SlotNode, only
+    # at that point we check if we have the fill for it.
+    #
+    # That means that we can use variables, and we can place slots in loops.
+    #
+    # However, because the slot names are dynamic, we cannot know all the slot names
+    # that will be rendered ahead of the time.
+    #
+    # Moreover, user may define a `{% slot %}` whose default content has more nested
+    # `{% slot %}` tags inside of it.
+    #
+    # Previously, there was an error raised if there were unfilled slots or extra fills,
+    # or if there was an extra fill for a default slot.
+    #
+    # But we don't raise those anymore, because:
+    # 1. We don't know about ALL slots, just about the rendered ones, so we CANNOT check
+    #    for unfilled slots (rendered slots WILL raise an error if the fill is missing).
+    # 2. User may provide extra fills, but these may belong to slots we haven't
+    #    encountered in this render run. So we CANNOT say which ones are extra.
     def render(self, context: Context) -> SafeString:
         trace_msg("RENDR", "SLOT", self.trace_id, self.node_id)
 

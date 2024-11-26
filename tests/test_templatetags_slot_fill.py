@@ -748,23 +748,75 @@ class ComponentSlotDefaultTests(BaseTestCase):
         self.assertTrue(True)
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_component_without_default_slot_refuses_implicit_fill(self):
+    def test_implicit_fill_when_no_slot_marked_default(self):
         registry.register("test_comp", SlottedComponent)
         template_str: types.django_html = """
             {% load component_tags %}
             {% component 'test_comp' %}
-              <p>This shouldn't work because the included component doesn't mark
-              any of its slots as 'default'</p>
+              <p>Component with no 'default' slot still accepts the fill, it just won't render it</p>
+            {% endcomponent %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context())
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <custom-template>
+                <header>Default header</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_implicit_fill_when_slot_marked_default_not_rendered(self):
+        @register("test_comp")
+        class ConditionalSlotted(Component):
+            def get_context_data(self, var: bool) -> Any:
+                return {"var": var}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                <custom-template>
+                    {% if var %}
+                        <header>{% slot "header" default %}Default header{% endslot %}</header>
+                    {% endif %}
+                    <main>{% slot "main" %}Default main{% endslot %}</main>
+                    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+                </custom-template>
+            """
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test_comp' var=var %}
+              123
             {% endcomponent %}
         """
         template = Template(template_str)
 
-        with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Component 'test_comp' passed default fill content (i.e. without explicit 'name' kwarg), "
-            "even though none of its slots is marked as 'default'",
-        ):
-            template.render(Context())
+        rendered_truthy = template.render(Context({"var": True}))
+        self.assertHTMLEqual(
+            rendered_truthy,
+            """
+            <custom-template>
+                <header>123</header>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
+
+        rendered_falsy = template.render(Context({"var": False}))
+        self.assertHTMLEqual(
+            rendered_falsy,
+            """
+            <custom-template>
+                <main>Default main</main>
+                <footer>Default footer</footer>
+            </custom-template>
+            """,
+        )
 
 
 class PassthroughSlotsTest(BaseTestCase):
