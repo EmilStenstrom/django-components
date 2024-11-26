@@ -57,6 +57,7 @@ from django_components.slots import (
     SlotName,
     SlotRef,
     SlotResult,
+    _is_extracting_fill,
     _nodelist_to_slot_render_func,
     resolve_fills,
 )
@@ -893,6 +894,11 @@ class ComponentNode(BaseNode):
 
     def render(self, context: Context) -> str:
         trace_msg("RENDR", "COMP", self.name, self.node_id)
+
+        # Do not render nested `{% component %}` tags in other `{% component %}` tags
+        # at the stage when we determining if the latter has named fills or not.
+        if _is_extracting_fill(context):
+            return ""
 
         component_cls: Type[Component] = self.registry.get(self.name)
 
