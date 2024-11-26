@@ -896,7 +896,7 @@ class ComponentNode(BaseNode):
         trace_msg("RENDR", "COMP", self.name, self.node_id)
 
         # Do not render nested `{% component %}` tags in other `{% component %}` tags
-        # at the stage when we determining if the latter has named fills or not.
+        # at the stage when we are determining if the latter has named fills or not.
         if _is_extracting_fill(context):
             return ""
 
