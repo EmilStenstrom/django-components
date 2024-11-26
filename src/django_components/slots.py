@@ -399,7 +399,7 @@ class FillNode(BaseNode):
         self.trace_id = trace_id
 
     def render(self, context: Context) -> str:
-        if self._is_extracting_fill(context):
+        if _is_extracting_fill(context):
             self._extract_fill(context)
             return ""
 
@@ -458,9 +458,6 @@ class FillNode(BaseNode):
             raise RuntimeError(f"Fill tag kwarg '{key}' does not resolve to a valid Python identifier, got '{value}'")
 
         return value
-
-    def _is_extracting_fill(self, context: Context) -> bool:
-        return context.get(FILL_GEN_CONTEXT_KEY, None) is not None
 
     def _extract_fill(self, context: Context) -> None:
         # `FILL_GEN_CONTEXT_KEY` is only ever set when we are rendering content between the
@@ -775,3 +772,7 @@ def _nodelist_to_slot_render_func(
         return rendered
 
     return Slot(content_func=cast(SlotFunc, render_func))
+
+
+def _is_extracting_fill(context: Context) -> bool:
+    return context.get(FILL_GEN_CONTEXT_KEY, None) is not None

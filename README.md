@@ -1311,7 +1311,7 @@ tags:
 {% endcomponent %}
 ```
 
-You can also use `{% for %}`, `{% with %}`, or other tags (even `{% include %}`)
+You can also use `{% for %}`, `{% with %}`, or other non-component tags (even `{% include %}`)
 to construct the `{% fill %}` tags, **as long as these other tags do not leave any text behind!**
 
 ```django
