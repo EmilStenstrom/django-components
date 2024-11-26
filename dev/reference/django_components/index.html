@@ -3899,7 +3899,11 @@
 <a id=__codelineno-0-7 name=__codelineno-0-7 href=#__codelineno-0-7></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" title=typing.Optional href=https://docs.python.org/3.12/library/typing.html#typing.Optional>Optional</a></span><span class=p>[</span><span class=n><span title=django.template.base.NodeList>NodeList</span></span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
 <a id=__codelineno-0-8 name=__codelineno-0-8 href=#__codelineno-0-8></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" title=typing.Optional href=https://docs.python.org/3.12/library/typing.html#typing.Optional>Optional</a></span><span class=p>[</span><span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
 <a id=__codelineno-0-9 name=__codelineno-0-9 href=#__codelineno-0-9></a><span class=p>)</span>
-</code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.node.BaseNode href=#django_components.node.BaseNode>BaseNode</a></code></p> <p>Django.template.Node subclass that renders a django-components component</p> <details class=quote> <summary>Source code in <code>src/django_components/component.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-873>873</a></span>
+</code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.node.BaseNode href=#django_components.node.BaseNode>BaseNode</a></code></p> <p>Django.template.Node subclass that renders a django-components component</p> <details class=quote> <summary>Source code in <code>src/django_components/component.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-869>869</a></span>
+<span class=normal><a href=#__codelineno-0-870>870</a></span>
+<span class=normal><a href=#__codelineno-0-871>871</a></span>
+<span class=normal><a href=#__codelineno-0-872>872</a></span>
+<span class=normal><a href=#__codelineno-0-873>873</a></span>
 <span class=normal><a href=#__codelineno-0-874>874</a></span>
 <span class=normal><a href=#__codelineno-0-875>875</a></span>
 <span class=normal><a href=#__codelineno-0-876>876</a></span>
@@ -3909,25 +3913,21 @@
 <span class=normal><a href=#__codelineno-0-880>880</a></span>
 <span class=normal><a href=#__codelineno-0-881>881</a></span>
 <span class=normal><a href=#__codelineno-0-882>882</a></span>
-<span class=normal><a href=#__codelineno-0-883>883</a></span>
-<span class=normal><a href=#__codelineno-0-884>884</a></span>
-<span class=normal><a href=#__codelineno-0-885>885</a></span>
-<span class=normal><a href=#__codelineno-0-886>886</a></span>
-<span class=normal><a href=#__codelineno-0-887>887</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-873 name=__codelineno-0-873></a><span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span>
-<a id=__codelineno-0-874 name=__codelineno-0-874></a>    <span class=bp>self</span><span class=p>,</span>
-<a id=__codelineno-0-875 name=__codelineno-0-875></a>    <span class=n>name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
-<a id=__codelineno-0-876 name=__codelineno-0-876></a>    <span class=n>args</span><span class=p>:</span> <span class=n>List</span><span class=p>[</span><span class=n>Expression</span><span class=p>],</span>
-<a id=__codelineno-0-877 name=__codelineno-0-877></a>    <span class=n>kwargs</span><span class=p>:</span> <span class=n>RuntimeKwargs</span><span class=p>,</span>
-<a id=__codelineno-0-878 name=__codelineno-0-878></a>    <span class=n>registry</span><span class=p>:</span> <span class=n>ComponentRegistry</span><span class=p>,</span>  <span class=c1># noqa F811</span>
-<a id=__codelineno-0-879 name=__codelineno-0-879></a>    <span class=n>isolated_context</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
-<a id=__codelineno-0-880 name=__codelineno-0-880></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=n>NodeList</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-881 name=__codelineno-0-881></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-882 name=__codelineno-0-882></a><span class=p>)</span> <span class=o>-&gt;</span> <span class=kc>None</span><span class=p>:</span>
-<a id=__codelineno-0-883 name=__codelineno-0-883></a>    <span class=nb>super</span><span class=p>()</span><span class=o>.</span><span class=fm>__init__</span><span class=p>(</span><span class=n>nodelist</span><span class=o>=</span><span class=n>nodelist</span> <span class=ow>or</span> <span class=n>NodeList</span><span class=p>(),</span> <span class=n>args</span><span class=o>=</span><span class=n>args</span><span class=p>,</span> <span class=n>kwargs</span><span class=o>=</span><span class=n>kwargs</span><span class=p>,</span> <span class=n>node_id</span><span class=o>=</span><span class=n>node_id</span><span class=p>)</span>
-<a id=__codelineno-0-884 name=__codelineno-0-884></a>
-<a id=__codelineno-0-885 name=__codelineno-0-885></a>    <span class=bp>self</span><span class=o>.</span><span class=n>name</span> <span class=o>=</span> <span class=n>name</span>
-<a id=__codelineno-0-886 name=__codelineno-0-886></a>    <span class=bp>self</span><span class=o>.</span><span class=n>isolated_context</span> <span class=o>=</span> <span class=n>isolated_context</span>
-<a id=__codelineno-0-887 name=__codelineno-0-887></a>    <span class=bp>self</span><span class=o>.</span><span class=n>registry</span> <span class=o>=</span> <span class=n>registry</span>
+<span class=normal><a href=#__codelineno-0-883>883</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-869 name=__codelineno-0-869></a><span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span>
+<a id=__codelineno-0-870 name=__codelineno-0-870></a>    <span class=bp>self</span><span class=p>,</span>
+<a id=__codelineno-0-871 name=__codelineno-0-871></a>    <span class=n>name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
+<a id=__codelineno-0-872 name=__codelineno-0-872></a>    <span class=n>args</span><span class=p>:</span> <span class=n>List</span><span class=p>[</span><span class=n>Expression</span><span class=p>],</span>
+<a id=__codelineno-0-873 name=__codelineno-0-873></a>    <span class=n>kwargs</span><span class=p>:</span> <span class=n>RuntimeKwargs</span><span class=p>,</span>
+<a id=__codelineno-0-874 name=__codelineno-0-874></a>    <span class=n>registry</span><span class=p>:</span> <span class=n>ComponentRegistry</span><span class=p>,</span>  <span class=c1># noqa F811</span>
+<a id=__codelineno-0-875 name=__codelineno-0-875></a>    <span class=n>isolated_context</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
+<a id=__codelineno-0-876 name=__codelineno-0-876></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=n>NodeList</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-877 name=__codelineno-0-877></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-878 name=__codelineno-0-878></a><span class=p>)</span> <span class=o>-&gt;</span> <span class=kc>None</span><span class=p>:</span>
+<a id=__codelineno-0-879 name=__codelineno-0-879></a>    <span class=nb>super</span><span class=p>()</span><span class=o>.</span><span class=fm>__init__</span><span class=p>(</span><span class=n>nodelist</span><span class=o>=</span><span class=n>nodelist</span> <span class=ow>or</span> <span class=n>NodeList</span><span class=p>(),</span> <span class=n>args</span><span class=o>=</span><span class=n>args</span><span class=p>,</span> <span class=n>kwargs</span><span class=o>=</span><span class=n>kwargs</span><span class=p>,</span> <span class=n>node_id</span><span class=o>=</span><span class=n>node_id</span><span class=p>)</span>
+<a id=__codelineno-0-880 name=__codelineno-0-880></a>
+<a id=__codelineno-0-881 name=__codelineno-0-881></a>    <span class=bp>self</span><span class=o>.</span><span class=n>name</span> <span class=o>=</span> <span class=n>name</span>
+<a id=__codelineno-0-882 name=__codelineno-0-882></a>    <span class=bp>self</span><span class=o>.</span><span class=n>isolated_context</span> <span class=o>=</span> <span class=n>isolated_context</span>
+<a id=__codelineno-0-883 name=__codelineno-0-883></a>    <span class=bp>self</span><span class=o>.</span><span class=n>registry</span> <span class=o>=</span> <span class=n>registry</span>
 </code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> </div> </div> </div> <div class="doc doc-object doc-class"> <h3 id=django_components.component.ComponentVars class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">ComponentVars</span> <a href=#django_components.component.ComponentVars class=headerlink title="Permanent link">¤</a></h3> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-external" title=typing.NamedTuple href=https://docs.python.org/3.12/library/typing.html#typing.NamedTuple>NamedTuple</a></code></p> <p>Type for the variables available inside the component templates.</p> <p>All variables here are scoped under <code>component_vars.</code>, so e.g. attribute <code>is_filled</code> on this class is accessible inside the template as:</p> <div class=highlight><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=cp>{{</span> <span class=nv>component_vars.is_filled</span> <span class=cp>}}</span>
 </code></pre></div> <p><span class=doc-section-title>Attributes:</span></p> <ul> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.component.ComponentVars.is_filled href=#django_components.component.ComponentVars.is_filled>is_filled</a></code></b> (<code><a class="autorefs autorefs-external" title=typing.Dict href=https://docs.python.org/3.12/library/typing.html#typing.Dict>Dict</a>[<a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a>, <a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/functions.html#bool>bool</a>]</code>) – <div class=doc-md-description> <p>Dictonary describing which component slots are filled (<code>True</code>) or are not (<code>False</code>).</p> </div> </li> </ul> <div class="doc doc-children"> <div class="doc doc-object doc-attribute"> <h4 id=django_components.component.ComponentVars.is_filled class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code> <span class="doc doc-object-name doc-attribute-name">is_filled</span> <span class="doc doc-labels"> <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small> </span> <a href=#django_components.component.ComponentVars.is_filled class=headerlink title="Permanent link">¤</a></h4> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=n>is_filled</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" title=typing.Dict href=https://docs.python.org/3.12/library/typing.html#typing.Dict>Dict</a></span><span class=p>[</span><span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span><span class=p>,</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/functions.html#bool>bool</a></span><span class=p>]</span>
 </code></pre></div> <div class="doc doc-contents "> <p>Dictonary describing which component slots are filled (<code>True</code>) or are not (<code>False</code>).</p> <p><i>New in version 0.70</i></p> <p>Use as <code>{{ component_vars.is_filled }}</code></p> <p>Example:</p> <div class=highlight><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=c>{# Render wrapping HTML only if the slot is defined #}</span>
@@ -6499,25 +6499,25 @@
 <a id=__codelineno-0-33 name=__codelineno-0-33></a>    <span class=bp>self</span><span class=o>.</span><span class=n>trace_id</span> <span class=o>=</span> <span class=n>trace_id</span>
 <a id=__codelineno-0-34 name=__codelineno-0-34></a>    <span class=bp>self</span><span class=o>.</span><span class=n>kwargs</span> <span class=o>=</span> <span class=n>kwargs</span> <span class=ow>or</span> <span class=n>RuntimeKwargs</span><span class=p>({})</span>
 </code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> </div> </div> </div> </div> </div> </div> <div class="doc doc-object doc-module"> <h2 id=django_components.slots class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-module"></code> <span class="doc doc-object-name doc-module-name">slots</span> <a href=#django_components.slots class=headerlink title="Permanent link">¤</a></h2> <div class="doc doc-contents "> <p><span class=doc-section-title>Classes:</span></p> <ul> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.FillNode href=#django_components.slots.FillNode>FillNode</a></code></b> – <div class=doc-md-description> <p>Node corresponding to <code>{% fill %}</code></p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.Slot href=#django_components.slots.Slot>Slot</a></code></b> – <div class=doc-md-description> <p>This class holds the slot content function along with related metadata.</p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.SlotFill href=#django_components.slots.SlotFill>SlotFill</a></code></b> – <div class=doc-md-description> <p>SlotFill describes what WILL be rendered.</p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.SlotIsFilled href=#django_components.slots.SlotIsFilled>SlotIsFilled</a></code></b> – <div class=doc-md-description> <p>Dictionary that returns <code>True</code> if the slot is filled (key is found), <code>False</code> otherwise.</p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.SlotNode href=#django_components.slots.SlotNode>SlotNode</a></code></b> – <div class=doc-md-description> <p>Node corresponding to <code>{% slot %}</code></p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.SlotRef href=#django_components.slots.SlotRef>SlotRef</a></code></b> – <div class=doc-md-description> <p>SlotRef allows to treat a slot as a variable. The slot is rendered only once</p> </div> </li> </ul> <p><span class=doc-section-title>Functions:</span></p> <ul> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.resolve_fills href=#django_components.slots.resolve_fills>resolve_fills</a></code></b> – <div class=doc-md-description> <p>Given a component body (<code>django.template.NodeList</code>), find all slot fills,</p> </div> </li> </ul> <div class="doc doc-children"> <div class="doc doc-object doc-class"> <h3 id=django_components.slots.FillNode class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">FillNode</span> <a href=#django_components.slots.FillNode class=headerlink title="Permanent link">¤</a></h3> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>FillNode</span><span class=p>(</span><span class=n>nodelist</span><span class=p>:</span> <span class=n><span title=django.template.base.NodeList>NodeList</span></span><span class=p>,</span> <span class=n>kwargs</span><span class=p>:</span> <span class=n><span title=django_components.expression.RuntimeKwargs>RuntimeKwargs</span></span><span class=p>,</span> <span class=n>trace_id</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span><span class=p>,</span> <span class=n>node_id</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" title=typing.Optional href=https://docs.python.org/3.12/library/typing.html#typing.Optional>Optional</a></span><span class=p>[</span><span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>)</span>
-</code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.node.BaseNode href=#django_components.node.BaseNode>BaseNode</a></code></p> <p>Node corresponding to <code>{% fill %}</code></p> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-390>390</a></span>
-<span class=normal><a href=#__codelineno-0-391>391</a></span>
-<span class=normal><a href=#__codelineno-0-392>392</a></span>
-<span class=normal><a href=#__codelineno-0-393>393</a></span>
-<span class=normal><a href=#__codelineno-0-394>394</a></span>
-<span class=normal><a href=#__codelineno-0-395>395</a></span>
-<span class=normal><a href=#__codelineno-0-396>396</a></span>
-<span class=normal><a href=#__codelineno-0-397>397</a></span>
-<span class=normal><a href=#__codelineno-0-398>398</a></span>
-<span class=normal><a href=#__codelineno-0-399>399</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-390 name=__codelineno-0-390></a><span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span>
-<a id=__codelineno-0-391 name=__codelineno-0-391></a>    <span class=bp>self</span><span class=p>,</span>
-<a id=__codelineno-0-392 name=__codelineno-0-392></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>NodeList</span><span class=p>,</span>
-<a id=__codelineno-0-393 name=__codelineno-0-393></a>    <span class=n>kwargs</span><span class=p>:</span> <span class=n>RuntimeKwargs</span><span class=p>,</span>
-<a id=__codelineno-0-394 name=__codelineno-0-394></a>    <span class=n>trace_id</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
-<a id=__codelineno-0-395 name=__codelineno-0-395></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-396 name=__codelineno-0-396></a><span class=p>):</span>
-<a id=__codelineno-0-397 name=__codelineno-0-397></a>    <span class=nb>super</span><span class=p>()</span><span class=o>.</span><span class=fm>__init__</span><span class=p>(</span><span class=n>nodelist</span><span class=o>=</span><span class=n>nodelist</span><span class=p>,</span> <span class=n>args</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>kwargs</span><span class=o>=</span><span class=n>kwargs</span><span class=p>,</span> <span class=n>node_id</span><span class=o>=</span><span class=n>node_id</span><span class=p>)</span>
-<a id=__codelineno-0-398 name=__codelineno-0-398></a>
-<a id=__codelineno-0-399 name=__codelineno-0-399></a>    <span class=bp>self</span><span class=o>.</span><span class=n>trace_id</span> <span class=o>=</span> <span class=n>trace_id</span>
+</code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.node.BaseNode href=#django_components.node.BaseNode>BaseNode</a></code></p> <p>Node corresponding to <code>{% fill %}</code></p> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-376>376</a></span>
+<span class=normal><a href=#__codelineno-0-377>377</a></span>
+<span class=normal><a href=#__codelineno-0-378>378</a></span>
+<span class=normal><a href=#__codelineno-0-379>379</a></span>
+<span class=normal><a href=#__codelineno-0-380>380</a></span>
+<span class=normal><a href=#__codelineno-0-381>381</a></span>
+<span class=normal><a href=#__codelineno-0-382>382</a></span>
+<span class=normal><a href=#__codelineno-0-383>383</a></span>
+<span class=normal><a href=#__codelineno-0-384>384</a></span>
+<span class=normal><a href=#__codelineno-0-385>385</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-376 name=__codelineno-0-376></a><span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span>
+<a id=__codelineno-0-377 name=__codelineno-0-377></a>    <span class=bp>self</span><span class=p>,</span>
+<a id=__codelineno-0-378 name=__codelineno-0-378></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>NodeList</span><span class=p>,</span>
+<a id=__codelineno-0-379 name=__codelineno-0-379></a>    <span class=n>kwargs</span><span class=p>:</span> <span class=n>RuntimeKwargs</span><span class=p>,</span>
+<a id=__codelineno-0-380 name=__codelineno-0-380></a>    <span class=n>trace_id</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
+<a id=__codelineno-0-381 name=__codelineno-0-381></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-382 name=__codelineno-0-382></a><span class=p>):</span>
+<a id=__codelineno-0-383 name=__codelineno-0-383></a>    <span class=nb>super</span><span class=p>()</span><span class=o>.</span><span class=fm>__init__</span><span class=p>(</span><span class=n>nodelist</span><span class=o>=</span><span class=n>nodelist</span><span class=p>,</span> <span class=n>args</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>kwargs</span><span class=o>=</span><span class=n>kwargs</span><span class=p>,</span> <span class=n>node_id</span><span class=o>=</span><span class=n>node_id</span><span class=p>)</span>
+<a id=__codelineno-0-384 name=__codelineno-0-384></a>
+<a id=__codelineno-0-385 name=__codelineno-0-385></a>    <span class=bp>self</span><span class=o>.</span><span class=n>trace_id</span> <span class=o>=</span> <span class=n>trace_id</span>
 </code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> </div> </div> </div> <div class="doc doc-object doc-class"> <h3 id=django_components.slots.Slot class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">Slot</span> <span class="doc doc-labels"> <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small> </span> <a href=#django_components.slots.Slot class=headerlink title="Permanent link">¤</a></h3> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>Slot</span><span class=p>(</span><span class=n>content_func</span><span class=p>:</span> <span class=n><span title=django_components.slots.SlotFunc>SlotFunc</span></span><span class=p>[</span><span class=n><span title=django_components.slots.TSlotData>TSlotData</span></span><span class=p>])</span>
 </code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-external" title=typing.Generic href=https://docs.python.org/3.12/library/typing.html#typing.Generic>Generic</a>[<span title=django_components.slots.TSlotData>TSlotData</span>]</code></p> <p>This class holds the slot content function along with related metadata.</p> <div class="doc doc-children"> </div> </div> </div> <div class="doc doc-object doc-class"> <h3 id=django_components.slots.SlotFill class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">SlotFill</span> <span class="doc doc-labels"> <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small> </span> <a href=#django_components.slots.SlotFill class=headerlink title="Permanent link">¤</a></h3> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>SlotFill</span><span class=p>(</span><span class=n>name</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span><span class=p>,</span> <span class=n>is_filled</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/functions.html#bool>bool</a></span><span class=p>,</span> <span class=n>slot</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-internal" title=django_components.slots.Slot href=#django_components.slots.Slot>Slot</a></span><span class=p>[</span><span class=n><span title=django_components.slots.TSlotData>TSlotData</span></span><span class=p>])</span>
 </code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-external" title=typing.Generic href=https://docs.python.org/3.12/library/typing.html#typing.Generic>Generic</a>[<span title=django_components.slots.TSlotData>TSlotData</span>]</code></p> <p>SlotFill describes what WILL be rendered.</p> <p>The fill may be provided by the user from the outside (<code>is_filled=True</code>), or it may be the default content of the slot (<code>is_filled=False</code>).</p> <p><span class=doc-section-title>Attributes:</span></p> <ul> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.slots.SlotFill.name href=#django_components.slots.SlotFill.name>name</a></code></b> (<code><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></code>) – <div class=doc-md-description> <p>Name of the slot.</p> </div> </li> </ul> <div class="doc doc-children"> <div class="doc doc-object doc-attribute"> <h4 id=django_components.slots.SlotFill.name class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code> <span class="doc doc-object-name doc-attribute-name">name</span> <span class="doc doc-labels"> <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small> </span> <a href=#django_components.slots.SlotFill.name class=headerlink title="Permanent link">¤</a></h4> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=n>name</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span>
@@ -6535,33 +6535,33 @@
 <a id=__codelineno-0-6 name=__codelineno-0-6 href=#__codelineno-0-6></a>    <span class=n>is_required</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/functions.html#bool>bool</a></span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
 <a id=__codelineno-0-7 name=__codelineno-0-7 href=#__codelineno-0-7></a>    <span class=n>is_default</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/functions.html#bool>bool</a></span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
 <a id=__codelineno-0-8 name=__codelineno-0-8 href=#__codelineno-0-8></a><span class=p>)</span>
-</code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.node.BaseNode href=#django_components.node.BaseNode>BaseNode</a></code></p> <p>Node corresponding to <code>{% slot %}</code></p> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-190>190</a></span>
-<span class=normal><a href=#__codelineno-0-191>191</a></span>
-<span class=normal><a href=#__codelineno-0-192>192</a></span>
-<span class=normal><a href=#__codelineno-0-193>193</a></span>
-<span class=normal><a href=#__codelineno-0-194>194</a></span>
-<span class=normal><a href=#__codelineno-0-195>195</a></span>
-<span class=normal><a href=#__codelineno-0-196>196</a></span>
-<span class=normal><a href=#__codelineno-0-197>197</a></span>
-<span class=normal><a href=#__codelineno-0-198>198</a></span>
-<span class=normal><a href=#__codelineno-0-199>199</a></span>
-<span class=normal><a href=#__codelineno-0-200>200</a></span>
-<span class=normal><a href=#__codelineno-0-201>201</a></span>
-<span class=normal><a href=#__codelineno-0-202>202</a></span>
-<span class=normal><a href=#__codelineno-0-203>203</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-190 name=__codelineno-0-190></a><span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span>
-<a id=__codelineno-0-191 name=__codelineno-0-191></a>    <span class=bp>self</span><span class=p>,</span>
-<a id=__codelineno-0-192 name=__codelineno-0-192></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>NodeList</span><span class=p>,</span>
-<a id=__codelineno-0-193 name=__codelineno-0-193></a>    <span class=n>trace_id</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
-<a id=__codelineno-0-194 name=__codelineno-0-194></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-195 name=__codelineno-0-195></a>    <span class=n>kwargs</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=n>RuntimeKwargs</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-196 name=__codelineno-0-196></a>    <span class=n>is_required</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
-<a id=__codelineno-0-197 name=__codelineno-0-197></a>    <span class=n>is_default</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
-<a id=__codelineno-0-198 name=__codelineno-0-198></a><span class=p>):</span>
-<a id=__codelineno-0-199 name=__codelineno-0-199></a>    <span class=nb>super</span><span class=p>()</span><span class=o>.</span><span class=fm>__init__</span><span class=p>(</span><span class=n>nodelist</span><span class=o>=</span><span class=n>nodelist</span><span class=p>,</span> <span class=n>args</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>kwargs</span><span class=o>=</span><span class=n>kwargs</span><span class=p>,</span> <span class=n>node_id</span><span class=o>=</span><span class=n>node_id</span><span class=p>)</span>
-<a id=__codelineno-0-200 name=__codelineno-0-200></a>
-<a id=__codelineno-0-201 name=__codelineno-0-201></a>    <span class=bp>self</span><span class=o>.</span><span class=n>is_required</span> <span class=o>=</span> <span class=n>is_required</span>
-<a id=__codelineno-0-202 name=__codelineno-0-202></a>    <span class=bp>self</span><span class=o>.</span><span class=n>is_default</span> <span class=o>=</span> <span class=n>is_default</span>
-<a id=__codelineno-0-203 name=__codelineno-0-203></a>    <span class=bp>self</span><span class=o>.</span><span class=n>trace_id</span> <span class=o>=</span> <span class=n>trace_id</span>
+</code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.node.BaseNode href=#django_components.node.BaseNode>BaseNode</a></code></p> <p>Node corresponding to <code>{% slot %}</code></p> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-155>155</a></span>
+<span class=normal><a href=#__codelineno-0-156>156</a></span>
+<span class=normal><a href=#__codelineno-0-157>157</a></span>
+<span class=normal><a href=#__codelineno-0-158>158</a></span>
+<span class=normal><a href=#__codelineno-0-159>159</a></span>
+<span class=normal><a href=#__codelineno-0-160>160</a></span>
+<span class=normal><a href=#__codelineno-0-161>161</a></span>
+<span class=normal><a href=#__codelineno-0-162>162</a></span>
+<span class=normal><a href=#__codelineno-0-163>163</a></span>
+<span class=normal><a href=#__codelineno-0-164>164</a></span>
+<span class=normal><a href=#__codelineno-0-165>165</a></span>
+<span class=normal><a href=#__codelineno-0-166>166</a></span>
+<span class=normal><a href=#__codelineno-0-167>167</a></span>
+<span class=normal><a href=#__codelineno-0-168>168</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-155 name=__codelineno-0-155></a><span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span>
+<a id=__codelineno-0-156 name=__codelineno-0-156></a>    <span class=bp>self</span><span class=p>,</span>
+<a id=__codelineno-0-157 name=__codelineno-0-157></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>NodeList</span><span class=p>,</span>
+<a id=__codelineno-0-158 name=__codelineno-0-158></a>    <span class=n>trace_id</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
+<a id=__codelineno-0-159 name=__codelineno-0-159></a>    <span class=n>node_id</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=nb>str</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-160 name=__codelineno-0-160></a>    <span class=n>kwargs</span><span class=p>:</span> <span class=n>Optional</span><span class=p>[</span><span class=n>RuntimeKwargs</span><span class=p>]</span> <span class=o>=</span> <span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-161 name=__codelineno-0-161></a>    <span class=n>is_required</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
+<a id=__codelineno-0-162 name=__codelineno-0-162></a>    <span class=n>is_default</span><span class=p>:</span> <span class=nb>bool</span> <span class=o>=</span> <span class=kc>False</span><span class=p>,</span>
+<a id=__codelineno-0-163 name=__codelineno-0-163></a><span class=p>):</span>
+<a id=__codelineno-0-164 name=__codelineno-0-164></a>    <span class=nb>super</span><span class=p>()</span><span class=o>.</span><span class=fm>__init__</span><span class=p>(</span><span class=n>nodelist</span><span class=o>=</span><span class=n>nodelist</span><span class=p>,</span> <span class=n>args</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>kwargs</span><span class=o>=</span><span class=n>kwargs</span><span class=p>,</span> <span class=n>node_id</span><span class=o>=</span><span class=n>node_id</span><span class=p>)</span>
+<a id=__codelineno-0-165 name=__codelineno-0-165></a>
+<a id=__codelineno-0-166 name=__codelineno-0-166></a>    <span class=bp>self</span><span class=o>.</span><span class=n>is_required</span> <span class=o>=</span> <span class=n>is_required</span>
+<a id=__codelineno-0-167 name=__codelineno-0-167></a>    <span class=bp>self</span><span class=o>.</span><span class=n>is_default</span> <span class=o>=</span> <span class=n>is_default</span>
+<a id=__codelineno-0-168 name=__codelineno-0-168></a>    <span class=bp>self</span><span class=o>.</span><span class=n>trace_id</span> <span class=o>=</span> <span class=n>trace_id</span>
 </code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> </div> </div> </div> <div class="doc doc-object doc-class"> <h3 id=django_components.slots.SlotRef class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">SlotRef</span> <a href=#django_components.slots.SlotRef class=headerlink title="Permanent link">¤</a></h3> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>SlotRef</span><span class=p>(</span><span class=n>slot</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-internal" title=django_components.slots.SlotNode href=#django_components.slots.SlotNode>SlotNode</a></span><span class=p>,</span> <span class=n>context</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" title=django.template.Context href=https://docs.djangoproject.com/en/5.0/ref/templates/api/#django.template.Context>Context</a></span><span class=p>)</span>
 </code></pre></div> <div class="doc doc-contents "> <p>SlotRef allows to treat a slot as a variable. The slot is rendered only once the instance is coerced to string.</p> <p>This is used to access slots as variables inside the templates. When a SlotRef is rendered in the template with <code>{{ my_lazy_slot }}</code>, it will output the contents of the slot.</p> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-121>121</a></span>
 <span class=normal><a href=#__codelineno-0-122>122</a></span>
@@ -6591,7 +6591,21 @@
 <a id=__codelineno-3-5 name=__codelineno-3-5 href=#__codelineno-3-5></a><span class=x>        </span><span class=cp>{%</span> <span class=k>endfill</span> <span class=cp>%}</span>
 <a id=__codelineno-3-6 name=__codelineno-3-6 href=#__codelineno-3-6></a><span class=x>    </span><span class=cp>{%</span> <span class=k>endfor</span> <span class=cp>%}</span>
 <a id=__codelineno-3-7 name=__codelineno-3-7 href=#__codelineno-3-7></a><span class=cp>{%</span> <span class=k>endcomponent</span> <span class=cp>%}</span>
-</code></pre></div> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-549>549</a></span>
+</code></pre></div> <details class=quote> <summary>Source code in <code>src/django_components/slots.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal><a href=#__codelineno-0-535>535</a></span>
+<span class=normal><a href=#__codelineno-0-536>536</a></span>
+<span class=normal><a href=#__codelineno-0-537>537</a></span>
+<span class=normal><a href=#__codelineno-0-538>538</a></span>
+<span class=normal><a href=#__codelineno-0-539>539</a></span>
+<span class=normal><a href=#__codelineno-0-540>540</a></span>
+<span class=normal><a href=#__codelineno-0-541>541</a></span>
+<span class=normal><a href=#__codelineno-0-542>542</a></span>
+<span class=normal><a href=#__codelineno-0-543>543</a></span>
+<span class=normal><a href=#__codelineno-0-544>544</a></span>
+<span class=normal><a href=#__codelineno-0-545>545</a></span>
+<span class=normal><a href=#__codelineno-0-546>546</a></span>
+<span class=normal><a href=#__codelineno-0-547>547</a></span>
+<span class=normal><a href=#__codelineno-0-548>548</a></span>
+<span class=normal><a href=#__codelineno-0-549>549</a></span>
 <span class=normal><a href=#__codelineno-0-550>550</a></span>
 <span class=normal><a href=#__codelineno-0-551>551</a></span>
 <span class=normal><a href=#__codelineno-0-552>552</a></span>
@@ -6667,111 +6681,97 @@
 <span class=normal><a href=#__codelineno-0-622>622</a></span>
 <span class=normal><a href=#__codelineno-0-623>623</a></span>
 <span class=normal><a href=#__codelineno-0-624>624</a></span>
-<span class=normal><a href=#__codelineno-0-625>625</a></span>
-<span class=normal><a href=#__codelineno-0-626>626</a></span>
-<span class=normal><a href=#__codelineno-0-627>627</a></span>
-<span class=normal><a href=#__codelineno-0-628>628</a></span>
-<span class=normal><a href=#__codelineno-0-629>629</a></span>
-<span class=normal><a href=#__codelineno-0-630>630</a></span>
-<span class=normal><a href=#__codelineno-0-631>631</a></span>
-<span class=normal><a href=#__codelineno-0-632>632</a></span>
-<span class=normal><a href=#__codelineno-0-633>633</a></span>
-<span class=normal><a href=#__codelineno-0-634>634</a></span>
-<span class=normal><a href=#__codelineno-0-635>635</a></span>
-<span class=normal><a href=#__codelineno-0-636>636</a></span>
-<span class=normal><a href=#__codelineno-0-637>637</a></span>
-<span class=normal><a href=#__codelineno-0-638>638</a></span>
-<span class=normal><a href=#__codelineno-0-639>639</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-549 name=__codelineno-0-549></a><span class=k>def</span> <span class=nf>resolve_fills</span><span class=p>(</span>
-<a id=__codelineno-0-550 name=__codelineno-0-550></a>    <span class=n>context</span><span class=p>:</span> <span class=n>Context</span><span class=p>,</span>
-<a id=__codelineno-0-551 name=__codelineno-0-551></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>NodeList</span><span class=p>,</span>
-<a id=__codelineno-0-552 name=__codelineno-0-552></a>    <span class=n>component_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
-<a id=__codelineno-0-553 name=__codelineno-0-553></a><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>Dict</span><span class=p>[</span><span class=n>SlotName</span><span class=p>,</span> <span class=n>Slot</span><span class=p>]:</span>
-<a id=__codelineno-0-554 name=__codelineno-0-554></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
-<a id=__codelineno-0-555 name=__codelineno-0-555></a><span class=sd>    Given a component body (`django.template.NodeList`), find all slot fills,</span>
-<a id=__codelineno-0-556 name=__codelineno-0-556></a><span class=sd>    whether defined explicitly with `{% fill %}` or implicitly.</span>
-<a id=__codelineno-0-557 name=__codelineno-0-557></a>
-<a id=__codelineno-0-558 name=__codelineno-0-558></a><span class=sd>    So if we have a component body:</span>
-<a id=__codelineno-0-559 name=__codelineno-0-559></a><span class=sd>    ```django</span>
-<a id=__codelineno-0-560 name=__codelineno-0-560></a><span class=sd>    {% component &quot;mycomponent&quot; %}</span>
-<a id=__codelineno-0-561 name=__codelineno-0-561></a><span class=sd>        {% fill &quot;first_fill&quot; %}</span>
-<a id=__codelineno-0-562 name=__codelineno-0-562></a><span class=sd>            Hello!</span>
-<a id=__codelineno-0-563 name=__codelineno-0-563></a><span class=sd>        {% endfill %}</span>
-<a id=__codelineno-0-564 name=__codelineno-0-564></a><span class=sd>        {% fill &quot;second_fill&quot; %}</span>
-<a id=__codelineno-0-565 name=__codelineno-0-565></a><span class=sd>            Hello too!</span>
-<a id=__codelineno-0-566 name=__codelineno-0-566></a><span class=sd>        {% endfill %}</span>
-<a id=__codelineno-0-567 name=__codelineno-0-567></a><span class=sd>    {% endcomponent %}</span>
-<a id=__codelineno-0-568 name=__codelineno-0-568></a><span class=sd>    ```</span>
-<a id=__codelineno-0-569 name=__codelineno-0-569></a>
-<a id=__codelineno-0-570 name=__codelineno-0-570></a><span class=sd>    Then this function finds 2 fill nodes: &quot;first_fill&quot; and &quot;second_fill&quot;,</span>
-<a id=__codelineno-0-571 name=__codelineno-0-571></a><span class=sd>    and formats them as slot functions, returning:</span>
-<a id=__codelineno-0-572 name=__codelineno-0-572></a>
-<a id=__codelineno-0-573 name=__codelineno-0-573></a><span class=sd>    ```python</span>
-<a id=__codelineno-0-574 name=__codelineno-0-574></a><span class=sd>    {</span>
-<a id=__codelineno-0-575 name=__codelineno-0-575></a><span class=sd>        &quot;first_fill&quot;: SlotFunc(...),</span>
-<a id=__codelineno-0-576 name=__codelineno-0-576></a><span class=sd>        &quot;second_fill&quot;: SlotFunc(...),</span>
-<a id=__codelineno-0-577 name=__codelineno-0-577></a><span class=sd>    }</span>
-<a id=__codelineno-0-578 name=__codelineno-0-578></a><span class=sd>    ```</span>
-<a id=__codelineno-0-579 name=__codelineno-0-579></a>
-<a id=__codelineno-0-580 name=__codelineno-0-580></a><span class=sd>    If no fill nodes are found, then the content is treated as default slot content.</span>
-<a id=__codelineno-0-581 name=__codelineno-0-581></a>
-<a id=__codelineno-0-582 name=__codelineno-0-582></a><span class=sd>    ```python</span>
-<a id=__codelineno-0-583 name=__codelineno-0-583></a><span class=sd>    {</span>
-<a id=__codelineno-0-584 name=__codelineno-0-584></a><span class=sd>        DEFAULT_SLOT_KEY: SlotFunc(...),</span>
-<a id=__codelineno-0-585 name=__codelineno-0-585></a><span class=sd>    }</span>
-<a id=__codelineno-0-586 name=__codelineno-0-586></a><span class=sd>    ```</span>
+<span class=normal><a href=#__codelineno-0-625>625</a></span></pre></div></td><td class=code><div><pre><span></span><code><a id=__codelineno-0-535 name=__codelineno-0-535></a><span class=k>def</span> <span class=nf>resolve_fills</span><span class=p>(</span>
+<a id=__codelineno-0-536 name=__codelineno-0-536></a>    <span class=n>context</span><span class=p>:</span> <span class=n>Context</span><span class=p>,</span>
+<a id=__codelineno-0-537 name=__codelineno-0-537></a>    <span class=n>nodelist</span><span class=p>:</span> <span class=n>NodeList</span><span class=p>,</span>
+<a id=__codelineno-0-538 name=__codelineno-0-538></a>    <span class=n>component_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span>
+<a id=__codelineno-0-539 name=__codelineno-0-539></a><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>Dict</span><span class=p>[</span><span class=n>SlotName</span><span class=p>,</span> <span class=n>Slot</span><span class=p>]:</span>
+<a id=__codelineno-0-540 name=__codelineno-0-540></a><span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<a id=__codelineno-0-541 name=__codelineno-0-541></a><span class=sd>    Given a component body (`django.template.NodeList`), find all slot fills,</span>
+<a id=__codelineno-0-542 name=__codelineno-0-542></a><span class=sd>    whether defined explicitly with `{% fill %}` or implicitly.</span>
+<a id=__codelineno-0-543 name=__codelineno-0-543></a>
+<a id=__codelineno-0-544 name=__codelineno-0-544></a><span class=sd>    So if we have a component body:</span>
+<a id=__codelineno-0-545 name=__codelineno-0-545></a><span class=sd>    ```django</span>
+<a id=__codelineno-0-546 name=__codelineno-0-546></a><span class=sd>    {% component &quot;mycomponent&quot; %}</span>
+<a id=__codelineno-0-547 name=__codelineno-0-547></a><span class=sd>        {% fill &quot;first_fill&quot; %}</span>
+<a id=__codelineno-0-548 name=__codelineno-0-548></a><span class=sd>            Hello!</span>
+<a id=__codelineno-0-549 name=__codelineno-0-549></a><span class=sd>        {% endfill %}</span>
+<a id=__codelineno-0-550 name=__codelineno-0-550></a><span class=sd>        {% fill &quot;second_fill&quot; %}</span>
+<a id=__codelineno-0-551 name=__codelineno-0-551></a><span class=sd>            Hello too!</span>
+<a id=__codelineno-0-552 name=__codelineno-0-552></a><span class=sd>        {% endfill %}</span>
+<a id=__codelineno-0-553 name=__codelineno-0-553></a><span class=sd>    {% endcomponent %}</span>
+<a id=__codelineno-0-554 name=__codelineno-0-554></a><span class=sd>    ```</span>
+<a id=__codelineno-0-555 name=__codelineno-0-555></a>
+<a id=__codelineno-0-556 name=__codelineno-0-556></a><span class=sd>    Then this function finds 2 fill nodes: &quot;first_fill&quot; and &quot;second_fill&quot;,</span>
+<a id=__codelineno-0-557 name=__codelineno-0-557></a><span class=sd>    and formats them as slot functions, returning:</span>
+<a id=__codelineno-0-558 name=__codelineno-0-558></a>
+<a id=__codelineno-0-559 name=__codelineno-0-559></a><span class=sd>    ```python</span>
+<a id=__codelineno-0-560 name=__codelineno-0-560></a><span class=sd>    {</span>
+<a id=__codelineno-0-561 name=__codelineno-0-561></a><span class=sd>        &quot;first_fill&quot;: SlotFunc(...),</span>
+<a id=__codelineno-0-562 name=__codelineno-0-562></a><span class=sd>        &quot;second_fill&quot;: SlotFunc(...),</span>
+<a id=__codelineno-0-563 name=__codelineno-0-563></a><span class=sd>    }</span>
+<a id=__codelineno-0-564 name=__codelineno-0-564></a><span class=sd>    ```</span>
+<a id=__codelineno-0-565 name=__codelineno-0-565></a>
+<a id=__codelineno-0-566 name=__codelineno-0-566></a><span class=sd>    If no fill nodes are found, then the content is treated as default slot content.</span>
+<a id=__codelineno-0-567 name=__codelineno-0-567></a>
+<a id=__codelineno-0-568 name=__codelineno-0-568></a><span class=sd>    ```python</span>
+<a id=__codelineno-0-569 name=__codelineno-0-569></a><span class=sd>    {</span>
+<a id=__codelineno-0-570 name=__codelineno-0-570></a><span class=sd>        DEFAULT_SLOT_KEY: SlotFunc(...),</span>
+<a id=__codelineno-0-571 name=__codelineno-0-571></a><span class=sd>    }</span>
+<a id=__codelineno-0-572 name=__codelineno-0-572></a><span class=sd>    ```</span>
+<a id=__codelineno-0-573 name=__codelineno-0-573></a>
+<a id=__codelineno-0-574 name=__codelineno-0-574></a><span class=sd>    This function also handles for-loops, if/else statements, or include tags to generate fill tags:</span>
+<a id=__codelineno-0-575 name=__codelineno-0-575></a>
+<a id=__codelineno-0-576 name=__codelineno-0-576></a><span class=sd>    ```django</span>
+<a id=__codelineno-0-577 name=__codelineno-0-577></a><span class=sd>    {% component &quot;mycomponent&quot; %}</span>
+<a id=__codelineno-0-578 name=__codelineno-0-578></a><span class=sd>        {% for slot_name in slots %}</span>
+<a id=__codelineno-0-579 name=__codelineno-0-579></a><span class=sd>            {% fill name=slot_name %}</span>
+<a id=__codelineno-0-580 name=__codelineno-0-580></a><span class=sd>                {% slot name=slot_name / %}</span>
+<a id=__codelineno-0-581 name=__codelineno-0-581></a><span class=sd>            {% endfill %}</span>
+<a id=__codelineno-0-582 name=__codelineno-0-582></a><span class=sd>        {% endfor %}</span>
+<a id=__codelineno-0-583 name=__codelineno-0-583></a><span class=sd>    {% endcomponent %}</span>
+<a id=__codelineno-0-584 name=__codelineno-0-584></a><span class=sd>    ```</span>
+<a id=__codelineno-0-585 name=__codelineno-0-585></a><span class=sd>    &quot;&quot;&quot;</span>
+<a id=__codelineno-0-586 name=__codelineno-0-586></a>    <span class=n>slots</span><span class=p>:</span> <span class=n>Dict</span><span class=p>[</span><span class=n>SlotName</span><span class=p>,</span> <span class=n>Slot</span><span class=p>]</span> <span class=o>=</span> <span class=p>{}</span>
 <a id=__codelineno-0-587 name=__codelineno-0-587></a>
-<a id=__codelineno-0-588 name=__codelineno-0-588></a><span class=sd>    This function also handles for-loops, if/else statements, or include tags to generate fill tags:</span>
-<a id=__codelineno-0-589 name=__codelineno-0-589></a>
-<a id=__codelineno-0-590 name=__codelineno-0-590></a><span class=sd>    ```django</span>
-<a id=__codelineno-0-591 name=__codelineno-0-591></a><span class=sd>    {% component &quot;mycomponent&quot; %}</span>
-<a id=__codelineno-0-592 name=__codelineno-0-592></a><span class=sd>        {% for slot_name in slots %}</span>
-<a id=__codelineno-0-593 name=__codelineno-0-593></a><span class=sd>            {% fill name=slot_name %}</span>
-<a id=__codelineno-0-594 name=__codelineno-0-594></a><span class=sd>                {% slot name=slot_name / %}</span>
-<a id=__codelineno-0-595 name=__codelineno-0-595></a><span class=sd>            {% endfill %}</span>
-<a id=__codelineno-0-596 name=__codelineno-0-596></a><span class=sd>        {% endfor %}</span>
-<a id=__codelineno-0-597 name=__codelineno-0-597></a><span class=sd>    {% endcomponent %}</span>
-<a id=__codelineno-0-598 name=__codelineno-0-598></a><span class=sd>    ```</span>
-<a id=__codelineno-0-599 name=__codelineno-0-599></a><span class=sd>    &quot;&quot;&quot;</span>
-<a id=__codelineno-0-600 name=__codelineno-0-600></a>    <span class=n>slots</span><span class=p>:</span> <span class=n>Dict</span><span class=p>[</span><span class=n>SlotName</span><span class=p>,</span> <span class=n>Slot</span><span class=p>]</span> <span class=o>=</span> <span class=p>{}</span>
-<a id=__codelineno-0-601 name=__codelineno-0-601></a>
-<a id=__codelineno-0-602 name=__codelineno-0-602></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>nodelist</span><span class=p>:</span>
-<a id=__codelineno-0-603 name=__codelineno-0-603></a>        <span class=k>return</span> <span class=n>slots</span>
-<a id=__codelineno-0-604 name=__codelineno-0-604></a>
-<a id=__codelineno-0-605 name=__codelineno-0-605></a>    <span class=n>maybe_fills</span> <span class=o>=</span> <span class=n>_extract_fill_content</span><span class=p>(</span><span class=n>nodelist</span><span class=p>,</span> <span class=n>context</span><span class=p>,</span> <span class=n>component_name</span><span class=p>)</span>
-<a id=__codelineno-0-606 name=__codelineno-0-606></a>
-<a id=__codelineno-0-607 name=__codelineno-0-607></a>    <span class=c1># The content has no fills, so treat it as default slot, e.g.:</span>
-<a id=__codelineno-0-608 name=__codelineno-0-608></a>    <span class=c1># {% component &quot;mycomponent&quot; %}</span>
-<a id=__codelineno-0-609 name=__codelineno-0-609></a>    <span class=c1>#   Hello!</span>
-<a id=__codelineno-0-610 name=__codelineno-0-610></a>    <span class=c1>#   {% if True %} 123 {% endif %}</span>
-<a id=__codelineno-0-611 name=__codelineno-0-611></a>    <span class=c1># {% endcomponent %}</span>
-<a id=__codelineno-0-612 name=__codelineno-0-612></a>    <span class=k>if</span> <span class=n>maybe_fills</span> <span class=ow>is</span> <span class=kc>False</span><span class=p>:</span>
-<a id=__codelineno-0-613 name=__codelineno-0-613></a>        <span class=c1># Ignore empty content between `{% component %} ... {% endcomponent %}` tags</span>
-<a id=__codelineno-0-614 name=__codelineno-0-614></a>        <span class=n>nodelist_is_empty</span> <span class=o>=</span> <span class=ow>not</span> <span class=nb>len</span><span class=p>(</span><span class=n>nodelist</span><span class=p>)</span> <span class=ow>or</span> <span class=nb>all</span><span class=p>(</span>
-<a id=__codelineno-0-615 name=__codelineno-0-615></a>            <span class=nb>isinstance</span><span class=p>(</span><span class=n>node</span><span class=p>,</span> <span class=n>TextNode</span><span class=p>)</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>node</span><span class=o>.</span><span class=n>s</span><span class=o>.</span><span class=n>strip</span><span class=p>()</span> <span class=k>for</span> <span class=n>node</span> <span class=ow>in</span> <span class=n>nodelist</span>
-<a id=__codelineno-0-616 name=__codelineno-0-616></a>        <span class=p>)</span>
-<a id=__codelineno-0-617 name=__codelineno-0-617></a>
-<a id=__codelineno-0-618 name=__codelineno-0-618></a>        <span class=k>if</span> <span class=ow>not</span> <span class=n>nodelist_is_empty</span><span class=p>:</span>
-<a id=__codelineno-0-619 name=__codelineno-0-619></a>            <span class=n>slots</span><span class=p>[</span><span class=n>DEFAULT_SLOT_KEY</span><span class=p>]</span> <span class=o>=</span> <span class=n>_nodelist_to_slot_render_func</span><span class=p>(</span>
-<a id=__codelineno-0-620 name=__codelineno-0-620></a>                <span class=n>DEFAULT_SLOT_KEY</span><span class=p>,</span>
-<a id=__codelineno-0-621 name=__codelineno-0-621></a>                <span class=n>nodelist</span><span class=p>,</span>
-<a id=__codelineno-0-622 name=__codelineno-0-622></a>                <span class=n>data_var</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-623 name=__codelineno-0-623></a>                <span class=n>default_var</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
-<a id=__codelineno-0-624 name=__codelineno-0-624></a>            <span class=p>)</span>
-<a id=__codelineno-0-625 name=__codelineno-0-625></a>
-<a id=__codelineno-0-626 name=__codelineno-0-626></a>    <span class=c1># The content has fills</span>
-<a id=__codelineno-0-627 name=__codelineno-0-627></a>    <span class=k>else</span><span class=p>:</span>
-<a id=__codelineno-0-628 name=__codelineno-0-628></a>        <span class=c1># NOTE: If slot fills are explicitly defined, we use them even if they are empty (or only whitespace).</span>
-<a id=__codelineno-0-629 name=__codelineno-0-629></a>        <span class=c1>#       This is different from the default slot, where we ignore empty content.</span>
-<a id=__codelineno-0-630 name=__codelineno-0-630></a>        <span class=k>for</span> <span class=n>fill</span> <span class=ow>in</span> <span class=n>maybe_fills</span><span class=p>:</span>
-<a id=__codelineno-0-631 name=__codelineno-0-631></a>            <span class=n>slots</span><span class=p>[</span><span class=n>fill</span><span class=o>.</span><span class=n>name</span><span class=p>]</span> <span class=o>=</span> <span class=n>_nodelist_to_slot_render_func</span><span class=p>(</span>
-<a id=__codelineno-0-632 name=__codelineno-0-632></a>                <span class=n>slot_name</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>name</span><span class=p>,</span>
-<a id=__codelineno-0-633 name=__codelineno-0-633></a>                <span class=n>nodelist</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>fill</span><span class=o>.</span><span class=n>nodelist</span><span class=p>,</span>
-<a id=__codelineno-0-634 name=__codelineno-0-634></a>                <span class=n>data_var</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>data_var</span><span class=p>,</span>
-<a id=__codelineno-0-635 name=__codelineno-0-635></a>                <span class=n>default_var</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>default_var</span><span class=p>,</span>
-<a id=__codelineno-0-636 name=__codelineno-0-636></a>                <span class=n>extra_context</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>extra_context</span><span class=p>,</span>
-<a id=__codelineno-0-637 name=__codelineno-0-637></a>            <span class=p>)</span>
-<a id=__codelineno-0-638 name=__codelineno-0-638></a>
-<a id=__codelineno-0-639 name=__codelineno-0-639></a>    <span class=k>return</span> <span class=n>slots</span>
+<a id=__codelineno-0-588 name=__codelineno-0-588></a>    <span class=k>if</span> <span class=ow>not</span> <span class=n>nodelist</span><span class=p>:</span>
+<a id=__codelineno-0-589 name=__codelineno-0-589></a>        <span class=k>return</span> <span class=n>slots</span>
+<a id=__codelineno-0-590 name=__codelineno-0-590></a>
+<a id=__codelineno-0-591 name=__codelineno-0-591></a>    <span class=n>maybe_fills</span> <span class=o>=</span> <span class=n>_extract_fill_content</span><span class=p>(</span><span class=n>nodelist</span><span class=p>,</span> <span class=n>context</span><span class=p>,</span> <span class=n>component_name</span><span class=p>)</span>
+<a id=__codelineno-0-592 name=__codelineno-0-592></a>
+<a id=__codelineno-0-593 name=__codelineno-0-593></a>    <span class=c1># The content has no fills, so treat it as default slot, e.g.:</span>
+<a id=__codelineno-0-594 name=__codelineno-0-594></a>    <span class=c1># {% component &quot;mycomponent&quot; %}</span>
+<a id=__codelineno-0-595 name=__codelineno-0-595></a>    <span class=c1>#   Hello!</span>
+<a id=__codelineno-0-596 name=__codelineno-0-596></a>    <span class=c1>#   {% if True %} 123 {% endif %}</span>
+<a id=__codelineno-0-597 name=__codelineno-0-597></a>    <span class=c1># {% endcomponent %}</span>
+<a id=__codelineno-0-598 name=__codelineno-0-598></a>    <span class=k>if</span> <span class=n>maybe_fills</span> <span class=ow>is</span> <span class=kc>False</span><span class=p>:</span>
+<a id=__codelineno-0-599 name=__codelineno-0-599></a>        <span class=c1># Ignore empty content between `{% component %} ... {% endcomponent %}` tags</span>
+<a id=__codelineno-0-600 name=__codelineno-0-600></a>        <span class=n>nodelist_is_empty</span> <span class=o>=</span> <span class=ow>not</span> <span class=nb>len</span><span class=p>(</span><span class=n>nodelist</span><span class=p>)</span> <span class=ow>or</span> <span class=nb>all</span><span class=p>(</span>
+<a id=__codelineno-0-601 name=__codelineno-0-601></a>            <span class=nb>isinstance</span><span class=p>(</span><span class=n>node</span><span class=p>,</span> <span class=n>TextNode</span><span class=p>)</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>node</span><span class=o>.</span><span class=n>s</span><span class=o>.</span><span class=n>strip</span><span class=p>()</span> <span class=k>for</span> <span class=n>node</span> <span class=ow>in</span> <span class=n>nodelist</span>
+<a id=__codelineno-0-602 name=__codelineno-0-602></a>        <span class=p>)</span>
+<a id=__codelineno-0-603 name=__codelineno-0-603></a>
+<a id=__codelineno-0-604 name=__codelineno-0-604></a>        <span class=k>if</span> <span class=ow>not</span> <span class=n>nodelist_is_empty</span><span class=p>:</span>
+<a id=__codelineno-0-605 name=__codelineno-0-605></a>            <span class=n>slots</span><span class=p>[</span><span class=n>DEFAULT_SLOT_KEY</span><span class=p>]</span> <span class=o>=</span> <span class=n>_nodelist_to_slot_render_func</span><span class=p>(</span>
+<a id=__codelineno-0-606 name=__codelineno-0-606></a>                <span class=n>DEFAULT_SLOT_KEY</span><span class=p>,</span>
+<a id=__codelineno-0-607 name=__codelineno-0-607></a>                <span class=n>nodelist</span><span class=p>,</span>
+<a id=__codelineno-0-608 name=__codelineno-0-608></a>                <span class=n>data_var</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-609 name=__codelineno-0-609></a>                <span class=n>default_var</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+<a id=__codelineno-0-610 name=__codelineno-0-610></a>            <span class=p>)</span>
+<a id=__codelineno-0-611 name=__codelineno-0-611></a>
+<a id=__codelineno-0-612 name=__codelineno-0-612></a>    <span class=c1># The content has fills</span>
+<a id=__codelineno-0-613 name=__codelineno-0-613></a>    <span class=k>else</span><span class=p>:</span>
+<a id=__codelineno-0-614 name=__codelineno-0-614></a>        <span class=c1># NOTE: If slot fills are explicitly defined, we use them even if they are empty (or only whitespace).</span>
+<a id=__codelineno-0-615 name=__codelineno-0-615></a>        <span class=c1>#       This is different from the default slot, where we ignore empty content.</span>
+<a id=__codelineno-0-616 name=__codelineno-0-616></a>        <span class=k>for</span> <span class=n>fill</span> <span class=ow>in</span> <span class=n>maybe_fills</span><span class=p>:</span>
+<a id=__codelineno-0-617 name=__codelineno-0-617></a>            <span class=n>slots</span><span class=p>[</span><span class=n>fill</span><span class=o>.</span><span class=n>name</span><span class=p>]</span> <span class=o>=</span> <span class=n>_nodelist_to_slot_render_func</span><span class=p>(</span>
+<a id=__codelineno-0-618 name=__codelineno-0-618></a>                <span class=n>slot_name</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>name</span><span class=p>,</span>
+<a id=__codelineno-0-619 name=__codelineno-0-619></a>                <span class=n>nodelist</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>fill</span><span class=o>.</span><span class=n>nodelist</span><span class=p>,</span>
+<a id=__codelineno-0-620 name=__codelineno-0-620></a>                <span class=n>data_var</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>data_var</span><span class=p>,</span>
+<a id=__codelineno-0-621 name=__codelineno-0-621></a>                <span class=n>default_var</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>default_var</span><span class=p>,</span>
+<a id=__codelineno-0-622 name=__codelineno-0-622></a>                <span class=n>extra_context</span><span class=o>=</span><span class=n>fill</span><span class=o>.</span><span class=n>extra_context</span><span class=p>,</span>
+<a id=__codelineno-0-623 name=__codelineno-0-623></a>            <span class=p>)</span>
+<a id=__codelineno-0-624 name=__codelineno-0-624></a>
+<a id=__codelineno-0-625 name=__codelineno-0-625></a>    <span class=k>return</span> <span class=n>slots</span>
 </code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div> <div class="doc doc-object doc-module"> <h2 id=django_components.tag_formatter class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-module"></code> <span class="doc doc-object-name doc-module-name">tag_formatter</span> <a href=#django_components.tag_formatter class=headerlink title="Permanent link">¤</a></h2> <div class="doc doc-contents "> <p><span class=doc-section-title>Classes:</span></p> <ul> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.ComponentFormatter href=#django_components.tag_formatter.ComponentFormatter>ComponentFormatter</a></code></b> – <div class=doc-md-description> <p>The original django_component's component tag formatter, it uses the <code>{% component %}</code></p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.InternalTagFormatter href=#django_components.tag_formatter.InternalTagFormatter>InternalTagFormatter</a></code></b> – <div class=doc-md-description> <p>Internal wrapper around user-provided TagFormatters, so that we validate the outputs.</p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.ShorthandComponentFormatter href=#django_components.tag_formatter.ShorthandComponentFormatter>ShorthandComponentFormatter</a></code></b> – <div class=doc-md-description> <p>The component tag formatter that uses <code>{% &lt;name&gt; %}</code> / <code>{% end&lt;name&gt; %}</code> tags.</p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.TagFormatterABC href=#django_components.tag_formatter.TagFormatterABC>TagFormatterABC</a></code></b> – <div class=doc-md-description> <p>Abstract base class for defining custom tag formatters.</p> </div> </li> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.TagResult href=#django_components.tag_formatter.TagResult>TagResult</a></code></b> – <div class=doc-md-description> <p>The return value from <a href=../api#django_components.TagFormatterABC.parse><code>TagFormatter.parse()</code></a>.</p> </div> </li> </ul> <p><span class=doc-section-title>Functions:</span></p> <ul> <li class="doc-section-item field-body"> <b><code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.get_tag_formatter href=#django_components.tag_formatter.get_tag_formatter>get_tag_formatter</a></code></b> – <div class=doc-md-description> <p>Returns an instance of the currently configured component tag formatter.</p> </div> </li> </ul> <div class="doc doc-children"> <div class="doc doc-object doc-class"> <h3 id=django_components.tag_formatter.ComponentFormatter class="doc doc-heading"> <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code> <span class="doc doc-object-name doc-class-name">ComponentFormatter</span> <a href=#django_components.tag_formatter.ComponentFormatter class=headerlink title="Permanent link">¤</a></h3> <div class="doc-signature highlight"><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=nf>ComponentFormatter</span><span class=p>(</span><span class=n>tag</span><span class=p>:</span> <span class=n><a class="autorefs autorefs-external" href=https://docs.python.org/3.12/library/stdtypes.html#str>str</a></span><span class=p>)</span>
 </code></pre></div> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><a class="autorefs autorefs-internal" title=django_components.tag_formatter.TagFormatterABC href=#django_components.tag_formatter.TagFormatterABC>TagFormatterABC</a></code></p> <p>The original django_component's component tag formatter, it uses the <code>{% component %}</code> and <code>{% endcomponent %}</code> tags, and the component name is given as the first positional arg.</p> <p>Example as block: <div class=highlight><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1 href=#__codelineno-0-1></a><span class=cp>{%</span> <span class=k>component</span> <span class=s2>&quot;mycomp&quot;</span> <span class=nv>abc</span><span class=o>=</span><span class=m>123</span> <span class=cp>%}</span>
 <a id=__codelineno-0-2 name=__codelineno-0-2 href=#__codelineno-0-2></a><span class=x>    </span><span class=cp>{%</span> <span class=k>fill</span> <span class=s2>&quot;myfill&quot;</span> <span class=cp>%}</span>
