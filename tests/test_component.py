@@ -318,6 +318,67 @@ class ComponentTest(BaseTestCase):
             """,
         )
 
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_prepends_exceptions_with_component_path(self):
+        @register("broken")
+        class Broken(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div> injected: {{ data|safe }} </div>
+                <main>
+                    {% slot "content" default / %}
+                </main>
+            """
+
+            def get_context_data(self):
+                data = self.inject("my_provide")
+                data["data1"]  # This should raise TypeError
+                return {"data": data}
+
+        @register("provider")
+        class Provider(Component):
+            def get_context_data(self, data: Any) -> Any:
+                return {"data": data}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                {% provide "my_provide" key="hi" data=data %}
+                    {% slot "content" default / %}
+                {% endprovide %}
+            """
+
+        @register("parent")
+        class Parent(Component):
+            def get_context_data(self, data: Any) -> Any:
+                return {"data": data}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "provider" data=data %}
+                    {% component "broken" %}
+                        {% slot "content" default / %}
+                    {% endcomponent %}
+                {% endcomponent %}
+            """
+
+        @register("root")
+        class Root(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "parent" data=123 %}
+                    {% fill "content" %}
+                        456
+                    {% endfill %}
+                {% endcomponent %}
+            """
+
+        with self.assertRaisesMessage(
+            TypeError,
+            "An error occured while rendering components Root > parent > provider > broken:\n"
+            "tuple indices must be integers or slices, not str",
+        ):
+            Root.render()
+
 
 class ComponentValidationTest(BaseTestCase):
     def test_validate_input_passes(self):
