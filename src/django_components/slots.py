@@ -203,6 +203,12 @@ class SlotNode(BaseNode):
     def render(self, context: Context) -> SafeString:
         trace_msg("RENDR", "SLOT", self.trace_id, self.node_id)
 
+        # Do not render `{% slot %}` tags within the `{% component %} .. {% endcomponent %}` tags
+        # at the fill discovery stage (when we render the component's body to determine if the body
+        # is a default slot, or contains named slots).
+        if _is_extracting_fill(context):
+            return ""
+
         if _COMPONENT_SLOT_CTX_CONTEXT_KEY not in context or not context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]:
             raise TemplateSyntaxError(
                 "Encountered a SlotNode outside of a ComponentNode context. "

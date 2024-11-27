@@ -740,6 +740,7 @@ class InjectTest(BaseTestCase):
         with self.assertRaises(RuntimeError):
             comp.inject("abc", "def")
 
+    # See https://github.com/EmilStenstrom/django-components/pull/778
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_in_fill(self):
         @register("injectee")
@@ -802,5 +803,67 @@ class InjectTest(BaseTestCase):
                 injected: DepInject(key='hi', data=123)
             </div>
             <main>456</main>
+            """,
+        )
+
+    # See https://github.com/EmilStenstrom/django-components/pull/786
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_inject_in_slot_in_fill(self):
+        @register("injectee")
+        class Injectee(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div> injected: {{ data|safe }} </div>
+                <main>
+                    {% slot "content" default / %}
+                </main>
+            """
+
+            def get_context_data(self):
+                data = self.inject("my_provide")
+                return {"data": data}
+
+        @register("provider")
+        class Provider(Component):
+            def get_context_data(self, data: Any) -> Any:
+                return {"data": data}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                {% provide "my_provide" key="hi" data=data %}
+                    {% slot "content" default / %}
+                {% endprovide %}
+            """
+
+        @register("parent")
+        class Parent(Component):
+            def get_context_data(self, data: Any) -> Any:
+                return {"data": data}
+
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "provider" data=data %}
+                    {% slot "content" default / %}
+                {% endcomponent %}
+            """
+
+        @register("root")
+        class Root(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "parent" data=123 %}
+                    {% component "injectee" / %}
+                {% endcomponent %}
+            """
+
+        rendered = Root.render()
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div>
+                injected: DepInject(key='hi', data=123)
+            </div>
+            <main></main>
             """,
         )
