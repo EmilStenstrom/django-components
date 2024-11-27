@@ -617,7 +617,31 @@ class Component(
         try:
             return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
         except Exception as err:
-            raise _type(err)(f"An error occured while rendering component '{self.name}':\n{repr(err)}") from err
+            # Nicely format the error message to include the component path.
+            # E.g.
+            # ```
+            # KeyError: "An error occured while rendering components ProjectPage > ProjectLayoutTabbed >
+            # Layout > RenderContextProvider > Base > TabItem:
+            # Component 'TabItem' tried to inject a variable '_tab' before it was provided.
+            # ```
+
+            if not hasattr(err, "_components"):
+                err._components = []  # type: ignore[attr-defined]
+
+            components = getattr(err, "_components", [])
+
+            # Access the exception's message, see https://stackoverflow.com/a/75549200/9788634
+            if not components:
+                orig_msg = err.args[0]
+            else:
+                orig_msg = err.args[0].split("\n", 1)[1]
+
+            components.insert(0, self.name)
+            comp_path = " > ".join(components)
+            prefix = f"An error occured while rendering components {comp_path}:\n"
+
+            err.args = (prefix + orig_msg,)  # tuple of one
+            raise err
 
     def _render_impl(
         self,
