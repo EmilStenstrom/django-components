@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import griffe
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 
 @lru_cache()

@@ -7,7 +7,7 @@ All pages are generated inside `docs/reference/`.
 Generation flow:
 1. For each section, like `commands`, we look up the corresponding template
    named `reference_<section>.md`, e.g. `docs/templates/reference_commands.md`.
-   
+
    This template contains the "preface" or text that will be rendered BEFORE
    the auto-generated docs.
 
