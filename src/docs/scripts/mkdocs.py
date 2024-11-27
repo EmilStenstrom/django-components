@@ -1,4 +1,5 @@
 """Utilities for interacting with MkDocs configuration."""
+
 from functools import lru_cache
 from importlib import import_module
 from pathlib import Path

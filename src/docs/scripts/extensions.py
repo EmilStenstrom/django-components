@@ -2,10 +2,9 @@ from pathlib import Path
 from typing import List, Optional, Type
 
 import griffe
+
 from django_components.util.misc import get_import_path
-
 from docs.scripts.mkdocs import get_mkdocstrings_plugin_handler_options, import_object, load_config
-
 
 SOURCE_CODE_GIT_BRANCH = "master"
 
@@ -18,16 +17,17 @@ is_skip_docstring: bool = mkdocstrings_config.get("show_if_no_docstring", "false
 # objects, effectively resolving aliases / reassignments.
 class RuntimeBasesExtension(griffe.Extension):
     """Griffe extension that lists class bases."""
+
     def on_class_instance(self, cls: griffe.Class, **kwargs) -> None:
         if is_skip_docstring and cls.docstring is None:
             return
-        
+
         runtime_cls: Type = import_object(cls)
 
         bases_formatted: List[str] = []
         for base in runtime_cls.__bases__:
             bases_formatted.append(f"<code>{get_import_path(base)}</code>")
-        
+
         html = f'<p class="doc doc-class-bases">Bases: {", ".join(bases_formatted) or "-"}</p>'
 
         cls.docstring = cls.docstring or griffe.Docstring("", parent=cls)

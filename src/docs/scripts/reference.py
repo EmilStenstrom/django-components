@@ -38,13 +38,13 @@ we don't have to run it manually. It will be run each time mkdocs is built.
 import inspect
 import re
 from argparse import ArgumentParser
-from textwrap import dedent
 from importlib import import_module
 from pathlib import Path
+from textwrap import dedent
 from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Type, Union
 
-from django.urls import URLResolver, URLPattern
 from django.core.management.base import BaseCommand
+from django.urls import URLPattern, URLResolver
 
 from django_components import ComponentVars, TagFormatterABC
 from django_components.component import Component
@@ -52,21 +52,20 @@ from django_components.templatetags.component_tags import TagSpec
 from django_components.util.misc import get_import_path
 from docs.scripts.extensions import _format_source_code_html
 
-
 root = Path(__file__).parent.parent.parent.parent
 
 
 def gen_reference_api():
     """
     Generate documentation for the Python API of `django_components`.
-    
+
     This takes all public symbols exported from `django_components`, except for those
     that are handled in other sections, like components, exceptions, etc.
     """
     module = import_module("django_components")
 
     preface = (root / "src/docs/templates/reference_api.md").read_text()
-    out_file = (root / "src/docs/reference/api.md")
+    out_file = root / "src/docs/reference/api.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -90,11 +89,7 @@ def gen_reference_api():
             #     options:
             #       show_if_no_docstring: true
             # ```
-            f.write(
-                f"::: {module.__name__}.{name}\n"
-                f"    options:\n"
-                f"      show_if_no_docstring: true\n"
-            )
+            f.write(f"::: {module.__name__}.{name}\n" f"    options:\n" f"      show_if_no_docstring: true\n")
 
             f.write("\n")
 
@@ -106,7 +101,7 @@ def gen_reference_exceptions():
     module = import_module("django_components")
 
     preface = (root / "src/docs/templates/reference_exceptions.md").read_text()
-    out_file = (root / "src/docs/reference/exceptions.md")
+    out_file = root / "src/docs/reference/exceptions.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -127,11 +122,7 @@ def gen_reference_exceptions():
             #     options:
             #       show_if_no_docstring: true
             # ```
-            f.write(
-                f"::: {module.__name__}.{name}\n"
-                f"    options:\n"
-                f"      show_if_no_docstring: true\n"
-            )
+            f.write(f"::: {module.__name__}.{name}\n" f"    options:\n" f"      show_if_no_docstring: true\n")
 
             f.write("\n")
 
@@ -144,7 +135,7 @@ def gen_reference_components():
     module = import_module("django_components.components")
 
     preface = (root / "src/docs/templates/reference_components.md").read_text()
-    out_file = (root / "src/docs/reference/components.md")
+    out_file = root / "src/docs/reference/components.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -161,7 +152,7 @@ def gen_reference_components():
             unique_methods = _get_unique_methods(Component, obj)
             if unique_methods:
                 members = ", ".join(unique_methods)
-                members = f'[{ unique_methods }]'
+                members = f"[{ unique_methods }]"
             else:
                 # Use `false` to hide all members to show no methods
                 members = "false"
@@ -193,7 +184,7 @@ def gen_reference_settings():
     module = import_module("django_components.app_settings")
 
     preface = (root / "src/docs/templates/reference_settings.md").read_text()
-    out_file = (root / "src/docs/reference/settings.md")
+    out_file = root / "src/docs/reference/settings.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -245,11 +236,7 @@ def _get_unique_methods(base_class: Type, sub_class: Type):
     subclass_methods = set(dir(sub_class))
     unique_methods = subclass_methods - base_methods
 
-    return [
-        method
-        for method in unique_methods
-        if not method.startswith("_")
-    ]
+    return [method for method in unique_methods if not method.startswith("_")]
 
 
 def _gen_default_settings_section(app_settings_filepath: str) -> str:
@@ -258,11 +245,11 @@ def _gen_default_settings_section(app_settings_filepath: str) -> str:
     # We copy this as a plain string, so that the comments are preserved.
     settings_sourcecode = Path(app_settings_filepath).read_text()
     defaults_snippet = settings_sourcecode.split("--snippet:defaults--")[1].split("--endsnippet:defaults--")[0]
-    
+
     # Next we need to clean up the snippet:
 
     # Remove single line from both ends to remove comments and the snippet strings
-    defaults_snippet_lines = defaults_snippet.split('\n')[1:-1]
+    defaults_snippet_lines = defaults_snippet.split("\n")[1:-1]
 
     # Also remove escape/formatter comments at the end of the lines like
     # `# noqa` or `# type: ignore`
@@ -301,7 +288,7 @@ def gen_reference_middlewares():
     module = import_module("django_components.middleware")
 
     preface = (root / "src/docs/templates/reference_middlewares.md").read_text()
-    out_file = (root / "src/docs/reference/middlewares.md")
+    out_file = root / "src/docs/reference/middlewares.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -339,11 +326,11 @@ def gen_reference_tagformatters():
     """
     Generate documentation for all pre-defined TagFormatters included
     in the Python API of `django_components`.
-    """    
+    """
     module = import_module("django_components")
 
     preface = (root / "src/docs/templates/reference_tagformatters.md").read_text()
-    out_file = (root / "src/docs/reference/tag_formatters.md")
+    out_file = root / "src/docs/reference/tag_formatters.md"
 
     tag_formatter_classes: Dict[str, Type[TagFormatterABC]] = {}
     tag_formatter_instances: Dict[str, TagFormatterABC] = {}
@@ -365,16 +352,11 @@ def gen_reference_tagformatters():
         formatted_instances_lines: List[str] = []
         for name, inst in tag_formatter_instances.items():
             cls = inst.__class__
-            cls_link_hash = f'#{get_import_path(cls)}'
-            formatted_instances_lines.append(
-                f"- `django_components.{name}` for [{cls.__name__}]({cls_link_hash})\n"
-            )
+            cls_link_hash = f"#{get_import_path(cls)}"
+            formatted_instances_lines.append(f"- `django_components.{name}` for [{cls.__name__}]({cls_link_hash})\n")
 
         formatted_instances = "\n".join(formatted_instances_lines)
-        f.write(
-            "### Available tag formatters\n\n"
-            + formatted_instances
-        )
+        f.write("### Available tag formatters\n\n" + formatted_instances)
 
         for name, obj in tag_formatter_classes.items():
             class_name = get_import_path(obj)
@@ -410,7 +392,7 @@ def gen_reference_urls():
     module = import_module("django_components.urls")
 
     preface = (root / "src/docs/templates/reference_urls.md").read_text()
-    out_file = (root / "src/docs/reference/urls.md")
+    out_file = root / "src/docs/reference/urls.md"
 
     all_urls = _list_urls(module.urlpatterns)
 
@@ -420,18 +402,13 @@ def gen_reference_urls():
 
         # Simply list all URLs, e.g.
         # `- components/cache/<str:comp_cls_hash>.<str:script_type>/`
-        f.write(
-            "\n".join([
-                f"- `{url_path}`\n"
-                for url_path in all_urls
-            ])
-        )
+        f.write("\n".join([f"- `{url_path}`\n" for url_path in all_urls]))
 
 
 def gen_reference_commands():
     """
     Generate documentation for all Django admin commands defined by django-components.
-    
+
     These are discovered by looking at the files defined inside `management/commands`.
     """
     command_files = Path("./src/django_components/management/commands").glob("*.py")
@@ -442,7 +419,7 @@ def gen_reference_commands():
     ]
 
     preface = (root / "src/docs/templates/reference_commands.md").read_text()
-    out_file = (root / "src/docs/reference/commands.md")
+    out_file = root / "src/docs/reference/commands.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -480,18 +457,16 @@ def gen_reference_templatetags():
     """
     Generate documentation for all Django template tags defined by django-components,
     like `{% slot %}`, `{% component %}`, etc.
-    
+
     These are discovered by looking at the files defined inside `django_components/template_tags`.
     """
     tags_files = Path("./src/django_components/templatetags").glob("*.py")
     tags_modules = [
-        (p.stem, f"django_components.templatetags.{p.stem}")
-        for p in tags_files
-        if not p.stem.startswith("_")
+        (p.stem, f"django_components.templatetags.{p.stem}") for p in tags_files if not p.stem.startswith("_")
     ]
 
     preface = (root / "src/docs/templates/reference_templatetags.md").read_text()
-    out_file = (root / "src/docs/reference/template_tags.md")
+    out_file = root / "src/docs/reference/template_tags.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
@@ -517,7 +492,7 @@ def gen_reference_templatetags():
                 source_code_link = _format_source_code_html(module_rel_path, obj_lineno)
 
                 # Use the tag's function's docstring
-                docstring = dedent(obj.__doc__ or '').strip()
+                docstring = dedent(obj.__doc__ or "").strip()
 
                 # Rebuild (almost) the same documentation than as if we used
                 # mkdocstrings' `::: path.to.module` syntax.
@@ -543,19 +518,17 @@ def gen_reference_templatevars():
     under the `{{ component_vars }}` variable, as defined by `ComponentVars`.
     """
     preface = (root / "src/docs/templates/reference_templatevars.md").read_text()
-    out_file = (root / "src/docs/reference/template_vars.md")
+    out_file = root / "src/docs/reference/template_vars.md"
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with out_file.open("w") as f:
         f.write(preface + "\n\n")
 
         for field in ComponentVars._fields:
-            f.write(
-                f"::: {ComponentVars.__module__}.{ComponentVars.__name__}.{field}\n\n"
-            )
+            f.write(f"::: {ComponentVars.__module__}.{ComponentVars.__name__}.{field}\n\n")
 
 
-def _list_urls(urlpatterns: Sequence[Union[URLPattern, URLResolver]], prefix=''):
+def _list_urls(urlpatterns: Sequence[Union[URLPattern, URLResolver]], prefix=""):
     """Recursively extract all URLs and their associated views from Django's urlpatterns"""
     urls: List[str] = []
 
@@ -588,10 +561,7 @@ def _format_tag_signature(tag_spec: TagSpec) -> str:
 
     optional_kwargs = set(tag_spec.optional_kwargs or [])
 
-    params.extend([
-        f"{name}=None" if name in optional_kwargs else name
-        for name in tag_spec.pos_or_keyword_args or []
-    ])
+    params.extend([f"{name}=None" if name in optional_kwargs else name for name in tag_spec.pos_or_keyword_args or []])
 
     if tag_spec.positional_args_allow_extra:
         params.append("[arg, ...]")
@@ -599,16 +569,12 @@ def _format_tag_signature(tag_spec: TagSpec) -> str:
     if tag_spec.keywordonly_args is True:
         params.append("**kwargs")
     elif tag_spec.keywordonly_args:
-        params.extend([
-            f"{name}=None" if name in optional_kwargs else name
-            for name in (tag_spec.keywordonly_args or [])
-        ])
-    
+        params.extend(
+            [f"{name}=None" if name in optional_kwargs else name for name in (tag_spec.keywordonly_args or [])]
+        )
+
     if tag_spec.flags:
-        params.extend([
-            f"[{name}]"
-            for name in tag_spec.flags
-        ])
+        params.extend([f"[{name}]" for name in tag_spec.flags])
 
     # Create the function signature
     full_tag = f"{{% {' '.join(params)} %}}"
@@ -684,14 +650,14 @@ def _parse_command_args(cmd_inputs: str) -> Dict[str, List[Dict]]:
                 "desc": arg_desc.strip(),
             }
             data[section].append(arg)
-        
+
         # Description of argument that was defined on the previous line(s). E.g.
         # `                        your Django settings.`
         else:
             # Append the description to the last argument
             desc = line.strip()
             data[section][-1]["desc"] += " " + desc
-    
+
     return data
 
 
@@ -707,21 +673,25 @@ def _format_command_args(cmd_parser: ArgumentParser):
                 "- " + ", ".join([f"`{name}`" for name in arg["names"]]) + f"\n    - {arg['desc']}" + "\n"
             )
         formatted_args += "\n"
-    
+
     return formatted_args
 
 
 def _is_component_cls(obj: Any) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Component) and obj is not Component
 
+
 def _is_error_cls(obj: Any) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Exception) and obj is not Exception
+
 
 def _is_tag_formatter_cls(obj: Any) -> bool:
     return inspect.isclass(obj) and issubclass(obj, TagFormatterABC) and obj is not TagFormatterABC
 
+
 def _is_tag_formatter_instance(obj: Any) -> bool:
     return isinstance(obj, TagFormatterABC)
+
 
 def _is_template_tag(obj: Any) -> bool:
     return callable(obj) and hasattr(obj, "_tag_spec")
