@@ -1,5 +1,31 @@
 # Release notes
 
+## v0.114
+
+#### Fix
+
+- Prevent rendering Slot tags during fill discovery stage to fix a case when a component inside a slot
+  fill tried to access provided data too early.
+
+## v0.113
+
+#### Fix
+
+- Ensure consistent order of scripts in `Component.Media.js`
+
+## v0.112
+
+#### Fix
+
+- Allow components to accept default fill even if no default slot was encountered during rendering
+
+## v0.111
+
+#### Fix
+
+- Prevent rendering Component tags during fill discovery stage to fix a case when a component inside the default slot
+  tried to access provided data too early.
+
 ## 🚨📢 v0.110
 
 ### General
