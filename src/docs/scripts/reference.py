@@ -152,7 +152,7 @@ def gen_reference_components():
             unique_methods = _get_unique_methods(Component, obj)
             if unique_methods:
                 members = ", ".join(unique_methods)
-                members = f"[{ unique_methods }]"
+                members = f"[{unique_methods}]"
             else:
                 # Use `false` to hide all members to show no methods
                 members = "false"
