@@ -700,6 +700,11 @@ def _insert_js_css_to_default_locations(
     js_content: Optional[str],
     css_content: Optional[str],
 ) -> Optional[str]:
+    """
+    This function tries to insert the JS and CSS content into the default locations.
+
+    JS is inserted at the end of `<body>`, and CSS is inserted at the end of `<head>`.
+    """
     elems = parse_fragment(html_content)
 
     if not elems:
