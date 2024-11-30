@@ -704,7 +704,7 @@ def _insert_js_css_to_default_locations(
 
     if not elems:
         return None
-    
+
     tree = elems[0].parser
     did_modify_html = False
 
@@ -810,7 +810,9 @@ class ComponentDependencyMiddleware:
         return response
 
     def _process_response(self, response: HttpResponse) -> HttpResponse:
-        if not isinstance(response, StreamingHttpResponse) and response.get("Content-Type", "").startswith("text/html"):
+        if not isinstance(response, StreamingHttpResponse) and response.get("Content-Type", "").startswith(
+            "text/html"
+        ):
             response.content = render_dependencies(response.content, type="document")
 
         return response
