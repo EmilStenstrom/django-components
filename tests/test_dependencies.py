@@ -287,6 +287,128 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
 
+    def test_does_not_modify_html_when_no_component_used(self):
+        registry.register(name="test", component=SimpleComponent)
+
+        template_str: types.django_html = """
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    {% for form in formset %}
+                        {% with row_number=forloop.counter %}
+                            <tr class=" hover:bg-gray-200 py-0 {% cycle 'bg-white' 'bg-gray-50' %} divide-x "
+                                aria-rowindex="{{ row_number }}">
+                                <!-- row num -->
+                                <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                                    aria-colindex="1">
+                                    {{ row_number }}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        """
+
+        rendered_raw = Template(template_str).render(Context({"formset": [1]}))
+        rendered = render_dependencies(rendered_raw, type="fragment")
+
+        expected = """
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    <tr class=" hover:bg-gray-200 py-0 bg-white divide-x "
+                        aria-rowindex="1">
+                        <!-- row num -->
+                        <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                            aria-colindex="1">
+                            1
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        """
+
+        self.assertHTMLEqual(expected, rendered)
+
+    # Explanation: The component is used in the template, but the template doesn't use
+    # {% component_js_dependencies %} or {% component_css_dependencies %} tags,
+    # nor defines a `<head>` or `<body>` tag. In which case, the dependencies are not rendered.
+    def test_does_not_modify_html_when_component_used_but_nowhere_to_insert(self):
+        registry.register(name="test", component=SimpleComponent)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    {% for form in formset %}
+                        {% with row_number=forloop.counter %}
+                            <tr class=" hover:bg-gray-200 py-0 {% cycle 'bg-white' 'bg-gray-50' %} divide-x "
+                                aria-rowindex="{{ row_number }}">
+                                <!-- row num -->
+                                <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                                    aria-colindex="1">
+                                    {{ row_number }}
+                                    {% component "test" variable="hi" / %}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        """
+
+        rendered_raw = Template(template_str).render(Context({"formset": [1]}))
+        rendered = render_dependencies(rendered_raw, type="fragment")
+
+        expected = """
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    <tr class=" hover:bg-gray-200 py-0 bg-white divide-x "
+                        aria-rowindex="1">
+                        <!-- row num -->
+                        <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                            aria-colindex="1">
+                            1
+                            Variable: <strong>hi</strong>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        """
+
+        self.assertHTMLEqual(expected, rendered)
+
 
 class MiddlewareTests(BaseTestCase):
     def test_middleware_response_without_content_type(self):

@@ -32,11 +32,10 @@ from django.templatetags.static import static
 from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
-from selectolax.lexbor import LexborHTMLParser
+from selectolax.lexbor import parse_fragment
 
 import django_components.types as types
-from django_components.util.html import parse_document_or_nodes, parse_multiroot_html, parse_node
-from django_components.util.misc import escape_js_string_literal, get_import_path
+from django_components.util.misc import _escape_js, get_import_path
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -361,26 +360,14 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
     # then try to insert the JS scripts at the end of <body> and CSS sheets at the end
     # of <head>
     if type == "document" and (not did_find_js_placeholder or not did_find_css_placeholder):
-        tree = parse_document_or_nodes(content_.decode())
+        maybe_transformed = _insert_js_css_to_default_locations(
+            content_.decode(),
+            css_content=None if did_find_css_placeholder else css_dependencies.decode(),
+            js_content=None if did_find_js_placeholder else js_dependencies.decode(),
+        )
 
-        if isinstance(tree, LexborHTMLParser):
-            did_modify_html = False
-
-            if not did_find_css_placeholder and tree.head:
-                css_elems = parse_multiroot_html(css_dependencies.decode())
-                for css_elem in css_elems:
-                    tree.head.insert_child(css_elem)  # type: ignore # TODO: Update to selectolax 0.3.25
-                did_modify_html = True
-
-            if not did_find_js_placeholder and tree.body:
-                js_elems = parse_multiroot_html(js_dependencies.decode())
-                for js_elem in js_elems:
-                    tree.body.insert_child(js_elem)  # type: ignore # TODO: Update to selectolax 0.3.25
-                did_modify_html = True
-
-            transformed = cast(str, tree.html)
-            if did_modify_html:
-                content_ = transformed.encode()
+        if maybe_transformed is not None:
+            content_ = maybe_transformed.encode()
 
     # Return the same type as we were given
     output = content_.decode() if isinstance(content, str) else content_
@@ -544,7 +531,7 @@ def _postprocess_media_tags(
     tags_by_url: Dict[str, str] = {}
 
     for tag in tags:
-        node = parse_node(tag)
+        node = parse_fragment(tag)[0]
         # <script src="..."> vs <link href="...">
         attr = "src" if script_type == "js" else "href"
         maybe_url = node.attrs.get(attr, None)
@@ -708,11 +695,42 @@ def _gen_exec_script(
     return exec_script
 
 
-def _escape_js(js: str, eval: bool = True) -> str:
-    escaped_js = escape_js_string_literal(js)
-    # `unescapeJs` is the function we call in the browser to parse the escaped JS
-    escaped_js = f"Components.unescapeJs(`{escaped_js}`)"
-    return f"eval({escaped_js})" if eval else escaped_js
+def _insert_js_css_to_default_locations(
+    html_content: str,
+    js_content: Optional[str],
+    css_content: Optional[str],
+) -> Optional[str]:
+    elems = parse_fragment(html_content)
+
+    if not elems:
+        return None
+    
+    tree = elems[0].parser
+    did_modify_html = False
+
+    if css_content is not None:
+        head_matches = tree.root.css("head")  # type: ignore[union-attr]
+        if head_matches:
+            head = head_matches[0]
+            css_elems = parse_fragment(css_content)
+            for css_elem in css_elems:
+                head.insert_child(css_elem)
+            did_modify_html = True
+
+    if js_content is not None:
+        body_matches = tree.root.css("body")  # type: ignore[union-attr]
+        if body_matches:
+            body = body_matches[0]
+            js_elems = parse_fragment(js_content)
+            for js_elem in js_elems:
+                body.insert_child(js_elem)
+            did_modify_html = True
+
+    if did_modify_html:
+        transformed = cast(str, tree.html)
+        return transformed
+    else:
+        return None  # No changes made
 
 
 #########################################################
@@ -771,30 +789,28 @@ class ComponentDependencyMiddleware:
     """
 
     def __init__(self, get_response: "Callable[[HttpRequest], HttpResponse]") -> None:
-        self.get_response = get_response
+        self._get_response = get_response
 
         # NOTE: Required to work with async
-        if iscoroutinefunction(self.get_response):
+        if iscoroutinefunction(self._get_response):
             markcoroutinefunction(self)
 
     def __call__(self, request: HttpRequest) -> HttpResponseBase:
         if iscoroutinefunction(self):
             return self.__acall__(request)
 
-        response = self.get_response(request)
-        response = self.process_response(response)
+        response = self._get_response(request)
+        response = self._process_response(response)
         return response
 
     # NOTE: Required to work with async
     async def __acall__(self, request: HttpRequest) -> HttpResponseBase:
-        response = await self.get_response(request)
-        response = self.process_response(response)
+        response = await self._get_response(request)
+        response = self._process_response(response)
         return response
 
-    def process_response(self, response: HttpResponse) -> HttpResponse:
-        if not isinstance(response, StreamingHttpResponse) and response.get("Content-Type", "").startswith(
-            "text/html"
-        ):
+    def _process_response(self, response: HttpResponse) -> HttpResponse:
+        if not isinstance(response, StreamingHttpResponse) and response.get("Content-Type", "").startswith("text/html"):
             response.content = render_dependencies(response.content, type="document")
 
         return response
