@@ -178,3 +178,9 @@ plugins:
             line_length: 140
             show_submodules: true
             docstring_style: google
+            show_bases: false # NOTE: Instead we use RuntimeBasesExtension
+            show_source: false # NOTE: Instead we use SourceCodeExtension
+            # NOTE: Order matters!
+            extensions:
+            - src/docs/scripts/extensions.py:RuntimeBasesExtension
+            - src/docs/scripts/extensions.py:SourceCodeExtension
