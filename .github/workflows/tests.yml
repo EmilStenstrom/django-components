@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -31,3 +31,26 @@ jobs:
         playwright install chromium --with-deps
     - name: Run tests
       run: tox
+
+  # Verify that docs build
+  test_docs:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: "pip"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements-docs.txt
+    - name: Run tests
+      run: mkdocs build --verbose
