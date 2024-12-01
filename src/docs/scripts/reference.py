@@ -63,7 +63,7 @@ from django_components.util.misc import get_import_path
 #       Hence we add the `src` directory to `sys.path` ourselves, so we can import from the
 #       `docs.scripts.extensions` module.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+src_dir = os.path.abspath(os.path.join(current_dir, "..", ".."))
 sys.path.insert(0, src_dir)
 
 from docs.scripts.extensions import _format_source_code_html  # noqa: E402
