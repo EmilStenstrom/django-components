@@ -15,6 +15,7 @@ watch:
   - src
   - mkdocs.yml
   - README.md
+  - CHANGELOG.md
   - scripts
 
 validation:
@@ -38,6 +39,7 @@ theme:
     - navigation.instant.progress
     - navigation.indexes
     - navigation.sections
+    - navigation.tabs
     - navigation.tracking
     - navigation.top
     - search.highlight
@@ -63,7 +65,10 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
-    
+
+extra_css:
+  - css/style.css
+
 extra:
   version:
     provider: mike
@@ -136,6 +141,7 @@ plugins:
         - code_of_conduct.md
         - license.md
   - markdown-exec
+  - mkdocs-nav-weight
   # - toc-md:
   - search
   - social:
@@ -161,7 +167,8 @@ plugins:
               ignore_init_summary: true
             docstring_section_style: list
             filters: ["!^_"]
-            heading_level: 1
+            group_by_category: true
+            heading_level: 2
             inherited_members: true
             merge_init_into_class: true
             preload_modules: [mkdocstrings]
@@ -178,3 +185,9 @@ plugins:
             line_length: 140
             show_submodules: true
             docstring_style: google
+            show_bases: false # NOTE: Instead we use RuntimeBasesExtension
+            show_source: false # NOTE: Instead we use SourceCodeExtension
+            # NOTE: Order matters!
+            extensions:
+            - src/docs/scripts/extensions.py:RuntimeBasesExtension
+            - src/docs/scripts/extensions.py:SourceCodeExtension

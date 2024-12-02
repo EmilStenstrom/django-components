@@ -140,6 +140,16 @@ class ComponentVars(NamedTuple):
         </div>
     {% endif %}
     ```
+
+    This is equivalent to checking if a given key is among the slot fills:
+
+    ```py
+    class MyTable(Component):
+        def get_context_data(self, *args, **kwargs):
+            return {
+                "my_slot_filled": "my_slot" in self.input.slots
+            }
+    ```
     """
 
 
