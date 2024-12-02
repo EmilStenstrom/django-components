@@ -1,5 +1,6 @@
 import functools
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -39,12 +40,12 @@ def run_django_dev_server():
     """Fixture to run Django development server in the background."""
     # Get the path where testserver is defined, so the command doesn't depend
     # on user's current working directory.
-    testserver_dir = (Path(__file__).parent / "testserver").absolute()
+    testserver_dir = (Path(__file__).parent / "testserver").resolve()
 
     # Start the Django dev server in the background
     print("Starting Django dev server...")
     proc = subprocess.Popen(
-        ["python", "manage.py", "runserver", f"127.0.0.1:{TEST_SERVER_PORT}", "--noreload"],
+        [sys.executable, "manage.py", "runserver", f"127.0.0.1:{TEST_SERVER_PORT}", "--noreload"],
         cwd=testserver_dir,
     )
 

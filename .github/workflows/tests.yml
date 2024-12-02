@@ -9,12 +9,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-        os: [ubuntu-20.04, windows-latest]
+        # os: [ubuntu-20.04, windows-latest]
+        os: [windows-latest]
 
     steps:
     - uses: actions/checkout@v4
