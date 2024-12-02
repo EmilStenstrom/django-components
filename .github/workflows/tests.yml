@@ -7,6 +7,8 @@ on:
       - 'dev'
   pull_request:
   workflow_dispatch:
+  # See https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  merge_group:
 
 jobs:
   tests:
