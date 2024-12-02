@@ -60,10 +60,7 @@ def do_collect():
     collected = cmd.collect()
 
     # Convert collected paths from string to Path, so we can run tests on both Unix and Windows
-    collected = {
-        key: [Path(item) for item in items]
-        for key, items in collected.items()
-    }
+    collected = {key: [Path(item) for item in items] for key, items in collected.items()}
     return collected
 
 
