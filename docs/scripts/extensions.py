@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import List, Optional, Type
 
 import griffe
+from mkdocs_util import get_mkdocstrings_plugin_handler_options, import_object, load_config
 
 from django_components.util.misc import get_import_path
-from mkdocs_util import get_mkdocstrings_plugin_handler_options, import_object, load_config
 
 SOURCE_CODE_GIT_BRANCH = "master"
 
