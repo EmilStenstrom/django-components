@@ -316,31 +316,44 @@ class TestFilepathToPythonModule(BaseTestCase):
             "tests.components.relative_file.relative_file",
         )
 
-    def test_handles_nonlinux_paths(self):
-        base_path = str(settings.BASE_DIR).replace("/", "//")
+    def test_handles_separators_based_on_os_name(self):
+        base_path = str(settings.BASE_DIR)
 
-        with patch("os.path.sep", new="//"):
-            the_path = os.path.join(base_path, "tests.py")
+        with patch("os.name", new="posix"):
+            the_path = base_path + "/" + "tests.py"
             self.assertEqual(
                 _filepath_to_python_module(the_path, base_path, None),
                 "tests",
             )
 
-            the_path = os.path.join(base_path, "tests//components//relative_file//relative_file.py")
+            the_path = base_path + "/" + "tests/components/relative_file/relative_file.py"
             self.assertEqual(
                 _filepath_to_python_module(the_path, base_path, None),
                 "tests.components.relative_file.relative_file",
             )
 
-        base_path = str(settings.BASE_DIR).replace("//", "\\")
-        with patch("os.path.sep", new="\\"):
-            the_path = os.path.join(base_path, "tests.py")
+        base_path = str(settings.BASE_DIR).replace("/", "\\")
+        with patch("os.name", new="nt"):
+            the_path = base_path + "\\" + "tests.py"
             self.assertEqual(
                 _filepath_to_python_module(the_path, base_path, None),
                 "tests",
             )
 
-            the_path = os.path.join(base_path, "tests\\components\\relative_file\\relative_file.py")
+            the_path = base_path + "\\" + "tests\\components\\relative_file\\relative_file.py"
+            self.assertEqual(
+                _filepath_to_python_module(the_path, base_path, None),
+                "tests.components.relative_file.relative_file",
+            )
+
+            # NOTE: Windows should handle also POSIX separator
+            the_path = base_path + "/" + "tests.py"
+            self.assertEqual(
+                _filepath_to_python_module(the_path, base_path, None),
+                "tests",
+            )
+
+            the_path = base_path + "/" + "tests/components/relative_file/relative_file.py"
             self.assertEqual(
                 _filepath_to_python_module(the_path, base_path, None),
                 "tests.components.relative_file.relative_file",
