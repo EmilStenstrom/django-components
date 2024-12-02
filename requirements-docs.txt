@@ -224,5 +224,5 @@ webencodings==0.5.1
     # via
     #   cssselect2
     #   tinycss2
-zipp==3.20.2
+zipp==3.21.0
     # via importlib-metadata

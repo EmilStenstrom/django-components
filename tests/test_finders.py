@@ -58,6 +58,9 @@ def do_collect():
         post_process=True,
     )
     collected = cmd.collect()
+
+    # Convert collected paths from string to Path, so we can run tests on both Unix and Windows
+    collected = {key: [Path(item) for item in items] for key, items in collected.items()}
     return collected
 
 
@@ -86,10 +89,10 @@ class StaticFilesFinderTests(SimpleTestCase):
         collected = do_collect()
 
         # Check that the component files are NOT loaded when our finder is NOT added
-        self.assertNotIn("staticfiles/staticfiles.css", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.css"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.js"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.html"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.py"), collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
@@ -109,10 +112,10 @@ class StaticFilesFinderTests(SimpleTestCase):
         collected = do_collect()
 
         # Check that our staticfiles_finder finds the files and OMITS .py and .html files
-        self.assertIn("staticfiles/staticfiles.css", collected["modified"])
-        self.assertIn("staticfiles/staticfiles.js", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.css"), collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.js"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.html"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.py"), collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
@@ -138,10 +141,10 @@ class StaticFilesFinderTests(SimpleTestCase):
         collected = do_collect()
 
         # Check that our staticfiles_finder finds the files and OMITS .py and .html files
-        self.assertNotIn("staticfiles/staticfiles.css", collected["modified"])
-        self.assertIn("staticfiles/staticfiles.js", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.css"), collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.js"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.html"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.py"), collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
@@ -169,10 +172,10 @@ class StaticFilesFinderTests(SimpleTestCase):
         collected = do_collect()
 
         # Check that our staticfiles_finder finds the files and OMITS .py and .html files
-        self.assertIn("staticfiles/staticfiles.css", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
-        self.assertIn("staticfiles/staticfiles.html", collected["modified"])
-        self.assertIn("staticfiles/staticfiles.py", collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.css"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.js"), collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.html"), collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.py"), collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])
@@ -201,10 +204,10 @@ class StaticFilesFinderTests(SimpleTestCase):
         collected = do_collect()
 
         # Check that our staticfiles_finder finds the files and OMITS .py and .html files
-        self.assertIn("staticfiles/staticfiles.css", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.js", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.html", collected["modified"])
-        self.assertNotIn("staticfiles/staticfiles.py", collected["modified"])
+        self.assertIn(Path("staticfiles/staticfiles.css"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.js"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.html"), collected["modified"])
+        self.assertNotIn(Path("staticfiles/staticfiles.py"), collected["modified"])
 
         self.assertListEqual(collected["unmodified"], [])
         self.assertListEqual(collected["post_processed"], [])

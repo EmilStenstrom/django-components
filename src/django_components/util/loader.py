@@ -1,6 +1,6 @@
 import glob
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import List, NamedTuple, Optional, Set, Union
 
 from django.apps import apps
@@ -211,13 +211,11 @@ def _filepath_to_python_module(
     - Then the path relative to project root is `app/components/mycomp.py`
     - Which we then turn into python import path `app.components.mycomp`
     """
-    rel_path = os.path.relpath(file_path, start=root_fs_path)
-    rel_path_without_suffix = str(Path(rel_path).with_suffix(""))
+    path_cls = PureWindowsPath if os.name == "nt" else PurePosixPath
 
-    # NOTE: `Path` normalizes paths to use `/` as separator, while `os.path`
-    # uses `os.path.sep`.
-    sep = os.path.sep if os.path.sep in rel_path_without_suffix else "/"
-    module_name = rel_path_without_suffix.replace(sep, ".")
+    rel_path = path_cls(file_path).relative_to(path_cls(root_fs_path))
+    rel_path_parts = rel_path.with_suffix("").parts
+    module_name = ".".join(rel_path_parts)
 
     # Combine with the base module path
     full_module_name = f"{root_module_path}.{module_name}" if root_module_path else module_name
