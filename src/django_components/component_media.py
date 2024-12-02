@@ -226,7 +226,8 @@ def _normalize_media_filepath(filepath: Any) -> Union[str, SafeData]:
         return filepath
 
     if isinstance(filepath, (Path, os.PathLike)) or hasattr(filepath, "__fspath__"):
-        filepath = filepath.__fspath__()
+        # In case of Windows OS, convert to forward slashes
+        filepath = Path(filepath.__fspath__()).as_posix()
 
     if isinstance(filepath, bytes):
         filepath = filepath.decode("utf-8")
@@ -293,19 +294,21 @@ def _resolve_component_relative_files(attrs: MutableMapping) -> None:
     # If not, don't modify anything.
     def resolve_file(filepath: Union[str, SafeData]) -> Union[str, SafeData]:
         if isinstance(filepath, str):
-            maybe_resolved_filepath = os.path.join(comp_dir_abs, filepath)
-            component_import_filepath = os.path.join(comp_dir_rel, filepath)
+            filepath_abs = os.path.join(comp_dir_abs, filepath)
+            # NOTE: The paths to resources need to use POSIX (forward slashes) for Django to wor
+            #       See https://github.com/EmilStenstrom/django-components/issues/796
+            filepath_rel_to_comp_dir = Path(os.path.join(comp_dir_rel, filepath)).as_posix()
 
-            if os.path.isfile(maybe_resolved_filepath):
+            if os.path.isfile(filepath_abs):
                 # NOTE: It's important to use `repr`, so we don't trigger __str__ on SafeStrings
                 logger.debug(
                     f"Interpreting template '{repr(filepath)}' of component '{module_name}'"
                     " relatively to component file"
                 )
 
-                return component_import_filepath
-            return filepath
+                return filepath_rel_to_comp_dir
 
+        # If resolved absolute path does NOT exist or filepath is NOT a string, then return as is
         logger.debug(
             f"Interpreting template '{repr(filepath)}' of component '{module_name}'"
             " relatively to components directory"
