@@ -35,8 +35,10 @@ class ComponentDirsTest(BaseTestCase):
 
         # Apps with a `components` dir
         self.assertEqual(len(apps_dirs), 2)
-        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
-        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
+
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(apps_dirs[0].parts[-2:], ("django_components", "components"))
+        self.assertTupleEqual(apps_dirs[1].parts[-3:], ("tests", "test_app", "components"))
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve() / "test_structures" / "test_structure_1",  # noqa
@@ -49,8 +51,10 @@ class ComponentDirsTest(BaseTestCase):
 
         # Apps with a `components` dir
         self.assertEqual(len(apps_dirs), 2)
-        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
-        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
+
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(apps_dirs[0].parts[-2:], ("django_components", "components"))
+        self.assertTupleEqual(apps_dirs[1].parts[-3:], ("tests", "test_app", "components"))
 
         expected = [
             Path(__file__).parent.resolve() / "test_structures" / "test_structure_1" / "components",
@@ -76,8 +80,10 @@ class ComponentDirsTest(BaseTestCase):
 
         # Apps with a `components` dir
         self.assertEqual(len(apps_dirs), 2)
-        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
-        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
+
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(apps_dirs[0].parts[-2:], ("django_components", "components"))
+        self.assertTupleEqual(apps_dirs[1].parts[-3:], ("tests", "test_app", "components"))
 
         self.assertEqual(
             own_dirs,
@@ -104,8 +110,10 @@ class ComponentDirsTest(BaseTestCase):
 
         # Apps with a `components` dir
         self.assertEqual(len(apps_dirs), 2)
-        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
-        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app\/components$"))
+
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(apps_dirs[0].parts[-2:], ("django_components", "components"))
+        self.assertTupleEqual(apps_dirs[1].parts[-3:], ("tests", "test_app", "components"))
 
     @override_settings(
         BASE_DIR=Path(__file__).parent.resolve(),
@@ -141,7 +149,9 @@ class ComponentDirsTest(BaseTestCase):
 
         # Apps with a `components` dir
         self.assertEqual(len(apps_dirs), 1)
-        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/tests\/test_app\/custom_comps_dir$"))
+
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(apps_dirs[0].parts[-3:], ("tests", "test_app", "custom_comps_dir"))
 
         self.assertEqual(
             own_dirs,
@@ -204,8 +214,10 @@ class ComponentDirsTest(BaseTestCase):
 
         # Apps with a `components` dir
         self.assertEqual(len(apps_dirs), 2)
-        self.assertRegex(str(apps_dirs[0]), re.compile(r"\/django_components\/components$"))
-        self.assertRegex(str(apps_dirs[1]), re.compile(r"\/tests\/test_app_nested\/app\/components$"))
+
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(apps_dirs[0].parts[-2:], ("django_components", "components"))
+        self.assertTupleEqual(apps_dirs[1].parts[-4:], ("tests", "test_app_nested", "app", "components"))
 
         self.assertEqual(
             own_dirs,
@@ -267,8 +279,6 @@ class ComponentFilesTest(BaseTestCase):
 
         dot_paths = [f.dot_path for f in files]
         file_paths = [str(f.filepath) for f in files]
-
-        print(file_paths)
 
         self.assertEqual(
             dot_paths,
