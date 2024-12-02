@@ -226,7 +226,8 @@ def _normalize_media_filepath(filepath: Any) -> Union[str, SafeData]:
         return filepath
 
     if isinstance(filepath, (Path, os.PathLike)) or hasattr(filepath, "__fspath__"):
-        filepath = filepath.__fspath__()
+        # In case of Windows OS, convert to forward slashes
+        filepath = Path(filepath.__fspath__()).as_posix()
 
     if isinstance(filepath, bytes):
         filepath = filepath.decode("utf-8")
