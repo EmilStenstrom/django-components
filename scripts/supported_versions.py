@@ -49,7 +49,7 @@ def get_django_to_pythoon_versions(url: str):
             '<span id="what-python-version-can-i-use-with-django">',
             "</table>",
         )
-        content = cut_by_content(content, '<tbody>', "</tbody>")
+        content = cut_by_content(content, "<tbody>", "</tbody>")
 
         versions = keys_from_content(content)
         version_dict = dict(zip(versions[::2], versions[1::2]))
