@@ -1,5 +1,12 @@
 # Release notes
 
+## v0.115
+
+#### Fix
+
+- Fix integration with ManifestStaticFilesStorage on Windows by resolving component filepaths 
+ (like `Component.template_name`) to POSIX paths.
+
 ## v0.114
 
 #### Fix
