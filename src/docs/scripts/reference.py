@@ -36,7 +36,9 @@ we don't have to run it manually. It will be run each time mkdocs is built.
 """
 
 import inspect
+import os
 import re
+import sys
 from argparse import ArgumentParser
 from importlib import import_module
 from pathlib import Path
@@ -50,7 +52,21 @@ from django_components import ComponentVars, TagFormatterABC
 from django_components.component import Component
 from django_components.templatetags.component_tags import TagSpec
 from django_components.util.misc import get_import_path
-from docs.scripts.extensions import _format_source_code_html
+
+# NOTE: This file is an entrypoint for the `gen-files` plugin in `mkdocs.yml`.
+#       However, `gen-files` plugin runs this file as a script, NOT as a module.
+#       That means that:
+#         - By default we can't do relative imports (e.g. `.extensions`)
+#         - We can't import from packages found in the `src` directory (e.g. `docs.scripts.extensions`)
+#
+#       But we need to import from another module.
+#       Hence we add the `src` directory to `sys.path` ourselves, so we can import from the
+#       `docs.scripts.extensions` module.
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.abspath(os.path.join(current_dir, "..", ".."))
+sys.path.insert(0, src_dir)
+
+from docs.scripts.extensions import _format_source_code_html  # noqa: E402
 
 root = Path(__file__).parent.parent.parent.parent
 

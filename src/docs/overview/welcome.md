@@ -65,7 +65,7 @@ Read on to learn about all the exciting details and configuration possibilities!
 
 ## Release notes
 
-Read the [Release Notes](https://github.com/EmilStenstrom/django-components/tree/master/CHANGELOG.md)
+Read the [Release Notes](https://EmilStenstrom.github.io/django-components/changelog)
 to see the latest features and fixes.
 
 ## Community examples

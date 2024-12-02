@@ -7,6 +7,4 @@
   - [Setup](guides/setup/)
   - [Cookbook](guides/cookbook/)
 - [API Documentation](reference/)
-- [Changelog](changelog.md)
-
-
+- [Release notes](release_notes.md)
