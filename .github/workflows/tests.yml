@@ -54,5 +54,5 @@ jobs:
         python -m pip install -r requirements-docs.txt
         # Install your package locally
         python -m pip install -e .
-    - name: Run tests
+    - name: Build documentation
       run: mkdocs build --verbose
