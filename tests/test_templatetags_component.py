@@ -483,7 +483,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         """
 
         template = Template(simple_tag_template)
-        with self.assertRaisesMessage(TypeError, "got an unexpected keyword argument \\'invalid_variable\\'"):
+        with self.assertRaisesMessage(TypeError, "got an unexpected keyword argument 'invalid_variable'"):
             template.render(Context({}))
 
 
