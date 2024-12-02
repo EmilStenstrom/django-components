@@ -4,7 +4,7 @@ from typing import List, Optional, Type
 import griffe
 
 from django_components.util.misc import get_import_path
-from docs.scripts.mkdocs import get_mkdocstrings_plugin_handler_options, import_object, load_config
+from mkdocs_util import get_mkdocstrings_plugin_handler_options, import_object, load_config
 
 SOURCE_CODE_GIT_BRANCH = "master"
 
