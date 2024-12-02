@@ -236,7 +236,7 @@ class ComponentFilesTest(BaseTestCase):
         files = sorted(get_component_files(".py"))
 
         dot_paths = [f.dot_path for f in files]
-        file_paths = [str(f.filepath) for f in files]
+        file_paths = [f.filepath for f in files]
 
         self.assertEqual(
             dot_paths,
@@ -254,20 +254,20 @@ class ComponentFilesTest(BaseTestCase):
             ],
         )
 
-        self.assertEqual(
-            [
-                file_paths[0].endswith("tests/components/__init__.py"),
-                file_paths[1].endswith("tests/components/multi_file/multi_file.py"),
-                file_paths[2].endswith("tests/components/relative_file/relative_file.py"),
-                file_paths[3].endswith("tests/components/relative_file_pathobj/relative_file_pathobj.py"),
-                file_paths[4].endswith("tests/components/single_file.py"),
-                file_paths[5].endswith("tests/components/staticfiles/staticfiles.py"),
-                file_paths[6].endswith("tests/components/urls.py"),
-                file_paths[7].endswith("django_components/components/__init__.py"),
-                file_paths[8].endswith("django_components/components/dynamic.py"),
-                file_paths[9].endswith("tests/test_app/components/app_lvl_comp/app_lvl_comp.py"),
-            ],
-            [True for _ in range(len(file_paths))],
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(file_paths[0].parts[-3:], ("tests", "components", "__init__.py"))
+        self.assertTupleEqual(file_paths[1].parts[-4:], ("tests", "components", "multi_file", "multi_file.py"))
+        self.assertTupleEqual(file_paths[2].parts[-4:], ("tests", "components", "relative_file", "relative_file.py"))
+        self.assertTupleEqual(
+            file_paths[3].parts[-4:], ("tests", "components", "relative_file_pathobj", "relative_file_pathobj.py")
+        )
+        self.assertTupleEqual(file_paths[4].parts[-3:], ("tests", "components", "single_file.py"))
+        self.assertTupleEqual(file_paths[5].parts[-4:], ("tests", "components", "staticfiles", "staticfiles.py"))
+        self.assertTupleEqual(file_paths[6].parts[-3:], ("tests", "components", "urls.py"))
+        self.assertTupleEqual(file_paths[7].parts[-3:], ("django_components", "components", "__init__.py"))
+        self.assertTupleEqual(file_paths[8].parts[-3:], ("django_components", "components", "dynamic.py"))
+        self.assertTupleEqual(
+            file_paths[9].parts[-5:], ("tests", "test_app", "components", "app_lvl_comp", "app_lvl_comp.py")
         )
 
     @override_settings(
@@ -277,7 +277,7 @@ class ComponentFilesTest(BaseTestCase):
         files = sorted(get_component_files(".js"))
 
         dot_paths = [f.dot_path for f in files]
-        file_paths = [str(f.filepath) for f in files]
+        file_paths = [f.filepath for f in files]
 
         self.assertEqual(
             dot_paths,
@@ -289,14 +289,14 @@ class ComponentFilesTest(BaseTestCase):
             ],
         )
 
-        self.assertEqual(
-            [
-                file_paths[0].endswith("tests/components/relative_file/relative_file.js"),
-                file_paths[1].endswith("tests/components/relative_file_pathobj/relative_file_pathobj.js"),
-                file_paths[2].endswith("tests/components/staticfiles/staticfiles.js"),
-                file_paths[3].endswith("tests/test_app/components/app_lvl_comp/app_lvl_comp.js"),
-            ],
-            [True for _ in range(len(file_paths))],
+        # NOTE: Compare parts so that the test works on Windows too
+        self.assertTupleEqual(file_paths[0].parts[-4:], ("tests", "components", "relative_file", "relative_file.js"))
+        self.assertTupleEqual(
+            file_paths[1].parts[-4:], ("tests", "components", "relative_file_pathobj", "relative_file_pathobj.js")
+        )
+        self.assertTupleEqual(file_paths[2].parts[-4:], ("tests", "components", "staticfiles", "staticfiles.js"))
+        self.assertTupleEqual(
+            file_paths[3].parts[-5:], ("tests", "test_app", "components", "app_lvl_comp", "app_lvl_comp.js")
         )
 
 
