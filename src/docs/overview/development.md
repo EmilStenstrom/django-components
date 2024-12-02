@@ -31,7 +31,8 @@ pyenv install -s 3.9
 pyenv install -s 3.10
 pyenv install -s 3.11
 pyenv install -s 3.12
-pyenv local 3.8 3.9 3.10 3.11 3.12
+pyenv install -s 3.13
+pyenv local 3.8 3.9 3.10 3.11 3.12 3.13
 tox -p
 ```
 

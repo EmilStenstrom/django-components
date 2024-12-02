@@ -13,7 +13,7 @@ def cut_by_content(content: str, cut_from: str, cut_to: str):
 
 
 def keys_from_content(content: str):
-    return re.findall(r"<td>(.*?)</td>", content)
+    return re.findall(r"<td><p>(.*?)</p></td>", content)
 
 
 def get_python_supported_version(url: str) -> list[Version]:
@@ -49,7 +49,7 @@ def get_django_to_pythoon_versions(url: str):
             '<span id="what-python-version-can-i-use-with-django">',
             "</table>",
         )
-        content = cut_by_content(content, '<tbody valign="top">', "</tbody>")
+        content = cut_by_content(content, '<tbody>', "</tbody>")
 
         versions = keys_from_content(content)
         version_dict = dict(zip(versions[::2], versions[1::2]))
@@ -264,13 +264,13 @@ def main():
     print()
     print()
 
-    print("Add this to the middle of README.md:\n")
+    print("Add this to src/docs/overview/compatibility.md:\n")
     readme = build_readme(python_to_django)
     print(readme)
     print()
     print()
 
-    print("And this to the end of README.md:\n")
+    print("Add this to src/docs/overview/development.md:\n")
     pyenv = build_pyenv(python_to_django)
     print(pyenv)
     print()
