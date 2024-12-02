@@ -45,6 +45,7 @@ def run_django_dev_server():
     # Start the Django dev server in the background
     print("Starting Django dev server...")
     proc = subprocess.Popen(
+        # NOTE: Use `sys.executable` so this works both for Unix and Windows OS
         [sys.executable, "manage.py", "runserver", f"127.0.0.1:{TEST_SERVER_PORT}", "--noreload"],
         cwd=testserver_dir,
     )
