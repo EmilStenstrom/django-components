@@ -152,4 +152,44 @@
          <loc>https://emilstenstrom.github.io/django-components/latest/overview/welcome/</loc>
          <lastmod>2024-12-02</lastmod>
     </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/api/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/commands/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/components/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/exceptions/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/middlewares/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/settings/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/tag_formatters/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/template_tags/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/template_vars/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
+    <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/reference/urls/</loc>
+         <lastmod>2024-12-02</lastmod>
+    </url>
 </urlset>
