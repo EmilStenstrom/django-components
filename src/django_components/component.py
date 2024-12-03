@@ -632,7 +632,9 @@ class Component(
         request: Optional[HttpRequest] = None,
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request)
+            return self._render_impl(
+                context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request
+            )
         except Exception as err:
             # Nicely format the error message to include the component path.
             # E.g.
