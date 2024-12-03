@@ -264,13 +264,13 @@ def main():
     print()
     print()
 
-    print("Add this to src/docs/overview/compatibility.md:\n")
+    print("Add this to docs/overview/compatibility.md:\n")
     readme = build_readme(python_to_django)
     print(readme)
     print()
     print()
 
-    print("Add this to src/docs/overview/development.md:\n")
+    print("Add this to docs/overview/development.md:\n")
     pyenv = build_pyenv(python_to_django)
     print(pyenv)
     print()
