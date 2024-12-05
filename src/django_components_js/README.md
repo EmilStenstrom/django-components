@@ -32,10 +32,10 @@ Components.callComponent(
 );
 
 // Load JS or CSS script if not laoded already
-Components.loadScript("js", '<script src="/abc/def">');
+Components.loadJs('<script src="/abc/def">');
 
 // Or mark one as already-loaded, so it is ignored when
-// we call `loadScript`
+// we call `loadJs`
 Components.markScriptLoaded("js", '/abc/def');
 ```
 

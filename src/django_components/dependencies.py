@@ -6,6 +6,7 @@ import sys
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from hashlib import md5
+from textwrap import dedent
 from typing import (
     TYPE_CHECKING,
     Callable,
@@ -492,16 +493,25 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
     loaded_css_urls = sorted(
         [
             *loaded_component_css_urls,
-            # NOTE: Unlike JS, the initial CSS is loaded outside of the dependency
-            # manager, and only marked as loaded, to avoid a flash of unstyled content.
-            *to_load_css_urls,
+            # NOTE: When rendering a document, the initial CSS is inserted directly into the HTML
+            # to avoid a flash of unstyled content. In the dependency manager, we only mark those
+            # scripts as loaded.
+            *(to_load_css_urls if type == "document" else []),
         ]
     )
-    loaded_js_urls = sorted(loaded_component_js_urls)
+    loaded_js_urls = sorted(
+        [
+            *loaded_component_js_urls,
+            # NOTE: When rendering a document, the initial JS is inserted directly into the HTML
+            # so the scripts are executed at proper order. In the dependency manager, we only mark those
+            # scripts as loaded.
+            *(to_load_js_urls if type == "document" else []),
+        ]
+    )
 
     exec_script = _gen_exec_script(
-        to_load_js_tags=to_load_js_tags,
-        to_load_css_tags=to_load_css_tags,
+        to_load_js_tags=to_load_js_tags if type == "fragment" else [],
+        to_load_css_tags=to_load_css_tags if type == "fragment" else [],
         loaded_js_urls=loaded_js_urls,
         loaded_css_urls=loaded_css_urls,
     )
@@ -511,24 +521,37 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
         js=[static("django_components/django_components.min.js")],
     ).render_js()
 
-    final_script_tags = b"".join(
+    final_script_tags = "".join(
         [
-            *[tag.encode("utf-8") for tag in core_script_tags],
-            *[tag.encode("utf-8") for tag in inlined_component_js_tags],
-            exec_script.encode("utf-8"),
+            # JS by us
+            *[tag for tag in core_script_tags],
+            # Make calls to the JS dependency manager
+            # Loads JS from `Media.js` and `Component.js` if fragment
+            exec_script,
+            # JS from `Media.js`
+            # NOTE: When rendering a document, the initial JS is inserted directly into the HTML
+            # so the scripts are executed at proper order. In the dependency manager, we only mark those
+            # scripts as loaded.
+            *(to_load_js_tags if type == "document" else []),
+            # JS from `Component.js` (if not fragment)
+            *[tag for tag in inlined_component_js_tags],
         ]
     )
 
-    final_css_tags = b"".join(
+    final_css_tags = "".join(
         [
-            *[tag.encode("utf-8") for tag in inlined_component_css_tags],
-            # NOTE: Unlike JS, the initial CSS is loaded outside of the dependency
-            # manager, and only marked as loaded, to avoid a flash of unstyled content.
-            *[tag.encode("utf-8") for tag in to_load_css_tags],
+            # CSS by us
+            # <NONE>
+            # CSS from `Component.css` (if not fragment)
+            *[tag for tag in inlined_component_css_tags],
+            # CSS from `Media.css` (plus from `Component.css` if fragment)
+            # NOTE: Similarly to JS, the initial CSS is loaded outside of the dependency
+            #       manager, and only marked as loaded, to avoid a flash of unstyled content.
+            *[tag for tag in to_load_css_tags],
         ]
     )
 
-    return content, final_script_tags, final_css_tags
+    return (content, final_script_tags.encode("utf-8"), final_css_tags.encode("utf-8"))
 
 
 def _is_nonempty_str(txt: Optional[str]) -> bool:
@@ -551,8 +574,9 @@ def _postprocess_media_tags(
 
         if not _is_nonempty_str(maybe_url):
             raise RuntimeError(
-                f"One of entries for `Component.Media.{script_type}` media is missing "
-                f"value for attribute '{attr}'. Got:\n{tag}"
+                f"One of entries for `Component.Media.{script_type}` media is missing a "
+                f"value for attribute '{attr}'. If there is content inlined inside the `<{node.tag}>` tags, "
+                f"you must move the content to a `.{script_type}` file and reference it via '{attr}'.\nGot:\n{tag}"
             )
 
         url = cast(str, maybe_url)
@@ -595,21 +619,21 @@ def _prepare_tags_and_urls(
         if type == "document":
             # NOTE: Skip fetching of inlined JS/CSS if it's not defined or empty for given component
             if _is_nonempty_str(comp_cls.js):
-                inlined_js_tags.append(_get_script("js", comp_cls, type="tag"))
-                loaded_js_urls.append(_get_script("js", comp_cls, type="url"))
+                inlined_js_tags.append(_get_script_tag("js", comp_cls))
+                loaded_js_urls.append(get_script_url("js", comp_cls))
 
             if _is_nonempty_str(comp_cls.css):
-                inlined_css_tags.append(_get_script("css", comp_cls, type="tag"))
-                loaded_css_urls.append(_get_script("css", comp_cls, type="url"))
+                inlined_css_tags.append(_get_script_tag("css", comp_cls))
+                loaded_css_urls.append(get_script_url("css", comp_cls))
 
         # When NOT a document (AKA is a fragment), then scripts are NOT inserted into
         # the HTML, and instead we fetch and load them all via our JS dependency manager.
         else:
             if _is_nonempty_str(comp_cls.js):
-                to_load_js_urls.append(_get_script("js", comp_cls, type="url"))
+                to_load_js_urls.append(get_script_url("js", comp_cls))
 
             if _is_nonempty_str(comp_cls.css):
-                loaded_css_urls.append(_get_script("css", comp_cls, type="url"))
+                loaded_css_urls.append(get_script_url("css", comp_cls))
 
     return (
         to_load_js_urls,
@@ -621,32 +645,45 @@ def _prepare_tags_and_urls(
     )
 
 
-def _get_script(
+def get_script_content(
     script_type: ScriptType,
     comp_cls: Type["Component"],
-    type: Literal["url", "tag"],
-) -> Union[str, SafeString]:
+) -> SafeString:
+    comp_cls_hash = _hash_comp_cls(comp_cls)
+    cache_key = _gen_cache_key(comp_cls_hash, script_type)
+    script = comp_media_cache.get(cache_key)
+
+    return script
+
+
+def _get_script_tag(
+    script_type: ScriptType,
+    comp_cls: Type["Component"],
+) -> SafeString:
+    script = get_script_content(script_type, comp_cls)
+
+    if script_type == "js":
+        return f"<script>{_escape_js(script)}</script>"
+
+    elif script_type == "css":
+        return f"<style>{script}</style>"
+
+    return script
+
+
+def get_script_url(
+    script_type: ScriptType,
+    comp_cls: Type["Component"],
+) -> str:
     comp_cls_hash = _hash_comp_cls(comp_cls)
 
-    if type == "url":
-        # NOTE: To make sure that Media object won't modify the URLs, we need to
-        # resolve the full path (`/abc/def/etc`), not just the file name.
-        script = reverse(
-            CACHE_ENDPOINT_NAME,
-            kwargs={
-                "comp_cls_hash": comp_cls_hash,
-                "script_type": script_type,
-            },
-        )
-    else:
-        cache_key = _gen_cache_key(comp_cls_hash, script_type)
-        script = comp_media_cache.get(cache_key)
-
-        if script_type == "js":
-            script = mark_safe(f"<script>{_escape_js(script)}</script>")
-        elif script_type == "css":
-            script = mark_safe(f"<style>{script}</style>")
-    return script
+    return reverse(
+        CACHE_ENDPOINT_NAME,
+        kwargs={
+            "comp_cls_hash": comp_cls_hash,
+            "script_type": script_type,
+        },
+    )
 
 
 def _gen_exec_script(
@@ -658,9 +695,9 @@ def _gen_exec_script(
     # Generate JS expression like so:
     # ```js
     # Promise.all([
-    #   Components.manager.loadScript("js", '<script src="/abc/def1">...</script>'),
-    #   Components.manager.loadScript("js", '<script src="/abc/def2">...</script>'),
-    #   Components.manager.loadScript("css", '<link href="/abc/def3">'),
+    #   Components.manager.loadJs('<script src="/abc/def1">...</script>'),
+    #   Components.manager.loadJs('<script src="/abc/def2">...</script>'),
+    #   Components.manager.loadCss('<link href="/abc/def3">'),
     # ]);
     # ```
     #
@@ -672,13 +709,14 @@ def _gen_exec_script(
     # Components.manager.markScriptLoaded("js", "/abc/def3.js"),
     # ```
     #
-    # NOTE: It would be better to pass only the URL itself for `loadScript`, instead of a whole tag.
-    # But because we allow users to specify the Media class, and thus users can
-    # configure how the `<link>` or `<script>` tags are rendered, we need pass the whole tag.
+    # NOTE: It would be better to pass only the URL itself for `loadJs/loadCss`, instead of a whole tag.
+    #    But because we allow users to specify the Media class, and thus users can
+    #    configure how the `<link>` or `<script>` tags are rendered, we need pass the whole tag.
     #
-    # NOTE 2: We must NOT await for the Promises, otherwise we create a deadlock
-    # where the script loaded with `loadScript` (loadee) is inserted AFTER the script with `loadScript` (loader).
-    # But the loader will NOT finish, because it's waiting for loadee, which cannot start before loader ends.
+    # NOTE 2: We must NOT await for the Promises, otherwise we create a deadlock where
+    #    the script loaded with `loadJs` (loadee) would be inserted only AFTER the script that
+    #    called `loadJs()` (loader) has finished.
+    #    But the loader will NOT finish, because it's waiting for loadee, which cannot start before loader ends.
     escaped_to_load_js_tags = [_escape_js(tag, eval=False) for tag in to_load_js_tags]
     escaped_to_load_css_tags = [_escape_js(tag, eval=False) for tag in to_load_css_tags]
 
@@ -686,25 +724,23 @@ def _gen_exec_script(
     def js_arr(lst: List) -> str:
         return "[" + ", ".join(lst) + "]"
 
-    exec_script: types.js = f"""(() => {{
-        const loadedJsScripts = {json.dumps(loaded_js_urls)};
-        const loadedCssScripts = {json.dumps(loaded_css_urls)};
-        const toLoadJsScripts = {js_arr(escaped_to_load_js_tags)};
-        const toLoadCssScripts = {js_arr(escaped_to_load_css_tags)};
-
-        loadedJsScripts.forEach((s) => Components.manager.markScriptLoaded("js", s));
-        loadedCssScripts.forEach((s) => Components.manager.markScriptLoaded("css", s));
-
-        Promise.all(
-            toLoadJsScripts.map((s) => Components.manager.loadScript("js", s))
-        ).catch(console.error);
-        Promise.all(
-            toLoadCssScripts.map((s) => Components.manager.loadScript("css", s))
-        ).catch(console.error);
-    }})();
+    # NOTE: Wrap the body in self-executing function to avoid polluting the global scope.
+    exec_script: types.js = f"""
+        (() => {{
+            Components.manager._loadComponentScripts({{
+                loadedCssUrls: {json.dumps(loaded_css_urls)},
+                loadedJsUrls: {json.dumps(loaded_js_urls)},
+                toLoadCssTags: {js_arr(escaped_to_load_css_tags)},
+                toLoadJsTags: {js_arr(escaped_to_load_js_tags)},
+            }});
+            document.currentScript.remove();
+        }})();
     """
 
-    exec_script = f"<script>{_escape_js(exec_script)}</script>"
+    # NOTE: The exec script MUST be executed SYNC, so we MUST NOT put `type="module"`,
+    #       `async`, nor `defer` on it.
+    #       See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#notes
+    exec_script = f"<script>{_escape_js(dedent(exec_script))}</script>"
     return exec_script
 
 
