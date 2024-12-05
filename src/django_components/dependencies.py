@@ -712,11 +712,6 @@ def _gen_exec_script(
     # NOTE: It would be better to pass only the URL itself for `loadJs/loadCss`, instead of a whole tag.
     #    But because we allow users to specify the Media class, and thus users can
     #    configure how the `<link>` or `<script>` tags are rendered, we need pass the whole tag.
-    #
-    # NOTE 2: We must NOT await for the Promises, otherwise we create a deadlock where
-    #    the script loaded with `loadJs` (loadee) would be inserted only AFTER the script that
-    #    called `loadJs()` (loader) has finished.
-    #    But the loader will NOT finish, because it's waiting for loadee, which cannot start before loader ends.
     escaped_to_load_js_tags = [_escape_js(tag, eval=False) for tag in to_load_js_tags]
     escaped_to_load_css_tags = [_escape_js(tag, eval=False) for tag in to_load_css_tags]
 
