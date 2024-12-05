@@ -339,20 +339,20 @@ class DependencyRenderingTests(BaseTestCase):
 
         # Media.css
         self.assertInHTML(
-            '''
+            """
             <link href="style.css" media="all" rel="stylesheet">
             <link href="style2.css" media="all" rel="stylesheet">
-            ''',
+            """,
             rendered,
             count=1,
         )
 
         # Media.js
         self.assertInHTML(
-            '''
+            """
             <script src="script.js"></script>
             <script src="script2.js"></script>
-            ''',
+            """,
             rendered,
             count=1,
         )
@@ -445,11 +445,11 @@ class DependencyRenderingTests(BaseTestCase):
         # - "style.css" (from SimpleComponent inside SimpleComponentNested)
         # - "xyz1.css" (from OtherComponent inserted into SimpleComponentNested)
         self.assertInHTML(
-            '''
+            """
             <link href="style.css" media="all" rel="stylesheet">
             <link href="style2.css" media="all" rel="stylesheet">
             <link href="xyz1.css" media="all" rel="stylesheet">
-            ''',
+            """,
             rendered,
             count=1,
         )
@@ -460,13 +460,13 @@ class DependencyRenderingTests(BaseTestCase):
         # - "script.js" (from SimpleComponent inside SimpleComponentNested)
         # - "xyz1.js" (from OtherComponent inserted into SimpleComponentNested)
         self.assertInHTML(
-            '''
+            """
             <script src="script2.js"></script>
             <script src="script.js"></script>
             <script src="xyz1.js"></script>
             <script>eval(Components.unescapeJs(`console.log(&quot;Hello&quot;);`))</script>
             <script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>
-            ''',
+            """,
             rendered,
             count=1,
         )
