@@ -15,8 +15,8 @@ class ComponentsConfig(AppConfig):
     def ready(self) -> None:
         from django_components.app_settings import app_settings
         from django_components.autodiscovery import autodiscover, import_libraries
-        from django_components.component_registry import registry
         from django_components.component import monkeypatch_template
+        from django_components.component_registry import registry
         from django_components.components.dynamic import DynamicComponent
 
         # NOTE: This monkeypatch is applied here, before Django processes any requests.
