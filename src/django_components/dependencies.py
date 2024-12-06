@@ -554,7 +554,7 @@ def _postprocess_media_tags(
     tags_by_url: Dict[str, str] = {}
 
     for tag in tags:
-        node = SoupNode.from_fragment(tag)[0]
+        node = SoupNode.from_fragment(tag.strip())[0]
         # <script src="..."> vs <link href="...">
         attr = "src" if script_type == "js" else "href"
         maybe_url = node.get_attr(attr, None)
@@ -745,6 +745,8 @@ def _insert_js_css_to_default_locations(
 
     if css_content is not None:
         for elem in elems:
+            if not elem.is_element():
+                continue
             head = elem.find_tag("head")
             if head:
                 css_elems = SoupNode.from_fragment(css_content)
@@ -753,6 +755,8 @@ def _insert_js_css_to_default_locations(
 
     if js_content is not None:
         for elem in elems:
+            if not elem.is_element():
+                continue
             body = elem.find_tag("body")
             if body:
                 js_elems = SoupNode.from_fragment(js_content)

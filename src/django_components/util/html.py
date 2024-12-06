@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Sequence
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, CData, Comment, Doctype, Tag
 
 
 class HTMLNode(ABC):
@@ -53,7 +53,14 @@ class SoupNode(HTMLNode):
         return [cls(elem) for elem in soup.contents]
 
     def to_html(self) -> str:
-        return str(self.node)
+        if isinstance(self.node, CData):
+            return f"<![CDATA[{self.node}]]>"
+        elif isinstance(self.node, Comment):
+            return f"<!-- {self.node} -->"
+        elif isinstance(self.node, Doctype):
+            return f"<!DOCTYPE {self.node}>"
+        else:
+            return str(self.node)
     
     def name(self) -> str:
         return self.node.name
@@ -62,7 +69,7 @@ class SoupNode(HTMLNode):
         if isinstance(self.node, Tag) and self.node.name == tag:
             return self
         else:
-            match = self.node.find(tag)
+            match = self.node.select_one(tag)
             if match:
                 return SoupNode(match)
         return None
@@ -74,19 +81,24 @@ class SoupNode(HTMLNode):
 
     def get_attr(self, attr: str, default: Any = None) -> Any:
         if isinstance(self.node, Tag):
-            return self.node.get(attr, default)
+            res = self.node.get(attr, default)
+            if isinstance(res, list):
+                return " ".join(res)
+            return res
         return default
 
     def set_attr(self, attr: str, value: Any) -> None:
-        if isinstance(self.node, Tag):
-            if value is True:
-                # Set boolean attributes without a value
-                self.node[attr] = None
-            elif value is False:
-                # Remove the attribute
-                self.node.attrs.pop(attr, None)
-            else:
-                self.node[attr] = value
+        if not isinstance(self.node, Tag):
+            return
+
+        if value is True:
+            # Set boolean attributes without a value
+            self.node[attr] = None
+        elif value is False:
+            # Remove the attribute
+            self.node.attrs.pop(attr, None)
+        else:
+            self.node[attr] = value
 
     def is_element(self) -> bool:
         return isinstance(self.node, Tag)
