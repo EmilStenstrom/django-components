@@ -1,6 +1,7 @@
 from django.test import TestCase
 
 from django_components.util.html import SoupNode
+
 from .django_test_setup import setup_test_config
 
 setup_test_config({"autodiscover": False})
@@ -33,7 +34,7 @@ class HtmlTests(TestCase):
                     <li>Hi</li>
                 </ul>
             </div>
-            """
+            """,
         )
         self.assertHTMLEqual(
             nodes[2].to_html(),
@@ -45,7 +46,7 @@ class HtmlTests(TestCase):
             <button>
                 Click me!
             </button>
-            """
+            """,
         )
 
         self.assertEqual(nodes[0].name(), "div")
@@ -71,7 +72,7 @@ class HtmlTests(TestCase):
                     <li>Hi</li>
                 </ul>
             </div>
-            """
+            """,
         )
         self.assertHTMLEqual(
             nodes[4].to_html(),
@@ -79,7 +80,7 @@ class HtmlTests(TestCase):
             <button class="abc def">
                 Click me!
             </button>
-            """
+            """,
         )
 
         # Setting attr to `True` will set it to boolean attribute,
@@ -91,7 +92,7 @@ class HtmlTests(TestCase):
             <button class="abc def" disabled>
                 Click me!
             </button>
-            """
+            """,
         )
         nodes[4].set_attr("disabled", False)
         self.assertHTMLEqual(
@@ -100,7 +101,7 @@ class HtmlTests(TestCase):
             <button class="abc def">
                 Click me!
             </button>
-            """
+            """,
         )
 
         # Return self
