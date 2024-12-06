@@ -36,7 +36,7 @@ from django.utils.safestring import SafeString, mark_safe
 
 import django_components.types as types
 from django_components.util.html import SoupNode
-from django_components.util.misc import escape_js_string_literal, get_import_path
+from django_components.util.misc import _escape_js, get_import_path
 
 if TYPE_CHECKING:
     from django_components.component import Component
