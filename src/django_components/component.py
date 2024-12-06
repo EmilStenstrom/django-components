@@ -955,7 +955,7 @@ class ComponentNode(BaseNode):
         return output
 
 
-def monkeypatch_template(template_cls: type[Template]) -> None:
+def monkeypatch_template(template_cls: Type[Template]) -> None:
     # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
     # based on our custom `Template._dc_is_component_nested`.
     #
