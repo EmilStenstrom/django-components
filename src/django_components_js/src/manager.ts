@@ -43,7 +43,11 @@ export type ScriptType = 'js' | 'css';
  * ```
  *
  * ```js
- * Components.loadScript("js", '<script src="/abc/def"></script>');
+ * Components.loadJs('<script src="/abc/def"></script>');
+ * ```
+ *
+ * ```js
+ * Components.loadCss('<link href="/abc/def" />');
  * ```
  *
  * ```js
@@ -84,68 +88,104 @@ export const createComponentsManager = () => {
   // one to the other.
   // Might be related to https://security.stackexchange.com/a/240362/302733
   // See https://stackoverflow.com/questions/13121948
-  const cloneNode = (srcNode: HTMLElement) => {
-    const targetNode = document.createElement(srcNode.tagName);
+  const cloneNode = <T extends HTMLElement>(srcNode: T): T => {
+    const targetNode = document.createElement(srcNode.tagName) as T;
+    targetNode.innerHTML = srcNode.innerHTML;
     for (const attr of srcNode.attributes) {
       targetNode.setAttributeNode(attr.cloneNode() as Attr);
     }
     return targetNode;
   };
 
-  const loadScript = (type: ScriptType, tag: string) => {
-    if (type === 'js') {
-      const srcScriptNode = parseScriptTag(tag);
+  const loadJs = (tag: string) => {
+    const srcScriptNode = parseScriptTag(tag);
 
-      // Use `.getAttribute()` instead of `.src` so we get the value as is,
-      // without the host name prepended if URL is just a path.
-      const src = srcScriptNode.getAttribute('src');
-      if (!src || loadedJs.has(src)) return;
+    // Use `.getAttribute()` instead of `.src` so we get the value as is,
+    // without the host name prepended if URL is just a path.
+    const src = srcScriptNode.getAttribute('src');
+    if (!src || isScriptLoaded('js', src)) return;
 
-      loadedJs.add(src);
+    markScriptLoaded('js', src);
 
-      const targetScriptNode = cloneNode(srcScriptNode);
+    const targetScriptNode = cloneNode(srcScriptNode);
 
-      // In case of JS scripts, we return a Promise that resolves when the script is loaded
-      // See https://stackoverflow.com/a/57267538/9788634
-      return new Promise<void>((resolve, reject) => {
-        targetScriptNode.onload = () => {
-          resolve();
-        };
+    const isAsync = (
+      // NOTE: `async` and `defer` are boolean attributes, so their value can be
+      // an empty string, hence the `!= null` check.
+      // Read more on https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+      srcScriptNode.getAttribute('async') != null
+      || srcScriptNode.getAttribute('defer') != null
+      || srcScriptNode.getAttribute('type') === 'module'
+    );
 
-        // Insert the script at the end of <body> to follow convention
-        globalThis.document.body.append(targetScriptNode);
-      });
-    } else if (type === 'css') {
-      const linkNode = parseLinkTag(tag);
-      // NOTE: Use `.getAttribute()` instead of `.href` so we get the value as is,
-      // without the host name prepended if URL is just a path.
-      const href = linkNode.getAttribute('href');
-      if (!href || loadedCss.has(href)) return;
+    // Setting this to `false` ensures that the loading and execution of the script is "blocking",
+    // meaning that the next script in line will wait until this one is done.
+    // See https://stackoverflow.com/a/21550322/9788634
+    targetScriptNode.async = isAsync;
 
-      // Insert at the end of <head> to follow convention
-      const targetLinkNode = cloneNode(linkNode);
-      globalThis.document.head.append(targetLinkNode);
-      loadedCss.add(href);
+    // In case of JS scripts, we return a Promise that resolves when the script is loaded
+    // See https://stackoverflow.com/a/57267538/9788634
+    const promise = new Promise<void>((resolve, reject) => {
+      targetScriptNode.onload = () => {
+        resolve();
+      };
 
-      // For CSS, we return a dummy Promise, since we don't need to wait for anything
-      return Promise.resolve();
-    } else {
-      throw Error(
-        `[Components] loadScript received invalid script type '${type}'. Must be one of 'js', 'css'`
-      );
-    }
+      // Insert at the end of `<body>` to follow convention
+      //
+      // NOTE: Because we are inserting the script into the DOM from within JS,
+      // the order of execution of the inserted scripts behaves a bit different:
+      // - The `<script>` that were originally in the HTML file will run in the order they appear in the file.
+      //   And they will run BEFORE the dynamically inserted scripts.
+      // - The order of execution of the dynamically inserted scripts depends on the order of INSERTION,
+      //   and NOT on WHERE we insert the script in the DOM.
+      globalThis.document.body.append(targetScriptNode);
+    });
+
+    return {
+      el: targetScriptNode,
+      promise,
+    };
   };
 
-  const markScriptLoaded = (type: ScriptType, url: string) => {
-    if (type === 'js') {
-      loadedJs.add(url);
-    } else if (type === 'css') {
-      loadedCss.add(url);
-    } else {
+  const loadCss = (tag: string) => {
+    const linkNode = parseLinkTag(tag);
+    // NOTE: Use `.getAttribute()` instead of `.href` so we get the value as is,
+    // without the host name prepended if URL is just a path.
+    const href = linkNode.getAttribute('href');
+    if (!href || isScriptLoaded('css', href)) return;
+
+    // Insert at the end of <head> to follow convention
+    const targetLinkNode = cloneNode(linkNode);
+    globalThis.document.head.append(targetLinkNode);
+    markScriptLoaded('css', href);
+
+    // For CSS, we return a dummy Promise, since we don't need to wait for anything
+    return {
+      el: targetLinkNode,
+      promise: Promise.resolve(),
+    };
+  };
+
+  const markScriptLoaded = (type: ScriptType, url: string): void => {
+    if (type !== 'js' && type !== 'css') {
       throw Error(
         `[Components] markScriptLoaded received invalid script type '${type}'. Must be one of 'js', 'css'`
       );
     }
+
+    const urlsSet = type === 'js' ? loadedJs : loadedCss;
+    urlsSet.add(url);
+  };
+
+  const isScriptLoaded = (type: ScriptType, url: string): boolean => {
+    if (type !== 'js' && type !== 'css') {
+      throw Error(
+        `[Components] isScriptLoaded received invalid script type '${type}'. Must be one of 'js', 'css'`
+      );
+    }
+
+    const urlsSet = type === 'js' ? loadedJs : loadedCss;
+    return urlsSet.has(url);
   };
 
   const registerComponent = (name: string, compFn: ComponentFn) => {
@@ -186,11 +226,38 @@ export const createComponentsManager = () => {
     return result;
   };
 
+  /** Internal API - We call this when we want to load / register all JS & CSS files rendered by component(s) */
+  const _loadComponentScripts = async (inputs: {
+    loadedCssUrls: string[];
+    loadedJsUrls: string[];
+    toLoadCssTags: string[];
+    toLoadJsTags: string[];
+  }) => {
+    // Mark as loaded the CSS that WAS inlined into the HTML.
+    inputs.loadedCssUrls.forEach((s) => markScriptLoaded("css", s));
+    inputs.loadedJsUrls.forEach((s) => markScriptLoaded("js", s));
+
+    // Load CSS that was not inlined into the HTML
+    // NOTE: We don't need to wait for CSS to load
+    Promise
+        .all(inputs.toLoadCssTags.map((s) => loadCss(s)))
+        .catch(console.error);
+
+    // Load JS that was not inlined into the HTML
+    const jsScriptsPromise = Promise
+        // NOTE: Interestingly enough, when we insert scripts into the DOM programmatically,
+        // the order of execution is the same as the order of insertion.
+        .all(inputs.toLoadJsTags.map((s) => loadJs(s)))
+        .catch(console.error);
+  };
+
   return {
     callComponent,
     registerComponent,
     registerComponentData,
-    loadScript,
+    loadJs,
+    loadCss,
     markScriptLoaded,
+    _loadComponentScripts,
   };
 };

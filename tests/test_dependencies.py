@@ -208,7 +208,7 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = Template(template_str).render(Context({}))
         rendered = render_dependencies(rendered_raw)
 
-        self.assertEqual(rendered.count("<script"), 3)
+        self.assertEqual(rendered.count("<script"), 4)
         self.assertEqual(rendered.count("<style"), 1)
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("_RENDERED"), 0)
@@ -256,7 +256,7 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = Template(template_str).render(Context({}))
         rendered = render_dependencies(rendered_raw)
 
-        self.assertEqual(rendered.count("<script"), 3)
+        self.assertEqual(rendered.count("<script"), 4)
         self.assertEqual(rendered.count("<style"), 1)
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("_RENDERED"), 0)
