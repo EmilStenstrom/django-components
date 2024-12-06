@@ -1,5 +1,50 @@
 # Release notes
 
+## v0.116
+
+#### Fix
+
+- Fix the order of execution of JS scripts:
+  - Scripts in `Component.Media.js` are executed in the order they are defined
+  - Scripts in `Component.js` are executed AFTER `Media.js` scripts
+
+- Fix compatibility with AlpineJS
+  - Scripts in `Component.Media.js` are now again inserted as `<script>` tags
+  - By default, `Component.Media.js` are inserted as synchronous `<script>` tags,
+    so the AlpineJS components registered in the `Media.js` scripts will now again
+    run BEFORE the core AlpineJS script.
+
+  AlpineJS can be configured like so:
+
+  Option 1 - AlpineJS loaded in `<head>` with `defer` attribute:
+  ```html
+  <html>
+    <head>
+      {% component_css_dependencies %}
+      <script defer src="https://unpkg.com/alpinejs"></script>
+    </head>
+    <body>
+      {% component 'my_alpine_component' / %}
+      {% component_js_dependencies %}
+    </body>
+  </html>
+  ```
+
+  Option 2 - AlpineJS loaded in `<body>` AFTER `{% component_js_depenencies %}`:
+  ```html
+  <html>
+      <head>
+          {% component_css_dependencies %}
+      </head>
+      <body>
+          {% component 'my_alpine_component' / %}
+          {% component_js_dependencies %}
+
+          <script src="https://unpkg.com/alpinejs"></script>
+      </body>
+  </html>
+  ```
+
 ## v0.115
 
 #### Fix
