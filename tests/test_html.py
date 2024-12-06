@@ -104,17 +104,17 @@ class HtmlTests(TestCase):
         )
 
         # Return self
-        self.assertEqual(nodes[0].node, nodes[0].find_tag("div").node)
+        self.assertEqual(nodes[0].node, nodes[0].find_tag("div").node)  # type: ignore[union-attr]
         # Return descendant
         li = nodes[0].find_tag("li")
-        self.assertHTMLEqual(li.to_html(), "<li>Hi</li>")
+        self.assertHTMLEqual(li.to_html(), "<li>Hi</li>")  # type: ignore[union-attr]
         # Return None when not found
         self.assertEqual(nodes[0].find_tag("main"), None)
 
         # Insert children
-        li.append_children([nodes[4]])
+        li.append_children([nodes[4]])  # type: ignore[union-attr]
         self.assertHTMLEqual(
-            li.to_html(),
+            li.to_html(),  # type: ignore[union-attr]
             """
             <li>
                 Hi

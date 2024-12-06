@@ -226,7 +226,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         # Nodes: [Doctype, whitespace, <html>]
         nodes = SoupNode.from_fragment(rendered.strip())
-        rendered_body = nodes[2].find_tag("body").to_html()
+        rendered_body = nodes[2].find_tag("body").to_html()  # type: ignore[union-attr]
 
         self.assertInHTML(
             """<script src="django_components/django_components.min.js">""",
@@ -278,7 +278,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         # Nodes: [Doctype, whitespace, <html>]
         nodes = SoupNode.from_fragment(rendered.strip())
-        rendered_head = nodes[2].find_tag("head").to_html()
+        rendered_head = nodes[2].find_tag("head").to_html()  # type: ignore[union-attr]
 
         self.assertInHTML(
             """<script src="django_components/django_components.min.js">""",

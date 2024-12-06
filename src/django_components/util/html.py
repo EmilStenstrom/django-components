@@ -9,31 +9,34 @@ class HTMLNode(ABC):
     Interface for an HTML manipulation library. This allows us to potentially swap
     between different libraries.
     """
+
     @classmethod
     @abstractmethod
-    def from_fragment(cls, html: str) -> Sequence["HTMLNode"]: ...
+    def from_fragment(cls, html: str) -> Sequence["HTMLNode"]: ...  # noqa: E704
 
     @abstractmethod
-    def to_html(self) -> str: ...
+    def to_html(self) -> str: ...  # noqa: E704
 
     @abstractmethod
-    def name(self) -> str: ...
-    """Get tag name"""
+    def name(self) -> str:
+        """Get tag name"""
+        ...
 
     @abstractmethod
-    def find_tag(self, tag: str) -> Optional["HTMLNode"]: ...
+    def find_tag(self, tag: str) -> Optional["HTMLNode"]: ...  # noqa: E704
 
     @abstractmethod
-    def append_children(self, children: Sequence[Any]) -> None: ...
+    def append_children(self, children: Sequence[Any]) -> None: ...  # noqa: E704
 
     @abstractmethod
-    def get_attr(self, attr: str, default: Any = None) -> Any: ...
+    def get_attr(self, attr: str, default: Any = None) -> Any: ...  # noqa: E704
 
     @abstractmethod
-    def set_attr(self, attr: str, value: Any) -> None: ...
+    def set_attr(self, attr: str, value: Any) -> None: ...  # noqa: E704
 
     @abstractmethod
-    def is_element(self) -> bool: ...
+    def is_element(self) -> bool: ...  # noqa: E704
+
     """Returns `False` if the node is a text, comment, or doctype node. `True` otherwise."""
 
     @classmethod
@@ -43,12 +46,13 @@ class HTMLNode(ABC):
 
 class SoupNode(HTMLNode):
     """BeautifulSoup implementation of HTMLNode."""
+
     def __init__(self, node: Tag):
         self.node = node
 
     @classmethod
     def from_fragment(cls, html: str) -> List["SoupNode"]:
-        soup = BeautifulSoup(html, 'html.parser')
+        soup = BeautifulSoup(html, "html.parser")
         # Get top-level elements in the fragment
         return [cls(elem) for elem in soup.contents]
 
@@ -61,7 +65,7 @@ class SoupNode(HTMLNode):
             return f"<!DOCTYPE {self.node}>"
         else:
             return str(self.node)
-    
+
     def name(self) -> str:
         return self.node.name
 
