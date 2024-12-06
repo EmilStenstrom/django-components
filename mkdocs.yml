@@ -152,6 +152,8 @@ plugins:
       version_selector: true
   - redirects:
       redirect_maps:
+        # 'old.md': 'new.md'
+        'README.md': 'overview/welcome.md'
   - minify:
       minify_html: true
   - mkdocstrings:
@@ -192,3 +194,4 @@ plugins:
             extensions:
             - docs/scripts/extensions.py:RuntimeBasesExtension
             - docs/scripts/extensions.py:SourceCodeExtension
+            # - docs/scripts/extensions.py:ComponentSyntaxesExtension
