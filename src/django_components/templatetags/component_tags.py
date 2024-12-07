@@ -885,7 +885,7 @@ def _parse_tag_preprocess(
 
 
 def _parse_tag_input(tag_name: str, attrs: List[TagAttr]) -> Tuple[List[str], List[TagKwarg], Set[str]]:
-    # Low-lever parser to extract flags, spread operator, and other bits.
+    # Given a list of attributes passed to a tag, categorise them into args, kwargs, and flags.
     # The result of this will be passed to plugins to allow them to modify the tag inputs.
     # And only once we get back the modified inputs, we will parse the data into
     # internal structures like `DynamicFilterExpression`, or `SpreadOperator`.
