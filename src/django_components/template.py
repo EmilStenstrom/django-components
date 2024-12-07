@@ -1,24 +1,16 @@
-from functools import lru_cache
 from typing import Any, Optional, Type, TypeVar
 
 from django.template import Origin, Template
-from django.template.base import UNKNOWN_SOURCE
 
 from django_components.app_settings import app_settings
-from django_components.util.cache import lazy_cache
+from django_components.util.cache import LRUCache
+from django_components.util.misc import get_import_path
 
 TTemplate = TypeVar("TTemplate", bound=Template)
 
 
-# Lazily initialize the cache. The cached function takes only the parts that can
-# affect how the template string is processed - Template class, template string, and engine
-@lazy_cache(lambda: lru_cache(maxsize=app_settings.TEMPLATE_CACHE_SIZE))
-def _create_template(
-    template_cls: Type[TTemplate],
-    template_string: str,
-    engine: Optional[Any] = None,
-) -> TTemplate:
-    return template_cls(template_string, engine=engine)
+# Lazily initialize the cache
+template_cache: Optional[LRUCache[Template]] = None
 
 
 # Central logic for creating Templates from string, so we can cache the results
@@ -62,13 +54,20 @@ def cached_template(
     )
     ```
     """  # noqa: E501
-    template = _create_template(template_cls or Template, template_string, engine)
+    global template_cache
+    if template_cache is None:
+        template_cache = LRUCache(maxsize=app_settings.TEMPLATE_CACHE_SIZE)
 
-    # Assign the origin and name separately, so the caching doesn't depend on them
-    # Since we might be accessing a template from cache, we want to define these only once
-    if not getattr(template, "_dc_cached", False):
-        template.origin = origin or Origin(UNKNOWN_SOURCE)
-        template.name = name
-        template._dc_cached = True
+    template_cls = template_cls or Template
+    template_cls_path = get_import_path(template_cls)
+    engine_cls_path = get_import_path(engine.__class__) if engine else None
+    cache_key = (template_cls_path, template_string, engine_cls_path)
+
+    maybe_cached_template = template_cache.get(cache_key)
+    if maybe_cached_template is None:
+        template = template_cls(template_string, origin=origin, name=name, engine=engine)
+        template_cache.set(cache_key, template)
+    else:
+        template = maybe_cached_template
 
     return template

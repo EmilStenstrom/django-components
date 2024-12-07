@@ -30,9 +30,10 @@ class BaseTestCase(SimpleTestCase):
         super().tearDown()
         registry.clear()
 
-        from django_components.template import _create_template
+        from django_components.template import template_cache
 
-        _create_template.cache_remove()  # type: ignore[attr-defined]
+        if template_cache:
+            template_cache.clear()
 
     # Mock the `generate` function used inside `gen_id` so it returns deterministic IDs
     def _start_gen_id_patch(self):
