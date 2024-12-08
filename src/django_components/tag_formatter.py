@@ -6,16 +6,14 @@ from django.template import TemplateSyntaxError
 from django.utils.module_loading import import_string
 
 from django_components.expression import resolve_string
-from django_components.template_parser import VAR_CHARS
 from django_components.util.misc import is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry
 
 
-# Forward slash is added so it's possible to define components like
-# `{% MyComp %}..{% /MyComp %}`
-TAG_CHARS = VAR_CHARS + r"/"
+# Require the start / end tags to contain NO spaces and only these characters
+TAG_CHARS = r"\w\-\:\@\.\#/"
 TAG_RE = re.compile(r"^[{chars}]+$".format(chars=TAG_CHARS))
 
 

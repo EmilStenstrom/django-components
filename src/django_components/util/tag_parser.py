@@ -13,8 +13,26 @@ class TagAttr:
     Start index of the attribute (include both key and value),
     relative to the start of the owner Tag.
     """
-    quoted: bool
-    """Whether the value is quoted (either with single or double quotes)"""
+    quoted: Optional[str]
+    """Whether the value is quoted, and the character that's used for the quotation"""
+    spread: bool
+    """Whether the value is a spread syntax, e.g. `...my_var`"""
+    translation: bool
+    """Whether the value is a translation string, e.g. `_("my string")`"""
+
+    def __post_init__(self) -> None:
+        if self.translation and not self.quoted:
+            raise ValueError("Translation value must be quoted")
+        if self.translation and self.spread:
+            raise ValueError("Cannot combine translation and spread syntax")
+
+    def formatted_value(self) -> str:
+        value = f"{self.quoted}{self.value}{self.quoted}" if self.quoted else self.value
+        if self.translation:
+            value = f"_({value})"
+        elif self.spread:
+            value = f"...{value}"
+        return value
 
 
 # Parse the content of a Django template tag like this:
@@ -125,7 +143,7 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
         # If token starts with a quote, we assume it's a value without key part.
         # e.g. `component 'my_comp'`
         # Otherwise, parse the key.
-        if is_next_token("'", '"', '_("', "_('"):
+        if is_next_token("'", '"', '_("', "_('", "..."):
             key = None
         else:
             key = take_until(["=", *TAG_WHITESPACE])
@@ -144,10 +162,17 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
                         key=None,
                         value=key,
                         start_index=start_index,
-                        quoted=False,
+                        quoted=None,
+                        translation=False,
+                        spread=False,
                     )
                 )
                 continue
+
+        # Move the spread synxtax out of the way, so that we properly handle what's next.
+        is_spread = is_next_token("...")
+        if is_spread:
+            taken_n(3)  # ...
 
         # Parse the value
         #
@@ -174,17 +199,15 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
             if is_next_token(quote_char):
                 add_token(quote_char)
                 if is_translation:
-                    value += taken_n(1)  # )
-                quoted = True
+                    taken_n(1)  # )
+                quoted = quote_char
             else:
-                quoted = False
+                quoted = None
                 value = quote_char + value
-                if is_translation:
-                    value = "_(" + value
         # E.g. `height=20`
         else:
             value = take_until(TAG_WHITESPACE)
-            quoted = False
+            quoted = None
 
         attrs.append(
             TagAttr(
@@ -192,6 +215,8 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
                 value=value,
                 start_index=start_index,
                 quoted=quoted,
+                spread=is_spread,
+                translation=False,
             )
         )
 

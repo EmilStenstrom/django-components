@@ -128,7 +128,7 @@ class HtmlAttrsTests(BaseTestCase):
         template = Template(self.template_str)
 
         with self.assertRaisesMessage(
-            TemplateSyntaxError, "'html_attrs' received some positional argument(s) after some keyword"
+            TemplateSyntaxError, "'html_attrs' received too many positional arguments: ['class']"
         ):
             template.render(Context({"class_var": "padding-top-8"}))
 
