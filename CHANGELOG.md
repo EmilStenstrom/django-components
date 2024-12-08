@@ -1,6 +1,19 @@
 # Release notes
 
+## v0.117
+
+#### Fix
+
+- The HTML parser no longer erronously inserts `<html><head><body>` on some occasions, and
+  no longer tries to close unclosed HTML tags.
+
+#### Refactor
+
+- Replaced [Selectolax](https://github.com/rushter/selectolax) with [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) as project dependencies.
+
 ## v0.116
+
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
 
 #### Fix
 
@@ -47,12 +60,16 @@
 
 ## v0.115
 
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+
 #### Fix
 
 - Fix integration with ManifestStaticFilesStorage on Windows by resolving component filepaths 
  (like `Component.template_name`) to POSIX paths.
 
 ## v0.114
+
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
 
 #### Fix
 
@@ -61,11 +78,15 @@
 
 ## v0.113
 
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+
 #### Fix
 
 - Ensure consistent order of scripts in `Component.Media.js`
 
 ## v0.112
+
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
 
 #### Fix
 
@@ -73,12 +94,16 @@
 
 ## v0.111
 
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+
 #### Fix
 
 - Prevent rendering Component tags during fill discovery stage to fix a case when a component inside the default slot
   tried to access provided data too early.
 
 ## 🚨📢 v0.110
+
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
 
 ### General
 
