@@ -6,7 +6,9 @@
 #
 asgiref==3.8.1
     # via django
-black==24.8.0
+beautifulsoup4==4.12.3
+    # via -r requirements-dev.in
+black==24.10.0
     # via -r requirements-dev.in
 cachetools==5.5.0
     # via tox
@@ -16,15 +18,15 @@ cfgv==3.4.0
     # via pre-commit
 chardet==5.2.0
     # via tox
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 click==8.1.7
     # via black
 colorama==0.4.6
     # via tox
-distlib==0.3.8
+distlib==0.3.9
     # via virtualenv
-django==5.1.1
+django==5.1.4
     # via -r requirements-dev.in
 filelock==3.16.1
     # via
@@ -38,7 +40,7 @@ flake8-pyproject==1.2.3
     # via -r requirements-dev.in
 greenlet==3.1.1
     # via playwright
-identify==2.5.33
+identify==2.6.3
     # via pre-commit
 idna==3.10
     # via requests
@@ -54,9 +56,9 @@ mypy-extensions==1.0.0
     # via
     #   black
     #   mypy
-nodeenv==1.8.0
+nodeenv==1.9.1
     # via pre-commit
-packaging==24.1
+packaging==24.2
     # via
     #   black
     #   pyproject-api
@@ -69,7 +71,7 @@ platformdirs==4.3.6
     #   black
     #   tox
     #   virtualenv
-playwright==1.48.0
+playwright==1.49.0
     # via -r requirements-dev.in
 pluggy==1.5.0
     # via
@@ -77,7 +79,7 @@ pluggy==1.5.0
     #   tox
 pre-commit==4.0.1
     # via -r requirements-dev.in
-pycodestyle==2.12.0
+pycodestyle==2.12.1
     # via flake8
 pyee==12.0.0
     # via playwright
@@ -87,19 +89,19 @@ pyproject-api==1.8.0
     # via tox
 pytest==8.3.4
     # via -r requirements-dev.in
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via pre-commit
 requests==2.32.3
     # via -r requirements-dev.in
-selectolax==0.3.26
-    # via -r requirements-dev.in
-sqlparse==0.5.0
+soupsieve==2.6
+    # via beautifulsoup4
+sqlparse==0.5.2
     # via django
 tox==4.23.2
     # via -r requirements-dev.in
 types-requests==2.32.0.20241016
     # via -r requirements-dev.in
-typing-extensions==4.10.0
+typing-extensions==4.12.2
     # via
     #   mypy
     #   pyee
@@ -107,12 +109,9 @@ urllib3==2.2.3
     # via
     #   requests
     #   types-requests
-virtualenv==20.26.6
+virtualenv==20.28.0
     # via
     #   pre-commit
     #   tox
-whitenoise==6.7.0
+whitenoise==6.8.2
     # via -r requirements-dev.in
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools

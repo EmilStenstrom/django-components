@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django_components"
-version = "0.116"
+version = "0.117"
 requires-python = ">=3.8, <4.0"
 description = "A way to create simple reusable template components in Django."
 keywords = ["django", "components", "css", "js", "html"]
@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     'Django>=4.2',
-    'selectolax>=0.3.24',
+    'beautifulsoup4>=4.12',
 ]
 license = {text = "MIT"}
 
