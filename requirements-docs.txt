@@ -95,7 +95,7 @@ markdown==3.7
     #   mkdocs-material
     #   mkdocstrings
     #   pymdown-extensions
-markdown-exec==1.9.3
+markdown-exec==1.10.0
     # via hatch.envs.docs
 markupsafe==3.0.2
     # via
@@ -169,7 +169,7 @@ pathspec==0.12.1
     # via
     #   black
     #   mkdocs
-pillow==10.4.0
+pillow==11.0.0
     # via
     #   cairosvg
     #   mkdocs-material
@@ -209,7 +209,7 @@ regex==2024.11.6
     # via mkdocs-material
 requests==2.32.3
     # via mkdocs-material
-six==1.16.0
+six==1.17.0
     # via python-dateutil
 smmap==5.0.1
     # via gitdb
