@@ -48,10 +48,11 @@ class CalendarRelative(Component):
         }
 
     def get(self, request, *args, **kwargs):
-        context = {
-            "date": request.GET.get("date", ""),
-        }
-        return self.render_to_response(context)
+        return self.render_to_response(
+            kwargs={
+                "date": request.GET.get("date", ""),
+            },
+        )
 
     class Media:
         css = "calendar.css"
