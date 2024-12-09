@@ -95,7 +95,7 @@ markdown==3.7
     #   mkdocs-material
     #   mkdocstrings
     #   pymdown-extensions
-markdown-exec==1.9.3
+markdown-exec==1.10.0
     # via hatch.envs.docs
 markupsafe==3.0.2
     # via
