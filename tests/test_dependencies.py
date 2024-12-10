@@ -2,11 +2,11 @@ from unittest.mock import Mock
 
 from django.http import HttpResponseNotModified
 from django.template import Context, Template
-from selectolax.lexbor import LexborHTMLParser
 
 from django_components import Component, registry, render_dependencies, types
 from django_components.components.dynamic import DynamicComponent
 from django_components.middleware import ComponentDependencyMiddleware
+from django_components.util.html import SoupNode
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, create_and_process_template_response
@@ -208,7 +208,7 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = Template(template_str).render(Context({}))
         rendered = render_dependencies(rendered_raw)
 
-        self.assertEqual(rendered.count("<script"), 3)
+        self.assertEqual(rendered.count("<script"), 4)
         self.assertEqual(rendered.count("<style"), 1)
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("_RENDERED"), 0)
@@ -224,7 +224,9 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
 
-        rendered_body = LexborHTMLParser(rendered).body.html  # type: ignore[union-attr]
+        # Nodes: [Doctype, whitespace, <html>]
+        nodes = SoupNode.from_fragment(rendered.strip())
+        rendered_body = nodes[2].find_tag("body").to_html()  # type: ignore[union-attr]
 
         self.assertInHTML(
             """<script src="django_components/django_components.min.js">""",
@@ -256,7 +258,7 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = Template(template_str).render(Context({}))
         rendered = render_dependencies(rendered_raw)
 
-        self.assertEqual(rendered.count("<script"), 3)
+        self.assertEqual(rendered.count("<script"), 4)
         self.assertEqual(rendered.count("<style"), 1)
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("_RENDERED"), 0)
@@ -274,7 +276,9 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
 
-        rendered_head = LexborHTMLParser(rendered).head.html  # type: ignore[union-attr]
+        # Nodes: [Doctype, whitespace, <html>]
+        nodes = SoupNode.from_fragment(rendered.strip())
+        rendered_head = nodes[2].find_tag("head").to_html()  # type: ignore[union-attr]
 
         self.assertInHTML(
             """<script src="django_components/django_components.min.js">""",
@@ -286,6 +290,142 @@ class RenderDependenciesTests(BaseTestCase):
             rendered_head,
             count=1,
         )
+
+    # NOTE: Some HTML parser libraries like selectolax or lxml try to "correct" the given HTML.
+    #       We want to avoid this behavior, so user gets the exact same HTML back.
+    def test_does_not_try_to_add_close_tags(self):
+        registry.register(name="test", component=SimpleComponent)
+
+        template_str: types.django_html = """
+            <thead>
+        """
+
+        rendered_raw = Template(template_str).render(Context({"formset": [1]}))
+        rendered = render_dependencies(rendered_raw, type="fragment")
+
+        self.assertHTMLEqual(rendered, "<thead>")
+
+    def test_does_not_modify_html_when_no_component_used(self):
+        registry.register(name="test", component=SimpleComponent)
+
+        template_str: types.django_html = """
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    {% for form in formset %}
+                        {% with row_number=forloop.counter %}
+                            <tr class=" hover:bg-gray-200 py-0 {% cycle 'bg-white' 'bg-gray-50' %} divide-x "
+                                aria-rowindex="{{ row_number }}">
+                                <!-- row num -->
+                                <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                                    aria-colindex="1">
+                                    {{ row_number }}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        """
+
+        rendered_raw = Template(template_str).render(Context({"formset": [1]}))
+        rendered = render_dependencies(rendered_raw, type="fragment")
+
+        expected = """
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    <tr class=" hover:bg-gray-200 py-0 bg-white divide-x "
+                        aria-rowindex="1">
+                        <!-- row num -->
+                        <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                            aria-colindex="1">
+                            1
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        """
+
+        self.assertHTMLEqual(expected, rendered)
+
+    # Explanation: The component is used in the template, but the template doesn't use
+    # {% component_js_dependencies %} or {% component_css_dependencies %} tags,
+    # nor defines a `<head>` or `<body>` tag. In which case, the dependencies are not rendered.
+    def test_does_not_modify_html_when_component_used_but_nowhere_to_insert(self):
+        registry.register(name="test", component=SimpleComponent)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    {% for form in formset %}
+                        {% with row_number=forloop.counter %}
+                            <tr class=" hover:bg-gray-200 py-0 {% cycle 'bg-white' 'bg-gray-50' %} divide-x "
+                                aria-rowindex="{{ row_number }}">
+                                <!-- row num -->
+                                <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                                    aria-colindex="1">
+                                    {{ row_number }}
+                                    {% component "test" variable="hi" / %}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        """
+
+        rendered_raw = Template(template_str).render(Context({"formset": [1]}))
+        rendered = render_dependencies(rendered_raw, type="fragment")
+
+        expected = """
+            <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
+                <!-- Table head -->
+                <thead>
+                    <tr class="py-0 my-0 h-7">
+                        <!-- Empty row -->
+                        <th class="min-w-12">#</th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody id="items" class="divide-y divide-slate-300">
+                    <tr class=" hover:bg-gray-200 py-0 bg-white divide-x "
+                        aria-rowindex="1">
+                        <!-- row num -->
+                        <td class="whitespace-nowrap w-fit text-center px-4 w-px"
+                            aria-colindex="1">
+                            1
+                            Variable: <strong>hi</strong>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        """
+
+        self.assertHTMLEqual(expected, rendered)
 
 
 class MiddlewareTests(BaseTestCase):

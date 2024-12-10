@@ -127,10 +127,19 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [];"), 1)
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [],
+        #     loadedJsUrls: [],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedJsUrls: [],"), 1)
+        self.assertEqual(rendered.count("loadedCssUrls: [],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_no_js_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
@@ -148,10 +157,19 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadJsScripts = [];"), 1)
-        self.assertEqual(rendered.count(r"const toLoadCssScripts = [];"), 1)
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [],
+        #     loadedJsUrls: [],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedJsUrls: [],"), 1)
+        self.assertEqual(rendered.count("loadedCssUrls: [],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_no_css_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
@@ -184,22 +202,21 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("<style"), 0)
-        self.assertEqual(rendered.count("<script"), 2)
+        self.assertEqual(rendered.count("<script"), 3)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
-            ),
-            1,
-        )
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
-            ),
-            1,
-        )
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [&quot;style.css&quot;],
+        #     loadedJsUrls: [&quot;script.js&quot;],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;],"), 1)
+        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_single_component_with_dash_or_slash_in_name(self):
         registry.register(name="te-s/t", component=SimpleComponent)
@@ -219,22 +236,21 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
         self.assertEqual(rendered.count("<style"), 0)
-        self.assertEqual(rendered.count("<script"), 2)
+        self.assertEqual(rendered.count("<script"), 3)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
-            ),
-            1,
-        )
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
-            ),
-            1,
-        )
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [&quot;style.css&quot;],
+        #     loadedJsUrls: [&quot;script.js&quot;],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;],"), 1)
+        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_single_component_placeholder_removed(self):
         registry.register(name="test", component=SimpleComponent)
@@ -285,22 +301,21 @@ class DependencyRenderingTests(BaseTestCase):
         # CSS NOT included
         self.assertEqual(rendered.count("<link"), 0)
         self.assertEqual(rendered.count("<style"), 0)
-        self.assertEqual(rendered.count("<script"), 2)
+        self.assertEqual(rendered.count("<script"), 3)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [&quot;style.css&quot;];"), 1)
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
-            ),
-            1,
-        )
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
-            ),
-            1,
-        )
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [&quot;style.css&quot;],
+        #     loadedJsUrls: [&quot;script.js&quot;],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;],"), 1)
+        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_all_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
@@ -320,31 +335,41 @@ class DependencyRenderingTests(BaseTestCase):
 
         self.assertEqual(rendered.count("<link"), 2)
         self.assertEqual(rendered.count("<style"), 0)
-        self.assertEqual(rendered.count("<script"), 2)  # Boilerplate scripts
+        self.assertEqual(rendered.count("<script"), 4)  # 2 scripts belong to the boilerplate
 
-        self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
-        self.assertEqual(rendered.count('<link href="style2.css" media="all" rel="stylesheet">'), 1)
-
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(
-            rendered.count("const loadedCssScripts = [&quot;style.css&quot;, &quot;style2.css&quot;];"), 1
+        # Media.css
+        self.assertInHTML(
+            """
+            <link href="style.css" media="all" rel="stylesheet">
+            <link href="style2.css" media="all" rel="stylesheet">
+            """,
+            rendered,
+            count=1,
         )
 
-        # JS ORDER - "script.js", "script2.js"
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
-            ),
-            1,
+        # Media.js
+        self.assertInHTML(
+            """
+            <script src="script.js"></script>
+            <script src="script2.js"></script>
+            """,
+            rendered,
+            count=1,
         )
 
-        # CSS ORDER - "style.css", "style2.css"
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
-            ),
-            1,
-        )
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [&quot;style.css&quot;, &quot;style2.css&quot;],
+        #     loadedJsUrls: [&quot;script.js&quot;, &quot;script2.js&quot;],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;, &quot;style2.css&quot;],"), 1)
+        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;, &quot;script2.js&quot;"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
 
     def test_no_dependencies_with_multiple_unused_components(self):
         registry.register(name="inner", component=SimpleComponent)
@@ -361,14 +386,23 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count("<script"), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<script"), 2)  # 2 scripts belong to the boilerplate
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-        self.assertEqual(rendered.count("const loadedJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const loadedCssScripts = [];"), 1)
-        self.assertEqual(rendered.count("const toLoadJsScripts = [];"), 1)
-        self.assertEqual(rendered.count("const toLoadCssScripts = [];"), 1)
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [],
+        #     loadedJsUrls: [],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
+        self.assertEqual(rendered.count("loadedJsUrls: [],"), 1)
+        self.assertEqual(rendered.count("loadedCssUrls: [],"), 1)
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_multiple_components_dependencies(self):
         registry.register(name="inner", component=SimpleComponent)
@@ -390,55 +424,76 @@ class DependencyRenderingTests(BaseTestCase):
         # NOTE: Should be present only ONCE!
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count("<script"), 4)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<script"), 7)  # 2 scripts belong to the boilerplate
         self.assertEqual(rendered.count("<link"), 3)
         self.assertEqual(rendered.count("<style"), 2)
 
         # Components' inlined CSS
         # NOTE: Each of these should be present only ONCE!
-        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)
-        self.assertInHTML("<style>.my-class { color: red; }</style>", rendered, count=1)
+        self.assertInHTML(
+            """
+            <style>.my-class { color: red; }</style>
+            <style>.xyz { color: red; }</style>
+            """,
+            rendered,
+            count=1,
+        )
 
         # Components' Media.css
-        # NOTE: Each of these should be present only ONCE!
-        self.assertInHTML('<link href="xyz1.css" media="all" rel="stylesheet">', rendered, count=1)
-        self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)
-        self.assertInHTML('<link href="style2.css" media="all" rel="stylesheet">', rendered, count=1)
-
-        self.assertEqual(
-            rendered.count(
-                "const loadedJsScripts = [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;];"
-            ),
-            1,
-        )
-        self.assertEqual(
-            rendered.count(
-                "const loadedCssScripts = [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;];"
-            ),
-            1,
-        )
-
-        # JS ORDER:
-        # - "script2.js" (from SimpleComponentNested)
-        # - "script.js" (from SimpleComponent inside SimpleComponentNested)
-        # - "xyz1.js" (from OtherComponent inserted into SimpleComponentNested)
-        self.assertEqual(
-            rendered.count(
-                r"const toLoadJsScripts = [Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`), Components.unescapeJs(\`&amp;lt;script src=&amp;quot;xyz1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\`)];"
-            ),
-            1,
-        )
-
-        # CSS ORDER:
+        # Order:
         # - "style.css", "style2.css" (from SimpleComponentNested)
         # - "style.css" (from SimpleComponent inside SimpleComponentNested)
         # - "xyz1.css" (from OtherComponent inserted into SimpleComponentNested)
+        self.assertInHTML(
+            """
+            <link href="style.css" media="all" rel="stylesheet">
+            <link href="style2.css" media="all" rel="stylesheet">
+            <link href="xyz1.css" media="all" rel="stylesheet">
+            """,
+            rendered,
+            count=1,
+        )
+
+        # Components' Media.js followed by inlined JS
+        # Order:
+        # - "script2.js" (from SimpleComponentNested)
+        # - "script.js" (from SimpleComponent inside SimpleComponentNested)
+        # - "xyz1.js" (from OtherComponent inserted into SimpleComponentNested)
+        self.assertInHTML(
+            """
+            <script src="script2.js"></script>
+            <script src="script.js"></script>
+            <script src="xyz1.js"></script>
+            <script>eval(Components.unescapeJs(`console.log(&quot;Hello&quot;);`))</script>
+            <script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>
+            """,
+            rendered,
+            count=1,
+        )
+
+        # We expect to find this:
+        # ```js
+        # Components.manager._loadComponentScripts({
+        #     loadedCssUrls: [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;],
+        #     loadedJsUrls: [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;, &quot;script.js&quot;, &quot;script2.js&quot;, &quot;xyz1.js&quot;],
+        #     toLoadCssTags: [],
+        #     toLoadJsTags: [],
+        # });
+        # ```
         self.assertEqual(
             rendered.count(
-                r"const toLoadCssScripts = [Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;style2.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`), Components.unescapeJs(\`&amp;lt;link href=&amp;quot;xyz1.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\`)];"
+                "loadedJsUrls: [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;, &quot;script.js&quot;, &quot;script2.js&quot;, &quot;xyz1.js&quot;],"
             ),
             1,
         )
+        self.assertEqual(
+            rendered.count(
+                "loadedCssUrls: [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;],"
+            ),
+            1,
+        )
+        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_multiple_components_all_placeholders_removed(self):
         registry.register(name="inner", component=SimpleComponent)

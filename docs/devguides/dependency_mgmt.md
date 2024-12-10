@@ -189,15 +189,15 @@ This is how we achieve that:
 
    ```js
    // Load JS or CSS script if not loaded already
-   Components.loadScript("js", '<script src="/abc/xyz/script.js">');
-   Components.loadScript("css", '<link href="/abc/xyz/style.css">');
+   Components.loadJs('<script src="/abc/xyz/script.js">');
+   Components.loadCss('<link href="/abc/xyz/style.css">');
 
    // Or mark one as already-loaded, so it is ignored when
-   // we call `loadScript`
+   // we call `loadJs`
    Components.markScriptLoaded("js", "/abc/def");
    ```
 
-   Note that `loadScript()` receives a whole `<script>` and `<link>` tags, not just the URL.
+   Note that `loadJs() / loadCss()` receive whole `<script> / <link>` tags, not just the URL.
    This is because when Django's `Media` class renders JS and CSS, it formats it as `<script>` and `<link>` tags.
    And we allow users to modify how the JS and CSS should be rendered into the `<script>` and `<link>` tags.
    

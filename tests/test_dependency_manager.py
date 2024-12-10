@@ -61,13 +61,22 @@ class DependencyManagerTests(_BaseDepManagerTestCase):
 
         keys = await page.evaluate("Object.keys(Components.manager)")
         self.assertEqual(
-            keys, ["callComponent", "registerComponent", "registerComponentData", "loadScript", "markScriptLoaded"]
+            keys,
+            [
+                "callComponent",
+                "registerComponent",
+                "registerComponentData",
+                "loadJs",
+                "loadCss",
+                "markScriptLoaded",
+                "_loadComponentScripts",
+            ],
         )
 
         await page.close()
 
 
-# Tests for `manager.loadScript()` / `manager.markAsLoaded()`
+# Tests for `manager.loadJs()` / `manager.loadCss()` / `manager.markAsLoaded()`
 @override_settings(STATIC_URL="static/")
 class LoadScriptTests(_BaseDepManagerTestCase):
     @with_playwright
@@ -81,15 +90,15 @@ class LoadScriptTests(_BaseDepManagerTestCase):
             const headBeforeFirstLoad = document.head.innerHTML;
 
             // Adds a script the first time
-            manager.loadScript('js', "<script src='/one/two'></script>");
+            manager.loadJs("<script src='/one/two'></script>");
             const bodyAfterFirstLoad = document.body.innerHTML;
 
             // Does not add it the second time
-            manager.loadScript('js', "<script src='/one/two'></script>");
+            manager.loadJs("<script src='/one/two'></script>");
             const bodyAfterSecondLoad = document.body.innerHTML;
 
             // Adds different script
-            manager.loadScript('js', "<script src='/four/three'></script>");
+            manager.loadJs("<script src='/four/three'></script>");
             const bodyAfterThirdLoad = document.body.innerHTML;
 
             const headAfterThirdLoad = document.head.innerHTML;
@@ -127,15 +136,15 @@ class LoadScriptTests(_BaseDepManagerTestCase):
             const bodyBeforeFirstLoad = document.body.innerHTML;
 
             // Adds a script the first time
-            manager.loadScript('css', "<link href='/one/two'>");
+            manager.loadCss("<link href='/one/two'>");
             const headAfterFirstLoad = document.head.innerHTML;
 
             // Does not add it the second time
-            manager.loadScript('css', "<link herf='/one/two'>");
+            manager.loadCss("<link herf='/one/two'>");
             const headAfterSecondLoad = document.head.innerHTML;
 
             // Adds different script
-            manager.loadScript('css', "<link href='/four/three'>");
+            manager.loadCss("<link href='/four/three'>");
             const headAfterThirdLoad = document.head.innerHTML;
 
             const bodyAfterThirdLoad = document.body.innerHTML;
@@ -172,10 +181,10 @@ class LoadScriptTests(_BaseDepManagerTestCase):
             manager.markScriptLoaded('css', '/one/two');
             manager.markScriptLoaded('js', '/one/three');
 
-            manager.loadScript('css', "<link href='/one/two'>");
+            manager.loadCss("<link href='/one/two'>");
             const headAfterFirstLoad = document.head.innerHTML;
 
-            manager.loadScript('js', "<script src='/one/three'></script>");
+            manager.loadJs("<script src='/one/three'></script>");
             const bodyAfterSecondLoad = document.body.innerHTML;
 
             return {
