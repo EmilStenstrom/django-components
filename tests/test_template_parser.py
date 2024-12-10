@@ -26,7 +26,7 @@ class ParserTest(BaseTestCase):
             pos_or_keyword_args=["num", "var"],
             keywordonly_args=True,
         )
-        tag = _parse_tag(parser, parser.tokens[0], tag_spec=spec)
+        tag = _parse_tag(parser, parser.tokens[0], tag_spec=spec, tag_id="my-id")
 
         ctx = {"myvar": {"a": "b"}, "val2": 1}
         args = safe_resolve_list(ctx, tag.args)
@@ -42,7 +42,7 @@ class ParserTest(BaseTestCase):
         tokens = Lexer(template_str).tokenize()
         parser = Parser(tokens=tokens)
         spec = TagSpec(tag="component", keywordonly_args=True)
-        tag = _parse_tag(parser, parser.tokens[0], tag_spec=spec)
+        tag = _parse_tag(parser, parser.tokens[0], tag_spec=spec, tag_id="my-id")
 
         ctx = Context({"date": 2024, "bzz": "fzz"})
         args = safe_resolve_list(ctx, tag.args)

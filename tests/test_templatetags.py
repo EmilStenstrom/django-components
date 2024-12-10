@@ -551,7 +551,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation's</strong>
+            Variable: <strong>organisation&#x27;s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -565,7 +565,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation's</strong>
+            Variable: <strong>organisation&#x27;s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 

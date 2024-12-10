@@ -775,9 +775,7 @@ class SpreadOperatorTests(BaseTestCase):
             )
         )
 
-        with self.assertRaisesMessage(
-            TemplateSyntaxError, "'component' received some positional argument(s) after some keyword argument(s)"
-        ):
+        with self.assertRaisesMessage(TemplateSyntaxError, "'component' received unknown flag 'var_a'"):
             Template(template_str)
 
     @parametrize_context_behavior(["django", "isolated"])
