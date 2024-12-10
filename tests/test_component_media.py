@@ -125,11 +125,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="path/to/style2.css" media="all" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script src="path/to/script.js"></script>', rendered)
 
     def test_css_js_as_string(self):
         class SimpleComponent(Component):
@@ -146,12 +142,7 @@ class ComponentMediaTests(BaseTestCase):
         rendered = SimpleComponent.render()
 
         self.assertInHTML('<link href="path/to/style.css" media="all" rel="stylesheet">', rendered)
-
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script src="path/to/script.js"></script>', rendered)
 
     def test_css_as_dict(self):
         class SimpleComponent(Component):
@@ -175,11 +166,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertInHTML('<link href="path/to/style2.css" media="print" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="path/to/style3.css" media="screen" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script src="path/to/script.js"></script>', rendered)
 
     def test_media_custom_render_js(self):
         class MyMedia(Media):
@@ -204,15 +191,8 @@ class ComponentMediaTests(BaseTestCase):
 
         rendered = SimpleComponent.render()
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertIn('<script defer src="path/to/script.js"></script>', rendered)
+        self.assertIn('<script defer src="path/to/script2.js"></script>', rendered)
 
     def test_media_custom_render_css(self):
         class MyMedia(Media):
@@ -314,23 +294,10 @@ class MediaPathAsObjectTests(BaseTestCase):
         self.assertInHTML('<link css_tag href="path/to/style3.css" rel="stylesheet" />', rendered)
         self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script js_tag src=&amp;quot;path/to/script.js&amp;quot; type=&amp;quot;module&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script hi src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script type=&amp;quot;module&amp;quot; src=&amp;quot;path/to/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script4.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script js_tag src="path/to/script.js" type="module"></script>', rendered)
+        self.assertInHTML('<script hi src="path/to/script2.js"></script>', rendered)
+        self.assertInHTML('<script type="module" src="path/to/script3.js"></script>', rendered)
+        self.assertInHTML('<script src="path/to/script4.js"></script>', rendered)
 
     def test_pathlike(self):
         """
@@ -376,19 +343,9 @@ class MediaPathAsObjectTests(BaseTestCase):
         self.assertInHTML('<link href="path/to/style3.css" media="print" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script src="path/to/script.js"></script>', rendered)
+        self.assertInHTML('<script src="path/to/script2.js"></script>', rendered)
+        self.assertInHTML('<script src="path/to/script3.js"></script>', rendered)
 
     def test_str(self):
         """
@@ -429,15 +386,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         self.assertInHTML('<link href="path/to/style3.css" media="print" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script src="path/to/script.js"></script>', rendered)
+        self.assertInHTML('<script src="path/to/script2.js"></script>', rendered)
 
     def test_bytes(self):
         """
@@ -478,15 +428,8 @@ class MediaPathAsObjectTests(BaseTestCase):
         self.assertInHTML('<link href="path/to/style3.css" media="print" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="path/to/style4.css" media="screen" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;path/to/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script src="path/to/script.js"></script>', rendered)
+        self.assertInHTML('<script src="path/to/script2.js"></script>', rendered)
 
     def test_function(self):
         class SimpleComponent(Component):
@@ -517,23 +460,10 @@ class MediaPathAsObjectTests(BaseTestCase):
         self.assertInHTML('<link href="calendar/style2.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="calendar/style3.css" media="all" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script hi src=&amp;quot;calendar/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;calendar/script1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;calendar/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;calendar/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script hi src="calendar/script.js"></script>', rendered)
+        self.assertInHTML('<script src="calendar/script1.js"></script>', rendered)
+        self.assertInHTML('<script src="calendar/script2.js"></script>', rendered)
+        self.assertInHTML('<script src="calendar/script3.js"></script>', rendered)
 
     @override_settings(STATIC_URL="static/")
     def test_works_with_static(self):
@@ -570,23 +500,10 @@ class MediaPathAsObjectTests(BaseTestCase):
         self.assertInHTML('<link href="/static/calendar/style2.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="/static/calendar/style3.css" media="all" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script hi src=&amp;quot;/static/calendar/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;/static/calendar/script1.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;/static/calendar/script2.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script src=&amp;quot;/static/calendar/script3.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script hi src="/static/calendar/script.js"></script>', rendered)
+        self.assertInHTML('<script src="/static/calendar/script1.js"></script>', rendered)
+        self.assertInHTML('<script src="/static/calendar/script2.js"></script>', rendered)
+        self.assertInHTML('<script src="/static/calendar/script3.js"></script>', rendered)
 
 
 class MediaStaticfilesTests(BaseTestCase):
@@ -634,11 +551,7 @@ class MediaStaticfilesTests(BaseTestCase):
         # be searched as specified above (e.g. `calendar/script.js`) inside `static_root` dir.
         self.assertInHTML('<link href="/static/calendar/style.css" media="all" rel="stylesheet">', rendered)
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;/static/calendar/script.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script defer src="/static/calendar/script.js"></script>', rendered)
 
     # For context see https://github.com/EmilStenstrom/django-components/issues/522
     @override_settings(
@@ -698,11 +611,7 @@ class MediaStaticfilesTests(BaseTestCase):
             '<link href="/static/calendar/style.0eeb72042b59.css" media="all" rel="stylesheet">', rendered
         )
 
-        # Command to load the JS from Media.js
-        self.assertIn(
-            "Components.unescapeJs(\\`&amp;lt;script defer src=&amp;quot;/static/calendar/script.e1815e23e0ec.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-            rendered,
-        )
+        self.assertInHTML('<script defer src="/static/calendar/script.e1815e23e0ec.js"></script>', rendered)
 
 
 class MediaRelativePathTests(BaseTestCase):
@@ -790,11 +699,7 @@ class MediaRelativePathTests(BaseTestCase):
                 rendered,
             )
 
-            # Command to load the JS from Media.js
-            self.assertIn(
-                "Components.unescapeJs(\\`&amp;lt;link href=&amp;quot;relative_file/relative_file.css&amp;quot; media=&amp;quot;all&amp;quot; rel=&amp;quot;stylesheet&amp;quot;&amp;gt;\\`)",
-                rendered,
-            )
+            self.assertInHTML('<link href="relative_file/relative_file.css" media="all" rel="stylesheet">', rendered)
 
     # Settings required for autodiscover to work
     @override_settings(
@@ -863,8 +768,4 @@ class MediaRelativePathTests(BaseTestCase):
             self.assertInHTML('<input type="text" name="variable" value="abc">', rendered)
             self.assertInHTML('<link href="relative_file_pathobj.css" rel="stylesheet">', rendered)
 
-            # Command to load the JS from Media.js
-            self.assertIn(
-                "Components.unescapeJs(\\`&amp;lt;script type=&amp;quot;module&amp;quot; src=&amp;quot;relative_file_pathobj.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;\\`)",
-                rendered,
-            )
+            self.assertInHTML('<script type="module" src="relative_file_pathobj.js"></script>', rendered)

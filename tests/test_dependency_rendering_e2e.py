@@ -215,3 +215,132 @@ class E2eDependencyRenderingTests(BaseTestCase):
         self.assertEqual("rgb(255, 0, 0)", data["myStyle2Color"])  # AKA 'color: red'
 
         await page.close()
+
+    @with_playwright
+    async def test_js_executed_in_order__js(self):
+        single_comp_url = TEST_SERVER_URL + "/js-order/js"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        test_js: types.js = """() => {
+            // NOTE: This variable should be defined by `check_script_order` component,
+            // and it should contain all other variables defined by the previous components
+            return checkVars;
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        # Check components' inlined JS got loaded
+        self.assertEqual(data["testSimpleComponent"], "kapowww!")
+        self.assertEqual(data["testSimpleComponentNested"], "bongo!")
+        self.assertEqual(data["testOtherComponent"], "wowzee!")
+
+        # Check JS from Media.js got loaded
+        self.assertEqual(data["testMsg"], {"hello": "world"})
+        self.assertEqual(data["testMsg2"], {"hello2": "world2"})
+
+        await page.close()
+
+    @with_playwright
+    async def test_js_executed_in_order__media(self):
+        single_comp_url = TEST_SERVER_URL + "/js-order/media"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        test_js: types.js = """() => {
+            // NOTE: This variable should be defined by `check_script_order` component,
+            // and it should contain all other variables defined by the previous components
+            return checkVars;
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        # Check components' inlined JS got loaded
+        # NOTE: The Media JS are loaded BEFORE the components' JS, so they should be empty
+        self.assertEqual(data["testSimpleComponent"], None)
+        self.assertEqual(data["testSimpleComponentNested"], None)
+        self.assertEqual(data["testOtherComponent"], None)
+
+        # Check JS from Media.js
+        self.assertEqual(data["testMsg"], {"hello": "world"})
+        self.assertEqual(data["testMsg2"], {"hello2": "world2"})
+
+        await page.close()
+
+    # In this case the component whose JS is accessing data from other components
+    # is used in the template before the other components. So the JS should
+    # not be able to access the data from the other components.
+    @with_playwright
+    async def test_js_executed_in_order__invalid(self):
+        single_comp_url = TEST_SERVER_URL + "/js-order/invalid"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        test_js: types.js = """() => {
+            // checkVars was defined BEFORE other components, so it should be empty!
+            return checkVars;
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        # Check components' inlined JS got loaded
+        self.assertEqual(data["testSimpleComponent"], None)
+        self.assertEqual(data["testSimpleComponentNested"], None)
+        self.assertEqual(data["testOtherComponent"], None)
+
+        # Check JS from Media.js got loaded
+        self.assertEqual(data["testMsg"], None)
+        self.assertEqual(data["testMsg2"], None)
+
+        await page.close()
+
+    @with_playwright
+    async def test_alpine__head(self):
+        single_comp_url = TEST_SERVER_URL + "/alpine/head"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        component_text = await page.locator('[x-data="alpine_test"]').text_content()
+        self.assertHTMLEqual(component_text.strip(), "ALPINE_TEST: 123")
+
+        await page.close()
+
+    @with_playwright
+    async def test_alpine__body(self):
+        single_comp_url = TEST_SERVER_URL + "/alpine/body"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        component_text = await page.locator('[x-data="alpine_test"]').text_content()
+        self.assertHTMLEqual(component_text.strip(), "ALPINE_TEST: 123")
+
+        await page.close()
+
+    @with_playwright
+    async def test_alpine__body2(self):
+        single_comp_url = TEST_SERVER_URL + "/alpine/body2"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        component_text = await page.locator('[x-data="alpine_test"]').text_content()
+        self.assertHTMLEqual(component_text.strip(), "ALPINE_TEST: 123")
+
+        await page.close()
+
+    @with_playwright
+    async def test_alpine__invalid(self):
+        single_comp_url = TEST_SERVER_URL + "/alpine/invalid"
+
+        page: Page = await self.browser.new_page()
+        await page.goto(single_comp_url)
+
+        component_text = await page.locator('[x-data="alpine_test"]').text_content()
+        self.assertHTMLEqual(component_text.strip(), "ALPINE_TEST:")
+
+        await page.close()

@@ -78,3 +78,65 @@ class OtherComponent(Component):
     class Media:
         css = "style.css"
         js = "script.js"
+
+
+@register("check_script_order_in_js")
+class CheckScriptOrderInJs(Component):
+    template = "<check_script_order>"
+
+    # We should be able to access the global variables set by the previous components:
+    # Scripts:
+    # - script.js               - testMsg
+    # - script2.js              - testMsg2
+    # Components:
+    # - SimpleComponent         - testSimpleComponent
+    # - SimpleComponentNested   - testSimpleComponentNested
+    # - OtherComponent          - testOtherComponent
+    js: types.js = """
+        globalThis.checkVars = {
+            testSimpleComponent,
+            testSimpleComponentNested,
+            testOtherComponent,
+            testMsg,
+            testMsg2,
+        };
+    """
+
+
+@register("check_script_order_in_media")
+class CheckScriptOrderInMedia(Component):
+    template = "<check_script_order>"
+
+    class Media:
+        js = "check_script_order.js"
+
+
+@register("alpine_test_in_media")
+class AlpineCompInMedia(Component):
+    template: types.django_html = """
+        <div x-data="alpine_test">
+            ALPINE_TEST:
+            <div x-text="somevalue"></div>
+        </div>
+    """
+
+    class Media:
+        js = "alpine_test.js"
+
+
+@register("alpine_test_in_js")
+class AlpineCompInJs(Component):
+    template: types.django_html = """
+        <div x-data="alpine_test">
+            ALPINE_TEST:
+            <div x-text="somevalue"></div>
+        </div>
+    """
+
+    js: types.js = """
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('alpine_test', () => ({
+                somevalue: 123,
+            }))
+        });
+    """

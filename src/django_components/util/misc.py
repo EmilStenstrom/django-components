@@ -77,3 +77,10 @@ def get_last_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
         if key(item):
             return len(lst) - 1 - index
     return None
+
+
+def _escape_js(js: str, eval: bool = True) -> str:
+    escaped_js = escape_js_string_literal(js)
+    # `unescapeJs` is the function we call in the browser to parse the escaped JS
+    escaped_js = f"Components.unescapeJs(`{escaped_js}`)"
+    return f"eval({escaped_js})" if eval else escaped_js
