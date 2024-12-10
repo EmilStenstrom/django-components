@@ -525,7 +525,8 @@ class Component(
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
         - `request` - The request object. This is only required when needing to use RequestContext,
-                      e.g. to enable template `context_processors`.
+                      e.g. to enable template `context_processors`. Unused if context is already an instance
+                      of `Context`
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -594,7 +595,8 @@ class Component(
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
         - `render_dependencies` - Set this to `False` if you want to insert the resulting HTML into another component.
         - `request` - The request object. This is only required when needing to use RequestContext,
-                      e.g. to enable template `context_processors`.
+                      e.g. to enable template `context_processors`. Unused if context is already an instance of
+                      `Context`
         Example:
         ```py
         MyComponent.render(
