@@ -968,7 +968,7 @@ class ComponentNode(BaseNode):
         return output
 
 
-def _monkeypatch_template(template: Template) -> None:
+def monkeypatch_template(template_cls: Type[Template]) -> None:
     # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
     # based on our custom `Template._dc_is_component_nested`.
     #
@@ -986,10 +986,10 @@ def _monkeypatch_template(template: Template) -> None:
     # and can modify the rendering behavior by overriding the `_render` method.
     #
     # NOTE 2: Instead of setting `Template._dc_is_component_nested`, alternatively we could
-    # have passed the value to `_monkeypatch_template` directly. However, we intentionally
+    # have passed the value to `monkeypatch_template` directly. However, we intentionally
     # did NOT do that, so the monkey-patched method is more robust, and can be e.g. copied
     # to other.
-    if hasattr(template, "_dc_patched"):
+    if hasattr(template_cls, "_dc_patched"):
         # Do not patch if done so already. This helps us avoid RecursionError
         return
 
@@ -1012,8 +1012,8 @@ def _monkeypatch_template(template: Template) -> None:
             else:
                 return self._render(context, *args, **kwargs)
 
-    # See https://stackoverflow.com/a/42154067/9788634
-    template.render = types.MethodType(_template_render, template)
+    template_cls.render = _template_render
+    template_cls._dc_patched = True
 
 
 @contextmanager
@@ -1037,7 +1037,14 @@ def _prepare_template(
         # See https://github.com/EmilStenstrom/django-components/issues/580
         # And https://github.com/EmilStenstrom/django-components/issues/634
         template = component._get_template(context)
-        _monkeypatch_template(template)
+
+        if not getattr(template, "_dc_patched"):
+            raise RuntimeError(
+                "Django-components received a Template instance which was not patched."
+                "If you are using Django's Template class, check if you added django-components"
+                "to INSTALLED_APPS. If you are using a custom template class, then you need to"
+                "manually patch the class."
+            )
 
         # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE
         # the `{% extends %}` tag.
