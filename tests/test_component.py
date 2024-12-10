@@ -1195,7 +1195,6 @@ class ComponentRenderTest(BaseTestCase):
         )
 
 
-
 class ComponentHookTest(BaseTestCase):
     def test_on_render_before(self):
         class SimpleComponent(Component):
