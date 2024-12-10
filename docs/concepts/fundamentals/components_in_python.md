@@ -1,6 +1,6 @@
 ---
 title: Components in Python
-weight: 4
+weight: 2
 ---
 
 _New in version 0.81_

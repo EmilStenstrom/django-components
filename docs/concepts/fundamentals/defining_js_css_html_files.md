@@ -1,6 +1,6 @@
 ---
 title: Defining HTML / JS / CSS files
-weight: 10
+weight: 8
 ---
 
 django_component's management of files builds on top of [Django's `Media` class](https://docs.djangoproject.com/en/5.0/topics/forms/media/).

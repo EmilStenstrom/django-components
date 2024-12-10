@@ -1,6 +1,6 @@
 ---
 title: Single-file components
-weight: 2
+weight: 1
 ---
 
 Components can also be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:

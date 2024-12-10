@@ -1,6 +1,6 @@
 ---
 title: Autodiscovery
-weight: 11
+weight: 9
 ---
 
 Every component that you want to use in the template with the [`{% component %}`](django_components.templateags.component_tags)
