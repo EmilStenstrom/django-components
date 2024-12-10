@@ -1,6 +1,6 @@
 ---
 title: Slots
-weight: 8
+weight: 6
 ---
 
 _New in version 0.26_:

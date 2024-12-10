@@ -5,7 +5,8 @@ weight: 7
 
 ## Install locally and run the tests
 
-Start by forking the project by clicking the **Fork button** up in the right corner in the GitHub . This makes a copy of the repository in your own name. Now you can clone this repository locally and start adding features:
+Start by forking the project by clicking the **Fork button** up in the right corner in the [GitHub](https://github.com/EmilStenstrom/django-components).
+This makes a copy of the repository in your own name. Now you can clone this repository locally and start adding features:
 
 ```sh
 git clone https://github.com/<your GitHub username>/django-components.git
@@ -61,28 +62,30 @@ Use the [sampleproject](https://github.com/EmilStenstrom/django-components/tree/
 
 1. Navigate to [sampleproject](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject/) directory:
 
-   ```sh
-   cd sampleproject
-   ```
+    ```sh
+    cd sampleproject
+    ```
 
 2. Install dependencies from the [requirements.txt](https://github.com/EmilStenstrom/django-components/blob/master/sampleproject/requirements.txt) file:
 
-   ```sh
-   pip install -r requirements.txt
-   ```
+    ```sh
+    pip install -r requirements.txt
+    ```
 
 3. Link to your local version of django-components:
 
-   ```sh
-   pip install -e ..
-   ```
+    ```sh
+    pip install -e ..
+    ```
 
-   NOTE: The path (in this case `..`) must point to the directory that has the `setup.py` file.
+    !!! note
+
+        The path to the local version (in this case `..`) must point to the directory that has the `setup.py` file.
 
 4. Start Django server
-   ```sh
-   python manage.py runserver
-   ```
+    ```sh
+    python manage.py runserver
+    ```
 
 Once the server is up, it should be available at <http://127.0.0.1:8000>.
 
@@ -99,24 +102,24 @@ When you make changes to this JS code, you also need to compile it:
 
 1. Make sure you are inside `src/django_components_js`:
 
-```sh
-cd src/django_components_js
-```
+    ```sh
+    cd src/django_components_js
+    ```
 
 2. Install the JS dependencies
 
-```sh
-npm install
-```
+    ```sh
+    npm install
+    ```
 
 3. Compile the JS/TS code:
 
-```sh
-python build.py
-```
+    ```sh
+    python build.py
+    ```
 
-The script will combine all JS/TS code into a single `.js` file, minify it,
-and copy it to `django_components/static/django_components/django_components.min.js`.
+    The script will combine all JS/TS code into a single `.js` file, minify it,
+    and copy it to `django_components/static/django_components/django_components.min.js`.
 
 ## Packaging and publishing
 
@@ -139,8 +142,4 @@ twine upload --repository pypi dist/* -u __token__ -p <PyPI_TOKEN>
 
 ## Development guides
 
-Deep dive into how django_components' features are implemented.
-
-- [Slot rendering](../devguides/slot_rendering.md)
-- [Slots and blocks](../devguides/slots_and_blocks.md)
-- [JS and CSS dependency management](../devguides/dependency_mgmt.md)
+Head over to [Dev guides](../guides/devguides/dependency_mgmt.md) for a deep dive into how django_components' features are implemented.

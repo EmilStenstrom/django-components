@@ -235,9 +235,6 @@ After the package has been published, all that remains is to install it in other
         {
             ...,
             'OPTIONS': {
-                'context_processors': [
-                    ...
-                ],
                 'builtins': [
                     'myapp.templatetags.mytags',
                 ]

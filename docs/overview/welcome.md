@@ -65,7 +65,7 @@ Read on to learn about all the exciting details and configuration possibilities!
 
 ## Release notes
 
-Read the [Release Notes](https://EmilStenstrom.github.io/django-components/changelog)
+Read the [Release Notes](../release_notes.md)
 to see the latest features and fixes.
 
 ## Community examples
@@ -76,6 +76,6 @@ One of our goals with `django-components` is to make it easy to share components
 
 ## Contributing and development
 
-Get involved or sponsor this project - [See here](https://emilstenstrom.github.io/django-components/dev/overview/contributing/)
+Get involved or sponsor this project - [See here](./contributing.md)
 
-Running django-components locally for development - [See here](https://emilstenstrom.github.io/django-components/dev/overview/development/)
+Running django-components locally for development - [See here](./development.md)

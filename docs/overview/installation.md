@@ -9,7 +9,7 @@ weight: 3
     pip install django_components
     ```
 
-2. Load `django_components` into Django by adding it into `INSTALLED_APPS` in settings.py:
+2. Load `django_components` into Django by adding it into `INSTALLED_APPS` in in your settings file:
 
     ```python
     INSTALLED_APPS = [
@@ -18,7 +18,7 @@ weight: 3
     ]
     ```
 
-3. `BASE_DIR` setting is required. Ensure that it is defined in settings.py:
+3. `BASE_DIR` setting is required. Ensure that it is defined:
 
     ```python
     from pathlib import Path
@@ -26,41 +26,52 @@ weight: 3
     BASE_DIR = Path(__file__).resolve().parent.parent
     ```
 
-4. Add / modify [`COMPONENTS.dirs`](#dirs) and / or [`COMPONENTS.app_dirs`](#app_dirs) so django_components knows where to find component HTML, JS and CSS files:
+4. Set [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
+   and/or [`COMPONENTS.app_dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+   so django_components knows where to find component HTML, JS and CSS files:
 
     ```python
     from django_components import ComponentsSettings
 
     COMPONENTS = ComponentsSettings(
         dirs=[
-                ...,
-                Path(BASE_DIR) / "components",
-            ],
+            ...,
+            Path(BASE_DIR) / "components",
+        ],
     )
     ```
 
-    If `COMPONENTS.dirs` is omitted, django-components will by default look for a top-level `/components` directory,
+    If [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
+    is omitted, django-components will by default look for a top-level `/components` directory,
     `{BASE_DIR}/components`.
 
-    In addition to `COMPONENTS.dirs`, django_components will also load components from app-level directories, such as `my-app/components/`.
-    The directories within apps are configured with [`COMPONENTS.app_dirs`](#app_dirs), and the default is `[app]/components`.
+    In addition to [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs),
+    django_components will also load components from app-level directories, such as `my-app/components/`.
+    The directories within apps are configured with
+    [`COMPONENTS.app_dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs),
+    and the default is `[app]/components`.
 
-    NOTE: The input to `COMPONENTS.dirs` is the same as for `STATICFILES_DIRS`, and the paths must be full paths. [See Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-dirs).
+    !!! note
 
-5. Next, to make Django load component HTML files as Django templates, modify `TEMPLATES` section of settings.py as follows:
+        The input to [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
+        is the same as for `STATICFILES_DIRS`, and the paths must be full paths.
+        [See Django docs](https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles-dirs).
+
+5. Next, modify `TEMPLATES` section of settings.py as follows:
 
     - _Remove `'APP_DIRS': True,`_
-        - NOTE: Instead of APP_DIRS, for the same effect, we will use [`django.template.loaders.app_directories.Loader`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#django.template.loaders.app_directories.Loader)
+        - NOTE: Instead of `APP_DIRS: True`, we will use
+          [`django.template.loaders.app_directories.Loader`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#django.template.loaders.app_directories.Loader),
+          which has the same effect.
     - Add `loaders` to `OPTIONS` list and set it to following value:
+
+    This allows Django load component HTML files as Django templates.
 
     ```python
     TEMPLATES = [
         {
             ...,
             'OPTIONS': {
-                'context_processors': [
-                    ...
-                ],
                 'loaders':[(
                     'django.template.loaders.cached.Loader', [
                         # Default Django loader
@@ -80,8 +91,9 @@ weight: 3
 
 If you want to use JS or CSS with components, you will need to:
 
-1. Modify `STATICFILES_FINDERS` section of settings.py as follows to be able to serve
-   the component JS and CSS files as static files:
+1. Add `"django_components.finders.ComponentsFileSystemFinder"` to `STATICFILES_FINDERS` in your settings file.
+
+    This allows Django to serve component JS and CSS as static files.
 
     ```python
     STATICFILES_FINDERS = [
@@ -93,7 +105,8 @@ If you want to use JS or CSS with components, you will need to:
     ]
     ```
 
-2. Add [`ComponentDependencyMiddleware`](#setting-up-componentdependencymiddleware) to `MIDDLEWARE` setting.
+2. Add [`ComponentDependencyMiddleware`](../reference/middlewares.md#django_components.dependencies.ComponentDependencyMiddleware)
+   to `MIDDLEWARE` setting.
 
     The middleware searches the outgoing HTML for all components that were rendered
     to generate the HTML, and adds the JS and CSS associated with those components.
@@ -105,7 +118,7 @@ If you want to use JS or CSS with components, you will need to:
     ]
     ```
 
-    Read more in [Rendering JS/CSS dependencies](#rendering-jscss-dependencies).
+    Read more in [Rendering JS/CSS dependencies](../concepts/advanced/rendering_js_css.md).
 
 3. Add django-component's URL paths to your `urlpatterns`:
 
@@ -119,7 +132,7 @@ If you want to use JS or CSS with components, you will need to:
     ```
 
 4. _Optional._ If you want to change where the JS and CSS is rendered, use
-    [`{% component_js_dependencies %}`](../reference/template_tags.md#component_js_dependencies)
+    [`{% component_js_dependencies %}`](../reference/template_tags.md#component_css_dependencies)
     and [`{% component_css_dependencies %}`](../reference/template_tags.md#component_js_dependencies).
 
     By default, the JS `<script>` and CSS `<link>` tags are automatically inserted
@@ -148,9 +161,6 @@ TEMPLATES = [
     {
         ...,
         'OPTIONS': {
-            'context_processors': [
-                ...
-            ],
             'builtins': [
                 'django_components.templatetags.component_tags',
             ]

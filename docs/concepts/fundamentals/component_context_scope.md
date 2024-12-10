@@ -1,6 +1,6 @@
 ---
 title: Component context and scope
-weight: 6
+weight: 4
 ---
 
 By default, context variables are passed down the template as in regular Django - deeper scopes can access the variables from the outer scopes. So if you have several nested forloops, then inside the deep-most loop you can access variables defined by all previous loops.

@@ -1,10 +1,11 @@
 <!-- See Pydantic for inspo https://docs.pydantic.dev/latest  -->
 - [Get Started](overview/)
 - Concepts
+  - [Getting started](concepts/getting_started/)
   - [Fundamentals](concepts/fundamentals/)
   - [Advanced](concepts/advanced/)
 - Guides
   - [Setup](guides/setup/)
-  - [Cookbook](guides/cookbook/)
+  - [Dev guides](guides/devguides/)
 - [API Documentation](reference/)
 - [Release notes](release_notes.md)

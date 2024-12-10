@@ -12,11 +12,18 @@ That said, our prefered way is to keep the files of a component close together b
 
 This means that files containing backend logic, such as Python modules and HTML templates, live in the same directory as static files, e.g. JS and CSS.
 
-From v0.100 onwards, we keep component files (as defined by [`COMPONENTS.dirs`](#dirs) and [`COMPONENTS.app_dirs`](#app_dirs)) separate from the rest of the static
-files (defined by `STATICFILES_DIRS`). That way, the Python and HTML files are NOT exposed by the server. Only the static JS, CSS, and [other common formats](#static_files_allowed).
+From v0.100 onwards, we keep component files (as defined by
+[`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
+and [`COMPONENTS.app_dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs))
+separate from the rest of the static
+files (defined by `STATICFILES_DIRS`). That way, the Python and HTML files are NOT exposed by the server. Only the static JS, CSS, and
+[other common formats](../reference/settings.md#django_components.app_settings.ComponentsSettings.static_files_allowed).
 
-> NOTE: If you need to expose different file formats, you can configure these with [`COMPONENTS.static_files_allowed`](#static_files_allowed)
-> and [`COMPONENTS.static_files_forbidden`](#static_files_forbidden).
+!!! note
+
+    If you need to expose different file formats, you can configure these with
+    [`COMPONENTS.static_files_allowed`](../reference/settings.md#django_components.app_settings.ComponentsSettings.static_files_allowed)
+    and [`COMPONENTS.static_files_forbidden`](../reference/settings.md#django_components.app_settings.ComponentsSettings.static_files_forbidden).
 
 <!-- # TODO_REMOVE_IN_V1 - Remove mentions of safer_staticfiles in V1 -->
 
@@ -29,7 +36,8 @@ You probably don't want this, as parts of your backend logic will be exposed, po
 
 From _v0.27_ until _v0.100_, django-components shipped with an additional installable app _django_components.**safer_staticfiles**_.
 It was a drop-in replacement for _django.contrib.staticfiles_.
-Its behavior is 100% identical except it ignores .py and .html files, meaning these will not end up on your static files server.
+Its behavior is 100% identical except it ignores `.py` and `.html` files, meaning these will not end up on your static files server.
+
 To use it, add it to `INSTALLED_APPS` and remove *django.contrib.staticfiles*.
 
 ```python
@@ -40,7 +48,11 @@ INSTALLED_APPS = [
 ]
 ```
 
-If you are on an older version of django-components, your alternatives are a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command, or b) defining a subclass of StaticFilesConfig.
+If you are on an pre-v0.27 version of django-components, your alternatives are:
+
+- a) passing `--ignore <pattern>` options to the _collecstatic_ CLI command,
+- b) defining a subclass of StaticFilesConfig.
+
 Both routes are described in the official [docs of the _staticfiles_ app](https://docs.djangoproject.com/en/4.2/ref/contrib/staticfiles/#customizing-the-ignored-pattern-list).
 
 Note that `safer_staticfiles` excludes the `.py` and `.html` files for [collectstatic command](https://docs.djangoproject.com/en/5.0/ref/contrib/staticfiles/#collectstatic):
@@ -57,3 +69,5 @@ python manage.py runserver
 
 For a step-by-step guide on deploying production server with static files,
 [see the demo project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject).
+
+See the older versions of the sampleproject for a setup with pre-v0.100 version.
