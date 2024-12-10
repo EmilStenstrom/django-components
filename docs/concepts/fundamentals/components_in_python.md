@@ -74,6 +74,12 @@ Component.render(
   - NOTE: In "isolated" mode, context is NOT accessible, and data MUST be passed via
     component's args and kwargs.
 
+- _`request`_ - A Django request object. This is used to enable Django template `context_processors` to run,  
+  allowing for template tags like `{% csrf_token %}` and variables like `{{ debug }}`.  
+  - Similar behavior can be achieved with [provide / inject](#how-to-use-provide--inject).
+  - This is used internally to convert `context` to a RequestContext. It does nothing if `context` is already 
+    a `Context` instance.
+
 ### `SlotFunc`
 
 When rendering components with slots in `render` or `render_to_response`, you can pass either a string or a function.
