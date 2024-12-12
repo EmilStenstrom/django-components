@@ -462,20 +462,22 @@ class E2eDependencyRenderingTests(BaseTestCase):
             const targetEl = document.querySelector("#target");
             const targetHtml = targetEl ? targetEl.outerHTML : null;
             const fragEl = document.querySelector(".frag");
-            const fragHtml = fragEl ? fragEl.outerHTML : null;
+            const fragInnerHtml = fragEl ? fragEl.innerHTML : null;
 
             // Get the stylings defined via CSS
             const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
 
-            return { targetHtml, fragHtml, fragBg };
+            return { targetHtml, fragInnerHtml, fragBg };
         }"""
 
         data = await page.evaluate(test_js)
 
         self.assertEqual(data["targetHtml"], None)
+        # NOTE: We test only the inner HTML, because the element itself may or may not have
+        # extra CSS classes added by HTMX, which results in flaky tests.
         self.assertHTMLEqual(
-            data["fragHtml"],
-            '<div class="frag htmx-added htmx-settling"> 123 <span id="frag-text">xxx</span></div>',
+            data["fragInnerHtml"],
+            '123 <span id="frag-text">xxx</span>',
         )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
 

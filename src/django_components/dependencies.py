@@ -526,7 +526,7 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
             *[tag for tag in core_script_tags],
             # Make calls to the JS dependency manager
             # Loads JS from `Media.js` and `Component.js` if fragment
-            exec_script,
+            *([exec_script] if exec_script else []),
             # JS from `Media.js`
             # NOTE: When rendering a document, the initial JS is inserted directly into the HTML
             # so the scripts are executed at proper order. In the dependency manager, we only mark those
@@ -690,25 +690,13 @@ def _gen_exec_script(
     to_load_css_tags: List[str],
     loaded_js_urls: List[str],
     loaded_css_urls: List[str],
-) -> str:
-    # Generate JS expression like so:
-    # ```js
-    # Promise.all([
-    #   Components.manager.loadJs('<script src="/abc/def1">...</script>'),
-    #   Components.manager.loadJs('<script src="/abc/def2">...</script>'),
-    #   Components.manager.loadCss('<link href="/abc/def3">'),
-    # ]);
-    # ```
+) -> Optional[str]:
+    if not to_load_js_tags and not to_load_css_tags and not loaded_css_urls and not loaded_js_urls:
+        return None
+
+    # Generate JSON that will tell the JS dependency manager which JS and CSS to load
     #
-    # or
-    #
-    # ```js
-    # Components.manager.markScriptLoaded("css", "/abc/def1.css"),
-    # Components.manager.markScriptLoaded("css", "/abc/def2.css"),
-    # Components.manager.markScriptLoaded("js", "/abc/def3.js"),
-    # ```
-    #
-    # NOTE: It would be better to pass only the URL itself for `loadJs/loadCss`, instead of a whole tag.
+    # NOTE: It would be simpler to pass only the URL itself for `loadJs/loadCss`, instead of a whole tag.
     #    But because we allow users to specify the Media class, and thus users can
     #    configure how the `<link>` or `<script>` tags are rendered, we need pass the whole tag.
     escaped_to_load_js_tags = [_escape_js(tag, wrap=False) for tag in to_load_js_tags]

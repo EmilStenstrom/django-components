@@ -106,7 +106,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<link"), 0)
 
-        self.assertEqual(rendered.count("<script"), 2)  # 2 Boilerplate scripts
+        self.assertEqual(rendered.count("<script"), 1)  # 1 Boilerplate script
 
     def test_css_js_as_lists(self):
         class SimpleComponent(Component):

@@ -423,7 +423,15 @@ class RenderDependenciesTests(BaseTestCase):
                     </tr>
                 </tbody>
             </table>
-        """
+            <script type="application/json" data-djc>
+                {"loadedCssUrls": [],
+                "loadedJsUrls": [],
+                "toLoadCssTags": ["&lt;link href=&quot;style.css&quot; media=&quot;all&quot; rel=&quot;stylesheet&quot;&gt;",
+                    "&lt;link href=&quot;/components/cache/SimpleComponent_311097.css/&quot; media=&quot;all&quot; rel=&quot;stylesheet&quot;&gt;"],
+                "toLoadJsTags": ["&lt;script src=&quot;script.js&quot;&gt;&lt;/script&gt;",
+                "&lt;script src=&quot;/components/cache/SimpleComponent_311097.js/&quot;&gt;&lt;/script&gt;"]}
+            </script>
+        """  # noqa: E501
 
         self.assertHTMLEqual(expected, rendered)
 

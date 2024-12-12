@@ -123,23 +123,14 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count("<script"), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<script"), 1)  # 1 boilerplate script
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [],
-        #     loadedJsUrls: [],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedJsUrls: [],"), 1)
-        self.assertEqual(rendered.count("loadedCssUrls: [],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertNotIn("loadedJsUrls", rendered)
+        self.assertNotIn("loadedCssUrls", rendered)
+        self.assertNotIn("toLoadJsTags", rendered)
+        self.assertNotIn("toLoadCssTags", rendered)
 
     def test_no_js_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
@@ -153,23 +144,14 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count("<script"), 2)  # Two 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<script"), 1)  # 1 boilerplate script
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [],
-        #     loadedJsUrls: [],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedJsUrls: [],"), 1)
-        self.assertEqual(rendered.count("loadedCssUrls: [],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertNotIn("loadedJsUrls", rendered)
+        self.assertNotIn("loadedCssUrls", rendered)
+        self.assertNotIn("toLoadJsTags", rendered)
+        self.assertNotIn("toLoadCssTags", rendered)
 
     def test_no_css_dependencies_when_no_components_used(self):
         registry.register(name="test", component=SimpleComponent)
@@ -204,19 +186,18 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<script"), 3)
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [&quot;style.css&quot;],
-        #     loadedJsUrls: [&quot;script.js&quot;],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;],"), 1)
-        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertInHTML(
+            """
+            <script type="application/json" data-djc>
+                {"loadedCssUrls": ["style.css"],
+                "loadedJsUrls": ["script.js"],
+                "toLoadCssTags": [],
+                "toLoadJsTags": []}
+            </script>
+            """,
+            rendered,
+            count=1,
+        )
 
     def test_single_component_with_dash_or_slash_in_name(self):
         registry.register(name="te-s/t", component=SimpleComponent)
@@ -238,19 +219,18 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<script"), 3)
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [&quot;style.css&quot;],
-        #     loadedJsUrls: [&quot;script.js&quot;],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;],"), 1)
-        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertInHTML(
+            """
+            <script type="application/json" data-djc>
+                {"loadedCssUrls": ["style.css"],
+                "loadedJsUrls": ["script.js"],
+                "toLoadCssTags": [],
+                "toLoadJsTags": []}
+            </script>
+            """,
+            rendered,
+            count=1,
+        )
 
     def test_single_component_placeholder_removed(self):
         registry.register(name="test", component=SimpleComponent)
@@ -303,19 +283,18 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<script"), 3)
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [&quot;style.css&quot;],
-        #     loadedJsUrls: [&quot;script.js&quot;],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;],"), 1)
-        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertInHTML(
+            """
+            <script type="application/json" data-djc>
+                {"loadedCssUrls": ["style.css"],
+                "loadedJsUrls": ["script.js"],
+                "toLoadCssTags": [],
+                "toLoadJsTags": []}
+            </script>
+            """,
+            rendered,
+            count=1,
+        )
 
     def test_all_dependencies_are_rendered_for_component_with_multiple_dependencies(
         self,
@@ -357,19 +336,18 @@ class DependencyRenderingTests(BaseTestCase):
             count=1,
         )
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [&quot;style.css&quot;, &quot;style2.css&quot;],
-        #     loadedJsUrls: [&quot;script.js&quot;, &quot;script2.js&quot;],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedCssUrls: [&quot;style.css&quot;, &quot;style2.css&quot;],"), 1)
-        self.assertEqual(rendered.count("loadedJsUrls: [&quot;script.js&quot;, &quot;script2.js&quot;"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
+        self.assertInHTML(
+            """
+            <script type="application/json" data-djc>
+                {"loadedCssUrls": ["style.css", "style2.css"],
+                "loadedJsUrls": ["script.js", "script2.js"],
+                "toLoadCssTags": [],
+                "toLoadJsTags": []}
+            </script>
+            """,
+            rendered,
+            count=1,
+        )
 
     def test_no_dependencies_with_multiple_unused_components(self):
         registry.register(name="inner", component=SimpleComponent)
@@ -386,23 +364,14 @@ class DependencyRenderingTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertEqual(rendered.count("<script"), 2)  # 2 scripts belong to the boilerplate
+        self.assertEqual(rendered.count("<script"), 1)  # 1 boilerplate script
         self.assertEqual(rendered.count("<link"), 0)  # No CSS
         self.assertEqual(rendered.count("<style"), 0)
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [],
-        #     loadedJsUrls: [],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(rendered.count("loadedJsUrls: [],"), 1)
-        self.assertEqual(rendered.count("loadedCssUrls: [],"), 1)
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
+        self.assertNotIn("loadedJsUrls", rendered)
+        self.assertNotIn("loadedCssUrls", rendered)
+        self.assertNotIn("toLoadJsTags", rendered)
+        self.assertNotIn("toLoadCssTags", rendered)
 
     def test_multiple_components_dependencies(self):
         registry.register(name="inner", component=SimpleComponent)
@@ -471,29 +440,18 @@ class DependencyRenderingTests(BaseTestCase):
             count=1,
         )
 
-        # We expect to find this:
-        # ```js
-        # Components.manager._loadComponentScripts({
-        #     loadedCssUrls: [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;],
-        #     loadedJsUrls: [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;, &quot;script.js&quot;, &quot;script2.js&quot;, &quot;xyz1.js&quot;],
-        #     toLoadCssTags: [],
-        #     toLoadJsTags: [],
-        # });
-        # ```
-        self.assertEqual(
-            rendered.count(
-                "loadedJsUrls: [&quot;/components/cache/OtherComponent_6329ae.js/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.js/&quot;, &quot;script.js&quot;, &quot;script2.js&quot;, &quot;xyz1.js&quot;],"
-            ),
-            1,
+        self.assertInHTML(
+            """
+            <script type="application/json" data-djc>
+                {"loadedCssUrls": ["/components/cache/OtherComponent_6329ae.css/", "/components/cache/SimpleComponentNested_f02d32.css/", "style.css", "style2.css", "xyz1.css"],
+                "loadedJsUrls": ["/components/cache/OtherComponent_6329ae.js/", "/components/cache/SimpleComponentNested_f02d32.js/", "script.js", "script2.js", "xyz1.js"],
+                "toLoadCssTags": [],
+                "toLoadJsTags": []}
+            </script>
+            """,
+            rendered,
+            count=1,
         )
-        self.assertEqual(
-            rendered.count(
-                "loadedCssUrls: [&quot;/components/cache/OtherComponent_6329ae.css/&quot;, &quot;/components/cache/SimpleComponentNested_f02d32.css/&quot;, &quot;style.css&quot;, &quot;style2.css&quot;, &quot;xyz1.css&quot;],"
-            ),
-            1,
-        )
-        self.assertEqual(rendered.count("toLoadJsTags: [],"), 1)
-        self.assertEqual(rendered.count("toLoadCssTags: [],"), 1)
 
     def test_multiple_components_all_placeholders_removed(self):
         registry.register(name="inner", component=SimpleComponent)
