@@ -319,7 +319,13 @@ class E2eDependencyRenderingTests(BaseTestCase):
 
         # Clicking button should load and insert the fragment
         await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
         await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function(
+            "() => document.head.innerHTML.includes('<link href=\"/components/cache/FragComp_')"
+        )
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
 
         test_js: types.js = """() => {
             const targetEl = document.querySelector("#target");
@@ -363,7 +369,11 @@ class E2eDependencyRenderingTests(BaseTestCase):
 
         # Clicking button should load and insert the fragment
         await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
         await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function("() => document.head.innerHTML.includes('<link href=\"/static/fragment.css\"')")
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
 
         test_js: types.js = """() => {
             const targetEl = document.querySelector("#target");
@@ -407,7 +417,13 @@ class E2eDependencyRenderingTests(BaseTestCase):
 
         # Clicking button should load and insert the fragment
         await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
         await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function(
+            "() => document.head.innerHTML.includes('<link href=\"/components/cache/FragComp_')"
+        )
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
 
         test_js: types.js = """() => {
             const targetEl = document.querySelector("#target");
@@ -456,7 +472,13 @@ class E2eDependencyRenderingTests(BaseTestCase):
 
         # Clicking button should load and insert the fragment
         await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
         await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function(
+            "() => document.head.innerHTML.includes('<link href=\"/components/cache/FragComp_')"
+        )
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
 
         test_js: types.js = """() => {
             const targetEl = document.querySelector("#target");
