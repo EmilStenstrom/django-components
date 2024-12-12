@@ -1,9 +1,8 @@
-from django.urls import path
-
 from components.calendar.calendar import Calendar, CalendarRelative
+from components.fragment import FragAlpine, FragJs, FragmentBaseAlpine, FragmentBaseHtmx, FragmentBaseJs
 from components.greeting import Greeting
 from components.nested.calendar.calendar import CalendarNested
-from components.fragment import FragmentBaseAlpine, FragmentBaseJs, FragmentBaseHtmx, FragAlpine, FragJs
+from django.urls import path
 
 urlpatterns = [
     path("greeting/", Greeting.as_view(), name="greeting"),

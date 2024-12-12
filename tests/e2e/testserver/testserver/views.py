@@ -1,9 +1,8 @@
 from django.http import HttpResponse
 from django.template import Context, Template
+from testserver.components import FragComp, FragMedia
 
 from django_components import render_dependencies, types
-
-from testserver.components import FragComp, FragMedia
 
 
 def single_component_view(request):
@@ -164,9 +163,13 @@ def fragment_base_js_view(request):
     template = Template(template_str)
 
     frag = request.GET["frag"]
-    rendered_raw = template.render(Context({
-        "frag": frag,
-    }))
+    rendered_raw = template.render(
+        Context(
+            {
+                "frag": frag,
+            }
+        )
+    )
     rendered = render_dependencies(rendered_raw)
     return HttpResponse(rendered)
 

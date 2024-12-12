@@ -96,6 +96,7 @@ class FragmentBaseHtmx(_FragmentBase):
         </html>
     """
 
+
 # Common logic for all Frag components
 class _Frag(Component):
     def get(self, request):
