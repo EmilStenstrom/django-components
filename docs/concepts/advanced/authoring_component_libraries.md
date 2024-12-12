@@ -1,6 +1,6 @@
 ---
 title: Authoring component libraries
-weight: 7
+weight: 8
 ---
 
 You can publish and share your components for others to use. Here are the steps to do so:

@@ -1,6 +1,6 @@
 ---
 title: Typing and validation
-weight: 5
+weight: 6
 ---
 
 ## Adding type hints with Generics

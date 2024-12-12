@@ -297,6 +297,190 @@ class E2eDependencyRenderingTests(BaseTestCase):
 
         await page.close()
 
+    # Fragment where JS and CSS is defined on Component class
+    @with_playwright
+    async def test_fragment_comp(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/js?frag=comp")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+        await page.locator(".frag").wait_for(state="visible")
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        self.assertEqual(data["targetHtml"], None)
+        self.assertHTMLEqual('<div class="frag"> 123 <span id="frag-text">xxx</span></div>', data["fragHtml"])
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
+    # Fragment where JS and CSS is defined on Media class
+    @with_playwright
+    async def test_fragment_media(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/js?frag=media")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+        await page.locator(".frag").wait_for(state="visible")
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        self.assertEqual(data["targetHtml"], None)
+        self.assertHTMLEqual('<div class="frag"> 123 <span id="frag-text">xxx</span></div>', data["fragHtml"])
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
+    # Fragment loaded by AlpineJS
+    @with_playwright
+    async def test_fragment_alpine(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/alpine?frag=comp")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target" x-html="htmlVar">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+        await page.locator(".frag").wait_for(state="visible")
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        # NOTE: Unlike the vanilla JS tests, for the Alpine test we don't remove the targetHtml,
+        # but only change its contents.
+        self.assertInHTML(
+            '<div class="frag"> 123 <span id="frag-text">xxx</span></div>',
+            data["targetHtml"],
+        )
+        self.assertHTMLEqual(data["fragHtml"], '<div class="frag"> 123 <span id="frag-text">xxx</span></div>')
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
+    # Fragment loaded by HTMX
+    @with_playwright
+    async def test_fragment_htmx(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/htmx?frag=comp")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+        await page.locator(".frag").wait_for(state="visible")
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        self.assertEqual(data["targetHtml"], None)
+        self.assertHTMLEqual(
+            data["fragHtml"],
+            '<div class="frag htmx-added htmx-settling"> 123 <span id="frag-text">xxx</span></div>',
+        )
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
     @with_playwright
     async def test_alpine__head(self):
         single_comp_url = TEST_SERVER_URL + "/alpine/head"

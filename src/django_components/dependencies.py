@@ -6,7 +6,6 @@ import sys
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from hashlib import md5
-from textwrap import dedent
 from typing import (
     TYPE_CHECKING,
     Callable,
@@ -34,7 +33,6 @@ from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 
-import django_components.types as types
 from django_components.util.html import SoupNode
 from django_components.util.misc import _escape_js, get_import_path
 
@@ -325,6 +323,9 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
         return HttpResponse(processed_html)
     ```
     """
+    if type not in ("document", "fragment"):
+        raise ValueError(f"Invalid type '{type}'")
+
     is_safestring = isinstance(content, SafeString)
 
     if isinstance(content, str):
@@ -335,18 +336,24 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
     content_, js_dependencies, css_dependencies = _process_dep_declarations(content_, type)
 
     # Replace the placeholders with the actual content
+    # If type == `document`, we insert the JS and CSS directly into the HTML,
+    #                        where the placeholders were.
+    # If type == `fragment`, we let the client-side manager load the JS and CSS,
+    #                        and remove the placeholders.
     did_find_js_placeholder = False
     did_find_css_placeholder = False
+    css_replacement = css_dependencies if type == "document" else b""
+    js_replacement = js_dependencies if type == "document" else b""
 
     def on_replace_match(match: "re.Match[bytes]") -> bytes:
         nonlocal did_find_css_placeholder
         nonlocal did_find_js_placeholder
 
         if match[0] == CSS_PLACEHOLDER_BYTES:
-            replacement = css_dependencies
+            replacement = css_replacement
             did_find_css_placeholder = True
         elif match[0] == JS_PLACEHOLDER_BYTES:
-            replacement = js_dependencies
+            replacement = js_replacement
             did_find_js_placeholder = True
         else:
             raise RuntimeError(
@@ -369,6 +376,10 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
 
         if maybe_transformed is not None:
             content_ = maybe_transformed.encode()
+
+    # In case of a fragment, we only append the JS (actually JSON) to trigger the call of dependency-manager
+    if type == "fragment":
+        content_ += js_dependencies
 
     # Return the same type as we were given
     output = content_.decode() if isinstance(content, str) else content_
@@ -505,7 +516,8 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
 
     # Core scripts without which the rest wouldn't work
     core_script_tags = Media(
-        js=[static("django_components/django_components.min.js")],
+        # NOTE: When rendering a document, the initial JS is inserted directly into the HTML
+        js=[static("django_components/django_components.min.js")] if type == "document" else [],
     ).render_js()
 
     final_script_tags = "".join(
@@ -620,7 +632,7 @@ def _prepare_tags_and_urls(
                 to_load_js_urls.append(get_script_url("js", comp_cls))
 
             if _is_nonempty_str(comp_cls.css):
-                loaded_css_urls.append(get_script_url("css", comp_cls))
+                to_load_css_urls.append(get_script_url("css", comp_cls))
 
     return (
         to_load_js_urls,
@@ -699,30 +711,22 @@ def _gen_exec_script(
     # NOTE: It would be better to pass only the URL itself for `loadJs/loadCss`, instead of a whole tag.
     #    But because we allow users to specify the Media class, and thus users can
     #    configure how the `<link>` or `<script>` tags are rendered, we need pass the whole tag.
-    escaped_to_load_js_tags = [_escape_js(tag, eval=False) for tag in to_load_js_tags]
-    escaped_to_load_css_tags = [_escape_js(tag, eval=False) for tag in to_load_css_tags]
+    escaped_to_load_js_tags = [_escape_js(tag, wrap=False) for tag in to_load_js_tags]
+    escaped_to_load_css_tags = [_escape_js(tag, wrap=False) for tag in to_load_css_tags]
 
-    # Make JS array whose items are interpreted as JS statements (e.g. functions)
-    def js_arr(lst: List) -> str:
-        return "[" + ", ".join(lst) + "]"
+    exec_script_data = {
+        "loadedCssUrls": loaded_css_urls,
+        "loadedJsUrls": loaded_js_urls,
+        "toLoadCssTags": escaped_to_load_css_tags,
+        "toLoadJsTags": escaped_to_load_js_tags,
+    }
 
-    # NOTE: Wrap the body in self-executing function to avoid polluting the global scope.
-    exec_script: types.js = f"""
-        (() => {{
-            Components.manager._loadComponentScripts({{
-                loadedCssUrls: {json.dumps(loaded_css_urls)},
-                loadedJsUrls: {json.dumps(loaded_js_urls)},
-                toLoadCssTags: {js_arr(escaped_to_load_css_tags)},
-                toLoadJsTags: {js_arr(escaped_to_load_js_tags)},
-            }});
-            document.currentScript.remove();
-        }})();
-    """
-
-    # NOTE: The exec script MUST be executed SYNC, so we MUST NOT put `type="module"`,
-    #       `async`, nor `defer` on it.
-    #       See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#notes
-    exec_script = f"<script>{_escape_js(dedent(exec_script))}</script>"
+    # NOTE: This data is embedded into the HTML as JSON. It is the responsibility of
+    # the client-side code to detect that this script was inserted, and to load the
+    # corresponding assets
+    # See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#embedding_data_in_html
+    exec_script = json.dumps(exec_script_data)
+    exec_script = f'<script type="application/json" data-djc>{exec_script}</script>'
     return exec_script
 
 
