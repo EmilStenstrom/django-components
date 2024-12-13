@@ -28,7 +28,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
 from django.http import HttpRequest, HttpResponse
 from django.template.base import NodeList, Template, TextNode
-from django.template.context import Context
+from django.template.context import Context, RequestContext
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
 from django.utils.html import conditional_escape
@@ -495,6 +495,7 @@ class Component(
         args: Optional[ArgsType] = None,
         kwargs: Optional[KwargsType] = None,
         type: RenderType = "document",
+        request: Optional[HttpRequest] = None,
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -523,6 +524,9 @@ class Component(
             - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
+        - `request` - The request object. This is only required when needing to use RequestContext,
+                      e.g. to enable template `context_processors`. Unused if context is already an instance
+                      of `Context`
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -553,6 +557,7 @@ class Component(
             escape_slots_content=escape_slots_content,
             type=type,
             render_dependencies=True,
+            request=request,
         )
         return cls.response_class(content, *response_args, **response_kwargs)
 
@@ -566,6 +571,7 @@ class Component(
         escape_slots_content: bool = True,
         type: RenderType = "document",
         render_dependencies: bool = True,
+        request: Optional[HttpRequest] = None,
     ) -> str:
         """
         Render the component into a string.
@@ -588,7 +594,9 @@ class Component(
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
         - `render_dependencies` - Set this to `False` if you want to insert the resulting HTML into another component.
-
+        - `request` - The request object. This is only required when needing to use RequestContext,
+                      e.g. to enable template `context_processors`. Unused if context is already an instance of
+                      `Context`
         Example:
         ```py
         MyComponent.render(
@@ -611,7 +619,7 @@ class Component(
         else:
             comp = cls()
 
-        return comp._render(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
+        return comp._render(context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request)
 
     # This is the internal entrypoint for the render function
     def _render(
@@ -623,9 +631,12 @@ class Component(
         escape_slots_content: bool = True,
         type: RenderType = "document",
         render_dependencies: bool = True,
+        request: Optional[HttpRequest] = None,
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
+            return self._render_impl(
+                context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request
+            )
         except Exception as err:
             # Nicely format the error message to include the component path.
             # E.g.
@@ -662,6 +673,7 @@ class Component(
         escape_slots_content: bool = True,
         type: RenderType = "document",
         render_dependencies: bool = True,
+        request: Optional[HttpRequest] = None,
     ) -> str:
         # NOTE: We must run validation before we normalize the slots, because the normalization
         #       wraps them in functions.
@@ -672,12 +684,13 @@ class Component(
         kwargs = cast(KwargsType, kwargs or {})
         slots_untyped = self._normalize_slot_fills(slots or {}, escape_slots_content)
         slots = cast(SlotsType, slots_untyped)
-        context = context or Context()
+        context = context or (RequestContext(request) if request else Context())
 
         # Allow to provide a dict instead of Context
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
-        context = context if isinstance(context, Context) else Context(context)
+        if not isinstance(context, Context):
+            context = RequestContext(request, context) if request else Context(context)
 
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
