@@ -1070,6 +1070,71 @@ class ComponentRenderTest(BaseTestCase):
         self.assertTrue(token)
         self.assertEqual(len(token), 64)
 
+    def test_request_context_created_when_no_context(self):
+        @register("thing")
+        class Thing(Component):
+            template: types.django_html = """
+                CSRF token: {{ csrf_token|default:"<em>No CSRF token</em>" }}
+            """
+
+            def get(self, request):
+                return self.render_to_response(request=request)
+
+        client = CustomClient(urlpatterns=[path("test_thing/", Thing.as_view())])
+        response = client.get("/test_thing/")
+
+        self.assertEqual(response.status_code, 200)
+
+        token_re = re.compile(rb"CSRF token:\s+(?P<token>[0-9a-zA-Z]{64})")
+        token = token_re.findall(response.content)[0]
+
+        self.assertTrue(token)
+        self.assertEqual(len(token), 64)
+
+    def test_request_context_created_when_already_a_context_dict(self):
+        @register("thing")
+        class Thing(Component):
+            template: types.django_html = """
+                <p>CSRF token: {{ csrf_token|default:"<em>No CSRF token</em>" }}</p>
+                <p>Existing context: {{ existing_context|default:"<em>No existing context</em>" }}</p>
+            """
+
+            def get(self, request):
+                return self.render_to_response(request=request, context={"existing_context": "foo"})
+
+        client = CustomClient(urlpatterns=[path("test_thing/", Thing.as_view())])
+        response = client.get("/test_thing/")
+
+        self.assertEqual(response.status_code, 200)
+
+        token_re = re.compile(rb"CSRF token:\s+(?P<token>[0-9a-zA-Z]{64})")
+        token = token_re.findall(response.content)[0]
+
+        self.assertTrue(token)
+        self.assertEqual(len(token), 64)
+        self.assertInHTML("Existing context: foo", response.content.decode())
+
+    def request_context_ignores_context_when_already_a_context(self):
+        @register("thing")
+        class Thing(Component):
+            template: types.django_html = """
+                <p>CSRF token: {{ csrf_token|default:"<em>No CSRF token</em>" }}</p>
+                <p>Existing context: {{ existing_context|default:"<em>No existing context</em>" }}</p>
+            """
+
+            def get(self, request):
+                return self.render_to_response(request=request, context=Context({"existing_context": "foo"}))
+
+        client = CustomClient(urlpatterns=[path("test_thing/", Thing.as_view())])
+        response = client.get("/test_thing/")
+
+        self.assertEqual(response.status_code, 200)
+
+        token_re = re.compile(rb"CSRF token:\s+(?P<token>[0-9a-zA-Z]{64})")
+
+        self.assertFalse(token_re.findall(response.content))
+        self.assertInHTML("Existing context: foo", response.content.decode())
+
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_extends(self):
         class SimpleComponent(Component):
