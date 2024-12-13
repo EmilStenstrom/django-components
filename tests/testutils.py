@@ -32,6 +32,7 @@ class BaseTestCase(SimpleTestCase):
 
         from django_components.template import template_cache
 
+        # NOTE: There are 1-2 tests which check Templates, so we need to clear the cache
         if template_cache:
             template_cache.clear()
 
