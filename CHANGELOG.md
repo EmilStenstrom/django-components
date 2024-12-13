@@ -1,5 +1,19 @@
 # Release notes
 
+## v0.119
+
+#### Fix
+
+- Fix compatibility with custom subclasses of Django's `Template` that need to access
+  `origin` or other initialization arguments. (https://github.com/EmilStenstrom/django-components/pull/828)
+
+#### Refactor
+
+- Compatibility with `django-debug-toolbar-template-profiler`:
+  - Monkeypatching of Django's `Template` now happens at `AppConfig.ready()` (https://github.com/EmilStenstrom/django-components/pull/825)
+
+- Internal parsing of template tags tag was updated. No API change. (https://github.com/EmilStenstrom/django-components/pull/827)
+
 ## v0.118
 
 #### Feat
