@@ -28,7 +28,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media
 from django.http import HttpRequest, HttpResponse
 from django.template.base import NodeList, Template, TextNode
-from django.template.context import Context
+from django.template.context import Context, RequestContext
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
 from django.utils.html import conditional_escape
@@ -495,6 +495,7 @@ class Component(
         args: Optional[ArgsType] = None,
         kwargs: Optional[KwargsType] = None,
         type: RenderType = "document",
+        request: Optional[HttpRequest] = None,
         *response_args: Any,
         **response_kwargs: Any,
     ) -> HttpResponse:
@@ -523,6 +524,9 @@ class Component(
             - `"document"` (default) - JS dependencies are inserted into `{% component_js_dependencies %}`,
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
+        - `request` - The request object. This is only required when needing to use RequestContext,
+                      e.g. to enable template `context_processors`. Unused if context is already an instance
+                      of `Context`
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -553,6 +557,7 @@ class Component(
             escape_slots_content=escape_slots_content,
             type=type,
             render_dependencies=True,
+            request=request,
         )
         return cls.response_class(content, *response_args, **response_kwargs)
 
@@ -566,6 +571,7 @@ class Component(
         escape_slots_content: bool = True,
         type: RenderType = "document",
         render_dependencies: bool = True,
+        request: Optional[HttpRequest] = None,
     ) -> str:
         """
         Render the component into a string.
@@ -588,7 +594,9 @@ class Component(
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
         - `render_dependencies` - Set this to `False` if you want to insert the resulting HTML into another component.
-
+        - `request` - The request object. This is only required when needing to use RequestContext,
+                      e.g. to enable template `context_processors`. Unused if context is already an instance of
+                      `Context`
         Example:
         ```py
         MyComponent.render(
@@ -611,7 +619,7 @@ class Component(
         else:
             comp = cls()
 
-        return comp._render(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
+        return comp._render(context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request)
 
     # This is the internal entrypoint for the render function
     def _render(
@@ -623,9 +631,12 @@ class Component(
         escape_slots_content: bool = True,
         type: RenderType = "document",
         render_dependencies: bool = True,
+        request: Optional[HttpRequest] = None,
     ) -> str:
         try:
-            return self._render_impl(context, args, kwargs, slots, escape_slots_content, type, render_dependencies)
+            return self._render_impl(
+                context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request
+            )
         except Exception as err:
             # Nicely format the error message to include the component path.
             # E.g.
@@ -662,6 +673,7 @@ class Component(
         escape_slots_content: bool = True,
         type: RenderType = "document",
         render_dependencies: bool = True,
+        request: Optional[HttpRequest] = None,
     ) -> str:
         # NOTE: We must run validation before we normalize the slots, because the normalization
         #       wraps them in functions.
@@ -672,12 +684,13 @@ class Component(
         kwargs = cast(KwargsType, kwargs or {})
         slots_untyped = self._normalize_slot_fills(slots or {}, escape_slots_content)
         slots = cast(SlotsType, slots_untyped)
-        context = context or Context()
+        context = context or (RequestContext(request) if request else Context())
 
         # Allow to provide a dict instead of Context
         # NOTE: This if/else is important to avoid nested Contexts,
         # See https://github.com/EmilStenstrom/django-components/issues/414
-        context = context if isinstance(context, Context) else Context(context)
+        if not isinstance(context, Context):
+            context = RequestContext(request, context) if request else Context(context)
 
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
@@ -955,7 +968,7 @@ class ComponentNode(BaseNode):
         return output
 
 
-def _monkeypatch_template(template: Template) -> None:
+def monkeypatch_template(template_cls: Type[Template]) -> None:
     # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
     # based on our custom `Template._dc_is_component_nested`.
     #
@@ -973,10 +986,10 @@ def _monkeypatch_template(template: Template) -> None:
     # and can modify the rendering behavior by overriding the `_render` method.
     #
     # NOTE 2: Instead of setting `Template._dc_is_component_nested`, alternatively we could
-    # have passed the value to `_monkeypatch_template` directly. However, we intentionally
+    # have passed the value to `monkeypatch_template` directly. However, we intentionally
     # did NOT do that, so the monkey-patched method is more robust, and can be e.g. copied
     # to other.
-    if hasattr(template, "_dc_patched"):
+    if hasattr(template_cls, "_dc_patched"):
         # Do not patch if done so already. This helps us avoid RecursionError
         return
 
@@ -999,8 +1012,8 @@ def _monkeypatch_template(template: Template) -> None:
             else:
                 return self._render(context, *args, **kwargs)
 
-    # See https://stackoverflow.com/a/42154067/9788634
-    template.render = types.MethodType(_template_render, template)
+    template_cls.render = _template_render
+    template_cls._dc_patched = True
 
 
 @contextmanager
@@ -1024,7 +1037,14 @@ def _prepare_template(
         # See https://github.com/EmilStenstrom/django-components/issues/580
         # And https://github.com/EmilStenstrom/django-components/issues/634
         template = component._get_template(context)
-        _monkeypatch_template(template)
+
+        if not getattr(template, "_dc_patched"):
+            raise RuntimeError(
+                "Django-components received a Template instance which was not patched."
+                "If you are using Django's Template class, check if you added django-components"
+                "to INSTALLED_APPS. If you are using a custom template class, then you need to"
+                "manually patch the class."
+            )
 
         # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE
         # the `{% extends %}` tag.
