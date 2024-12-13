@@ -12,10 +12,10 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(
             attrs,
             [
-                TagAttr(key=None, value="component", start_index=0, quoted=False),
-                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
-                TagAttr(key="key", value="val", start_index=20, quoted=False),
-                TagAttr(key="key2", value="val2 two", start_index=28, quoted=True),
+                TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
+                TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
+                TagAttr(key="key2", value="val2 two", start_index=28, quoted="'", spread=False, translation=False),
             ],
         )
 
@@ -24,11 +24,13 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(
             attrs,
             [
-                TagAttr(key=None, value="component", start_index=0, quoted=False),
-                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
-                TagAttr(key="key", value="val", start_index=20, quoted=False),
-                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted=True),
-                TagAttr(key="text", value="organisation's", start_index=46, quoted=True),
+                TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
+                TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
+                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted="'", spread=False, translation=False),
+                TagAttr(
+                    key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False
+                ),
             ],
         )
 
@@ -38,12 +40,14 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(
             attrs,
             [
-                TagAttr(key=None, value="component", start_index=0, quoted=False),
-                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
-                TagAttr(key="key", value="val", start_index=20, quoted=False),
-                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted=True),
-                TagAttr(key="text", value="organisation's", start_index=46, quoted=True),
-                TagAttr(key=None, value="'abc", start_index=68, quoted=False),
+                TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
+                TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
+                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted="'", spread=False, translation=False),
+                TagAttr(
+                    key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False
+                ),
+                TagAttr(key=None, value="'abc", start_index=68, quoted=None, spread=False, translation=False),
             ],
         )
 
@@ -52,12 +56,14 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(
             attrs,
             [
-                TagAttr(key=None, value="component", start_index=0, quoted=False),
-                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
-                TagAttr(key="key", value="val", start_index=20, quoted=False),
-                TagAttr(key="key2", value="val2 'two'", start_index=28, quoted=True),
-                TagAttr(key="text", value='organisation"s', start_index=46, quoted=True),
-                TagAttr(key=None, value='"abc', start_index=68, quoted=False),
+                TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted='"', spread=False, translation=False),
+                TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
+                TagAttr(key="key2", value="val2 'two'", start_index=28, quoted='"', spread=False, translation=False),
+                TagAttr(
+                    key="text", value='organisation"s', start_index=46, quoted="'", spread=False, translation=False
+                ),  # noqa: E501
+                TagAttr(key=None, value='"abc', start_index=68, quoted=None, spread=False, translation=False),
             ],
         )
 
@@ -68,12 +74,14 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(
             attrs,
             [
-                TagAttr(key=None, value="component", start_index=0, quoted=False),
-                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
-                TagAttr(key="key", value="val", start_index=20, quoted=False),
-                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted=True),
-                TagAttr(key="text", value="organisation's", start_index=46, quoted=True),
-                TagAttr(key="value", value="'abc", start_index=68, quoted=False),
+                TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
+                TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
+                TagAttr(key="key2", value='val2 "two"', start_index=28, quoted="'", spread=False, translation=False),
+                TagAttr(
+                    key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False
+                ),
+                TagAttr(key="value", value="'abc", start_index=68, quoted=None, spread=False, translation=False),
             ],
         )
 
@@ -84,11 +92,13 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(
             attrs,
             [
-                TagAttr(key=None, value="component", start_index=0, quoted=False),
-                TagAttr(key=None, value="my_comp", start_index=10, quoted=True),
-                TagAttr(key="key", value="val", start_index=20, quoted=False),
-                TagAttr(key="key2", value="val2 'two'", start_index=28, quoted=True),
-                TagAttr(key="text", value='organisation"s', start_index=46, quoted=True),
-                TagAttr(key="value", value='"abc', start_index=68, quoted=False),
+                TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
+                TagAttr(key=None, value="my_comp", start_index=10, quoted='"', spread=False, translation=False),
+                TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
+                TagAttr(key="key2", value="val2 'two'", start_index=28, quoted='"', spread=False, translation=False),
+                TagAttr(
+                    key="text", value='organisation"s', start_index=46, quoted="'", spread=False, translation=False
+                ),
+                TagAttr(key="value", value='"abc', start_index=68, quoted=None, spread=False, translation=False),
             ],
         )
