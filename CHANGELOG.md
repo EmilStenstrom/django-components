@@ -1,6 +1,14 @@
 # Release notes
 
+## v0.120
+
+#### Fix
+
+- Fix the use of translation strings `_("bla")` as inputs to components [#849](https://github.com/EmilStenstrom/django-components/pull/849).
+
 ## v0.119
+
+⚠️ Attention ⚠️ - This release introduced a bug [#849](https://github.com/EmilStenstrom/django-components/pull/849). Please update to v0.120.
 
 #### Fix
 
