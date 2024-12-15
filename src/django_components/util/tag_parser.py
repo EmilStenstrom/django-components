@@ -33,6 +33,12 @@ class TagAttr:
         elif self.spread:
             value = f"...{value}"
         return value
+    
+    def formatted(self) -> str:
+        s = self.formatted_value()
+        if self.key:
+            return f"{self.key}={s}"
+        return s
 
 
 # Parse the content of a Django template tag like this:
@@ -216,7 +222,7 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
                 start_index=start_index,
                 quoted=quoted,
                 spread=is_spread,
-                translation=False,
+                translation=is_translation,
             )
         )
 
