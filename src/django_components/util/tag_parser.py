@@ -33,7 +33,7 @@ class TagAttr:
         elif self.spread:
             value = f"...{value}"
         return value
-    
+
     def formatted(self) -> str:
         s = self.formatted_value()
         if self.key:

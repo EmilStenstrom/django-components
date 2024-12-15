@@ -36,9 +36,7 @@ class TagParserTests(BaseTestCase):
             TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
             TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
             TagAttr(key="key2", value='val2 "two"', start_index=28, quoted="'", spread=False, translation=False),
-            TagAttr(
-                key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False
-            ),
+            TagAttr(key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -49,7 +47,7 @@ class TagParserTests(BaseTestCase):
                 "'my_comp'",
                 "key=val",
                 "key2='val2 \"two\"'",
-                "text=\"organisation's\"",
+                'text="organisation\'s"',
             ],
         )
 
@@ -61,9 +59,7 @@ class TagParserTests(BaseTestCase):
             TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
             TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
             TagAttr(key="key2", value='val2 "two"', start_index=28, quoted="'", spread=False, translation=False),
-            TagAttr(
-                key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False
-            ),
+            TagAttr(key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False),
             TagAttr(key=None, value="'abc", start_index=68, quoted=None, spread=False, translation=False),
         ]
 
@@ -75,7 +71,7 @@ class TagParserTests(BaseTestCase):
                 "'my_comp'",
                 "key=val",
                 "key2='val2 \"two\"'",
-                "text=\"organisation's\"",
+                'text="organisation\'s"',
                 "'abc",
             ],
         )
@@ -98,11 +94,11 @@ class TagParserTests(BaseTestCase):
             [a.formatted() for a in attrs],
             [
                 "component",
-                "\"my_comp\"",
+                '"my_comp"',
                 "key=val",
                 "key2=\"val2 'two'\"",
                 "text='organisation\"s'",
-                "\"abc",
+                '"abc',
             ],
         )
 
@@ -115,9 +111,7 @@ class TagParserTests(BaseTestCase):
             TagAttr(key=None, value="my_comp", start_index=10, quoted="'", spread=False, translation=False),
             TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
             TagAttr(key="key2", value='val2 "two"', start_index=28, quoted="'", spread=False, translation=False),
-            TagAttr(
-                key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False
-            ),
+            TagAttr(key="text", value="organisation's", start_index=46, quoted='"', spread=False, translation=False),
             TagAttr(key="value", value="'abc", start_index=68, quoted=None, spread=False, translation=False),
         ]
 
@@ -129,7 +123,7 @@ class TagParserTests(BaseTestCase):
                 "'my_comp'",
                 "key=val",
                 "key2='val2 \"two\"'",
-                "text=\"organisation's\"",
+                'text="organisation\'s"',
                 "value='abc",
             ],
         )
@@ -143,9 +137,7 @@ class TagParserTests(BaseTestCase):
             TagAttr(key=None, value="my_comp", start_index=10, quoted='"', spread=False, translation=False),
             TagAttr(key="key", value="val", start_index=20, quoted=None, spread=False, translation=False),
             TagAttr(key="key2", value="val2 'two'", start_index=28, quoted='"', spread=False, translation=False),
-            TagAttr(
-                key="text", value='organisation"s', start_index=46, quoted="'", spread=False, translation=False
-            ),
+            TagAttr(key="text", value='organisation"s', start_index=46, quoted="'", spread=False, translation=False),
             TagAttr(key="value", value='"abc', start_index=68, quoted=None, spread=False, translation=False),
         ]
 
@@ -154,18 +146,16 @@ class TagParserTests(BaseTestCase):
             [a.formatted() for a in attrs],
             [
                 "component",
-                "\"my_comp\"",
+                '"my_comp"',
                 "key=val",
                 "key2=\"val2 'two'\"",
                 "text='organisation\"s'",
-                "value=\"abc",
+                'value="abc',
             ],
         )
 
     def test_tag_parser_translation(self):
-        _, attrs = parse_tag_attrs(
-            'component "my_comp" _("one") key=_("two")'
-        )
+        _, attrs = parse_tag_attrs('component "my_comp" _("one") key=_("two")')
 
         expected_attrs = [
             TagAttr(key=None, value="component", start_index=0, quoted=None, spread=False, translation=False),
@@ -179,8 +169,8 @@ class TagParserTests(BaseTestCase):
             [a.formatted() for a in attrs],
             [
                 "component",
-                "\"my_comp\"",
-                "_(\"one\")",
-                "key=_(\"two\")",
+                '"my_comp"',
+                '_("one")',
+                'key=_("two")',
             ],
         )
