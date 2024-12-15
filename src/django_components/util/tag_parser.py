@@ -145,6 +145,7 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
         take_while(TAG_WHITESPACE)
 
         start_index = len(normalized)
+        is_translation = False
 
         # If token starts with a quote, we assume it's a value without key part.
         # e.g. `component 'my_comp'`
@@ -191,8 +192,6 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
             if is_next_token("_("):
                 taken_n(2)  # _(
                 is_translation = True
-            else:
-                is_translation = False
 
             # NOTE: We assume no space between the translation syntax and the quote.
             quote_char = taken_n(1)  # " or '
