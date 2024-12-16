@@ -49,7 +49,7 @@ class InlineComponentTest(BaseTestCase):
             rendered,
         )
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&#x27;HTML and JS only&#x27;);`))</script>",
+            "<script>console.log('HTML and JS only');</script>",
             rendered,
         )
 

@@ -1,8 +1,6 @@
 import re
 from typing import Any, Callable, List, Optional, Type, TypeVar
 
-from django.template.defaultfilters import escape
-
 from django_components.util.nanoid import generate
 
 T = TypeVar("T")
@@ -52,22 +50,6 @@ def get_import_path(cls_or_fn: Type[Any]) -> str:
     return module + "." + cls_or_fn.__qualname__
 
 
-# See https://stackoverflow.com/a/58800331/9788634
-# str.replace(/\\|`|\$/g, '\\$&');
-JS_STRING_LITERAL_SPECIAL_CHARS_REGEX = re.compile(r"\\|`|\$")
-
-
-# See https://stackoverflow.com/a/34064434/9788634
-def escape_js_string_literal(js: str) -> str:
-    escaped_js = escape(js)
-
-    def on_replace_match(match: "re.Match[str]") -> str:
-        return f"\\{match[0]}"
-
-    escaped_js = JS_STRING_LITERAL_SPECIAL_CHARS_REGEX.sub(on_replace_match, escaped_js)
-    return escaped_js
-
-
 def default(val: Optional[T], default: T) -> T:
     return val if val is not None else default
 
@@ -77,12 +59,3 @@ def get_last_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
         if key(item):
             return len(lst) - 1 - index
     return None
-
-
-def _escape_js(content: str, wrap: bool = True, eval: bool = True) -> str:
-    escaped_js = escape_js_string_literal(content)
-    if not wrap:
-        return escaped_js
-    # `unescapeJs` is the function we call in the browser to parse the escaped JS
-    escaped_js = f"Components.unescapeJs(`{escaped_js}`)"
-    return f"eval({escaped_js})" if eval else escaped_js

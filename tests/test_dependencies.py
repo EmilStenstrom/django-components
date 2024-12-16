@@ -69,7 +69,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>", rendered, count=1
+            '<script>console.log("xyz");</script>', rendered, count=1
         )  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
@@ -91,7 +91,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>", rendered, count=1
+            '<script>console.log("xyz");</script>', rendered, count=1
         )  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
@@ -120,7 +120,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>", rendered, count=1
+            '<script>console.log("xyz");</script>', rendered, count=1
         )  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
@@ -157,7 +157,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered_raw, count=0)  # Media.css
 
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>",
+            '<script>console.log("xyz");</script>',
             rendered_raw,
             count=0,
         )  # Inlined JS
@@ -185,7 +185,7 @@ class RenderDependenciesTests(BaseTestCase):
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>", rendered, count=1
+            '<script>console.log("xyz");</script>', rendered, count=1
         )  # Inlined JS
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
@@ -234,7 +234,7 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
         self.assertInHTML(
-            """<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>""",
+            '<script>console.log("xyz");</script>',
             rendered_body,
             count=1,
         )
@@ -286,7 +286,7 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
         self.assertInHTML(
-            """<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>""",
+            '<script>console.log("xyz");</script>',
             rendered_head,
             count=1,
         )
@@ -401,6 +401,11 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = Template(template_str).render(Context({"formset": [1]}))
         rendered = render_dependencies(rendered_raw, type="fragment")
 
+        # Base64 encodings:
+        # `PGxpbmsgaHJlZj0ic3R5bGUuY3NzIiBtZWRpYT0iYWxsIiByZWw9InN0eWxlc2hlZXQiPg==` -> `<link href="style.css" media="all" rel="stylesheet">`
+        # `PGxpbmsgaHJlZj0iL2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50XzMxMTA5Ny5jc3MiIG1lZGlhPSJhbGwiIHJlbD0ic3R5bGVzaGVldCI+` -> `<link href="/components/cache/SimpleComponent_311097.css" media="all" rel="stylesheet">`
+        # `PHNjcmlwdCBzcmM9InNjcmlwdC5qcyI+PC9zY3JpcHQ+` -> `<script src="script.js"></script>`
+        # `PHNjcmlwdCBzcmM9Ii9jb21wb25lbnRzL2NhY2hlL1NpbXBsZUNvbXBvbmVudF8zMTEwOTcuanMiPjwvc2NyaXB0Pg==` -> `<script src="/components/cache/SimpleComponent_311097.js"></script>`
         expected = """
             <table class="table-auto border-collapse divide-y divide-x divide-slate-300 w-full">
                 <!-- Table head -->
@@ -426,14 +431,45 @@ class RenderDependenciesTests(BaseTestCase):
             <script type="application/json" data-djc>
                 {"loadedCssUrls": [],
                 "loadedJsUrls": [],
-                "toLoadCssTags": ["&lt;link href=&quot;style.css&quot; media=&quot;all&quot; rel=&quot;stylesheet&quot;&gt;",
-                    "&lt;link href=&quot;/components/cache/SimpleComponent_311097.css/&quot; media=&quot;all&quot; rel=&quot;stylesheet&quot;&gt;"],
-                "toLoadJsTags": ["&lt;script src=&quot;script.js&quot;&gt;&lt;/script&gt;",
-                "&lt;script src=&quot;/components/cache/SimpleComponent_311097.js/&quot;&gt;&lt;/script&gt;"]}
+                "toLoadCssTags": ["PGxpbmsgaHJlZj0ic3R5bGUuY3NzIiBtZWRpYT0iYWxsIiByZWw9InN0eWxlc2hlZXQiPg==",
+                    "PGxpbmsgaHJlZj0iL2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50XzMxMTA5Ny5jc3MiIG1lZGlhPSJhbGwiIHJlbD0ic3R5bGVzaGVldCI+"],
+                "toLoadJsTags": ["PHNjcmlwdCBzcmM9InNjcmlwdC5qcyI+PC9zY3JpcHQ+",
+                "PHNjcmlwdCBzcmM9Ii9jb21wb25lbnRzL2NhY2hlL1NpbXBsZUNvbXBvbmVudF8zMTEwOTcuanMiPjwvc2NyaXB0Pg=="]}
             </script>
         """  # noqa: E501
 
         self.assertHTMLEqual(expected, rendered)
+
+    def test_raises_if_script_end_tag_inside_component_js(self):
+        class ComponentWithScript(SimpleComponent):
+            js: types.js = """
+                console.log("</script  >");
+            """
+
+        registry.register(name="test", component=ComponentWithScript)
+
+        with self.assertRaisesMessage(
+            RuntimeError,
+            "Content of `Component.js` for component 'ComponentWithScript' contains '</script>' end tag.",
+        ):
+            ComponentWithScript.render(kwargs={"variable": "foo"})
+
+    def test_raises_if_script_end_tag_inside_component_css(self):
+        class ComponentWithScript(SimpleComponent):
+            css: types.css = """
+                /* </style  > */
+                .xyz {
+                    color: red;
+                }
+            """
+
+        registry.register(name="test", component=ComponentWithScript)
+
+        with self.assertRaisesMessage(
+            RuntimeError,
+            "Content of `Component.css` for component 'ComponentWithScript' contains '</style>' end tag.",
+        ):
+            ComponentWithScript.render(kwargs={"variable": "foo"})
 
 
 class MiddlewareTests(BaseTestCase):
@@ -471,7 +507,7 @@ class MiddlewareTests(BaseTestCase):
 
             # Inlined JS
             self.assertInHTML(
-                "<script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>", rendered, count=1
+                '<script>console.log("xyz");</script>', rendered, count=1
             )
             # Inlined CSS
             self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)

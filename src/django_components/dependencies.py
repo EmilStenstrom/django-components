@@ -1,5 +1,6 @@
 """All code related to management of component dependencies (JS and CSS scripts)"""
 
+import base64
 import json
 import re
 import sys
@@ -34,7 +35,7 @@ from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.util.html import SoupNode
-from django_components.util.misc import _escape_js, get_import_path
+from django_components.util.misc import get_import_path
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -662,9 +663,20 @@ def _get_script_tag(
     script = get_script_content(script_type, comp_cls)
 
     if script_type == "js":
-        return f"<script>{_escape_js(script)}</script>"
+        if "</script" in script:
+            raise RuntimeError(
+                f"Content of `Component.js` for component '{comp_cls.__name__}' contains '</script>' end tag. "
+                "This is not allowed, as it would break the HTML."
+            )
+        return f"<script>{script}</script>"
 
     elif script_type == "css":
+        if "</style" in script:
+            raise RuntimeError(
+                f"Content of `Component.css` for component '{comp_cls.__name__}' contains '</style>' end tag. "
+                "This is not allowed, as it would break the HTML."
+            )
+
         return f"<style>{script}</style>"
 
     return script
@@ -694,19 +706,21 @@ def _gen_exec_script(
     if not to_load_js_tags and not to_load_css_tags and not loaded_css_urls and not loaded_js_urls:
         return None
 
+    def map_to_base64(lst: List[str]) -> List[str]:
+        return [base64.b64encode(tag.encode()).decode() for tag in lst]
+
     # Generate JSON that will tell the JS dependency manager which JS and CSS to load
     #
     # NOTE: It would be simpler to pass only the URL itself for `loadJs/loadCss`, instead of a whole tag.
     #    But because we allow users to specify the Media class, and thus users can
     #    configure how the `<link>` or `<script>` tags are rendered, we need pass the whole tag.
-    escaped_to_load_js_tags = [_escape_js(tag, wrap=False) for tag in to_load_js_tags]
-    escaped_to_load_css_tags = [_escape_js(tag, wrap=False) for tag in to_load_css_tags]
-
+    #
+    # NOTE 2: Convert to Base64 to avoid any issues with `</script>` tags in the content
     exec_script_data = {
-        "loadedCssUrls": loaded_css_urls,
-        "loadedJsUrls": loaded_js_urls,
-        "toLoadCssTags": escaped_to_load_css_tags,
-        "toLoadJsTags": escaped_to_load_js_tags,
+        "loadedCssUrls": map_to_base64(loaded_css_urls),
+        "loadedJsUrls": map_to_base64(loaded_js_urls),
+        "toLoadCssTags": map_to_base64(to_load_css_tags),
+        "toLoadJsTags": map_to_base64(to_load_js_tags),
     }
 
     # NOTE: This data is embedded into the HTML as JSON. It is the responsibility of

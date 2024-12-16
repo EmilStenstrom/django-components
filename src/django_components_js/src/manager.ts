@@ -235,12 +235,14 @@ export const createComponentsManager = () => {
     toLoadCssTags: string[];
     toLoadJsTags: string[];
   }) => {
-    const toLoadCssTags = inputs.toLoadCssTags.map((s) => unescapeJs(s));
-    const toLoadJsTags = inputs.toLoadJsTags.map((s) => unescapeJs(s));
+    const loadedCssUrls = inputs.loadedCssUrls.map((s) => atob(s));
+    const loadedJsUrls = inputs.loadedJsUrls.map((s) => atob(s));
+    const toLoadCssTags = inputs.toLoadCssTags.map((s) => atob(s));
+    const toLoadJsTags = inputs.toLoadJsTags.map((s) => atob(s));
 
     // Mark as loaded the CSS that WAS inlined into the HTML.
-    inputs.loadedCssUrls.forEach((s) => markScriptLoaded("css", s));
-    inputs.loadedJsUrls.forEach((s) => markScriptLoaded("js", s));
+    loadedCssUrls.forEach((s) => markScriptLoaded("css", s));
+    loadedJsUrls.forEach((s) => markScriptLoaded("js", s));
 
     // Load CSS that was not inlined into the HTML
     // NOTE: We don't need to wait for CSS to load

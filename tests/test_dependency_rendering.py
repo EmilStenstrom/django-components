@@ -186,11 +186,13 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<script"), 3)
 
+        # `c3R5bGUuY3Nz` is base64 encoded `style.css`
+        # `c2NyaXB0Lmpz` is base64 encoded `style.js`
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["style.css"],
-                "loadedJsUrls": ["script.js"],
+                {"loadedCssUrls": ["c3R5bGUuY3Nz"],
+                "loadedJsUrls": ["c2NyaXB0Lmpz"],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
@@ -219,11 +221,13 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<script"), 3)
 
+        # `c3R5bGUuY3Nz` is base64 encoded `style.css`
+        # `c2NyaXB0Lmpz` is base64 encoded `style.js`
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["style.css"],
-                "loadedJsUrls": ["script.js"],
+                {"loadedCssUrls": ["c3R5bGUuY3Nz"],
+                "loadedJsUrls": ["c2NyaXB0Lmpz"],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
@@ -283,11 +287,13 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<script"), 3)
 
+        # `c3R5bGUuY3Nz` is base64 encoded `style.css`
+        # `c2NyaXB0Lmpz` is base64 encoded `style.js`
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["style.css"],
-                "loadedJsUrls": ["script.js"],
+                {"loadedCssUrls": ["c3R5bGUuY3Nz"],
+                "loadedJsUrls": ["c2NyaXB0Lmpz"],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
@@ -336,11 +342,16 @@ class DependencyRenderingTests(BaseTestCase):
             count=1,
         )
 
+        # Base64 encoding:
+        # `c3R5bGUuY3Nz` -> `style.css`
+        # `c3R5bGUyLmNzcw==` -> `style2.css`
+        # `c2NyaXB0Lmpz` -> `script.js`
+        # `c2NyaXB0Mi5qcw==` -> `script2.js`
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["style.css", "style2.css"],
-                "loadedJsUrls": ["script.js", "script2.js"],
+                {"loadedCssUrls": ["c3R5bGUuY3Nz", "c3R5bGUyLmNzcw=="],
+                "loadedJsUrls": ["c2NyaXB0Lmpz", "c2NyaXB0Mi5qcw=="],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
@@ -433,18 +444,29 @@ class DependencyRenderingTests(BaseTestCase):
             <script src="script2.js"></script>
             <script src="script.js"></script>
             <script src="xyz1.js"></script>
-            <script>eval(Components.unescapeJs(`console.log(&quot;Hello&quot;);`))</script>
-            <script>eval(Components.unescapeJs(`console.log(&quot;xyz&quot;);`))</script>
+            <script>console.log("Hello");</script>
+            <script>console.log("xyz");</script>
             """,
             rendered,
             count=1,
         )
 
+        # Base64 encoding:
+        # `c3R5bGUuY3Nz` -> `style.css`
+        # `c3R5bGUyLmNzcw==` -> `style2.css`
+        # `eHl6MS5jc3M=` -> `xyz1.css`
+        # `L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==` -> `/components/cache/OtherComponent_6329ae.css`
+        # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=` -> `/components/cache/SimpleComponentNested_f02d32.css`
+        # `L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz` -> `/components/cache/OtherComponent_6329ae.js`
+        # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==` -> `/components/cache/SimpleComponentNested_f02d32.js`
+        # `c2NyaXB0Lmpz` -> `script.js`
+        # `c2NyaXB0Mi5qcw==` -> `script2.js`
+        # `eHl6MS5qcw==` -> `xyz1.js`
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["/components/cache/OtherComponent_6329ae.css", "/components/cache/SimpleComponentNested_f02d32.css", "style.css", "style2.css", "xyz1.css"],
-                "loadedJsUrls": ["/components/cache/OtherComponent_6329ae.js", "/components/cache/SimpleComponentNested_f02d32.js", "script.js", "script2.js", "xyz1.js"],
+                {"loadedCssUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==", "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=", "c3R5bGUuY3Nz", "c3R5bGUyLmNzcw==", "eHl6MS5jc3M="],
+                "loadedJsUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz", "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==", "c2NyaXB0Lmpz", "c2NyaXB0Mi5qcw==", "eHl6MS5qcw=="],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
