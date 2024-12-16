@@ -215,7 +215,7 @@ smmap==5.0.1
     # via gitdb
 soupsieve==2.6
     # via beautifulsoup4
-sqlparse==0.5.2
+sqlparse==0.5.3
     # via django
 tinycss2==1.4.0
     # via
