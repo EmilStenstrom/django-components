@@ -1,5 +1,27 @@
 # Release notes
 
+## v0.120
+
+#### Fix
+
+- Fix the use of translation strings `_("bla")` as inputs to components [#849](https://github.com/EmilStenstrom/django-components/pull/849).
+
+## v0.119
+
+⚠️ Attention ⚠️ - This release introduced a bug [#849](https://github.com/EmilStenstrom/django-components/pull/849). Please update to v0.120.
+
+#### Fix
+
+- Fix compatibility with custom subclasses of Django's `Template` that need to access
+  `origin` or other initialization arguments. (https://github.com/EmilStenstrom/django-components/pull/828)
+
+#### Refactor
+
+- Compatibility with `django-debug-toolbar-template-profiler`:
+  - Monkeypatching of Django's `Template` now happens at `AppConfig.ready()` (https://github.com/EmilStenstrom/django-components/pull/825)
+
+- Internal parsing of template tags tag was updated. No API change. (https://github.com/EmilStenstrom/django-components/pull/827)
+
 ## v0.118
 
 #### Feat
