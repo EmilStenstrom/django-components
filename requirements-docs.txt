@@ -39,7 +39,7 @@ cairocffi==1.7.1
     # via cairosvg
 cairosvg==2.7.1
     # via mkdocs-material
-certifi==2024.8.30
+certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via cairocffi
