@@ -1,6 +1,6 @@
 ---
 title: HTML attributes
-weight: 9
+weight: 7
 ---
 
 _New in version 0.74_:

@@ -1,6 +1,6 @@
 ---
 title: Accessing component inputs
-weight: 5
+weight: 3
 ---
 
 When you call `Component.render` or `Component.render_to_response`, the inputs to these methods can be accessed from within the instance under `self.input`.

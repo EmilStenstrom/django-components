@@ -1,6 +1,6 @@
 ---
 title: Components as views
-weight: 12
+weight: 10
 ---
 
 _New in version 0.34_
