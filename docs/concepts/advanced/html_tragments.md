@@ -67,7 +67,7 @@ MyTable.render(
 ### Fragment mode
 
 Fragment mode assumes that the main HTML has already been rendered and loaded on the page.
-The component renders HTML that will be inserted into the page as a fragments, at a LATER time:
+The component renders HTML that will be inserted into the page as a fragment, at a LATER time:
 
 - JS and CSS is not directly embedded to avoid duplicately executing the same JS scripts.
   So template tags like [`{% component_js_dependencies %}`](../../reference/template_tags.md#component_js_dependencies)
