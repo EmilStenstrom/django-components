@@ -209,7 +209,7 @@ export const createComponentsManager = () => {
     const initFn = components[name];
     if (!initFn) throw Error(`[Components] '${name}': No component registered for that name`);
 
-    const elems = Array.from(document.querySelectorAll<HTMLElement>(`[data-comp-id-${compId}]`));
+    const elems = Array.from(document.querySelectorAll<HTMLElement>(`[data-djc-id="${compId}"]`));
     if (!elems.length) throw Error(`[Components] '${name}': No elements with component ID '${compId}' found`);
 
     const dataKey = `${name}:${inputHash}`;

@@ -240,7 +240,7 @@ class HtmlAttrsTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div class="added_class another-class from_agg_key" data-id="123" type="submit">
+            <div class="added_class another-class from_agg_key" data-djc-id-a1bc3e="" data-id="123" type="submit">
                 content
             </div>
             """,  # noqa: E501

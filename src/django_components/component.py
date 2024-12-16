@@ -45,7 +45,14 @@ from django_components.context import (
     get_injected_context_var,
     make_isolated_context_copy,
 )
-from django_components.dependencies import RenderType, cache_inlined_css, cache_inlined_js, postprocess_component_html
+from django_components.dependencies import (
+    RenderType,
+    cache_component_css,
+    cache_component_css_vars,
+    cache_component_js,
+    cache_component_js_vars,
+    postprocess_component_html,
+)
 from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
 from django_components.node import BaseNode
 from django_components.slots import (
@@ -712,9 +719,12 @@ class Component(
         context_data = self.get_context_data(*args, **kwargs)
         self._validate_outputs(data=context_data)
 
-        # Process JS and CSS files
-        cache_inlined_js(self.__class__, self.js or "")
-        cache_inlined_css(self.__class__, self.css or "")
+        # Process Component's JS and CSS
+        cache_component_js(self.__class__)
+        js_input_hash = cache_component_js_vars(self.__class__, {})
+
+        cache_component_css(self.__class__)
+        css_input_hash = cache_component_css_vars(self.__class__, {})
 
         with _prepare_template(self, context, context_data) as template:
             # For users, we expose boolean variables that they may check
@@ -761,6 +771,8 @@ class Component(
                     component_cls=self.__class__,
                     component_id=self.component_id,
                     html_content=html_content,
+                    css_input_hash=css_input_hash,
+                    js_input_hash=js_input_hash,
                     type=type,
                     render_dependencies=render_dependencies,
                 )
