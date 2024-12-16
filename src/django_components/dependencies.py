@@ -799,8 +799,8 @@ def cached_script_view(
 
 
 urlpatterns = [
-    # E.g. `/components/cache/table.js/`
-    path("cache/<str:comp_cls_hash>.<str:script_type>/", cached_script_view, name=CACHE_ENDPOINT_NAME),
+    # E.g. `/components/cache/table.js`
+    path("cache/<str:comp_cls_hash>.<str:script_type>", cached_script_view, name=CACHE_ENDPOINT_NAME),
 ]
 
 

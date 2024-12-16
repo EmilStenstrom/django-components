@@ -1,14 +1,11 @@
 from django_components import Component, types
 
 
-# Common logic for all FragmentBase components
-class _FragmentBase(Component):
+# HTML into which a fragment will be loaded using vanilla JS
+class FragmentBaseJs(Component):
     def get(self, request):
         return self.render_to_response()
 
-
-# HTML into which a fragment will be loaded using vanilla JS
-class FragmentBaseJs(_FragmentBase):
     template: types.django_html = """
         {% load component_tags %}
         <!DOCTYPE html>
@@ -41,7 +38,10 @@ class FragmentBaseJs(_FragmentBase):
 
 
 # HTML into which a fragment will be loaded using AlpineJs
-class FragmentBaseAlpine(_FragmentBase):
+class FragmentBaseAlpine(Component):
+    def get(self, request):
+        return self.render_to_response()
+
     template: types.django_html = """
         {% load component_tags %}
         <!DOCTYPE html>
@@ -75,7 +75,10 @@ class FragmentBaseAlpine(_FragmentBase):
 
 
 # HTML into which a fragment will be loaded using HTMX
-class FragmentBaseHtmx(_FragmentBase):
+class FragmentBaseHtmx(Component):
+    def get(self, request):
+        return self.render_to_response()
+
     template: types.django_html = """
         {% load component_tags %}
         <!DOCTYPE html>
@@ -97,14 +100,11 @@ class FragmentBaseHtmx(_FragmentBase):
     """
 
 
-# Common logic for all Frag components
-class _Frag(Component):
+# Fragment where the JS and CSS are defined on the Component
+class FragJs(Component):
     def get(self, request):
         return self.render_to_response(type="fragment")
 
-
-# Fragment where the JS and CSS are defined on the Component
-class FragJs(_Frag):
     template: types.django_html = """
         <div class="frag">
             123
@@ -124,7 +124,10 @@ class FragJs(_Frag):
 
 
 # Fragment that defines an AlpineJS component
-class FragAlpine(_Frag):
+class FragAlpine(Component):
+    def get(self, request):
+        return self.render_to_response(type="fragment")
+
     # NOTE: We wrap the actual fragment in a template tag with x-if="false" to prevent it
     #       from being rendered until we have registered the component with AlpineJS.
     template: types.django_html = """

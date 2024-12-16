@@ -443,8 +443,8 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["/components/cache/OtherComponent_6329ae.css/", "/components/cache/SimpleComponentNested_f02d32.css/", "style.css", "style2.css", "xyz1.css"],
-                "loadedJsUrls": ["/components/cache/OtherComponent_6329ae.js/", "/components/cache/SimpleComponentNested_f02d32.js/", "script.js", "script2.js", "xyz1.js"],
+                {"loadedCssUrls": ["/components/cache/OtherComponent_6329ae.css", "/components/cache/SimpleComponentNested_f02d32.css", "style.css", "style2.css", "xyz1.css"],
+                "loadedJsUrls": ["/components/cache/OtherComponent_6329ae.js", "/components/cache/SimpleComponentNested_f02d32.js", "script.js", "script2.js", "xyz1.js"],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
