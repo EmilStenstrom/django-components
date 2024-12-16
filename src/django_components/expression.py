@@ -169,10 +169,6 @@ def resolve_string(
     return parser.compile_filter(s).resolve(context)
 
 
-def is_kwarg(key: str) -> bool:
-    return "=" in key
-
-
 def is_aggregate_key(key: str) -> bool:
     # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
     # This syntax is used by Vue and AlpineJS.
@@ -194,7 +190,7 @@ DYNAMIC_EXPR_RE = re.compile(
 
 def is_dynamic_expression(value: Any) -> bool:
     # NOTE: Currently dynamic expression need at least 6 characters
-    # for the opening and closing tags, and quotes
+    # for the opening and closing tags, and quotes, e.g. `"`, `{%`, `%}` in `" some text {% ... %}"`
     MIN_EXPR_LEN = 6
 
     if not isinstance(value, str) or not value or len(value) < MIN_EXPR_LEN:
@@ -212,24 +208,6 @@ def is_spread_operator(value: Any) -> bool:
         return False
 
     return value.startswith("...")
-
-
-# A string that starts with `...1=`, `...29=`, etc.
-# We convert the spread syntax to this, so Django parses
-# it as a kwarg, so it remains in the original position.
-#
-# So from `...dict`, we make `...1=dict`
-#
-# That way it's trivial to merge the kwargs after the spread
-# operator is replaced with actual values.
-INTERNAL_SPREAD_OPERATOR_RE = re.compile(r"^\.\.\.\d+=")
-
-
-def is_internal_spread_operator(value: Any) -> bool:
-    if not isinstance(value, str) or not value:
-        return False
-
-    return bool(INTERNAL_SPREAD_OPERATOR_RE.match(value))
 
 
 def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:

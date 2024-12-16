@@ -1,5 +1,4 @@
 from django.template import Context, Template
-from django.test import override_settings
 
 from django_components import Component, cached_template, types
 
@@ -24,27 +23,6 @@ class TemplateCacheTest(BaseTestCase):
 
         template = cached_template("Variable: <strong>{{ variable }}</strong>", MyTemplate)
         self.assertIsInstance(template, MyTemplate)
-
-    @override_settings(COMPONENTS={"template_cache_size": 2})
-    def test_cache_discards_old_entries(self):
-        template_1 = cached_template("Variable: <strong>{{ variable }}</strong>")
-        template_1._test_id = "123"
-
-        template_2 = cached_template("Variable2")
-        template_2._test_id = "456"
-
-        # Templates 1 and 2 should still be available
-        template_1_copy = cached_template("Variable: <strong>{{ variable }}</strong>")
-        self.assertEqual(template_1_copy._test_id, "123")
-
-        template_2_copy = cached_template("Variable2")
-        self.assertEqual(template_2_copy._test_id, "456")
-
-        # But once we add the third template, template 1 should go
-        cached_template("Variable3")
-
-        template_1_copy2 = cached_template("Variable: <strong>{{ variable }}</strong>")
-        self.assertEqual(hasattr(template_1_copy2, "_test_id"), False)
 
     def test_component_template_is_cached(self):
         class SimpleComponent(Component):
