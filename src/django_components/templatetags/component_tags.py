@@ -860,7 +860,7 @@ def _parse_tag_preprocess(
 
     # First token is tag name, e.g. `slot` in `{% slot <name> ... %}`
     tag_name_attr = attrs.pop(0)
-    tag_name = tag_name_attr.value
+    tag_name = tag_name_attr.formatted_value()
 
     # Sanity check
     if tag_name != tag_spec.tag:
@@ -872,7 +872,7 @@ def _parse_tag_preprocess(
     # Otherwise, depending on the tag spec, the tag may be:
     # 2. Block tag - With corresponding end tag, e.g. `{% endslot %}`
     # 3. Inlined tag - Without the end tag.
-    last_token = attrs[-1].value if len(attrs) else None
+    last_token = attrs[-1].formatted_value() if len(attrs) else None
     if last_token == "/":
         attrs.pop()
         is_inline = True
@@ -1168,7 +1168,8 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
         return
 
     last_attr = attrs[-1]
-    last_token = last_attr.value
+    last_attr_part = last_attr.parts[-1]
+    last_token = last_attr_part.value
 
     # User probably forgot to wrap the nested tag in quotes, or this is the end of the input.
     # `{% component ... key={% nested %} %}`
@@ -1204,7 +1205,7 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
 
     # There is 3 double quotes, but if the contents get split at the first `%}`
     # then there will be a single unclosed double quote in the last bit.
-    has_unclosed_quote = not last_attr.quoted and last_token and last_token[0] in ('"', "'")
+    has_unclosed_quote = not last_attr_part.quoted and last_token and last_token[0] in ('"', "'")
 
     needs_fixing = has_unclosed_tag and has_unclosed_quote
 

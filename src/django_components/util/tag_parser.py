@@ -1,37 +1,71 @@
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
 
-TAG_WHITESPACE = (" ", "\t", "\n", "\r", "\f")
+TAG_WHITESPACES = (" ", "\t", "\n", "\r", "\f")
+TAG_QUOTES = ("'", '"', '_("', "_('")
+TAG_FILTER_JOINERS = ("|", ":")
+TAG_SPREAD = "..."
 
 
 @dataclass
-class TagAttr:
-    key: Optional[str]
-    value: str
-    start_index: int
+class TagAttrPart:
     """
-    Start index of the attribute (include both key and value),
-    relative to the start of the owner Tag.
+    Django tag attributes may consist of multiple parts, being separated by filter pipes (`|`)
+    or filter arguments (`:`). This class represents a single part of the attribute value.
+
+    E.g. in the following tag:
+    ```django
+    {% component "my_comp" key="my val's" key2=val2|filter1:"one" %}
+    ```
+
+    The `key2` attribute has three parts: `val2`, `filter1` and `"one"`.
+    """
+
+    value: str
+    """The actual value of the part, e.g. `val2` in `key2=val2` or `my string` in `_("my string")`."""
+    prefix: Optional[str]
+    """
+    If this part is filter or filter arguent, `prefix` is the string that connects it to the previous part.
+    E.g. the `|` and `:` in `key2=val2|filter1:"one"`.
     """
     quoted: Optional[str]
     """Whether the value is quoted, and the character that's used for the quotation"""
-    spread: bool
-    """Whether the value is a spread syntax, e.g. `...my_var`"""
     translation: bool
     """Whether the value is a translation string, e.g. `_("my string")`"""
 
     def __post_init__(self) -> None:
         if self.translation and not self.quoted:
             raise ValueError("Translation value must be quoted")
-        if self.translation and self.spread:
-            raise ValueError("Cannot combine translation and spread syntax")
 
-    def formatted_value(self) -> str:
+    def formatted(self) -> str:
+        """
+        Format the part as a string that can be used in a Django template tag.
+        E.g. `val2`, `|filter1:"one"`, `_("my string")`.
+        """
         value = f"{self.quoted}{self.value}{self.quoted}" if self.quoted else self.value
         if self.translation:
             value = f"_({value})"
-        elif self.spread:
-            value = f"...{value}"
+        if self.prefix:
+            value = f"{self.prefix}{value}"
+        return value
+
+
+@dataclass
+class TagAttr:
+    key: Optional[str]
+    parts: List[TagAttrPart]
+    start_index: int
+    """
+    Start index of the attribute (include both key and value),
+    relative to the start of the owner Tag.
+    """
+    spread: bool
+    """Whether the value is a spread syntax, e.g. `...my_var`"""
+
+    def formatted_value(self) -> str:
+        value = "".join(part.formatted() for part in self.parts)
+        if self.spread:
+            value = f"{TAG_SPREAD}{value}"
         return value
 
     def formatted(self) -> str:
@@ -138,90 +172,109 @@ def parse_tag_attrs(text: str) -> Tuple[str, List[TagAttr]]:
 
         return result
 
-    # Parse
+    def parse_attr_parts() -> List[TagAttrPart]:
+        parts: List[TagAttrPart] = []
+
+        while index < len(text) and not is_next_token("=", *TAG_WHITESPACES):
+            is_translation = False
+            value: str = ""
+            quoted: Optional[str] = None
+            prefix: Optional[str] = None
+
+            if is_next_token(*TAG_FILTER_JOINERS):
+                prefix = taken_n(1)  # | or :
+
+            # E.g. `height="20"` or `height=_("my_text")` or `height="my_text"|fil1:"one"`
+            if is_next_token(*TAG_QUOTES):
+                # NOTE: Strings may be wrapped in `_()` to allow for translation.
+                # See https://docs.djangoproject.com/en/5.1/topics/i18n/translation/#string-literals-passed-to-tags-and-filters  # noqa: E501
+                if is_next_token("_("):
+                    taken_n(2)  # _(
+                    is_translation = True
+
+                # NOTE: We assume no space between the translation syntax and the quote.
+                quote_char = taken_n(1)  # " or '
+
+                # NOTE: Handle escaped quotes like \" or \', and continue until we reach the closing quote.
+                value = take_until([quote_char], ignore=["\\" + quote_char])
+                # Handle the case when there is a trailing quote, e.g. when a text value is not closed.
+                # `{% component 'my_comp' text="organis %}`
+
+                if is_next_token(quote_char):
+                    add_token(quote_char)
+                    if is_translation:
+                        taken_n(1)  # )
+                    quoted = quote_char
+                else:
+                    quoted = None
+                    value = quote_char + value
+            # E.g. `height=20` or `height=my_var` or or `height=my_var|fil1:"one"`
+            else:
+                value = take_until(["=", *TAG_WHITESPACES, *TAG_FILTER_JOINERS])
+                quoted = None
+
+            parts.append(
+                TagAttrPart(
+                    value=value,
+                    prefix=prefix,
+                    quoted=quoted,
+                    translation=is_translation,
+                )
+            )
+
+        return parts
+
+    # Parse attributes
     attrs: List[TagAttr] = []
     while index < len(text):
         # Skip whitespace
-        take_while(TAG_WHITESPACE)
+        take_while(TAG_WHITESPACES)
 
         start_index = len(normalized)
-        is_translation = False
+        key = None
 
         # If token starts with a quote, we assume it's a value without key part.
         # e.g. `component 'my_comp'`
         # Otherwise, parse the key.
-        if is_next_token("'", '"', '_("', "_('", "..."):
+        if is_next_token(*TAG_QUOTES, TAG_SPREAD):
             key = None
         else:
-            key = take_until(["=", *TAG_WHITESPACE])
+            parts = parse_attr_parts()
 
             # We've reached the end of the text
-            if not key:
+            if not parts:
                 break
 
             # Has value
             if is_next_token("="):
                 add_token("=")
+                key = "".join(part.formatted() for part in parts)
             else:
                 # Actually was a value without key part
+                key = None
                 attrs.append(
                     TagAttr(
-                        key=None,
-                        value=key,
+                        key=key,
+                        parts=parts,
                         start_index=start_index,
-                        quoted=None,
-                        translation=False,
                         spread=False,
                     )
                 )
                 continue
 
-        # Move the spread synxtax out of the way, so that we properly handle what's next.
-        is_spread = is_next_token("...")
+        # Move the spread syntax out of the way, so that we properly handle what's next.
+        is_spread = is_next_token(TAG_SPREAD)
         if is_spread:
-            taken_n(3)  # ...
+            taken_n(len(TAG_SPREAD))  # ...
 
-        # Parse the value
-        #
-        # E.g. `height="20"`
-        # NOTE: We don't need to parse the attributes fully. We just need to account
-        # for the quotes.
-        if is_next_token("'", '"', '_("', "_('"):
-            # NOTE: Strings may be wrapped in `_()` to allow for translation.
-            # See https://docs.djangoproject.com/en/5.1/topics/i18n/translation/#string-literals-passed-to-tags-and-filters  # noqa: E501
-            if is_next_token("_("):
-                taken_n(2)  # _(
-                is_translation = True
-
-            # NOTE: We assume no space between the translation syntax and the quote.
-            quote_char = taken_n(1)  # " or '
-
-            # NOTE: Handle escaped quotes like \" or \', and continue until we reach the closing quote.
-            value = take_until([quote_char], ignore=["\\" + quote_char])
-            # Handle the case when there is a trailing quote, e.g. when a text value is not closed.
-            # `{% component 'my_comp' text="organis %}`
-
-            if is_next_token(quote_char):
-                add_token(quote_char)
-                if is_translation:
-                    taken_n(1)  # )
-                quoted = quote_char
-            else:
-                quoted = None
-                value = quote_char + value
-        # E.g. `height=20`
-        else:
-            value = take_until(TAG_WHITESPACE)
-            quoted = None
+        parts = parse_attr_parts()
 
         attrs.append(
             TagAttr(
                 key=key,
-                value=value,
+                parts=parts,
                 start_index=start_index,
-                quoted=quoted,
                 spread=is_spread,
-                translation=is_translation,
             )
         )
 
