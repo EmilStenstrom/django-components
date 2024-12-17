@@ -16,25 +16,25 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 start_index=20,
                 spread=False,
                 parts=[TagAttrPart(value="val", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key2",
                 start_index=28,
                 spread=False,
                 parts=[TagAttrPart(value="val2 two", prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -57,31 +57,31 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 start_index=20,
                 spread=False,
                 parts=[TagAttrPart(value="val", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key2",
                 start_index=28,
                 spread=False,
                 parts=[TagAttrPart(value='val2 "two"', prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="text",
                 start_index=46,
                 spread=False,
                 parts=[TagAttrPart(value="organisation's", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -105,37 +105,37 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 start_index=20,
                 spread=False,
                 parts=[TagAttrPart(value="val", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key2",
                 start_index=28,
                 spread=False,
                 parts=[TagAttrPart(value='val2 "two"', prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="text",
                 start_index=46,
                 spread=False,
                 parts=[TagAttrPart(value="organisation's", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=68,
                 spread=False,
                 parts=[TagAttrPart(value="'abc", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -160,37 +160,37 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 start_index=20,
                 spread=False,
                 parts=[TagAttrPart(value="val", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key2",
                 start_index=28,
                 spread=False,
                 parts=[TagAttrPart(value="val2 'two'", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="text",
                 start_index=46,
                 spread=False,
                 parts=[TagAttrPart(value='organisation"s', prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=68,
                 spread=False,
                 parts=[TagAttrPart(value='"abc', prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -217,37 +217,37 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 start_index=20,
                 spread=False,
                 parts=[TagAttrPart(value="val", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key2",
                 start_index=28,
                 spread=False,
                 parts=[TagAttrPart(value='val2 "two"', prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="text",
                 start_index=46,
                 spread=False,
                 parts=[TagAttrPart(value="organisation's", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="value",
                 start_index=68,
                 spread=False,
                 parts=[TagAttrPart(value="'abc", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -274,37 +274,37 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 start_index=20,
                 spread=False,
                 parts=[TagAttrPart(value="val", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key2",
                 start_index=28,
                 spread=False,
                 parts=[TagAttrPart(value="val2 'two'", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="text",
                 start_index=46,
                 spread=False,
                 parts=[TagAttrPart(value='organisation"s', prefix=None, quoted="'", translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="value",
                 start_index=68,
                 spread=False,
                 parts=[TagAttrPart(value='"abc', prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -329,25 +329,25 @@ class TagParserTests(BaseTestCase):
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
                 start_index=0,
                 spread=False,
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted='"', translation=False)],
                 start_index=10,
                 spread=False,
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 parts=[TagAttrPart(value="one", prefix=None, quoted='"', translation=True)],
                 start_index=20,
                 spread=False,
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key="key",
                 parts=[TagAttrPart(value="two", prefix=None, quoted='"', translation=True)],
                 start_index=29,
                 spread=False,
-            ),  # noqa: E501
+            ),
         ]
 
         self.assertEqual(attrs, expected_attrs)
@@ -372,13 +372,13 @@ class TagParserTests(BaseTestCase):
                 start_index=0,
                 spread=False,
                 parts=[TagAttrPart(value="component", prefix=None, quoted=None, translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=10,
                 spread=False,
                 parts=[TagAttrPart(value="my_comp", prefix=None, quoted='"', translation=False)],
-            ),  # noqa: E501
+            ),
             TagAttr(
                 key=None,
                 start_index=20,
