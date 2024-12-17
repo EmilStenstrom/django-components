@@ -1,6 +1,14 @@
 # Release notes
 
+## v0.121
+
+#### Fix
+
+- Fix the use of Django template filters (`|lower:"etc"`) with component inputs [#855](https://github.com/EmilStenstrom/django-components/pull/855).
+
 ## v0.120
+
+⚠️ Attention ⚠️ - Please update to v0.121 to fix bugs introduced in v0.119.
 
 #### Fix
 
@@ -8,7 +16,7 @@
 
 ## v0.119
 
-⚠️ Attention ⚠️ - This release introduced a bug [#849](https://github.com/EmilStenstrom/django-components/pull/849). Please update to v0.120.
+⚠️ Attention ⚠️ - This release introduced bugs [#849](https://github.com/EmilStenstrom/django-components/pull/849), [#855](https://github.com/EmilStenstrom/django-components/pull/855). Please update to v0.121.
 
 #### Fix
 
