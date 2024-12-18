@@ -101,7 +101,7 @@ class ComponentOldTemplateApiTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -175,7 +175,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -201,7 +201,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -223,7 +223,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -244,13 +244,13 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             SvgComponent.render(kwargs={"name": "svg1"}),
             """
-            <svg>Dynamic1</svg>
+            <svg data-djc-id-a1bc3e>Dynamic1</svg>
             """,
         )
         self.assertHTMLEqual(
             SvgComponent.render(kwargs={"name": "svg2"}),
             """
-            <svg>Dynamic2</svg>
+            <svg data-djc-id-a1bc3f>Dynamic2</svg>
             """,
         )
 
@@ -270,7 +270,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -314,7 +314,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong> MY_SLOT
+            Variable: <strong data-djc-id-a1bc3e>test</strong> MY_SLOT
             """,
         )
 
@@ -407,7 +407,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             Slot 1: MY_SLOT
             Slot 2: abc
             """,
@@ -536,7 +536,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             Slot 1: 123.5
             Slot 2: abc
             """,
@@ -568,7 +568,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             Slot 1: MY_SLOT
             Slot 2: abc
             """,
@@ -655,7 +655,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Name: <strong>TestComponent</strong>
+            Name: <strong data-djc-id-a1bc3e>TestComponent</strong>
             """,
         )
 
@@ -960,7 +960,7 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <custom-template>
+            <custom-template data-djc-id-a1bc3e>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
@@ -982,7 +982,7 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <custom-template>
+            <custom-template data-djc-id-a1bc3e>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
@@ -1005,7 +1005,7 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <custom-template>
+            <custom-template data-djc-id-a1bc3e>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
@@ -1057,7 +1057,7 @@ class ComponentRenderTest(BaseTestCase):
         # """
         self.assertInHTML(
             """
-            <kbd>
+            <kbd data-djc-id-a1bc3e>
                 Rendered via GET request
             </kbd>
             """,
@@ -1150,7 +1150,7 @@ class ComponentRenderTest(BaseTestCase):
             rendered,
             """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc3e lang="en">
             <body>
                 <main role="main">
                 <div class='container main-container'>
@@ -1175,7 +1175,7 @@ class ComponentRenderTest(BaseTestCase):
         rendered = TestComponent.render()
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id="123">123</strong>',
+            'Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>',
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -1191,7 +1191,7 @@ class ComponentRenderTest(BaseTestCase):
         rendered_resp = TestComponent.render_to_response()
         self.assertHTMLEqual(
             rendered_resp.content.decode("utf-8"),
-            'Variable: <strong data-djc-id="123">123</strong>',
+            'Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>',
         )
 
 

@@ -456,8 +456,8 @@ class DependencyRenderingTests(BaseTestCase):
         # `c3R5bGUyLmNzcw==` -> `style2.css`
         # `eHl6MS5jc3M=` -> `xyz1.css`
         # `L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==` -> `/components/cache/OtherComponent_6329ae.css`
-        # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=` -> `/components/cache/SimpleComponentNested_f02d32.css`
         # `L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz` -> `/components/cache/OtherComponent_6329ae.js`
+        # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=` -> `/components/cache/SimpleComponentNested_f02d32.css`
         # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==` -> `/components/cache/SimpleComponentNested_f02d32.js`
         # `c2NyaXB0Lmpz` -> `script.js`
         # `c2NyaXB0Mi5qcw==` -> `script2.js`
@@ -465,8 +465,16 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==", "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=", "c3R5bGUuY3Nz", "c3R5bGUyLmNzcw==", "eHl6MS5jc3M="],
-                "loadedJsUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz", "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==", "c2NyaXB0Lmpz", "c2NyaXB0Mi5qcw==", "eHl6MS5qcw=="],
+                {"loadedCssUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==",
+                    "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=",
+                    "c3R5bGUuY3Nz",
+                    "c3R5bGUyLmNzcw==",
+                    "eHl6MS5jc3M="],
+                "loadedJsUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz",
+                    "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==",
+                    "c2NyaXB0Lmpz",
+                    "c2NyaXB0Mi5qcw==",
+                    "eHl6MS5qcw=="],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>

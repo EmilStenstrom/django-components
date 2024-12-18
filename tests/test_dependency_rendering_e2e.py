@@ -3,6 +3,8 @@ Here we check that all parts of managing JS and CSS dependencies work together
 in an actual browser.
 """
 
+import re
+
 from playwright.async_api import Page
 
 from django_components import types
@@ -44,7 +46,10 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         # Check that the actual HTML content was loaded
-        self.assertIn('Variable: <strong class="inner">foo</strong>', data["bodyHTML"])
+        self.assertRegex(
+            data["bodyHTML"],
+            re.compile(r'Variable: <strong class="inner" data-djc-id-\w{6}="">foo</strong>'),
+        )
         self.assertInHTML('<div class="my-style"> 123 </div>', data["bodyHTML"], count=1)
         self.assertInHTML('<div class="my-style2"> xyz </div>', data["bodyHTML"], count=1)
 
@@ -106,17 +111,34 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         # Check that the actual HTML content was loaded
-        self.assertInHTML(
-            """
-            <div class="outer">
-                Variable: <strong class="inner">variable</strong>
-                XYZ: <strong class="other">variable_inner</strong>
-            </div>
-            <div class="my-style">123</div>
-            <div class="my-style2">xyz</div>
-            """,
+        self.assertRegex(
             data["bodyHTML"],
-            count=1,
+            # <div class="outer" data-djc-id-10uLMD>
+            #     Variable:
+            #     <strong class="inner" data-djc-id-DZEnUC>
+            #         variable
+            #     </strong>
+            #     XYZ:
+            #     <strong class="other" data-djc-id-IYirHK>
+            #         variable_inner
+            #     </strong>
+            # </div>
+            # <div class="my-style">123</div>
+            # <div class="my-style2">xyz</div>
+            re.compile(
+                r'<div class="outer" data-djc-id-\w{6}="">\s*'
+                r'Variable:\s*'
+                r'<strong class="inner" data-djc-id-\w{6}="">\s*'
+                r'variable\s*'
+                r'<\/strong>\s*'
+                r'XYZ:\s*'
+                r'<strong class="other" data-djc-id-\w{6}="">\s*'
+                r'variable_inner\s*'
+                r'<\/strong>\s*'
+                r'<\/div>\s*'
+                r'<div class="my-style">123<\/div>\s*'
+                r'<div class="my-style2">xyz<\/div>\s*'
+            ),
         )
 
         # Check components' inlined JS got loaded
@@ -183,17 +205,34 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         # Check that the actual HTML content was loaded
-        self.assertInHTML(
-            """
-            <div class="outer">
-                Variable: <strong class="inner">variable</strong>
-                XYZ: <strong class="other">variable_inner</strong>
-            </div>
-            <div class="my-style">123</div>
-            <div class="my-style2">xyz</div>
-            """,
+        self.assertRegex(
             data["bodyHTML"],
-            count=1,
+            # <div class="outer" data-djc-id-10uLMD>
+            #     Variable:
+            #     <strong class="inner" data-djc-id-DZEnUC>
+            #         variable
+            #     </strong>
+            #     XYZ:
+            #     <strong data-djc-id-IYirHK class="other">
+            #         variable_inner
+            #     </strong>
+            # </div>
+            # <div class="my-style">123</div>
+            # <div class="my-style2">xyz</div>
+            re.compile(
+                r'<div class="outer" data-djc-id-\w{6}="">\s*'
+                r'Variable:\s*'
+                r'<strong class="inner" data-djc-id-\w{6}="">\s*'
+                r'variable\s*'
+                r'<\/strong>\s*'
+                r'XYZ:\s*'
+                r'<strong class="other" data-djc-id-\w{6}="">\s*'
+                r'variable_inner\s*'
+                r'<\/strong>\s*'
+                r'<\/div>\s*'
+                r'<div class="my-style">123<\/div>\s*'
+                r'<div class="my-style2">xyz<\/div>\s*'
+            ),
         )
 
         # Check components' inlined JS did NOT get loaded
@@ -342,7 +381,15 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         self.assertEqual(data["targetHtml"], None)
-        self.assertHTMLEqual('<div class="frag"> 123 <span id="frag-text">xxx</span></div>', data["fragHtml"])
+        self.assertRegex(
+            data["fragHtml"],
+            re.compile(
+                r'<div class="frag" data-djc-id-\w{6}="">\s*'
+                r'123\s*'
+                r'<span id="frag-text">xxx</span>\s*'
+                r'</div>'
+            ),
+        )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
 
         await page.close()
@@ -390,7 +437,15 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         self.assertEqual(data["targetHtml"], None)
-        self.assertHTMLEqual('<div class="frag"> 123 <span id="frag-text">xxx</span></div>', data["fragHtml"])
+        self.assertRegex(
+            data["fragHtml"],
+            re.compile(
+                r'<div class="frag" data-djc-id-\w{6}="">\s*'
+                r'123\s*'
+                r'<span id="frag-text">xxx</span>\s*'
+                r'</div>'
+            ),
+        )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
 
         await page.close()
@@ -441,11 +496,15 @@ class E2eDependencyRenderingTests(BaseTestCase):
 
         # NOTE: Unlike the vanilla JS tests, for the Alpine test we don't remove the targetHtml,
         # but only change its contents.
-        self.assertInHTML(
-            '<div class="frag"> 123 <span id="frag-text">xxx</span></div>',
+        self.assertRegex(
             data["targetHtml"],
+            re.compile(
+                r'<div class="frag" data-djc-id-\w{6}="">\s*'
+                r'123\s*'
+                r'<span id="frag-text">xxx</span>\s*'
+                r'</div>'
+            ),
         )
-        self.assertHTMLEqual(data["fragHtml"], '<div class="frag"> 123 <span id="frag-text">xxx</span></div>')
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
 
         await page.close()
@@ -497,9 +556,9 @@ class E2eDependencyRenderingTests(BaseTestCase):
         self.assertEqual(data["targetHtml"], None)
         # NOTE: We test only the inner HTML, because the element itself may or may not have
         # extra CSS classes added by HTMX, which results in flaky tests.
-        self.assertHTMLEqual(
+        self.assertRegex(
             data["fragInnerHtml"],
-            '123 <span id="frag-text">xxx</span>',
+            re.compile(r'123\s*<span id="frag-text">xxx</span>'),
         )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
 
