@@ -1,3 +1,10 @@
+"""
+These tests check the public API side of managing dependencies - We check
+if calling `Component.render()` or `render_dependencies()` behave as expected.
+
+For checking the OUTPUT of the dependencies, see `test_dependency_rendering.py`.
+"""
+
 from unittest.mock import Mock
 
 from django.http import HttpResponseNotModified
