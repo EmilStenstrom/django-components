@@ -114,9 +114,9 @@ def _gen_cache_key(
     input_hash: Optional[str],
 ) -> str:
     if input_hash:
-        return f'__components:{comp_cls_hash}:{script_type}:{input_hash}'
+        return f"__components:{comp_cls_hash}:{script_type}:{input_hash}"
     else:
-        return f'__components:{comp_cls_hash}:{script_type}'
+        return f"__components:{comp_cls_hash}:{script_type}"
 
 
 def _is_script_in_cache(
@@ -289,12 +289,12 @@ def _link_dependencies_with_component_html(
         # `data-djc-css="a1b2c3"` and `data-djc-id="a1b2c3"`, to allow
         # multiple values to be associated with the same element, which may happen if
         # One component renders another.
-        elem.set_attr(f'data-djc-id-{component_id}', True)
+        elem.set_attr(f"data-djc-id-{component_id}", True)
 
         # Attribute by which we bind the CSS variables to the component's CSS,
         # e.g. `data-djc-css-a1b2c3`
         if css_input_hash:
-            elem.set_attr(f'data-djc-css-{css_input_hash}', True)
+            elem.set_attr(f"data-djc-css-{css_input_hash}", True)
 
     return SoupNode.to_html_multiroot(elems)
 
@@ -401,11 +401,13 @@ COMPONENT_DEPS_COMMENT = "<!-- _RENDERED {data} -->"
 # E.g. `<!-- _RENDERED table,123,a92ef298,bd002c3 -->`
 COMPONENT_COMMENT_REGEX = re.compile(rb"<!--\s+_RENDERED\s+(?P<data>[\w\-,/]+?)\s+-->")
 # E.g. `table,123,a92ef298,bd002c3`
-SCRIPT_NAME_REGEX = re.compile(rb"^(?P<comp_cls_hash>[\w\-\./]+?),(?P<id>[\w]+?),(?P<js>[0-9a-f]*?),(?P<css>[0-9a-f]*?)$")
+SCRIPT_NAME_REGEX = re.compile(
+    rb"^(?P<comp_cls_hash>[\w\-\./]+?),(?P<id>[\w]+?),(?P<js>[0-9a-f]*?),(?P<css>[0-9a-f]*?)$"
+)
 # E.g. `data-djc-id-a1b2c3`
-MAYBE_COMP_ID = '(?: data-djc-id-\w{6})?'
+MAYBE_COMP_ID = r"(?: data-djc-id-\w{6})?"
 # E.g. `data-djc-css-99914b`
-MAYBE_COMP_CSS_ID = '(?: data-djc-css-\w{6})?'
+MAYBE_COMP_CSS_ID = r"(?: data-djc-css-\w{6})?"
 
 PLACEHOLDER_REGEX = re.compile(
     r"{css_placeholder}|{js_placeholder}".format(

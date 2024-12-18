@@ -620,7 +620,7 @@ class DependencyRenderingTests(BaseTestCase):
             Variable2: <div data-djc-id-a1bc42 data-djc-id-a1bc43>foo</div>
             Variable3: <span data-djc-id-a1bc42 data-djc-id-a1bc43>foo</span>
             <div data-djc-id-a1bc42>Another</div>
-            
+
             Variable: <strong data-djc-id-a1bc44 data-djc-id-a1bc45>foo</strong>
             Variable2: <div data-djc-id-a1bc44 data-djc-id-a1bc45>foo</div>
             Variable3: <span data-djc-id-a1bc44 data-djc-id-a1bc45>foo</span>

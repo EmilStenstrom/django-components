@@ -488,7 +488,7 @@ class DynamicExprTests(BaseTestCase):
                 '<div data-djc-id-a1bc40="">True</div>\n'
                 '</div>\n'
                 '<div data-djc-id-a1bc41>True</div>'
-             ),
+            ),
         )
 
 
