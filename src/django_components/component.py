@@ -733,11 +733,13 @@ class Component(
         self._validate_outputs(data=context_data)
 
         # Process Component's JS and CSS
+        js_data: Dict = {}  # TODO
         cache_component_js(self.__class__)
-        js_input_hash = cache_component_js_vars(self.__class__, {})
+        js_input_hash = cache_component_js_vars(self.__class__, js_data) if js_data else None
 
+        css_data: Dict = {}  # TODO
         cache_component_css(self.__class__)
-        css_input_hash = cache_component_css_vars(self.__class__, {})
+        css_input_hash = cache_component_css_vars(self.__class__, css_data) if css_data else None
 
         with _prepare_template(self, context, context_data) as template:
             # For users, we expose boolean variables that they may check
