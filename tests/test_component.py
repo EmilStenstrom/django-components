@@ -1169,13 +1169,13 @@ class ComponentRenderTest(BaseTestCase):
 
             def get_context_data(self, **attrs):
                 return {
-                    "id": self.component_id,
+                    "id": self.id,
                 }
 
-        rendered = TestComponent(component_id="123").render()
+        rendered = TestComponent.render()
         self.assertHTMLEqual(
             rendered,
-            "Variable: <strong>123</strong>",
+            'Variable: <strong data-djc-id="123">123</strong>',
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -1185,13 +1185,13 @@ class ComponentRenderTest(BaseTestCase):
 
             def get_context_data(self, **attrs):
                 return {
-                    "id": self.component_id,
+                    "id": self.id,
                 }
 
-        rendered_resp = TestComponent(component_id="123").render_to_response()
+        rendered_resp = TestComponent.render_to_response()
         self.assertHTMLEqual(
             rendered_resp.content.decode("utf-8"),
-            "Variable: <strong>123</strong>",
+            'Variable: <strong data-djc-id="123">123</strong>',
         )
 
 

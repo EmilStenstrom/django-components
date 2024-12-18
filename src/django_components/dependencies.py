@@ -321,7 +321,7 @@ def _insert_component_comment(
 
     # NOTE: It's important that we put the comment BEFORE the content, so we can
     # use the order of comments to evaluate components' instance JS code in the correct order.
-    output = mark_safe(COMPONENT_DEPS_COMMENT.format(data=data)) + content
+    output = mark_safe(COMPONENT_DEPS_COMMENT.format(data=data) + content)
     return output
 
 
@@ -389,21 +389,28 @@ def postprocess_component_html(
 TContent = TypeVar("TContent", bound=Union[bytes, str])
 
 
-CSS_DEPENDENCY_PLACEHOLDER = '<link name="CSS_PLACEHOLDER">'
-JS_DEPENDENCY_PLACEHOLDER = '<script name="JS_PLACEHOLDER"></script>'
+CSS_PLACEHOLDER_NAME = "CSS_PLACEHOLDER"
+CSS_PLACEHOLDER_NAME_B = CSS_PLACEHOLDER_NAME.encode()
+JS_PLACEHOLDER_NAME = "JS_PLACEHOLDER"
+JS_PLACEHOLDER_NAME_B = JS_PLACEHOLDER_NAME.encode()
 
-CSS_PLACEHOLDER_BYTES = bytes(CSS_DEPENDENCY_PLACEHOLDER, encoding="utf-8")
-JS_PLACEHOLDER_BYTES = bytes(JS_DEPENDENCY_PLACEHOLDER, encoding="utf-8")
-
+CSS_DEPENDENCY_PLACEHOLDER = f'<link name="{CSS_PLACEHOLDER_NAME}"/>'
+JS_DEPENDENCY_PLACEHOLDER = f'<script name="{JS_PLACEHOLDER_NAME}"></script>'
 COMPONENT_DEPS_COMMENT = "<!-- _RENDERED {data} -->"
+
 # E.g. `<!-- _RENDERED table,123,a92ef298,bd002c3 -->`
-COMPONENT_COMMENT_REGEX = re.compile(rb"<!-- _RENDERED (?P<data>[\w\-,/]+?) -->")
+COMPONENT_COMMENT_REGEX = re.compile(rb"<!--\s+_RENDERED\s+(?P<data>[\w\-,/]+?)\s+-->")
 # E.g. `table,123,a92ef298,bd002c3`
 SCRIPT_NAME_REGEX = re.compile(rb"^(?P<comp_cls_hash>[\w\-\./]+?),(?P<id>[\w]+?),(?P<js>[0-9a-f]*?),(?P<css>[0-9a-f]*?)$")
+# E.g. `data-djc-id="a1b2c3"`
+MAYBE_COMP_ID = '(?: data-djc-id="\w{6}")?'
+# E.g. `data-djc-css="99914b"`
+MAYBE_COMP_CSS_ID = '(?: data-djc-css="\w{6}")?'
+
 PLACEHOLDER_REGEX = re.compile(
     r"{css_placeholder}|{js_placeholder}".format(
-        css_placeholder=CSS_DEPENDENCY_PLACEHOLDER,
-        js_placeholder=JS_DEPENDENCY_PLACEHOLDER,
+        css_placeholder=f'<link{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{CSS_PLACEHOLDER_NAME}"/>',
+        js_placeholder=f'<script{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{JS_PLACEHOLDER_NAME}"></script>',
     ).encode()
 )
 
@@ -473,10 +480,10 @@ def render_dependencies(content: TContent, type: RenderType = "document") -> TCo
         nonlocal did_find_css_placeholder
         nonlocal did_find_js_placeholder
 
-        if match[0] == CSS_PLACEHOLDER_BYTES:
+        if CSS_PLACEHOLDER_NAME_B in match[0]:
             replacement = css_replacement
             did_find_css_placeholder = True
-        elif match[0] == JS_PLACEHOLDER_BYTES:
+        elif JS_PLACEHOLDER_NAME_B in match[0]:
             replacement = js_replacement
             did_find_js_placeholder = True
         else:

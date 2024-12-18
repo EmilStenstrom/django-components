@@ -99,6 +99,7 @@ _type = type
 
 @dataclass(frozen=True)
 class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
+    id: str
     context: Context
     args: ArgsType
     kwargs: KwargsType
@@ -304,7 +305,6 @@ class Component(
     def __init__(
         self,
         registered_name: Optional[str] = None,
-        component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
         registry: Optional[ComponentRegistry] = None,  # noqa F811
     ):
@@ -325,7 +325,6 @@ class Component(
 
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
-        self.component_id = component_id or gen_id()
         self.registry = registry or registry_
         self._render_stack: Deque[RenderStackItem[ArgsType, KwargsType, SlotsType]] = deque()
         # None == uninitialized, False == No types, Tuple == types
@@ -337,6 +336,19 @@ class Component(
     @property
     def name(self) -> str:
         return self.registered_name or self.__class__.__name__
+
+    @property
+    def id(self) -> str:
+        """
+        Render ID - This ID is unique for every time a `Component.render()` (or equivalent) is called.
+
+        This is useful for logging or debugging.
+
+        Render IDs have the chance of collision 1 in 3.3M.
+
+        Raises RuntimeError if called outside of rendering execution.
+        """
+        return self.input.id
 
     @property
     def input(self) -> RenderInput[ArgsType, KwargsType, SlotsType]:
@@ -705,6 +717,7 @@ class Component(
         self._render_stack.append(
             RenderStackItem(
                 input=RenderInput(
+                    id=gen_id(),
                     context=context,
                     slots=slots,
                     args=args,
@@ -769,7 +782,7 @@ class Component(
 
                 output = postprocess_component_html(
                     component_cls=self.__class__,
-                    component_id=self.component_id,
+                    component_id=self.id,
                     html_content=html_content,
                     css_input_hash=css_input_hash,
                     js_input_hash=js_input_hash,
@@ -958,7 +971,6 @@ class ComponentNode(BaseNode):
         component: Component = component_cls(
             registered_name=self.name,
             outer_context=context,
-            component_id=self.node_id,
             registry=self.registry,
         )
 
