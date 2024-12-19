@@ -497,7 +497,7 @@ class MiddlewareTests(BaseTestCase):
             self.assertInHTML('<script src="django_components/django_components.min.js"></script>', content, count=1)
 
             # Inlined JS
-            self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)
+            self.assertInHTML('<script>console.log("xyz");</script>', content, count=1)
             # Inlined CSS
             self.assertInHTML("<style>.xyz { color: red; }</style>", content, count=1)
             # Media.css
