@@ -1,5 +1,11 @@
 # Release notes
 
+## v0.122
+
+#### Feat
+
+- Add support for HTML fragments. HTML fragments can be rendered by passing `type="fragment"` to `Component.render()` or `Component.render_to_response()`. Read more on how to [use HTML fragments with HTMX, AlpineJS, or vanillaJS](https://EmilStenstrom.github.io/django-components/latest/concepts/advanced/html_tragments).
+
 ## v0.121
 
 #### Fix
