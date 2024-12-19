@@ -400,3 +400,39 @@ class ExtendsCompatTests(BaseTestCase):
             </html>
         """
         self.assertHTMLEqual(rendered, expected)
+
+    @parametrize_context_behavior(["isolated", "django"])
+    def test_double_extends_on_main_template_and_nested_component_and_include(self):
+        registry.register("slotted_component", SlottedComponent)
+        registry.register("blocked_and_slotted_component", BlockedAndSlottedComponent)
+
+        @register("extended_component")
+        class _ExtendedComponent(Component):
+            template_name = "included.html"
+
+        template: types.django_html = """
+            {% extends 'block.html' %}
+            {% load component_tags %}
+            {% block body %}
+                {% include 'included.html' %}
+                {% component "extended_component" / %}
+            {% endblock %}
+        """
+        rendered = Template(template).render(Context())
+        expected = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <body>
+            <main role="main">
+            <div class='container main-container'>
+            Variable: <strong></strong>
+            Variable: <strong></strong>
+            </div>
+            </main>
+            </body>
+            </html>
+        """
+        self.assertHTMLEqual(rendered, expected)
+        # second rendering after cache built
+        rendered_2 = Template(template).render(Context())
+        self.assertHTMLEqual(rendered_2, expected)
