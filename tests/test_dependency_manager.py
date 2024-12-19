@@ -69,7 +69,6 @@ class DependencyManagerTests(_BaseDepManagerTestCase):
                 "loadJs",
                 "loadCss",
                 "markScriptLoaded",
-                "_loadComponentScripts",
             ],
         )
 

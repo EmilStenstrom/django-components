@@ -111,6 +111,74 @@ class CheckScriptOrderInMedia(Component):
         js = "check_script_order.js"
 
 
+# Fragment where the JS and CSS are defined on the Component
+@register("frag_comp")
+class FragComp(Component):
+    template: types.django_html = """
+        <div class="frag">
+            123
+            <span id="frag-text"></span>
+        </div>
+    """
+
+    js = """
+        document.querySelector('#frag-text').textContent = 'xxx';
+    """
+
+    css = """
+        .frag {
+            background: blue;
+        }
+    """
+
+
+# Fragment where the JS and CSS are defined on the Media class
+@register("frag_media")
+class FragMedia(Component):
+    template = """
+        <div class="frag">
+            123
+            <span id="frag-text"></span>
+        </div>
+    """
+
+    class Media:
+        js = "fragment.js"
+        css = "fragment.css"
+
+
+# Fragment that defines an AlpineJS component
+@register("frag_alpine")
+class FragAlpine(Component):
+    template = """
+    <template x-if="false" data-name="frag">
+        <div class="frag">
+            123
+            <span x-data="frag" x-text="fragVal">
+            </span>
+        </div>
+    </template>
+    """
+
+    js = """
+        Alpine.data('frag', () => ({
+            fragVal: 'xxx',
+        }));
+
+        // Now that the component has been defined in AlpineJS, we can "activate" all instances
+        // where we use the `x-data="frag"` directive.
+        document.querySelectorAll('[data-name="frag"]').forEach((el) => {
+            el.setAttribute('x-if', 'true');
+        });
+    """
+
+    css = """
+        .frag {
+            background: blue;
+        }
+    """
+
+
 @register("alpine_test_in_media")
 class AlpineCompInMedia(Component):
     template: types.django_html = """

@@ -49,7 +49,7 @@ class InlineComponentTest(BaseTestCase):
             rendered,
         )
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&#x27;HTML and JS only&#x27;);`))</script>",
+            "<script>console.log('HTML and JS only');</script>",
             rendered,
         )
 
@@ -106,7 +106,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<link"), 0)
 
-        self.assertEqual(rendered.count("<script"), 2)  # 2 Boilerplate scripts
+        self.assertEqual(rendered.count("<script"), 1)  # 1 Boilerplate script
 
     def test_css_js_as_lists(self):
         class SimpleComponent(Component):

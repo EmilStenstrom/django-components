@@ -1,5 +1,7 @@
 /** The actual code of the JS dependency manager */
 import { callWithAsyncErrorHandling } from './errorHandling';
+import { observeScriptTag } from './mutationObserver';
+import { unescapeJs } from './utils';
 
 type MaybePromise<T> = Promise<T> | T;
 
@@ -233,23 +235,34 @@ export const createComponentsManager = () => {
     toLoadCssTags: string[];
     toLoadJsTags: string[];
   }) => {
+    const loadedCssUrls = inputs.loadedCssUrls.map((s) => atob(s));
+    const loadedJsUrls = inputs.loadedJsUrls.map((s) => atob(s));
+    const toLoadCssTags = inputs.toLoadCssTags.map((s) => atob(s));
+    const toLoadJsTags = inputs.toLoadJsTags.map((s) => atob(s));
+
     // Mark as loaded the CSS that WAS inlined into the HTML.
-    inputs.loadedCssUrls.forEach((s) => markScriptLoaded("css", s));
-    inputs.loadedJsUrls.forEach((s) => markScriptLoaded("js", s));
+    loadedCssUrls.forEach((s) => markScriptLoaded("css", s));
+    loadedJsUrls.forEach((s) => markScriptLoaded("js", s));
 
     // Load CSS that was not inlined into the HTML
     // NOTE: We don't need to wait for CSS to load
     Promise
-        .all(inputs.toLoadCssTags.map((s) => loadCss(s)))
+        .all(toLoadCssTags.map((s) => loadCss(s)))
         .catch(console.error);
 
     // Load JS that was not inlined into the HTML
     const jsScriptsPromise = Promise
         // NOTE: Interestingly enough, when we insert scripts into the DOM programmatically,
         // the order of execution is the same as the order of insertion.
-        .all(inputs.toLoadJsTags.map((s) => loadJs(s)))
+        .all(toLoadJsTags.map((s) => loadJs(s)))
         .catch(console.error);
   };
+
+  // Initialise the MutationObserver that watches for `<script>` tags with `data-djc` attribute
+  observeScriptTag((script) => {
+    const data = JSON.parse(script.text);
+    _loadComponentScripts(data);
+  });
 
   return {
     callComponent,
@@ -258,6 +271,5 @@ export const createComponentsManager = () => {
     loadJs,
     loadCss,
     markScriptLoaded,
-    _loadComponentScripts,
   };
 };

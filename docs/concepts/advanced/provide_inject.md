@@ -1,6 +1,6 @@
 ---
 title: Prop drilling and provide / inject
-weight: 2
+weight: 3
 ---
 
 _New in version 0.80_:
