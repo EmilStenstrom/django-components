@@ -13,6 +13,7 @@ setup_test_config({"autodiscover": False})
 class SlottedComponent(Component):
     template_name = "slotted_template.html"
 
+
 class BlockedAndSlottedComponent(Component):
     template_name = "blocked_and_slotted_template.html"
 
