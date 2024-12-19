@@ -58,7 +58,7 @@ class ComponentTemplateTagTest(BaseTestCase):
 
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, 'Variable: <strong data-djc-id-a1bc3f>variable</strong>\n')
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_single_component_self_closing(self):
@@ -71,7 +71,7 @@ class ComponentTemplateTagTest(BaseTestCase):
 
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, 'Variable: <strong data-djc-id-a1bc3f>variable</strong>\n')
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_call_with_invalid_name(self):
@@ -97,7 +97,7 @@ class ComponentTemplateTagTest(BaseTestCase):
 
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, 'Variable: <strong data-djc-id-a1bc3f>variable</strong>\n')
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_call_component_with_two_variables(self):
@@ -146,7 +146,7 @@ class ComponentTemplateTagTest(BaseTestCase):
 
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, 'Variable: <strong data-djc-id-a1bc3f>variable</strong>\n')
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f>variable</strong>\n")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_raises_on_component_called_with_variable_as_name(self):
@@ -230,7 +230,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>',
+            "Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -261,7 +261,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>',
+            "Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -286,7 +286,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         )
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>',
+            "Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -308,7 +308,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         )
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>',
+            "Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>",
         )
 
     @parametrize_context_behavior(
@@ -334,10 +334,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
 
         template = Template(simple_tag_template)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(
-            rendered,
-            'Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>\n'
-        )
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>\n")
 
     @parametrize_context_behavior(
         ["django", "isolated"],
@@ -365,7 +362,7 @@ class DynamicComponentTemplateTagTest(BaseTestCase):
         rendered = template.render(Context({}))
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>',
+            "Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>variable</strong>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])

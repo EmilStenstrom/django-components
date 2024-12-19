@@ -127,15 +127,15 @@ class E2eDependencyRenderingTests(BaseTestCase):
             # <div class="my-style2">xyz</div>
             re.compile(
                 r'<div class="outer" data-djc-id-\w{6}="">\s*'
-                r'Variable:\s*'
+                r"Variable:\s*"
                 r'<strong class="inner" data-djc-id-\w{6}="">\s*'
-                r'variable\s*'
-                r'<\/strong>\s*'
-                r'XYZ:\s*'
+                r"variable\s*"
+                r"<\/strong>\s*"
+                r"XYZ:\s*"
                 r'<strong class="other" data-djc-id-\w{6}="">\s*'
-                r'variable_inner\s*'
-                r'<\/strong>\s*'
-                r'<\/div>\s*'
+                r"variable_inner\s*"
+                r"<\/strong>\s*"
+                r"<\/div>\s*"
                 r'<div class="my-style">123<\/div>\s*'
                 r'<div class="my-style2">xyz<\/div>\s*'
             ),
@@ -221,15 +221,15 @@ class E2eDependencyRenderingTests(BaseTestCase):
             # <div class="my-style2">xyz</div>
             re.compile(
                 r'<div class="outer" data-djc-id-\w{6}="">\s*'
-                r'Variable:\s*'
+                r"Variable:\s*"
                 r'<strong class="inner" data-djc-id-\w{6}="">\s*'
-                r'variable\s*'
-                r'<\/strong>\s*'
-                r'XYZ:\s*'
+                r"variable\s*"
+                r"<\/strong>\s*"
+                r"XYZ:\s*"
                 r'<strong class="other" data-djc-id-\w{6}="">\s*'
-                r'variable_inner\s*'
-                r'<\/strong>\s*'
-                r'<\/div>\s*'
+                r"variable_inner\s*"
+                r"<\/strong>\s*"
+                r"<\/div>\s*"
                 r'<div class="my-style">123<\/div>\s*'
                 r'<div class="my-style2">xyz<\/div>\s*'
             ),
@@ -384,10 +384,7 @@ class E2eDependencyRenderingTests(BaseTestCase):
         self.assertRegex(
             data["fragHtml"],
             re.compile(
-                r'<div class="frag" data-djc-id-\w{6}="">\s*'
-                r'123\s*'
-                r'<span id="frag-text">xxx</span>\s*'
-                r'</div>'
+                r'<div class="frag" data-djc-id-\w{6}="">\s*' r"123\s*" r'<span id="frag-text">xxx</span>\s*' r"</div>"
             ),
         )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
@@ -440,10 +437,7 @@ class E2eDependencyRenderingTests(BaseTestCase):
         self.assertRegex(
             data["fragHtml"],
             re.compile(
-                r'<div class="frag" data-djc-id-\w{6}="">\s*'
-                r'123\s*'
-                r'<span id="frag-text">xxx</span>\s*'
-                r'</div>'
+                r'<div class="frag" data-djc-id-\w{6}="">\s*' r"123\s*" r'<span id="frag-text">xxx</span>\s*' r"</div>"
             ),
         )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
@@ -499,10 +493,7 @@ class E2eDependencyRenderingTests(BaseTestCase):
         self.assertRegex(
             data["targetHtml"],
             re.compile(
-                r'<div class="frag" data-djc-id-\w{6}="">\s*'
-                r'123\s*'
-                r'<span id="frag-text">xxx</span>\s*'
-                r'</div>'
+                r'<div class="frag" data-djc-id-\w{6}="">\s*' r"123\s*" r'<span id="frag-text">xxx</span>\s*' r"</div>"
             ),
         )
         self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'

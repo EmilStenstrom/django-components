@@ -510,7 +510,7 @@ class DependencyRenderingTests(BaseTestCase):
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
 
-        self.assertHTMLEqual(rendered, 'Variable: <strong data-djc-id-a1bc3f>foo</strong>')
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f>foo</strong>")
 
     def test_adds_component_id_html_attr_single_multiroot(self):
         class SimpleMultiroot(SimpleComponent):

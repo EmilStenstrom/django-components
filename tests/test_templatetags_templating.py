@@ -78,7 +78,7 @@ class NestedSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p data-djc-id-a1bc40>Override</p>')
+        self.assertHTMLEqual(rendered, "<p data-djc-id-a1bc40>Override</p>")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_both_overriden_and_inner_removed(self):
@@ -93,7 +93,7 @@ class NestedSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p data-djc-id-a1bc41>Override</p>')
+        self.assertHTMLEqual(rendered, "<p data-djc-id-a1bc41>Override</p>")
 
     # NOTE: Second arg in tuple is expected name in nested fill. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should
@@ -207,7 +207,8 @@ class ConditionalSlotTests(BaseTestCase):
             """
             <p id="a" data-djc-id-a1bc40>Default A</p>
             <p id="b" data-djc-id-a1bc43>Default B</p>
-            """)
+            """,
+        )
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_slot_overridden(self):
@@ -227,7 +228,8 @@ class ConditionalSlotTests(BaseTestCase):
             """
             <p id="a" data-djc-id-a1bc42>Default A</p>
             <p id="b" data-djc-id-a1bc45>Override B</p>
-            """)
+            """,
+        )
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_both_slots_overridden(self):
@@ -249,7 +251,7 @@ class ConditionalSlotTests(BaseTestCase):
             """
             <p id="a" data-djc-id-a1bc44>Override A</p>
             <p id="b" data-djc-id-a1bc47>Override B</p>
-            """
+            """,
         )
 
 

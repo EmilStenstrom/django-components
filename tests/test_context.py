@@ -100,8 +100,8 @@ class ContextTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context())
 
-        self.assertInHTML('<h1 data-djc-id-a1bc43>Shadowing variable = override</h1>', rendered)
-        self.assertInHTML('<h1 data-djc-id-a1bc44>Shadowing variable = slot_default_override</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc43>Shadowing variable = override</h1>", rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc44>Shadowing variable = slot_default_override</h1>", rendered)
         self.assertNotIn("Shadowing variable = NOT SHADOWED", rendered)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -115,9 +115,9 @@ class ContextTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context())
 
-        self.assertInHTML('<h1 data-djc-id-a1bc43>Uniquely named variable = unique_val</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc43>Uniquely named variable = unique_val</h1>", rendered)
         self.assertInHTML(
-            '<h1 data-djc-id-a1bc44>Uniquely named variable = slot_default_unique</h1>',
+            "<h1 data-djc-id-a1bc44>Uniquely named variable = slot_default_unique</h1>",
             rendered,
         )
 
@@ -135,8 +135,8 @@ class ContextTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context())
 
-        self.assertInHTML('<h1 data-djc-id-a1bc45>Shadowing variable = override</h1>', rendered)
-        self.assertInHTML('<h1 data-djc-id-a1bc46>Shadowing variable = shadow_from_slot</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc45>Shadowing variable = override</h1>", rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc46>Shadowing variable = shadow_from_slot</h1>", rendered)
         self.assertNotIn("Shadowing variable = NOT SHADOWED", rendered)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -167,8 +167,8 @@ class ContextTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({"shadowing_variable": "NOT SHADOWED"}))
 
-        self.assertInHTML('<h1 data-djc-id-a1bc43>Shadowing variable = override</h1>', rendered)
-        self.assertInHTML('<h1 data-djc-id-a1bc44>Shadowing variable = slot_default_override</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc43>Shadowing variable = override</h1>", rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc44>Shadowing variable = slot_default_override</h1>", rendered)
         self.assertNotIn("Shadowing variable = NOT SHADOWED", rendered)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -187,8 +187,8 @@ class ContextTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({"shadowing_variable": "NOT SHADOWED"}))
 
-        self.assertInHTML('<h1 data-djc-id-a1bc45>Shadowing variable = override</h1>', rendered)
-        self.assertInHTML('<h1 data-djc-id-a1bc46>Shadowing variable = shadow_from_slot</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc45>Shadowing variable = override</h1>", rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc46>Shadowing variable = shadow_from_slot</h1>", rendered)
         self.assertNotIn("Shadowing variable = NOT SHADOWED", rendered)
 
 
@@ -254,8 +254,8 @@ class ParentArgsTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context())
 
-        self.assertInHTML('<h1 data-djc-id-a1bc43>Shadowing variable = passed_in</h1>', rendered)
-        self.assertInHTML('<h1 data-djc-id-a1bc44>Uniquely named variable = passed_in</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc43>Shadowing variable = passed_in</h1>", rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc44>Uniquely named variable = passed_in</h1>", rendered)
         self.assertNotIn("Shadowing variable = NOT SHADOWED", rendered)
 
     # NOTE: Second arg in tuple are expected values passed through components.

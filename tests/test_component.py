@@ -1175,7 +1175,7 @@ class ComponentRenderTest(BaseTestCase):
         rendered = TestComponent.render()
         self.assertHTMLEqual(
             rendered,
-            'Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>',
+            "Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -1191,7 +1191,7 @@ class ComponentRenderTest(BaseTestCase):
         rendered_resp = TestComponent.render_to_response()
         self.assertHTMLEqual(
             rendered_resp.content.decode("utf-8"),
-            'Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>',
+            "Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>",
         )
 
 

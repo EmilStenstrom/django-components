@@ -178,6 +178,7 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
 
                 # Reset template cache
                 from django_components.template import template_cache
+
                 if template_cache:  # May be None if the cache was not initialized
                     template_cache.clear()
 

@@ -198,7 +198,7 @@ class ComponentSlotTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({}))
 
-        self.assertHTMLEqual(rendered, '<custom-template data-djc-id-a1bc3f></custom-template>')
+        self.assertHTMLEqual(rendered, "<custom-template data-djc-id-a1bc3f></custom-template>")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slotted_template_without_slots_and_single_quotes(self):
@@ -215,7 +215,7 @@ class ComponentSlotTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({}))
 
-        self.assertHTMLEqual(rendered, '<custom-template data-djc-id-a1bc3f></custom-template>')
+        self.assertHTMLEqual(rendered, "<custom-template data-djc-id-a1bc3f></custom-template>")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_variable_fill_name(self):
@@ -455,8 +455,8 @@ class ComponentSlotTests(BaseTestCase):
             render_dependencies=False,
         )
 
-        self.assertHTMLEqual(rendered1, '<div data-djc-id-a1bc3e><div>MAIN</div></div>')
-        self.assertHTMLEqual(rendered2, '<div data-djc-id-a1bc41><div>MAIN</div></div>')
+        self.assertHTMLEqual(rendered1, "<div data-djc-id-a1bc3e><div>MAIN</div></div>")
+        self.assertHTMLEqual(rendered2, "<div data-djc-id-a1bc41><div>MAIN</div></div>")
 
         # 3. Specify the required slot by its name
         rendered3 = TestComp.render(
@@ -466,7 +466,7 @@ class ComponentSlotTests(BaseTestCase):
             },
             render_dependencies=False,
         )
-        self.assertHTMLEqual(rendered3, '<div data-djc-id-a1bc42><main>MAIN</main><div>MAIN</div></div>')
+        self.assertHTMLEqual(rendered3, "<div data-djc-id-a1bc42><main>MAIN</main><div>MAIN</div></div>")
 
         # 4. RAISES: Specify the required slot by the "default" name
         #    This raises because the slot that is marked as 'required' is NOT marked as 'default'.
@@ -1720,7 +1720,7 @@ class ScopedSlotTest(BaseTestCase):
             {% endcomponent %}
         """
         rendered = Template(template).render(Context())
-        expected = '<div data-djc-id-a1bc40> overriden </div>'
+        expected = "<div data-djc-id-a1bc40> overriden </div>"
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -1743,7 +1743,7 @@ class ScopedSlotTest(BaseTestCase):
             {% endcomponent %}
         """
         rendered = Template(template).render(Context())
-        expected = '<div data-djc-id-a1bc40> {} </div>'
+        expected = "<div data-djc-id-a1bc40> {} </div>"
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -1769,7 +1769,7 @@ class ScopedSlotTest(BaseTestCase):
             {% endcomponent %}
         """
         rendered = Template(template).render(Context())
-        expected = '<div data-djc-id-a1bc3f> Default text </div>'
+        expected = "<div data-djc-id-a1bc3f> Default text </div>"
         self.assertHTMLEqual(rendered, expected)
 
     @parametrize_context_behavior(["django", "isolated"])
