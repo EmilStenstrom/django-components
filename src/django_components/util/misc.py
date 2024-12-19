@@ -59,3 +59,7 @@ def get_last_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
         if key(item):
             return len(lst) - 1 - index
     return None
+
+
+def is_nonempty_str(txt: Optional[str]) -> bool:
+    return txt is not None and bool(txt.strip())

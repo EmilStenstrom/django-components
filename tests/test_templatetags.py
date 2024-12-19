@@ -116,12 +116,12 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc40>
             <body>
-                <custom-template>
-                <header></header>
-                <main>BODY_FROM_FILL</main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc45>
+                    <header></header>
+                    <main>BODY_FROM_FILL</main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -149,12 +149,12 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc40>
             <body>
-                <custom-template>
-                <header></header>
-                <main>BODY_FROM_FILL</main>
-                <footer>Default footer</footer>
+                <custom-template  data-djc-id-a1bc45>
+                    <header></header>
+                    <main>BODY_FROM_FILL</main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -182,15 +182,15 @@ class BlockCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
             <body>
-            <main role="main">
-            <div class='container main-container'>
-                <custom-template>
-                <header></header>
-                <main>TEST</main>
-                <footer></footer>
-                </custom-template>
-            </div>
-            </main>
+                <main role="main">
+                    <div class='container main-container'>
+                        <custom-template data-djc-id-a1bc42>
+                            <header></header>
+                            <main>TEST</main>
+                            <footer></footer>
+                        </custom-template>
+                    </div>
+                </main>
             </body>
             </html>
         """
@@ -214,12 +214,12 @@ class BlockCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    <div> 58 giraffes and 2 pantaloons </div>
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc41>
+                    <header></header>
+                    <main>
+                        <div> 58 giraffes and 2 pantaloons </div>
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -241,14 +241,14 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc3f>
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    <div> 58 giraffes and 2 pantaloons </div>
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc43>
+                    <header></header>
+                    <main>
+                        <div> 58 giraffes and 2 pantaloons </div>
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -281,12 +281,12 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc40>
             <body>
-                <custom-template>
-                <header></header>
-                <main>BODY_FROM_FILL</main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc45>
+                    <header></header>
+                    <main>BODY_FROM_FILL</main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -311,15 +311,15 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc3f>
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    Helloodiddoo
-                    Default inner
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc44>
+                    <header></header>
+                    <main>
+                        Helloodiddoo
+                        Default inner
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -347,15 +347,15 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc3f>
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    Helloodiddoo
-                    INNER BLOCK OVERRIDEN
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc44>
+                    <header></header>
+                    <main>
+                        Helloodiddoo
+                        INNER BLOCK OVERRIDEN
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -383,15 +383,15 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc40>
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    Helloodiddoo
-                    SLOT OVERRIDEN
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc45>
+                    <header></header>
+                    <main>
+                        Helloodiddoo
+                        SLOT OVERRIDEN
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -429,15 +429,15 @@ class BlockCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-djc-id-a1bc41>
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    Helloodiddoo
-                    SLOT_NEW__OVERRIDEN
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc47>
+                    <header></header>
+                    <main>
+                        Helloodiddoo
+                        SLOT_NEW__OVERRIDEN
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -471,12 +471,12 @@ class BlockCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
             <body>
-                <custom-template>
-                <header></header>
-                <main>
-                    <div> injected: DepInject(hello='from_block') </div>
-                </main>
-                <footer>Default footer</footer>
+                <custom-template data-djc-id-a1bc43>
+                    <header></header>
+                    <main>
+                        <div data-djc-id-a1bc47> injected: DepInject(hello='from_block') </div>
+                    </main>
+                    <footer>Default footer</footer>
                 </custom-template>
             </body>
             </html>
@@ -510,7 +510,7 @@ class MultilineTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>123</strong>
+            Variable: <strong data-djc-id-a1bc3f>123</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -537,7 +537,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>lorem</strong>
+            Variable: <strong data-djc-id-a1bc3f>lorem</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -551,7 +551,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation&#x27;s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation&#x27;s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -565,7 +565,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation&#x27;s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation&#x27;s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -579,7 +579,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation"s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation"s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -593,6 +593,6 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation"s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation"s</strong>
         """
         self.assertHTMLEqual(rendered, expected)

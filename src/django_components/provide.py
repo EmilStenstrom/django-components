@@ -8,7 +8,6 @@ from django_components.context import set_provided_context_var
 from django_components.expression import RuntimeKwargs
 from django_components.node import BaseNode
 from django_components.util.logger import trace_msg
-from django_components.util.misc import gen_id
 
 PROVIDE_NAME_KWARG = "name"
 
@@ -28,10 +27,7 @@ class ProvideNode(BaseNode):
     ):
         super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
 
-        self.nodelist = nodelist
-        self.node_id = node_id or gen_id()
         self.trace_id = trace_id
-        self.kwargs = kwargs or RuntimeKwargs({})
 
     def __repr__(self) -> str:
         return f"<Provide Node: {self.node_id}. Contents: {repr(self.nodelist)}>"

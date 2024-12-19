@@ -1,5 +1,15 @@
 # Release notes
 
+## v0.123
+
+#### Refactor
+
+- The undocumented `Component.component_id` was removed. Instead, use `Component.id`. Changes:
+
+  - While `component_id` was unique every time you instantiated `Component`, The new `id` is unique
+    every time you render the component (e.g. with `Component.render()`)
+  - The new `id` is available only during render, so e.g. from within `get_context_data()`
+
 ## v0.122
 
 #### Feat

@@ -113,7 +113,6 @@ class DynamicComponent(Component):
         # NOTE: Slots are passed at component instantiation
         comp = comp_class(
             registered_name=self.registered_name,
-            component_id=self.component_id,
             outer_context=self.outer_context,
             registry=self.registry,
         )

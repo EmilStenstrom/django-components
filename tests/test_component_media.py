@@ -24,7 +24,7 @@ class InlineComponentTest(BaseTestCase):
 
         self.assertHTMLEqual(
             InlineHTMLComponent.render(),
-            "<div class='inline'>Hello Inline</div>",
+            '<div class="inline" data-djc-id-a1bc3e>Hello Inline</div>',
         )
 
     def test_inlined_js_and_css(self):
@@ -41,7 +41,7 @@ class InlineComponentTest(BaseTestCase):
         rendered = TestComponent.render()
 
         self.assertInHTML(
-            "<div class='html-css-only'>Content</div>",
+            '<div class="html-css-only" data-djc-id-a1bc3e>Content</div>',
             rendered,
         )
         self.assertInHTML(
@@ -62,7 +62,7 @@ class InlineComponentTest(BaseTestCase):
         context = Context({"variable": "Dynamic Content"})
         self.assertHTMLEqual(
             comp.render(context),
-            "<div class='variable-html'>Dynamic Content</div>",
+            '<div class="variable-html" data-djc-id-a1bc3e>Dynamic Content</div>',
         )
 
     def test_html_variable_filtered(self):
@@ -82,8 +82,8 @@ class InlineComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Var1: <strong>test1</strong>
-            Var2 (uppercased): <strong>TEST2</strong>
+            Var1: <strong data-djc-id-a1bc3e>test1</strong>
+            Var2 (uppercased): <strong data-djc-id-a1bc3e>TEST2</strong>
             """,
         )
 
@@ -691,7 +691,7 @@ class MediaRelativePathTests(BaseTestCase):
 
             self.assertInHTML(
                 """
-                <form method="post">
+                <form data-djc-id-a1bc41 method="post">
                     <input type="text" name="variable" value="test">
                     <input type="submit">
                 </form>
@@ -730,7 +730,7 @@ class MediaRelativePathTests(BaseTestCase):
             """
             template = Template(template_str)
             rendered = template.render(Context({}))
-            self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
+            self.assertInHTML('<input type="text" name="variable" value="hello">', rendered)
 
     # Settings required for autodiscover to work
     @override_settings(

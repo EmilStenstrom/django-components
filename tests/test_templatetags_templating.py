@@ -52,7 +52,7 @@ class NestedSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<div id="outer">Default</div>')
+        self.assertHTMLEqual(rendered, '<div id="outer" data-djc-id-a1bc3f>Default</div>')
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inner_slot_overriden(self):
@@ -66,7 +66,7 @@ class NestedSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<div id="outer">Override</div>')
+        self.assertHTMLEqual(rendered, '<div id="outer" data-djc-id-a1bc40>Override</div>')
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_outer_slot_overriden(self):
@@ -78,7 +78,7 @@ class NestedSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "<p>Override</p>")
+        self.assertHTMLEqual(rendered, "<p data-djc-id-a1bc40>Override</p>")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_both_overriden_and_inner_removed(self):
@@ -93,7 +93,7 @@ class NestedSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, "<p>Override</p>")
+        self.assertHTMLEqual(rendered, "<p data-djc-id-a1bc41>Override</p>")
 
     # NOTE: Second arg in tuple is expected name in nested fill. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should
@@ -145,9 +145,9 @@ class NestedSlotTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             f"""
-            <custom-template>
+            <custom-template data-djc-id-a1bc45>
                 <header>
-                    <custom-template>
+                    <custom-template data-djc-id-a1bc49>
                         <header>Name2: {context_behavior_data}</header>
                         <main>Day2: Monday</main>
                         <footer>XYZ</footer>
@@ -202,7 +202,13 @@ class ConditionalSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Default B</p>')
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <p id="a" data-djc-id-a1bc40>Default A</p>
+            <p id="b" data-djc-id-a1bc43>Default B</p>
+            """,
+        )
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_one_slot_overridden(self):
@@ -217,7 +223,13 @@ class ConditionalSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p id="a">Default A</p><p id="b">Override B</p>')
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <p id="a" data-djc-id-a1bc42>Default A</p>
+            <p id="b" data-djc-id-a1bc45>Override B</p>
+            """,
+        )
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_both_slots_overridden(self):
@@ -234,7 +246,13 @@ class ConditionalSlotTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({}))
-        self.assertHTMLEqual(rendered, '<p id="a">Override A</p><p id="b">Override B</p>')
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <p id="a" data-djc-id-a1bc44>Override A</p>
+            <p id="b" data-djc-id-a1bc47>Override B</p>
+            """,
+        )
 
 
 class SlotIterationTest(BaseTestCase):
@@ -670,11 +688,11 @@ class ComponentNestingTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             f"""
-            <custom-template>
+            <custom-template data-djc-id-a1bc45>
                 <header>Name: {first_name}</header>
                 <main>Day: Monday</main>
                 <footer>
-                    <custom-template>
+                    <custom-template data-djc-id-a1bc49>
                         <header>Name2: {second_name}</header>
                         <main>Day2: Monday</main>
                         <footer>Default footer</footer>
@@ -699,8 +717,8 @@ class ComponentNestingTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2, 3]}))
         expected = f"""
-            <div class="dashboard-component">
-            <div class="calendar-component">
+            <div class="dashboard-component" data-djc-id-a1bc3f>
+            <div class="calendar-component" data-djc-id-a1bc44>
                 <h1>
                 Welcome to your dashboard!
                 </h1>
@@ -734,8 +752,8 @@ class ComponentNestingTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2, 3]}))
         expected = f"""
-            <div class="dashboard-component">
-            <div class="calendar-component">
+            <div class="dashboard-component" data-djc-id-a1bc40>
+            <div class="calendar-component" data-djc-id-a1bc45>
                 <h1>
                 Whoa!
                 </h1>
@@ -759,16 +777,17 @@ class ComponentNestingTests(BaseTestCase):
         template = Template(template_str)
         items = [{"value": 1}, {"value": 2}, {"value": 3}]
         rendered = template.render(Context({"items": items}))
+
         expected = """
             ITEMS: [{'value': 1}, {'value': 2}, {'value': 3}]
-            <li>
-                <div> 1 </div>
+            <li data-djc-id-a1bc3f>
+                <div data-djc-id-a1bc41> 1 </div>
             </li>
-            <li>
-                <div> 2 </div>
+            <li data-djc-id-a1bc3f>
+                <div data-djc-id-a1bc43> 2 </div>
             </li>
-            <li>
-                <div> 3 </div>
+            <li data-djc-id-a1bc3f>
+                <div data-djc-id-a1bc44> 3 </div>
             </li>
         """
         self.assertHTMLEqual(rendered, expected)
@@ -790,8 +809,8 @@ class ComponentNestingTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context({"items": [1, 2]}))
         expected = f"""
-            <div class="dashboard-component">
-            <div class="calendar-component">
+            <div class="dashboard-component" data-djc-id-a1bc40>
+            <div class="calendar-component" data-djc-id-a1bc45>
                 <h1>
                 Hello! Welcome to your dashboard!
                 </h1>
