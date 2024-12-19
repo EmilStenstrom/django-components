@@ -75,9 +75,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
 
@@ -97,9 +95,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
@@ -126,9 +122,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
@@ -191,9 +185,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
         self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
@@ -505,9 +497,7 @@ class MiddlewareTests(BaseTestCase):
             self.assertInHTML('<script src="django_components/django_components.min.js"></script>', content, count=1)
 
             # Inlined JS
-            self.assertInHTML(
-                '<script>console.log("xyz");</script>', content, count=1
-            )
+            self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)
             # Inlined CSS
             self.assertInHTML("<style>.xyz { color: red; }</style>", content, count=1)
             # Media.css
