@@ -3,7 +3,7 @@ title: Defining HTML / JS / CSS files
 weight: 8
 ---
 
-django_component's management of files builds on top of [Django's `Media` class](https://docs.djangoproject.com/en/5.0/topics/forms/media/).
+django_component's management of files is inspired by [Django's `Media` class](https://docs.djangoproject.com/en/5.0/topics/forms/media/).
 
 To be familiar with how Django handles static files, we recommend reading also:
 
@@ -12,7 +12,7 @@ To be familiar with how Django handles static files, we recommend reading also:
 ## Defining file paths relative to component or static dirs
 
 As seen in the [getting started example](#create-your-first-component), to associate HTML/JS/CSS
-files with a component, you set them as `template_name`, `Media.js` and `Media.css` respectively:
+files with a component, you set them as `template_name`, `js_file` and `css_file` respectively:
 
 ```py
 # In a file [project root]/components/calendar/calendar.py
@@ -21,10 +21,8 @@ from django_components import Component, register
 @register("calendar")
 class Calendar(Component):
     template_name = "template.html"
-
-    class Media:
-        css = "style.css"
-        js = "script.js"
+    css_file = "style.css"
+    js_file = "script.js"
 ```
 
 In the example above, the files are defined relative to the directory where `component.py` is.
@@ -40,17 +38,24 @@ from django_components import Component, register
 @register("calendar")
 class Calendar(Component):
     template_name = "calendar/template.html"
-
-    class Media:
-        css = "calendar/style.css"
-        js = "calendar/script.js"
+    css_file = "calendar/style.css"
+    js_file = "calendar/script.js"
 ```
 
 NOTE: In case of conflict, the preference goes to resolving the files relative to the component's directory.
 
 ## Defining multiple paths
 
-Each component can have only a single template. However, you can define as many JS or CSS files as you want using a list.
+Each component can have only a single template, and single main JS and CSS. However, you can define additional JS or CSS 
+using the nested [`Media` class](../../../reference/api#django_components.Component.Media).
+
+This `Media` class behaves similarly to [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition),
+with a few differences:
+
+1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list, or (CSS-only) a dictonary (See below)
+2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`, [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
+3. Our Media class does NOT support [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
+
 
 ```py
 class MyComponent(Component):
@@ -106,14 +111,14 @@ from django.utils.safestring import mark_safe
 class SimpleComponent(Component):
     class Media:
         css = [
-            mark_safe('<link href="/static/calendar/style.css" rel="stylesheet" />'),
+            mark_safe('<link href="/static/calendar/style1.css" rel="stylesheet" />'),
             Path("calendar/style1.css"),
             "calendar/style2.css",
             b"calendar/style3.css",
             lambda: "calendar/style4.css",
         ]
         js = [
-            mark_safe('<script src="/static/calendar/script.js"></script>'),
+            mark_safe('<script src="/static/calendar/script1.js"></script>'),
             Path("calendar/script1.js"),
             "calendar/script2.js",
             b"calendar/script3.js",
@@ -152,7 +157,7 @@ class Calendar(Component):
         }
 
     class Media:
-        css = "calendar/style.css"
+        css = "calendar/style1.css"
         js = [
             # <script> tag constructed by Media class
             "calendar/script1.js",
@@ -191,10 +196,12 @@ class MyMedia(Media):
 @register("calendar")
 class Calendar(Component):
     template_name = "calendar/template.html"
+    css_file = "calendar/style.css"
+    js_file = "calendar/script.js"
 
     class Media:
-        css = "calendar/style.css"
-        js = "calendar/script.js"
+        css = "calendar/style1.css"
+        js = "calendar/script2.js"
 
     # Override the behavior of Media class
     media_class = MyMedia

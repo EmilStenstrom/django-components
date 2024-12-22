@@ -222,4 +222,6 @@ the parametrized version of the component:
 </div>
 ```
 
+---
+
 Next, you will learn [how to use slots give your components even more flexibility ➡️](./adding_slots.md)
