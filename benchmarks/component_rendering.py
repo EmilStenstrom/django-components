@@ -24,15 +24,14 @@ class SimpleComponent(Component):
         Variable: <strong>{{ variable }}</strong>
     """
 
+    css_file = "style.css"
+    js_file = "script.js"
+
     def get_context_data(self, variable, variable2="default"):
         return {
             "variable": variable,
             "variable2": variable2,
         }
-
-    class Media:
-        css = {"all": ["style.css"]}
-        js = ["script.js"]
 
 
 class BreadcrumbComponent(Component):
@@ -52,6 +51,9 @@ class BreadcrumbComponent(Component):
             </nav>
         </div>
     """
+
+    css_file = "test.css"
+    js_file = "test.js"
 
     LINKS = [
         (
@@ -78,10 +80,6 @@ class BreadcrumbComponent(Component):
         elif items < 0:
             items = 0
         return {"links": self.LINKS[: items - 1]}
-
-    class Media:
-        css = {"all": ["test.css"]}
-        js = ["test.js"]
 
 
 EXPECTED_CSS = """<link href="test.css" media="all" rel="stylesheet">"""
