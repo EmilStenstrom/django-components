@@ -237,7 +237,8 @@ def _search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:
         for path_str in glob.iglob(str(Path(directory) / search_glob), recursive=True):
             path = Path(path_str)
             # Skip any subdirectory or file (under the top-level directory) that starts with an underscore
-            rel_dir_parts, name_part = path.relative_to(directory).parts
+            rel_dir_parts = list(path.relative_to(directory).parts)
+            name_part = rel_dir_parts.pop()
             if any(part.startswith("_") for part in rel_dir_parts):
                 continue
             if name_part.startswith("_") and not name_part != "__init__.py":
