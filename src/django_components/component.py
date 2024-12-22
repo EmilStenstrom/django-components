@@ -25,7 +25,7 @@ from typing import (
 )
 
 from django.core.exceptions import ImproperlyConfigured
-from django.forms.widgets import Media
+from django.forms.widgets import Media as MediaCls
 from django.http import HttpRequest, HttpResponse
 from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context, RequestContext
@@ -35,7 +35,7 @@ from django.utils.html import conditional_escape
 from django.views import View
 
 from django_components.app_settings import ContextBehavior
-from django_components.component_media import ComponentMediaInput, MediaMeta
+from django_components.component_media import ComponentMediaInput, ComponentMediaMeta
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as registry_
 from django_components.context import (
@@ -85,9 +85,6 @@ SlotsType = TypeVar("SlotsType", bound=Mapping[SlotName, SlotContent])
 DataType = TypeVar("DataType", bound=Mapping[str, Any], covariant=True)
 JsDataType = TypeVar("JsDataType", bound=Mapping[str, Any])
 CssDataType = TypeVar("CssDataType", bound=Mapping[str, Any])
-
-# Rename, so we can use `type()` inside functions with kwrags of the same name
-_type = type
 
 
 @dataclass(frozen=True)
@@ -153,14 +150,8 @@ class ComponentVars(NamedTuple):
     """
 
 
-class ComponentMeta(MediaMeta):
-    def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
-        # NOTE: Skip template/media file resolution when then Component class ITSELF
-        # is being created.
-        if "__module__" in attrs and attrs["__module__"] == "django_components.component":
-            return super().__new__(mcs, name, bases, attrs)
-
-        return super().__new__(mcs, name, bases, attrs)
+class ComponentMeta(ComponentMediaMeta):
+    pass
 
 
 # NOTE: We use metaclass to automatically define the HTTP methods as defined
@@ -246,18 +237,67 @@ class Component(
         return cast(DataType, {})
 
     js: Optional[str] = None
-    """Inlined JS associated with this component."""
+    """Main JS associated with this component inlined as string."""
+
+    js_file: Optional[str] = None
+    """
+    Main JS associated with this component as file path.
+    
+    When you create a Component subclass, these will happen:
+
+    1. The filepath is resolved, in case it is relative to the component Python file.
+    2. The file is read and its contents will be available under `MyComponent.js`.
+    """
+
     css: Optional[str] = None
-    """Inlined CSS associated with this component."""
-    media: Media
+    """Main CSS associated with this component inlined as string."""
+    css_file: Optional[str] = None
+    """
+    Main CSS associated with this component as file path.
+    
+    When you create a Component subclass, these will happen:
+
+    1. The filepath is resolved, in case it is relative to the component Python file.
+    2. The file is read and its contents will be available under `MyComponent.css`.
+    """
+
+    media: Optional[MediaCls] = None
     """
     Normalized definition of JS and CSS media files associated with this component.
+    `None` if `Media` is not defined.
 
-    NOTE: This field is generated from Component.Media class.
+    NOTE: This field is generated from `Component.media_class`.
     """
-    media_class: Media = Media
-    Media = ComponentMediaInput
-    """Defines JS and CSS media files associated with this component."""
+    media_class: Type[MediaCls] = MediaCls
+    Media: Optional[type[ComponentMediaInput]] = None
+    """
+    Defines JS and CSS media files associated with this component.
+
+    This `Media` class behaves similarly to [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition),
+    with a few differences:
+
+    1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list, or (CSS-only) a dictonary (See below)
+    2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`, [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
+    3. Our Media class does NOT support [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
+
+    **Example:**
+
+    ```py
+    class MyTable(Component):
+        class Media:
+            js = [
+                "path/to/script.js",
+                "https://unpkg.com/alpinejs@3.14.7/dist/cdn.min.js",  # AlpineJS
+            ]
+            css = {
+                "all": [
+                    "path/to/style.css",
+                    "https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css",  # TailwindCSS
+                ],
+                "print": ["path/to/style2.css"],
+            }
+    ```
+    """
 
     response_class = HttpResponse
     """This allows to configure what class is used to generate response from `render_to_response`"""

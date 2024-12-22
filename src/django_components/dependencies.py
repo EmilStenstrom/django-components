@@ -480,8 +480,16 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
 
     # Once we have ALL JS and CSS URLs that we want to fetch, we can convert them to
     # <script> and <link> tags. Note that this is done by the user-provided Media classes.
-    to_load_css_tags = [tag for media in all_medias for tag in media.render_css()]
-    to_load_js_tags = [tag for media in all_medias for tag in media.render_js()]
+    to_load_css_tags = [
+        tag
+        for media in all_medias if media is not None
+        for tag in media.render_css()  #
+    ]
+    to_load_js_tags = [
+        tag
+        for media in all_medias if media is not None
+        for tag in media.render_js()  #
+    ]
 
     # Postprocess all <script> and <link> tags to 1) dedupe, and 2) extract URLs.
     # For the deduplication, if multiple components link to the same JS/CSS, but they
