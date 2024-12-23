@@ -223,7 +223,7 @@ tinycss2==1.4.0
     #   cssselect2
 tzdata==2024.2
     # via django
-urllib3==2.2.3
+urllib3==2.3.0
     # via requests
 verspec==0.1.0
     # via mike
