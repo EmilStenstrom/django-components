@@ -692,6 +692,10 @@ class Component(
         if not isinstance(context, Context):
             context = RequestContext(request, context) if request else Context(context)
 
+        # Required for compatibility with Django's {% extends %} tag
+        # See https://github.com/EmilStenstrom/django-components/pull/859
+        context.render_context.push({BLOCK_CONTEXT_KEY: context.render_context.get(BLOCK_CONTEXT_KEY, {})})
+
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
         # call `self.inject()` from within `get_context_data()`.
@@ -768,6 +772,7 @@ class Component(
         # After rendering is done, remove the current state from the stack, which means
         # properties like `self.context` will no longer return the current state.
         self._render_stack.pop()
+        context.render_context.pop()
 
         return output
 
