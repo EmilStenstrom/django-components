@@ -120,7 +120,7 @@ class MultilineTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>123</strong>
+            Variable: <strong data-djc-id-a1bc3f>123</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -147,7 +147,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>lorem</strong>
+            Variable: <strong data-djc-id-a1bc3f>lorem</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -161,7 +161,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation&#x27;s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation&#x27;s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -175,7 +175,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation&#x27;s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation&#x27;s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -189,7 +189,7 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation"s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation"s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
 
@@ -203,6 +203,6 @@ class NestedTagsTests(BaseTestCase):
         """
         rendered = Template(template).render(Context())
         expected = """
-            Variable: <strong>organisation"s</strong>
+            Variable: <strong data-djc-id-a1bc3f>organisation"s</strong>
         """
         self.assertHTMLEqual(rendered, expected)
