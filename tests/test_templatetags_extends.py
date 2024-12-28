@@ -49,14 +49,15 @@ class ExtendsCompatTests(BaseTestCase):
             {% endblock %}
         """
         rendered = Template(template).render(Context())
+
         expected = """
             <!DOCTYPE html>
             <html lang="en">
                 <body>
                     <main role="main">
                         <div class='container main-container'>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc40>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc40>
                                 <header>SLOT OVERRIDEN</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
@@ -105,14 +106,14 @@ class ExtendsCompatTests(BaseTestCase):
                 <body>
                     <main role="main">
                         <div class='container main-container'>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc42>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc42>
                                 <header>SLOT OVERRIDEN</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
                             </custom-template>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc46>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc46>
                                 <header>SLOT OVERRIDEN 2</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
@@ -171,14 +172,14 @@ class ExtendsCompatTests(BaseTestCase):
                 <body>
                     <main role="main">
                         <div class='container main-container'>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc42>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc42>
                                 <header>SLOT OVERRIDEN</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
                             </custom-template>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc46>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc46>
                                 <header>SLOT OVERRIDEN 2</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
@@ -230,20 +231,21 @@ class ExtendsCompatTests(BaseTestCase):
             {% endblock %}
         """
         rendered = Template(template).render(Context())
+
         expected = """
             <!DOCTYPE html>
             <html lang="en">
                 <body>
                     <main role="main">
                         <div class='container main-container'>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc42>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc42>
                                 <header>SLOT OVERRIDEN</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
                             </custom-template>
-                            <div>BLOCK OVERRIDEN</div>
-                            <custom-template>
+                            <div data-djc-id-a1bc46>BLOCK OVERRIDEN</div>
+                            <custom-template data-djc-id-a1bc46>
                                 <header>SLOT OVERRIDEN 2</header>
                                 <main>Default main</main>
                                 <footer>Default footer</footer>
@@ -287,8 +289,8 @@ class ExtendsCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
                 <body>
-                    <div>BLOCK OVERRIDEN</div>
-                    <custom-template>
+                    <div data-djc-id-a1bc40>BLOCK OVERRIDEN</div>
+                    <custom-template data-djc-id-a1bc40>
                         <header>SLOT OVERRIDEN</header>
                         <main>Default main</main>
                         <footer>Default footer</footer>
@@ -335,14 +337,14 @@ class ExtendsCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
                 <body>
-                    <div>BLOCK OVERRIDEN</div>
-                    <custom-template>
+                    <div data-djc-id-a1bc42>BLOCK OVERRIDEN</div>
+                    <custom-template data-djc-id-a1bc42>
                         <header>SLOT OVERRIDEN</header>
                         <main>Default main</main>
                         <footer>Default footer</footer>
                     </custom-template>
-                    <div>BLOCK OVERRIDEN</div>
-                    <custom-template>
+                    <div data-djc-id-a1bc46>BLOCK OVERRIDEN</div>
+                    <custom-template data-djc-id-a1bc46>
                         <header>SLOT OVERRIDEN 2</header>
                         <main>Default main</main>
                         <footer>Default footer</footer>
@@ -389,11 +391,11 @@ class ExtendsCompatTests(BaseTestCase):
                 <body>
                     <main role="main">
                         <div class='container main-container'>
-                            <custom-template>
+                            <custom-template data-djc-id-a1bc42>
                                 <header>Default header</header>
                                 <main>
-                                    <div>BLOCK OVERRIDEN</div>
-                                    <custom-template>
+                                    <div data-djc-id-a1bc46>BLOCK OVERRIDEN</div>
+                                    <custom-template data-djc-id-a1bc46>
                                         <header>SLOT OVERRIDEN</header>
                                         <main>Default main</main>
                                         <footer>Default footer</footer>
@@ -435,7 +437,7 @@ class ExtendsCompatTests(BaseTestCase):
                     <main role="main">
                         <div class='container main-container'>
                             Variable: <strong></strong>
-                            Variable: <strong></strong>
+                            Variable: <strong data-djc-id-a1bc3f></strong>
                         </div>
                     </main>
                 </body>
@@ -469,9 +471,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc40 lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc45>
                     <header></header>
                     <main>BODY_FROM_FILL</main>
                     <footer>Default footer</footer>
@@ -502,9 +504,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc40 lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc45>
                     <header></header>
                     <main>BODY_FROM_FILL</main>
                     <footer>Default footer</footer>
@@ -537,7 +539,7 @@ class ExtendsCompatTests(BaseTestCase):
             <body>
                 <main role="main">
                     <div class='container main-container'>
-                        <custom-template>
+                        <custom-template data-djc-id-a1bc42>
                             <header></header>
                             <main>TEST</main>
                             <footer></footer>
@@ -567,7 +569,7 @@ class ExtendsCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc41>
                     <header></header>
                     <main>
                         <div> 58 giraffes and 2 pantaloons </div>
@@ -594,9 +596,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc3f lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc43>
                     <header></header>
                     <main>
                         <div> 58 giraffes and 2 pantaloons </div>
@@ -634,9 +636,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc40 lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc45>
                     <header></header>
                     <main>BODY_FROM_FILL</main>
                     <footer>Default footer</footer>
@@ -664,9 +666,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc3f lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc44>
                     <header></header>
                     <main>
                         Helloodiddoo
@@ -700,9 +702,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc3f lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc44>
                     <header></header>
                     <main>
                         Helloodiddoo
@@ -736,9 +738,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc40 lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc45>
                     <header></header>
                     <main>
                         Helloodiddoo
@@ -782,9 +784,9 @@ class ExtendsCompatTests(BaseTestCase):
         rendered = Template(template).render(Context())
         expected = """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc41 lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc47>
                     <header></header>
                     <main>
                         Helloodiddoo
@@ -824,10 +826,10 @@ class ExtendsCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
             <body>
-                <custom-template>
+                <custom-template data-djc-id-a1bc43>
                     <header></header>
                     <main>
-                        <div> injected: DepInject(hello='from_block') </div>
+                        <div data-djc-id-a1bc47> injected: DepInject(hello='from_block') </div>
                     </main>
                     <footer>Default footer</footer>
                 </custom-template>
