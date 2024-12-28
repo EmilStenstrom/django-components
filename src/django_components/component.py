@@ -45,7 +45,14 @@ from django_components.context import (
     get_injected_context_var,
     make_isolated_context_copy,
 )
-from django_components.dependencies import RenderType, cache_inlined_css, cache_inlined_js, postprocess_component_html
+from django_components.dependencies import (
+    RenderType,
+    cache_component_css,
+    cache_component_css_vars,
+    cache_component_js,
+    cache_component_js_vars,
+    postprocess_component_html,
+)
 from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
 from django_components.node import BaseNode
 from django_components.slots import (
@@ -89,6 +96,7 @@ CssDataType = TypeVar("CssDataType", bound=Mapping[str, Any])
 
 @dataclass(frozen=True)
 class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
+    id: str
     context: Context
     args: ArgsType
     kwargs: KwargsType
@@ -337,7 +345,6 @@ class Component(
     def __init__(
         self,
         registered_name: Optional[str] = None,
-        component_id: Optional[str] = None,
         outer_context: Optional[Context] = None,
         registry: Optional[ComponentRegistry] = None,  # noqa F811
     ):
@@ -358,7 +365,6 @@ class Component(
 
         self.registered_name: Optional[str] = registered_name
         self.outer_context: Context = outer_context or Context()
-        self.component_id = component_id or gen_id()
         self.registry = registry or registry_
         self._render_stack: Deque[RenderStackItem[ArgsType, KwargsType, SlotsType]] = deque()
         # None == uninitialized, False == No types, Tuple == types
@@ -370,6 +376,19 @@ class Component(
     @property
     def name(self) -> str:
         return self.registered_name or self.__class__.__name__
+
+    @property
+    def id(self) -> str:
+        """
+        Render ID - This ID is unique for every time a `Component.render()` (or equivalent) is called.
+
+        This is useful for logging or debugging.
+
+        Render IDs have the chance of collision 1 in 3.3M.
+
+        Raises RuntimeError if called outside of rendering execution.
+        """
+        return self.input.id
 
     @property
     def input(self) -> RenderInput[ArgsType, KwargsType, SlotsType]:
@@ -732,12 +751,17 @@ class Component(
         if not isinstance(context, Context):
             context = RequestContext(request, context) if request else Context(context)
 
+        # Required for compatibility with Django's {% extends %} tag
+        # See https://github.com/EmilStenstrom/django-components/pull/859
+        context.render_context.push({BLOCK_CONTEXT_KEY: context.render_context.get(BLOCK_CONTEXT_KEY, {})})
+
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
         # call `self.inject()` from within `get_context_data()`.
         self._render_stack.append(
             RenderStackItem(
                 input=RenderInput(
+                    id=gen_id(),
                     context=context,
                     slots=slots,
                     args=args,
@@ -752,9 +776,14 @@ class Component(
         context_data = self.get_context_data(*args, **kwargs)
         self._validate_outputs(data=context_data)
 
-        # Process JS and CSS files
-        cache_inlined_js(self.__class__, self.js or "")
-        cache_inlined_css(self.__class__, self.css or "")
+        # Process Component's JS and CSS
+        js_data: Dict = {}  # TODO
+        cache_component_js(self.__class__)
+        js_input_hash = cache_component_js_vars(self.__class__, js_data) if js_data else None
+
+        css_data: Dict = {}  # TODO
+        cache_component_css(self.__class__)
+        css_input_hash = cache_component_css_vars(self.__class__, css_data) if css_data else None
 
         with _prepare_template(self, context, context_data) as template:
             # For users, we expose boolean variables that they may check
@@ -799,8 +828,10 @@ class Component(
 
                 output = postprocess_component_html(
                     component_cls=self.__class__,
-                    component_id=self.component_id,
+                    component_id=self.id,
                     html_content=html_content,
+                    css_input_hash=css_input_hash,
+                    js_input_hash=js_input_hash,
                     type=type,
                     render_dependencies=render_dependencies,
                 )
@@ -808,6 +839,7 @@ class Component(
         # After rendering is done, remove the current state from the stack, which means
         # properties like `self.context` will no longer return the current state.
         self._render_stack.pop()
+        context.render_context.pop()
 
         return output
 
@@ -986,7 +1018,6 @@ class ComponentNode(BaseNode):
         component: Component = component_cls(
             registered_name=self.name,
             outer_context=context,
-            component_id=self.node_id,
             registry=self.registry,
         )
 

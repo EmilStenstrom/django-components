@@ -1,0 +1,7 @@
+{% load component_tags %}
+{% block before_custom %}{% endblock %}
+<custom-template>
+    <header>{% slot "header" %}Default header{% endslot %}</header>
+    <main>{% slot "main" %}Default main{% endslot %}</main>
+    <footer>{% slot "footer" %}Default footer{% endslot %}</footer>
+</custom-template>
