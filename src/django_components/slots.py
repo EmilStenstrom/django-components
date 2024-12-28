@@ -338,10 +338,16 @@ class SlotNode(BaseNode):
         # came from (or current context if configured so)
         used_ctx = self._resolve_slot_context(context, slot_fill)
         with used_ctx.update(extra_context):
-            # Render slot as a function
-            # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
-            #       the render function ALWAYS receives them.
-            output = slot_fill.slot(used_ctx, kwargs, slot_ref)
+            # Required for compatibility with Django's {% extends %} tag
+            # This makes sure that the render context used outside of a component
+            # is the same as the one used inside the slot.
+            # See https://github.com/EmilStenstrom/django-components/pull/859
+            render_ctx_layer = used_ctx.render_context.dicts[-2] if len(used_ctx.render_context.dicts) > 1 else {}
+            with used_ctx.render_context.push(render_ctx_layer):
+                # Render slot as a function
+                # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
+                #       the render function ALWAYS receives them.
+                output = slot_fill.slot(used_ctx, kwargs, slot_ref)
 
         trace_msg("RENDR", "SLOT", self.trace_id, self.node_id, msg="...Done!")
         return output

@@ -74,6 +74,8 @@ poetry.lock
 .DS_Store
 .python-version
 site
+.direnv/
+.envrc
 
 # JS, NPM Dependency directories
 node_modules/

@@ -1,6 +1,6 @@
 # Release notes
 
-## v0.123
+## v0.124
 
 #### Refactor
 
@@ -9,6 +9,12 @@
   - While `component_id` was unique every time you instantiated `Component`, The new `id` is unique
     every time you render the component (e.g. with `Component.render()`)
   - The new `id` is available only during render, so e.g. from within `get_context_data()`
+
+## v0.123
+
+#### Fix
+
+- Fix edge cases around rendering components whose templates used the `{% extends %}` template tag ([#859](https://github.com/EmilStenstrom/django-components/pull/859))
 
 ## v0.122
 
