@@ -401,6 +401,10 @@ COMPONENT_DEPS_COMMENT = "<!-- _RENDERED {data} -->"
 # E.g. `<!-- _RENDERED table,123,a92ef298,bd002c3 -->`
 COMPONENT_COMMENT_REGEX = re.compile(rb"<!--\s+_RENDERED\s+(?P<data>[\w\-,/]+?)\s+-->")
 # E.g. `table,123,a92ef298,bd002c3`
+# - comp_cls_hash - Cache key of the component class that was rendered
+# - id - Component render ID
+# - js - Cache key for the JS data from `get_js_data()`
+# - css - Cache key for the CSS data from `get_css_data()`
 SCRIPT_NAME_REGEX = re.compile(
     rb"^(?P<comp_cls_hash>[\w\-\./]+?),(?P<id>[\w]+?),(?P<js>[0-9a-f]*?),(?P<css>[0-9a-f]*?)$"
 )
