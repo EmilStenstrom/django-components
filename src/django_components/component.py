@@ -250,7 +250,7 @@ class Component(
     js_file: Optional[str] = None
     """
     Main JS associated with this component as file path.
-    
+
     When you create a Component subclass, these will happen:
 
     1. The filepath is resolved, in case it is relative to the component Python file.
@@ -262,7 +262,7 @@ class Component(
     css_file: Optional[str] = None
     """
     Main CSS associated with this component as file path.
-    
+
     When you create a Component subclass, these will happen:
 
     1. The filepath is resolved, in case it is relative to the component Python file.
@@ -277,16 +277,20 @@ class Component(
     NOTE: This field is generated from `Component.media_class`.
     """
     media_class: Type[MediaCls] = MediaCls
-    Media: Optional[type[ComponentMediaInput]] = None
+    Media: Optional[Type[ComponentMediaInput]] = None
     """
     Defines JS and CSS media files associated with this component.
 
-    This `Media` class behaves similarly to [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition),
+    This `Media` class behaves similarly to
+    [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition),
     with a few differences:
 
-    1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list, or (CSS-only) a dictonary (See below)
-    2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`, [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
-    3. Our Media class does NOT support [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
+    1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list,
+       or (CSS-only) a dictonary (See below)
+    2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
+       [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
+    3. Our Media class does NOT support
+       [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
 
     **Example:**
 

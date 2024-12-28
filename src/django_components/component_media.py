@@ -87,8 +87,10 @@ class ComponentMedia:
 #
 # We achieve this by:
 # 1. At class creation, we define a private `ComponentMedia` object that holds all the media-related attributes.
-# 2. At the same time, we replace the actual media-related attributes (like `js`) with descriptors that intercept the access to them.
-# 3. When the user tries to access the media-related attributes, we resolve the media files if they haven't been resolved yet.
+# 2. At the same time, we replace the actual media-related attributes (like `js`) with descriptors that intercept
+#    the access to them.
+# 3. When the user tries to access the media-related attributes, we resolve the media files if they haven't been
+#    resolved yet.
 # 4. Any further access to the media-related attributes will return the resolved values.
 class ComponentMediaMeta(type):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
@@ -109,7 +111,8 @@ class ComponentMediaMeta(type):
     #       If they were instance attributes, we could use `@property` decorator.
     #
     # Because we lazily resolve the media, there's a possibility that the user may try to set some media fields
-    # after the media fields were already resolved. This is currently not supported, and we do the resolution only once.
+    # after the media fields were already resolved. This is currently not supported, and we do the resolution
+    # only once.
     #
     # Thus, we print a warning when user sets the media fields after they were resolved.
     def __setattr__(cls, name: str, value: Any) -> None:
@@ -219,8 +222,8 @@ def resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> No
     Then `script.js` will be understood as relative to the component file.
     To obtain the final path, we make it relative to a component directory (as set in `COMPONENTS.dirs`
     and `COMPONENTS.app_dirs`; and `STATICFILES_DIRS` for JS and CSS). So if the parent directory is `components/`,
-    and the component file is inside `components/my_comp/my_comp.py`, then the final path will be relative to `components/`,
-    thus `./my_comp/script.js`.
+    and the component file is inside `components/my_comp/my_comp.py`, then the final path will be relative
+    to `components/`, thus `./my_comp/script.js`.
 
     If the relative path does not point to an actual file, the path is kept as is.
 
@@ -252,7 +255,8 @@ def resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> No
     _resolve_component_relative_files(comp_cls, comp_media, comp_dirs=comp_dirs)
 
     # If the component defined `js_file` or `css_file`, instead of `js`/`css` resolve them now.
-    # Effectively, even if the Component class defined `js_file`, at "runtime" the `js` attribute will be set to the content of the file.
+    # Effectively, even if the Component class defined `js_file`, at "runtime" the `js` attribute
+    # will be set to the content of the file.
     comp_media.js = _get_static_asset(
         comp_cls, comp_media, inlined_attr="js", file_attr="js_file", comp_dirs=comp_dirs
     )
@@ -530,7 +534,7 @@ def _get_dir_path_from_component_path(
 
 
 def _get_static_asset(
-    comp_cls: type["Component"],
+    comp_cls: Type["Component"],
     comp_media: ComponentMedia,
     inlined_attr: str,
     file_attr: str,

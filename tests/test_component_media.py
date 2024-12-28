@@ -177,14 +177,26 @@ class MainMediaTest(BaseTestCase):
 
         # NOTE: Since this is a subclass, actual CSS is defined on the parent class, and thus
         # the corresponding ComponentMedia instance is also on the parent class.
-        self.assertEqual(AppLvlCompComponent._component_media.css, None)
-        self.assertEqual(AppLvlCompComponent._component_media.css_file, "app_lvl_comp.css")
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
+            None,
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
+            "app_lvl_comp.css",
+        )
 
         # Access the property to load the CSS
         _ = TestComponent.css
 
-        self.assertHTMLEqual(AppLvlCompComponent._component_media.css, ".html-css-only { color: blue; }")
-        self.assertEqual(AppLvlCompComponent._component_media.css_file, "app_lvl_comp/app_lvl_comp.css")
+        self.assertHTMLEqual(
+            AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
+            ".html-css-only { color: blue; }",
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
+            "app_lvl_comp/app_lvl_comp.css",
+        )
 
     def test_html_variable(self):
         class VariableHTMLComponent(Component):
