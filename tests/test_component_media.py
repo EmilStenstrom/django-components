@@ -186,7 +186,6 @@ class MainMediaTest(BaseTestCase):
         self.assertHTMLEqual(AppLvlCompComponent._component_media.css, ".html-css-only { color: blue; }")
         self.assertEqual(AppLvlCompComponent._component_media.css_file, "app_lvl_comp/app_lvl_comp.css")
 
-
     def test_html_variable(self):
         class VariableHTMLComponent(Component):
             def get_template(self, context):

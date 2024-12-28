@@ -84,7 +84,7 @@ class ComponentMedia:
 # At the same time, we need to do so lazily, otherwise we hit a problem with circular imports when trying to
 # use Django settings. This is because the settings are not available at the time when the component class is defined
 # (Assuming that components are defined at the top-level of modules).
-# 
+#
 # We achieve this by:
 # 1. At class creation, we define a private `ComponentMedia` object that holds all the media-related attributes.
 # 2. At the same time, we replace the actual media-related attributes (like `js`) with descriptors that intercept the access to them.
@@ -145,7 +145,7 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
     # Because the media values are not defined directly on the instance, but held in `_component_media`,
     # then simply accessing `_component_media.js` will NOT get the values from parent classes.
     #
-    # So this function is like `getattr`, but for searching for values inside `_component_media`. 
+    # So this function is like `getattr`, but for searching for values inside `_component_media`.
     def get_comp_media_attr(attr: str) -> Any:
         for base in comp_cls.mro():
             comp_media: Optional[ComponentMedia] = getattr(base, "_component_media", None)
@@ -253,9 +253,13 @@ def resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> No
 
     # If the component defined `js_file` or `css_file`, instead of `js`/`css` resolve them now.
     # Effectively, even if the Component class defined `js_file`, at "runtime" the `js` attribute will be set to the content of the file.
-    comp_media.js = _get_static_asset(comp_cls, comp_media, inlined_attr="js", file_attr="js_file", comp_dirs=comp_dirs)
-    comp_media.css = _get_static_asset(comp_cls, comp_media, inlined_attr="css", file_attr="css_file", comp_dirs=comp_dirs)
-    
+    comp_media.js = _get_static_asset(
+        comp_cls, comp_media, inlined_attr="js", file_attr="js_file", comp_dirs=comp_dirs
+    )
+    comp_media.css = _get_static_asset(
+        comp_cls, comp_media, inlined_attr="css", file_attr="css_file", comp_dirs=comp_dirs
+    )
+
     media_cls = comp_media.media_class or MediaCls
     media_js = getattr(comp_media.Media, "js", [])
     media_css = getattr(comp_media.Media, "css", {})
@@ -267,7 +271,7 @@ def resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> No
 def normalize_media(media: Type[ComponentMediaInput]) -> None:
     """
     Resolve the `Media` class associated with the component.
-    
+
     We support following cases:
 
     1. As plain strings
@@ -408,7 +412,9 @@ def _normalize_media_filepath(filepath: Any) -> Union[str, SafeData]:
     )
 
 
-def _resolve_component_relative_files(comp_cls: Type["Component"], comp_media: ComponentMedia, comp_dirs: List[Path]) -> None:
+def _resolve_component_relative_files(
+    comp_cls: Type["Component"], comp_media: ComponentMedia, comp_dirs: List[Path]
+) -> None:
     """
     Check if component's HTML, JS and CSS files refer to files in the same directory
     as the component class. If so, modify the attributes so the class Django's rendering
@@ -417,7 +423,11 @@ def _resolve_component_relative_files(comp_cls: Type["Component"], comp_media: C
     # First check if we even need to resolve anything. If the class doesn't define any
     # HTML/JS/CSS files, just skip.
     will_resolve_files = False
-    if getattr(comp_media, "template_name", None) or getattr(comp_media, "js_file", None) or getattr(comp_media, "css_file", None):
+    if (
+        getattr(comp_media, "template_name", None)
+        or getattr(comp_media, "js_file", None)
+        or getattr(comp_media, "css_file", None)
+    ):
         will_resolve_files = True
     elif not will_resolve_files and getattr(comp_media, "Media", None):
         if getattr(comp_media.Media, "css", None) or getattr(comp_media.Media, "js", None):
