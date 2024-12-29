@@ -7,7 +7,7 @@ Next we will add CSS and JavaScript to our template.
 
 !!! info
 
-    In django-components, using JS and CSS is as simple as defining the content.
+    In django-components, using JS and CSS is as simple as defining them on the Component class.
     You don't have to insert the `<script>` and `<link>` tags into the HTML manually.
 
     Behind the scenes, django-components keeps track of which components use which JS and CSS
