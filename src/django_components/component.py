@@ -542,9 +542,9 @@ class Component(
 
         A single render ID has a chance of collision 1 in 3.3M. However, due to birthday paradox, the chance of
         collision increases when approaching ~1,000 render IDs.
-        
+
         **Thus, there is a soft-cap of 1,000 components rendered on a single page.**
-        
+
         If you need to more than that, please open an issue on GitHub.
 
         **Example:**

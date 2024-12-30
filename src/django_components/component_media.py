@@ -88,7 +88,7 @@ class ComponentMediaInput(Protocol):
             ComponentMediaInputPath,
             List[ComponentMediaInputPath],
             Dict[str, ComponentMediaInputPath],
-            Dict[str, List[ComponentMediaInputPath]]
+            Dict[str, List[ComponentMediaInputPath]],
         ]
     ] = None
     """
