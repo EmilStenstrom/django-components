@@ -2,7 +2,7 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://github.com/EmilStenstrom/django-components/blob/master/LICENSE/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
 
-[**Docs (Work in progress)**](https://EmilStenstrom.github.io/django-components/latest/)
+### <table><td>[Read the full documentation](https://EmilStenstrom.github.io/django-components/latest/)</td></table>
 
 Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
 
@@ -127,9 +127,9 @@ And this is what gets rendered:
 <div class="calendar-component">Today's date is <span>2024-11-06</span></div>
 ```
 
-Read on to learn about all the exciting details and configuration possibilities!
+### <table><td>[Read the full documentation](https://EmilStenstrom.github.io/django-components/latest/)</td></table>
 
-(If you instead prefer to jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
+... or jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
 
 ## Release notes
 
