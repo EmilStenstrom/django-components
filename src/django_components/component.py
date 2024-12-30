@@ -309,7 +309,7 @@ class Component(
     ```js title="path/to/script.js"
     console.log('Hello, World!');
     ```
-    
+
     ```py title="path/to/component.py"
     class MyComponent(Component):
         js_file = "path/to/script.js"
@@ -358,7 +358,7 @@ class Component(
         color: red;
     }
     ```
-    
+
     ```py title="path/to/component.py"
     class MyComponent(Component):
         css_file = "path/to/style.css"
@@ -387,13 +387,13 @@ class Component(
         class Media:
             js = "path/to/script.js"
             css = "path/to/style.css"
-    
+
     print(MyComponent.media)
     # Output:
     # <script src="/static/path/to/script.js"></script>
     # <link href="/static/path/to/style.css" media="all" rel="stylesheet">
     ```
-    """
+    """  # noqa: E501
 
     media_class: Type[MediaCls] = MediaCls
     """
@@ -415,7 +415,7 @@ class Component(
 
         media_class = MyMediaClass
     ```
-    """
+    """  # noqa: E501
 
     Media: Optional[Type[ComponentMediaInput]] = None
     """

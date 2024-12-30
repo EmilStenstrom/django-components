@@ -93,7 +93,7 @@ class ComponentMediaInput(Protocol):
     ] = None
     """
     CSS files associated with a [`Component`](../api#django_components.Component).
-    
+
     - If a string, it's assumed to be a path to a CSS file.
 
     - If a list, each entry is assumed to be a path to a CSS file.
