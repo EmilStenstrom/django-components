@@ -214,7 +214,7 @@ automatically embed the associated JS and CSS.
 
     Special role of `css` and `js`:
 
-    The "primary" JS and CSS you that specify via `js/css` and `js/css_file` have special role in multitudes of django-components'
+    The "primary" JS and CSS you that specify via `js/css` and `js_file/css_file` have special role in many of django-components'
     features:
     - CSS scoping [a la Vue](https://vuejs.org/api/sfc-css-features.html#scoped-css)
     - CSS variables from Python are available

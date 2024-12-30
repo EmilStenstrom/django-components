@@ -10,7 +10,7 @@ class Calendar(Component):
     template_name = "calendar/calendar.html"
 
     css_file = "calendar/calendar.css"
-    js = "calendar/calendar.js"
+    js_file = "calendar/calendar.js"
 
     # This component takes one parameter, a date string to show in the template
     def get_context_data(self, date):
