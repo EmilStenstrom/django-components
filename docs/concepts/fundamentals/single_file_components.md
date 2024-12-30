@@ -3,7 +3,7 @@ title: Single-file components
 weight: 1
 ---
 
-Components can also be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:
+Components can be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:
 
 ```python title="[project root]/components/calendar.py"
 # In a file called [project root]/components/calendar.py
@@ -35,3 +35,5 @@ class Calendar(Component):
 ```
 
 This makes it easy to create small components without having to create a separate template, CSS, and JS file.
+
+To add syntax highlighting to these snippets, head over to [Syntax highlighting](../../guides/setup/syntax_highlight.md).

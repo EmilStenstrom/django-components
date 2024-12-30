@@ -6,6 +6,78 @@
 
 Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
 
+A component in django-components can be as simple as a Django template and Python code to declare the component:
+
+```htmldjango title="calendar.html"
+<div class="calendar">
+  Today's date is <span>{{ date }}</span>
+</div>
+```
+
+```py title="calendar.py"
+from django_components import Component
+
+class Calendar(Component):
+    template_name = "calendar.html"
+```
+
+Or a combination of Django template, Python, CSS, and Javascript:
+
+```htmldjango title="calendar.html"
+<div class="calendar">
+  Today's date is <span>{{ date }}</span>
+</div>
+```
+
+```css title="calendar.css"
+.calendar {
+  width: 200px;
+  background: pink;
+}
+```
+
+```js title="calendar.js"
+document.querySelector(".calendar").onclick = function () {
+  alert("Clicked calendar!");
+};
+```
+
+```py title="calendar.py"
+from django_components import Component
+
+class Calendar(Component):
+    template_name = "calendar.html"
+    js_file = "calendar.js"
+    css_file = "calendar.css"
+```
+
+Alternatively, you can "inline" HTML, JS, and CSS right into the component class:
+
+```py
+from django_components import Component
+
+class Calendar(Component):
+    template = """
+      <div class="calendar">
+        Today's date is <span>{{ date }}</span>
+      </div>
+    """
+
+    css = """
+      .calendar {
+        width: 200px;
+        background: pink;
+      }
+    """
+
+    js = """
+      document.querySelector(".calendar").onclick = function () {
+        alert("Clicked calendar!");
+      };
+    """
+```
+
+
 ## Features
 
 1. 🧩 **Reusability:** Allows creation of self-contained, reusable UI elements.
