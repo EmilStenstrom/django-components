@@ -17,17 +17,32 @@ from .testutils import BaseTestCase, autodiscover_with_cleanup
 setup_test_config({"autodiscover": False})
 
 
-class InlineComponentTest(BaseTestCase):
-    def test_html(self):
+# "Main media" refer to the HTML, JS, and CSS set on the Component class itself
+# (as opposed via the `Media` class). These have special handling in the Component.
+class MainMediaTest(BaseTestCase):
+    def test_html_inlined(self):
         class InlineHTMLComponent(Component):
             template = "<div class='inline'>Hello Inline</div>"
 
         self.assertHTMLEqual(
             InlineHTMLComponent.render(),
-            "<div class='inline'>Hello Inline</div>",
+            '<div class="inline" data-djc-id-a1bc3e>Hello Inline</div>',
         )
 
-    def test_inlined_js_and_css(self):
+    def test_html_filepath(self):
+        class Test(Component):
+            template_name = "simple_template.html"
+
+        rendered = Test.render(context={"variable": "test"})
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
+            """,
+        )
+
+    def test_js_css_inlined(self):
         class TestComponent(Component):
             template = """
                 {% load component_tags %}
@@ -38,10 +53,19 @@ class InlineComponentTest(BaseTestCase):
             css = ".html-css-only { color: blue; }"
             js = "console.log('HTML and JS only');"
 
+        self.assertEqual(
+            TestComponent.css,
+            ".html-css-only { color: blue; }",
+        )
+        self.assertEqual(
+            TestComponent.js,
+            "console.log('HTML and JS only');",
+        )
+
         rendered = TestComponent.render()
 
         self.assertInHTML(
-            "<div class='html-css-only'>Content</div>",
+            '<div class="html-css-only" data-djc-id-a1bc3e>Content</div>',
             rendered,
         )
         self.assertInHTML(
@@ -49,8 +73,129 @@ class InlineComponentTest(BaseTestCase):
             rendered,
         )
         self.assertInHTML(
-            "<script>eval(Components.unescapeJs(`console.log(&#x27;HTML and JS only&#x27;);`))</script>",
+            "<script>console.log('HTML and JS only');</script>",
             rendered,
+        )
+
+    @override_settings(
+        STATICFILES_DIRS=[
+            os.path.join(Path(__file__).resolve().parent, "static_root"),
+        ],
+    )
+    def test_js_css_filepath_rel_to_component(self):
+        from tests.test_app.components.app_lvl_comp.app_lvl_comp import AppLvlCompComponent
+
+        class TestComponent(AppLvlCompComponent):
+            template_name = None
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+                <div class='html-css-only'>Content</div>
+            """
+
+        self.assertIn(
+            ".html-css-only {\n  color: blue;\n}",
+            TestComponent.css,
+        )
+        self.assertIn(
+            'console.log("JS file");',
+            TestComponent.js,
+        )
+
+        rendered = TestComponent.render(kwargs={"variable": "test"})
+
+        self.assertInHTML(
+            '<div class="html-css-only" data-djc-id-a1bc3e>Content</div>',
+            rendered,
+        )
+        self.assertInHTML(
+            "<style>.html-css-only {  color: blue;  }</style>",
+            rendered,
+        )
+        self.assertInHTML(
+            '<script>console.log("JS file");</script>',
+            rendered,
+        )
+
+    @override_settings(
+        STATICFILES_DIRS=[
+            os.path.join(Path(__file__).resolve().parent, "static_root"),
+        ],
+    )
+    def test_js_css_filepath_from_static(self):
+        class TestComponent(Component):
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+                <div class='html-css-only'>Content</div>
+            """
+            css_file = "style.css"
+            js_file = "script.js"
+
+        self.assertIn(
+            ".html-css-only {\n    color: blue;\n}",
+            TestComponent.css,
+        )
+        self.assertIn(
+            'console.log("HTML and JS only");',
+            TestComponent.js,
+        )
+
+        rendered = TestComponent.render()
+
+        self.assertInHTML(
+            '<div class="html-css-only" data-djc-id-a1bc3e>Content</div>',
+            rendered,
+        )
+        self.assertInHTML(
+            "<style>/* Used in `MainMediaTest` tests in `test_component_media.py` */\n.html-css-only {\n    color: blue;\n}</style>",
+            rendered,
+        )
+        self.assertInHTML(
+            '<script>/* Used in `MainMediaTest` tests in `test_component_media.py` */\nconsole.log("HTML and JS only");</script>',
+            rendered,
+        )
+
+    @override_settings(
+        STATICFILES_DIRS=[
+            os.path.join(Path(__file__).resolve().parent, "static_root"),
+        ],
+    )
+    def test_js_css_filepath_lazy_loaded(self):
+        from tests.test_app.components.app_lvl_comp.app_lvl_comp import AppLvlCompComponent
+
+        class TestComponent(AppLvlCompComponent):
+            template_name = None
+            template = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+                <div class='html-css-only'>Content</div>
+            """
+
+        # NOTE: Since this is a subclass, actual CSS is defined on the parent class, and thus
+        # the corresponding ComponentMedia instance is also on the parent class.
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
+            None,
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
+            "app_lvl_comp.css",
+        )
+
+        # Access the property to load the CSS
+        _ = TestComponent.css
+
+        self.assertHTMLEqual(
+            AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
+            ".html-css-only { color: blue; }",
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
+            "app_lvl_comp/app_lvl_comp.css",
         )
 
     def test_html_variable(self):
@@ -62,7 +207,7 @@ class InlineComponentTest(BaseTestCase):
         context = Context({"variable": "Dynamic Content"})
         self.assertHTMLEqual(
             comp.render(context),
-            "<div class='variable-html'>Dynamic Content</div>",
+            '<div class="variable-html" data-djc-id-a1bc3e>Dynamic Content</div>',
         )
 
     def test_html_variable_filtered(self):
@@ -82,8 +227,8 @@ class InlineComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Var1: <strong>test1</strong>
-            Var2 (uppercased): <strong>TEST2</strong>
+            Var1: <strong data-djc-id-a1bc3e>test1</strong>
+            Var2 (uppercased): <strong data-djc-id-a1bc3e>TEST2</strong>
             """,
         )
 
@@ -106,7 +251,7 @@ class ComponentMediaTests(BaseTestCase):
         self.assertEqual(rendered.count("<style"), 0)
         self.assertEqual(rendered.count("<link"), 0)
 
-        self.assertEqual(rendered.count("<script"), 2)  # 2 Boilerplate scripts
+        self.assertEqual(rendered.count("<script"), 1)  # 1 Boilerplate script
 
     def test_css_js_as_lists(self):
         class SimpleComponent(Component):
@@ -691,7 +836,7 @@ class MediaRelativePathTests(BaseTestCase):
 
             self.assertInHTML(
                 """
-                <form method="post">
+                <form data-djc-id-a1bc41 method="post">
                     <input type="text" name="variable" value="test">
                     <input type="submit">
                 </form>
@@ -730,7 +875,7 @@ class MediaRelativePathTests(BaseTestCase):
             """
             template = Template(template_str)
             rendered = template.render(Context({}))
-            self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
+            self.assertInHTML('<input type="text" name="variable" value="hello">', rendered)
 
     # Settings required for autodiscover to work
     @override_settings(

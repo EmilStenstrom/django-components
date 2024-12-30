@@ -1,6 +1,6 @@
 ---
 title: Registering components
-weight: 4
+weight: 5
 ---
 
 In previous examples you could repeatedly see us using `@register()` to "register"

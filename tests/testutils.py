@@ -176,6 +176,12 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
                 self._stop_gen_id_patch()
                 self._start_gen_id_patch()
 
+                # Reset template cache
+                from django_components.template import template_cache
+
+                if template_cache:  # May be None if the cache was not initialized
+                    template_cache.clear()
+
                 case_has_data = not isinstance(case, str)
 
                 if isinstance(case, str):

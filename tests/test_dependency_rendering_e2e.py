@@ -3,6 +3,8 @@ Here we check that all parts of managing JS and CSS dependencies work together
 in an actual browser.
 """
 
+import re
+
 from playwright.async_api import Page
 
 from django_components import types
@@ -44,7 +46,10 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         # Check that the actual HTML content was loaded
-        self.assertIn('Variable: <strong class="inner">foo</strong>', data["bodyHTML"])
+        self.assertRegex(
+            data["bodyHTML"],
+            re.compile(r'Variable: <strong class="inner" data-djc-id-\w{6}="">foo</strong>'),
+        )
         self.assertInHTML('<div class="my-style"> 123 </div>', data["bodyHTML"], count=1)
         self.assertInHTML('<div class="my-style2"> xyz </div>', data["bodyHTML"], count=1)
 
@@ -106,17 +111,34 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         # Check that the actual HTML content was loaded
-        self.assertInHTML(
-            """
-            <div class="outer">
-                Variable: <strong class="inner">variable</strong>
-                XYZ: <strong class="other">variable_inner</strong>
-            </div>
-            <div class="my-style">123</div>
-            <div class="my-style2">xyz</div>
-            """,
+        self.assertRegex(
             data["bodyHTML"],
-            count=1,
+            # <div class="outer" data-djc-id-10uLMD>
+            #     Variable:
+            #     <strong class="inner" data-djc-id-DZEnUC>
+            #         variable
+            #     </strong>
+            #     XYZ:
+            #     <strong class="other" data-djc-id-IYirHK>
+            #         variable_inner
+            #     </strong>
+            # </div>
+            # <div class="my-style">123</div>
+            # <div class="my-style2">xyz</div>
+            re.compile(
+                r'<div class="outer" data-djc-id-\w{6}="">\s*'
+                r"Variable:\s*"
+                r'<strong class="inner" data-djc-id-\w{6}="">\s*'
+                r"variable\s*"
+                r"<\/strong>\s*"
+                r"XYZ:\s*"
+                r'<strong class="other" data-djc-id-\w{6}="">\s*'
+                r"variable_inner\s*"
+                r"<\/strong>\s*"
+                r"<\/div>\s*"
+                r'<div class="my-style">123<\/div>\s*'
+                r'<div class="my-style2">xyz<\/div>\s*'
+            ),
         )
 
         # Check components' inlined JS got loaded
@@ -183,17 +205,34 @@ class E2eDependencyRenderingTests(BaseTestCase):
         data = await page.evaluate(test_js)
 
         # Check that the actual HTML content was loaded
-        self.assertInHTML(
-            """
-            <div class="outer">
-                Variable: <strong class="inner">variable</strong>
-                XYZ: <strong class="other">variable_inner</strong>
-            </div>
-            <div class="my-style">123</div>
-            <div class="my-style2">xyz</div>
-            """,
+        self.assertRegex(
             data["bodyHTML"],
-            count=1,
+            # <div class="outer" data-djc-id-10uLMD>
+            #     Variable:
+            #     <strong class="inner" data-djc-id-DZEnUC>
+            #         variable
+            #     </strong>
+            #     XYZ:
+            #     <strong data-djc-id-IYirHK class="other">
+            #         variable_inner
+            #     </strong>
+            # </div>
+            # <div class="my-style">123</div>
+            # <div class="my-style2">xyz</div>
+            re.compile(
+                r'<div class="outer" data-djc-id-\w{6}="">\s*'
+                r"Variable:\s*"
+                r'<strong class="inner" data-djc-id-\w{6}="">\s*'
+                r"variable\s*"
+                r"<\/strong>\s*"
+                r"XYZ:\s*"
+                r'<strong class="other" data-djc-id-\w{6}="">\s*'
+                r"variable_inner\s*"
+                r"<\/strong>\s*"
+                r"<\/div>\s*"
+                r'<div class="my-style">123<\/div>\s*'
+                r'<div class="my-style2">xyz<\/div>\s*'
+            ),
         )
 
         # Check components' inlined JS did NOT get loaded
@@ -294,6 +333,225 @@ class E2eDependencyRenderingTests(BaseTestCase):
         # Check JS from Media.js got loaded
         self.assertEqual(data["testMsg"], None)
         self.assertEqual(data["testMsg2"], None)
+
+        await page.close()
+
+    # Fragment where JS and CSS is defined on Component class
+    @with_playwright
+    async def test_fragment_comp(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/js?frag=comp")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
+        await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function(
+            "() => document.head.innerHTML.includes('<link href=\"/components/cache/FragComp_')"
+        )
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        self.assertEqual(data["targetHtml"], None)
+        self.assertRegex(
+            data["fragHtml"],
+            re.compile(
+                r'<div class="frag" data-djc-id-\w{6}="">\s*' r"123\s*" r'<span id="frag-text">xxx</span>\s*' r"</div>"
+            ),
+        )
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
+    # Fragment where JS and CSS is defined on Media class
+    @with_playwright
+    async def test_fragment_media(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/js?frag=media")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
+        await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function("() => document.head.innerHTML.includes('<link href=\"/static/fragment.css\"')")
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        self.assertEqual(data["targetHtml"], None)
+        self.assertRegex(
+            data["fragHtml"],
+            re.compile(
+                r'<div class="frag" data-djc-id-\w{6}="">\s*' r"123\s*" r'<span id="frag-text">xxx</span>\s*' r"</div>"
+            ),
+        )
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
+    # Fragment loaded by AlpineJS
+    @with_playwright
+    async def test_fragment_alpine(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/alpine?frag=comp")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target" x-html="htmlVar">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
+        await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function(
+            "() => document.head.innerHTML.includes('<link href=\"/components/cache/FragComp_')"
+        )
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        # NOTE: Unlike the vanilla JS tests, for the Alpine test we don't remove the targetHtml,
+        # but only change its contents.
+        self.assertRegex(
+            data["targetHtml"],
+            re.compile(
+                r'<div class="frag" data-djc-id-\w{6}="">\s*' r"123\s*" r'<span id="frag-text">xxx</span>\s*' r"</div>"
+            ),
+        )
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
+
+        await page.close()
+
+    # Fragment loaded by HTMX
+    @with_playwright
+    async def test_fragment_htmx(self):
+        page: Page = await self.browser.new_page()
+        await page.goto(f"{TEST_SERVER_URL}/fragment/base/htmx?frag=comp")
+
+        test_before_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragHtml = fragEl ? fragEl.outerHTML : null;
+
+            return { targetHtml, fragHtml };
+        }"""
+
+        data_before = await page.evaluate(test_before_js)
+
+        self.assertEqual(data_before["targetHtml"], '<div id="target">OLD</div>')
+        self.assertEqual(data_before["fragHtml"], None)
+
+        # Clicking button should load and insert the fragment
+        await page.locator("button").click()
+
+        # Wait until both JS and CSS are loaded
+        await page.locator(".frag").wait_for(state="visible")
+        await page.wait_for_function(
+            "() => document.head.innerHTML.includes('<link href=\"/components/cache/FragComp_')"
+        )
+        await page.wait_for_timeout(100)  # NOTE: For CI we need to wait a bit longer
+
+        test_js: types.js = """() => {
+            const targetEl = document.querySelector("#target");
+            const targetHtml = targetEl ? targetEl.outerHTML : null;
+            const fragEl = document.querySelector(".frag");
+            const fragInnerHtml = fragEl ? fragEl.innerHTML : null;
+
+            // Get the stylings defined via CSS
+            const fragBg = fragEl ? globalThis.getComputedStyle(fragEl).getPropertyValue('background') : null;
+
+            return { targetHtml, fragInnerHtml, fragBg };
+        }"""
+
+        data = await page.evaluate(test_js)
+
+        self.assertEqual(data["targetHtml"], None)
+        # NOTE: We test only the inner HTML, because the element itself may or may not have
+        # extra CSS classes added by HTMX, which results in flaky tests.
+        self.assertRegex(
+            data["fragInnerHtml"],
+            re.compile(r'123\s*<span id="frag-text">xxx</span>'),
+        )
+        self.assertIn("rgb(0, 0, 255)", data["fragBg"])  # AKA 'background: blue'
 
         await page.close()
 

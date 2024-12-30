@@ -56,9 +56,9 @@ class TestComponentAsView(BaseTestCase):
         client = CustomClient(urlpatterns=[path("test_template/", render_template_view)])
         response = client.get("/test_template/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b'<input type="text" name="variable" value="TEMPLATE">',
-            response.content,
+        self.assertInHTML(
+            '<input type="text" name="variable" value="TEMPLATE">',
+            response.content.decode(),
         )
 
     def test_get_request(self):
@@ -81,9 +81,9 @@ class TestComponentAsView(BaseTestCase):
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.get("/test/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b'<input type="text" name="variable" value="GET">',
-            response.content,
+        self.assertInHTML(
+            '<input type="text" name="variable" value="GET">',
+            response.content.decode(),
         )
 
     def test_get_request_shortcut(self):
@@ -105,9 +105,9 @@ class TestComponentAsView(BaseTestCase):
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.get("/test/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b'<input type="text" name="variable" value="GET">',
-            response.content,
+        self.assertInHTML(
+            '<input type="text" name="variable" value="GET">',
+            response.content.decode(),
         )
 
     def test_post_request(self):
@@ -131,9 +131,9 @@ class TestComponentAsView(BaseTestCase):
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.post("/test/", {"variable": "POST"})
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b'<input type="text" name="variable" value="POST">',
-            response.content,
+        self.assertInHTML(
+            '<input type="text" name="variable" value="POST">',
+            response.content.decode(),
         )
 
     def test_post_request_shortcut(self):
@@ -156,9 +156,9 @@ class TestComponentAsView(BaseTestCase):
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest.as_view())])
         response = client.post("/test/", {"variable": "POST"})
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b'<input type="text" name="variable" value="POST">',
-            response.content,
+        self.assertInHTML(
+            '<input type="text" name="variable" value="POST">',
+            response.content.decode(),
         )
 
     def test_instantiate_component(self):
@@ -178,9 +178,9 @@ class TestComponentAsView(BaseTestCase):
         client = CustomClient(urlpatterns=[path("test/", MockComponentRequest("my_comp").as_view())])
         response = client.get("/test/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b'<input type="text" name="variable" value="my_comp">',
-            response.content,
+        self.assertInHTML(
+            '<input type="text" name="variable" value="my_comp">',
+            response.content.decode(),
         )
 
     @parametrize_context_behavior(["django", "isolated"])

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from django_components import Component, register
 
@@ -6,7 +6,9 @@ from django_components import Component, register
 # Used for testing the template_loader
 @register("app_lvl_comp")
 class AppLvlCompComponent(Component):
-    template_name = "app_lvl_comp.html"
+    template_name: Optional[str] = "app_lvl_comp.html"
+    js_file = "app_lvl_comp.js"
+    css_file = "app_lvl_comp.css"
 
     class Media:
         js = "app_lvl_comp.js"

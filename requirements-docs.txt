@@ -43,9 +43,9 @@ certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via cairocffi
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-click==8.1.7
+click==8.1.8
     # via
     #   black
     #   mkdocs
@@ -70,7 +70,7 @@ gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
     # via mkdocs-git-revision-date-localized-plugin
-griffe==1.5.1
+griffe==1.5.4
     # via mkdocstrings-python
 htmlmin2==0.1.13
     # via mkdocs-minify-plugin
@@ -80,7 +80,7 @@ importlib-metadata==8.5.0
     # via mike
 importlib-resources==6.4.5
     # via mike
-jinja2==3.1.4
+jinja2==3.1.5
     # via
     #   mike
     #   mkdocs
@@ -155,7 +155,7 @@ mkdocstrings==0.27.0
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
-mkdocstrings-python==1.12.2
+mkdocstrings-python==1.13.0
     # via hatch.envs.docs
 mypy-extensions==1.0.0
     # via black
@@ -182,7 +182,7 @@ pycparser==2.22
     # via cffi
 pygments==2.18.0
     # via mkdocs-material
-pymdown-extensions==10.12
+pymdown-extensions==10.13
     # via
     #   hatch.envs.docs
     #   markdown-exec
@@ -223,7 +223,7 @@ tinycss2==1.4.0
     #   cssselect2
 tzdata==2024.2
     # via django
-urllib3==2.2.3
+urllib3==2.3.0
     # via requests
 verspec==0.1.0
     # via mike

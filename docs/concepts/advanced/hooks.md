@@ -1,6 +1,6 @@
 ---
 title: Lifecycle hooks
-weight: 3
+weight: 4
 ---
 
 _New in version 0.96_

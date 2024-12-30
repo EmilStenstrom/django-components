@@ -2,9 +2,81 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://github.com/EmilStenstrom/django-components/blob/master/LICENSE/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
 
-[**Documentation**](https://EmilStenstrom.github.io/django-components/latest/)
+### <table><td>[Read the full documentation](https://EmilStenstrom.github.io/django-components/latest/)</td></table>
 
 Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
+
+A component in django-components can be as simple as a Django template and Python code to declare the component:
+
+```htmldjango title="calendar.html"
+<div class="calendar">
+  Today's date is <span>{{ date }}</span>
+</div>
+```
+
+```py title="calendar.py"
+from django_components import Component
+
+class Calendar(Component):
+    template_name = "calendar.html"
+```
+
+Or a combination of Django template, Python, CSS, and Javascript:
+
+```htmldjango title="calendar.html"
+<div class="calendar">
+  Today's date is <span>{{ date }}</span>
+</div>
+```
+
+```css title="calendar.css"
+.calendar {
+  width: 200px;
+  background: pink;
+}
+```
+
+```js title="calendar.js"
+document.querySelector(".calendar").onclick = function () {
+  alert("Clicked calendar!");
+};
+```
+
+```py title="calendar.py"
+from django_components import Component
+
+class Calendar(Component):
+    template_name = "calendar.html"
+    js_file = "calendar.js"
+    css_file = "calendar.css"
+```
+
+Alternatively, you can "inline" HTML, JS, and CSS right into the component class:
+
+```py
+from django_components import Component
+
+class Calendar(Component):
+    template = """
+      <div class="calendar">
+        Today's date is <span>{{ date }}</span>
+      </div>
+    """
+
+    css = """
+      .calendar {
+        width: 200px;
+        background: pink;
+      }
+    """
+
+    js = """
+      document.querySelector(".calendar").onclick = function () {
+        alert("Clicked calendar!");
+      };
+    """
+```
+
 
 ## Features
 
@@ -55,9 +127,9 @@ And this is what gets rendered:
 <div class="calendar-component">Today's date is <span>2024-11-06</span></div>
 ```
 
-Read on to learn about all the exciting details and configuration possibilities!
+### <table><td>[Read the full documentation](https://EmilStenstrom.github.io/django-components/latest/)</td></table>
 
-(If you instead prefer to jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
+... or jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
 
 ## Release notes
 
