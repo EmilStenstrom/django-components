@@ -212,7 +212,20 @@ class Component(
     The filepath must be relative to either the file where the component class was defined,
     or one of the roots of `STATIFILES_DIRS`.
 
-    Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+    Only one of [`template_name`](../api#django_components.Component.template_name),
+    [`get_template_name`](../api#django_components.Component.get_template_name),
+    [`template`](../api#django_components.Component.template)
+    or [`get_template`](../api#django_components.Component.get_template) must be defined.
+
+    **Example:**
+
+    ```py
+    class MyComponent(Component):
+        template_name = "path/to/template.html"
+
+        def get_context_data(self):
+            return {"name": "World"}
+    ```
     """
 
     def get_template_name(self, context: Context) -> Optional[str]:
@@ -222,7 +235,10 @@ class Component(
         The filepath must be relative to either the file where the component class was defined,
         or one of the roots of `STATIFILES_DIRS`.
 
-        Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+        Only one of [`template_name`](../api#django_components.Component.template_name),
+        [`get_template_name`](../api#django_components.Component.get_template_name),
+        [`template`](../api#django_components.Component.template)
+        or [`get_template`](../api#django_components.Component.get_template) must be defined.
         """
         return None
 
@@ -230,14 +246,30 @@ class Component(
     """
     Inlined Django template associated with this component. Can be a plain string or a Template instance.
 
-    Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+    Only one of [`template_name`](../api#django_components.Component.template_name),
+    [`get_template_name`](../api#django_components.Component.get_template_name),
+    [`template`](../api#django_components.Component.template)
+    or [`get_template`](../api#django_components.Component.get_template) must be defined.
+
+    **Example:**
+
+    ```py
+    class MyComponent(Component):
+        template = "Hello, {{ name }}!"
+
+        def get_context_data(self):
+            return {"name": "World"}
+    ```
     """
 
     def get_template(self, context: Context) -> Optional[Union[str, Template]]:
         """
         Inlined Django template associated with this component. Can be a plain string or a Template instance.
 
-        Only one of `template_name`, `get_template_name`, `template` or `get_template` must be defined.
+        Only one of [`template_name`](../api#django_components.Component.template_name),
+        [`get_template_name`](../api#django_components.Component.get_template_name),
+        [`template`](../api#django_components.Component.template)
+        or [`get_template`](../api#django_components.Component.get_template) must be defined.
         """
         return None
 
@@ -245,50 +277,167 @@ class Component(
         return cast(DataType, {})
 
     js: Optional[str] = None
-    """Main JS associated with this component inlined as string."""
+    """
+    Main JS associated with this component inlined as string.
+
+    Only one of [`js`](../api#django_components.Component.js) or
+    [`js_file`](../api#django_components.Component.js_file) must be defined.
+
+    **Example:**
+
+    ```py
+    class MyComponent(Component):
+        js = "console.log('Hello, World!');"
+    ```
+    """
 
     js_file: Optional[str] = None
     """
     Main JS associated with this component as file path.
 
-    When you create a Component subclass, these will happen:
+    When you create a Component class with `js_file`, these will happen:
 
-    1. The filepath is resolved, in case it is relative to the component Python file.
-    2. The file is read and its contents will be available under `MyComponent.js`.
+    1. If the file path is relative to the directory where the component's Python file is,
+       the path is resolved.
+    2. The file is read and its contents is set to [`Component.js`](../api#django_components.Component.js).
+
+    Only one of [`js`](../api#django_components.Component.js) or
+    [`js_file`](../api#django_components.Component.js_file) must be defined.
+
+    **Example:**
+
+    ```js title="path/to/script.js"
+    console.log('Hello, World!');
+    ```
+    
+    ```py title="path/to/component.py"
+    class MyComponent(Component):
+        js_file = "path/to/script.js"
+
+    print(MyComponent.js)
+    # Output: console.log('Hello, World!');
+    ```
     """
 
     css: Optional[str] = None
-    """Main CSS associated with this component inlined as string."""
+    """
+    Main CSS associated with this component inlined as string.
+
+    Only one of [`css`](../api#django_components.Component.css) or
+    [`css_file`](../api#django_components.Component.css_file) must be defined.
+
+    **Example:**
+
+    ```py
+    class MyComponent(Component):
+        css = \"\"\"
+        .my-class {
+            color: red;
+        }
+        \"\"\"
+    ```
+    """
+
     css_file: Optional[str] = None
     """
     Main CSS associated with this component as file path.
 
-    When you create a Component subclass, these will happen:
+    When you create a Component class with `css_file`, these will happen:
 
-    1. The filepath is resolved, in case it is relative to the component Python file.
-    2. The file is read and its contents will be available under `MyComponent.css`.
+    1. If the file path is relative to the directory where the component's Python file is,
+       the path is resolved.
+    2. The file is read and its contents is set to [`Component.css`](../api#django_components.Component.css).
+
+    Only one of [`css`](../api#django_components.Component.css) or
+    [`css_file`](../api#django_components.Component.css_file) must be defined.
+
+    **Example:**
+
+    ```css title="path/to/style.css"
+    .my-class {
+        color: red;
+    }
+    ```
+    
+    ```py title="path/to/component.py"
+    class MyComponent(Component):
+        css_file = "path/to/style.css"
+
+    print(MyComponent.css)
+    # Output:
+    # .my-class {
+    #     color: red;
+    # };
+    ```
     """
 
     media: Optional[MediaCls] = None
     """
     Normalized definition of JS and CSS media files associated with this component.
-    `None` if `Media` is not defined.
+    `None` if [`Component.Media`](../api#django_components.Component.Media) is not defined.
 
-    NOTE: This field is generated from `Component.media_class`.
+    This field is generated from [`Component.media_class`](../api#django_components.Component.media_class).
+
+    Read more on [Accessing component's HTML / JS / CSS](../../concepts/fundamentals/defining_js_css_html_files/#accessing-components-media-files).
+
+    **Example:**
+
+    ```py
+    class MyComponent(Component):
+        class Media:
+            js = "path/to/script.js"
+            css = "path/to/style.css"
+    
+    print(MyComponent.media)
+    # Output:
+    # <script src="/static/path/to/script.js"></script>
+    # <link href="/static/path/to/style.css" media="all" rel="stylesheet">
+    ```
     """
+
     media_class: Type[MediaCls] = MediaCls
+    """
+    Set the [Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition)
+    that will be instantiated with the JS and CSS media files from
+    [`Component.Media`](../api#django_components.Component.Media).
+
+    This is useful when you want to customize the behavior of the media files, like
+    customizing how the JS or CSS files are rendered into `<script>` or `<link>` HTML tags.
+    Read more in [Defining HTML / JS / CSS files](../../concepts/fundamentals/defining_js_css_html_files/#customize-how-paths-are-rendered-into-html-tags-with-media_class).
+
+    **Example:**
+
+    ```py
+    class MyTable(Component):
+        class Media:
+            js = "path/to/script.js"
+            css = "path/to/style.css"
+
+        media_class = MyMediaClass
+    ```
+    """
+
     Media: Optional[Type[ComponentMediaInput]] = None
     """
     Defines JS and CSS media files associated with this component.
 
     This `Media` class behaves similarly to
-    [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition),
-    with a few differences:
+    [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition):
+
+    - Paths are generally handled as static file paths, and resolved URLs are rendered to HTML with
+      `media_class.render_js()` or `media_class.render_css()`.
+    - A path that starts with `http`, `https`, or `/` is considered a URL, skipping the static file resolution.
+      This path is still rendered to HTML with `media_class.render_js()` or `media_class.render_css()`.
+    - A `SafeString` (with `__html__` method) is considered an already-formatted HTML tag, skipping both static file
+        resolution and rendering with `media_class.render_js()` or `media_class.render_css()`.
+
+    However, there's a few differences from Django's Media class:
 
     1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list,
-       or (CSS-only) a dictonary (See below)
+       or (CSS-only) a dictonary (See [`ComponentMediaInput`](../api#django_components.ComponentMediaInput)).
     2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
-       [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
+       [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function
+       (See [`ComponentMediaInputPath`](../api#django_components.ComponentMediaInputPath)).
     3. Our Media class does NOT support
        [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
 
@@ -384,13 +533,31 @@ class Component(
     @property
     def id(self) -> str:
         """
-        Render ID - This ID is unique for every time a `Component.render()` (or equivalent) is called.
+        This ID is unique for every time a [`Component.render()`](../api#django_components.Component.render)
+        (or equivalent) is called (AKA "render ID").
 
         This is useful for logging or debugging.
 
-        Render IDs have the chance of collision 1 in 3.3M.
+        Raises `RuntimeError` if accessed outside of rendering execution.
 
-        Raises RuntimeError if called outside of rendering execution.
+        A single render ID has a chance of collision 1 in 3.3M. However, due to birthday paradox, the chance of
+        collision increases when approaching ~1,000 render IDs.
+        
+        **Thus, there is a soft-cap of 1,000 components rendered on a single page.**
+        
+        If you need to more than that, please open an issue on GitHub.
+
+        **Example:**
+
+        ```py
+        class MyComponent(Component):
+            def get_context_data(self):
+                print(f"Rendering '{self.id}'")
+                return {}
+
+        MyComponent.render()
+        # Rendering 'ab3c4d'
+        ```
         """
         return self.input.id
 

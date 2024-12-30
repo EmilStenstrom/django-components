@@ -7,6 +7,7 @@
 from django_components.app_settings import ContextBehavior, ComponentsSettings
 from django_components.autodiscovery import autodiscover, import_libraries
 from django_components.component import Component, ComponentVars, ComponentView
+from django_components.component_media import ComponentMediaInput, ComponentMediaInputPath
 from django_components.component_registry import (
     AlreadyRegistered,
     ComponentRegistry,
@@ -44,6 +45,8 @@ __all__ = [
     "Component",
     "ComponentFileEntry",
     "ComponentFormatter",
+    "ComponentMediaInput",
+    "ComponentMediaInputPath",
     "ComponentRegistry",
     "ComponentVars",
     "ComponentView",

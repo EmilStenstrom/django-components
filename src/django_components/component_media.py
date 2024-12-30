@@ -21,6 +21,40 @@ if TYPE_CHECKING:
 COMP_MEDIA_LAZY_ATTRS = ("media", "template", "template_name", "js", "js_file", "css", "css_file")
 
 
+ComponentMediaInputPath = Union[
+    str,
+    bytes,
+    SafeData,
+    Path,
+    os.PathLike,
+    Callable[[], Union[str, bytes, SafeData, Path, os.PathLike]],
+]
+"""
+A type representing an entry in [Media.js](../api#django_components.ComponentMediaInput.js)
+or [Media.css](../api#django_components.ComponentMediaInput.css).
+
+If an entry is a [SafeString](https://dev.to/doridoro/django-safestring-afj) (or has `__html__` method),
+then entry is assumed to be a formatted HTML tag. Otherwise, it's assumed to be a path to a file.
+
+**Example:**
+
+```py
+class MyComponent
+    class Media:
+        js = [
+            "path/to/script.js",
+            b"script.js",
+            SafeString("<script src='path/to/script.js'></script>"),
+        ]
+        css = [
+            Path("path/to/style.css"),
+            lambda: "path/to/style.css",
+            lambda: Path("path/to/style.css"),
+        ]
+```
+"""
+
+
 # This is the interface of the class that user is expected to define on the component class, e.g.:
 # ```py
 # class MyComponent(Component):
@@ -30,7 +64,7 @@ COMP_MEDIA_LAZY_ATTRS = ("media", "template", "template_name", "js", "js_file", 
 # ```
 class ComponentMediaInput(Protocol):
     """
-    Defines JS and CSS media files associated with this component.
+    Defines JS and CSS media files associated with a [`Component`](../api#django_components.Component).
 
     ```py
     class MyTable(Component):
@@ -49,8 +83,90 @@ class ComponentMediaInput(Protocol):
     ```
     """
 
-    css: Optional[Union[str, List[str], Dict[str, str], Dict[str, List[str]]]] = None
-    js: Optional[Union[str, List[str]]] = None
+    css: Optional[
+        Union[
+            ComponentMediaInputPath,
+            List[ComponentMediaInputPath],
+            Dict[str, ComponentMediaInputPath],
+            Dict[str, List[ComponentMediaInputPath]]
+        ]
+    ] = None
+    """
+    CSS files associated with a [`Component`](../api#django_components.Component).
+    
+    - If a string, it's assumed to be a path to a CSS file.
+
+    - If a list, each entry is assumed to be a path to a CSS file.
+
+    - If a dict, the keys are media types (e.g. "all", "print", "screen", etc.), and the values are either:
+        - A string, assumed to be a path to a CSS file.
+        - A list, each entry is assumed to be a path to a CSS file.
+
+    Each entry can be a string, bytes, SafeString, PathLike, or a callable that returns one of the former
+    (see [`ComponentMediaInputPath`](../api#django_components.ComponentMediaInputPath)).
+
+    Examples:
+    ```py
+    class MyComponent(Component):
+        class Media:
+            css = "path/to/style.css"
+    ```
+
+    ```py
+    class MyComponent(Component):
+        class Media:
+            css = ["path/to/style1.css", "path/to/style2.css"]
+    ```
+
+    ```py
+    class MyComponent(Component):
+        class Media:
+            css = {
+                "all": "path/to/style.css",
+                "print": "path/to/print.css",
+            }
+    ```
+
+    ```py
+    class MyComponent(Component):
+        class Media:
+            css = {
+                "all": ["path/to/style1.css", "path/to/style2.css"],
+                "print": "path/to/print.css",
+            }
+    ```
+    """
+
+    js: Optional[Union[ComponentMediaInputPath, List[ComponentMediaInputPath]]] = None
+    """
+    JS files associated with a [`Component`](../api#django_components.Component).
+
+    - If a string, it's assumed to be a path to a JS file.
+
+    - If a list, each entry is assumed to be a path to a JS file.
+
+    Each entry can be a string, bytes, SafeString, PathLike, or a callable that returns one of the former
+    (see [`ComponentMediaInputPath`](../api#django_components.ComponentMediaInputPath)).
+
+    Examples:
+    ```py
+    class MyComponent(Component):
+        class Media:
+            js = "path/to/script.js"
+    ```
+
+    ```py
+    class MyComponent(Component):
+        class Media:
+            js = ["path/to/script1.js", "path/to/script2.js"]
+    ```
+
+    ```py
+    class MyComponent(Component):
+        class Media:
+            js = lambda: ["path/to/script1.js", "path/to/script2.js"]
+    ```
+    """
 
 
 @dataclass
@@ -96,7 +212,7 @@ class ComponentMediaMeta(type):
     def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any]) -> Type:
         # Normalize the various forms of Media inputs we allow
         if "Media" in attrs:
-            normalize_media(attrs["Media"])
+            _normalize_media(attrs["Media"])
 
         cls = super().__new__(mcs, name, bases, attrs)
         comp_cls = cast(Type["Component"], cls)
@@ -155,7 +271,7 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
             if comp_media is None:
                 continue
             if not comp_media.resolved:
-                resolve_media(base, comp_media)
+                _resolve_media(base, comp_media)
             value = getattr(comp_media, attr, None)
 
             # For each of the pairs of inlined_content + file (e.g. `js` + `js_file`), if at least one of the two
@@ -204,7 +320,7 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
         setattr(comp_cls, attr, InterceptDescriptor(attr))
 
 
-def resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> None:
+def _resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> None:
     """
     Resolve the media files associated with the component.
 
@@ -272,7 +388,7 @@ def resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> No
     comp_media.resolved = True
 
 
-def normalize_media(media: Type[ComponentMediaInput]) -> None:
+def _normalize_media(media: Type[ComponentMediaInput]) -> None:
     """
     Resolve the `Media` class associated with the component.
 
@@ -394,7 +510,7 @@ def _is_media_filepath(filepath: Any) -> bool:
     return False
 
 
-def _normalize_media_filepath(filepath: Any) -> Union[str, SafeData]:
+def _normalize_media_filepath(filepath: ComponentMediaInputPath) -> Union[str, SafeData]:
     if callable(filepath):
         filepath = filepath()
 
