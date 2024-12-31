@@ -7,7 +7,7 @@ from django_components import Component, register
 
 @register("multi_file_component")
 class MultFileComponent(Component):
-    template_name = "multi_file/multi_file.html"
+    template_file = "multi_file/multi_file.html"
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         variable = request.POST.get("variable")

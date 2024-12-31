@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 # These are all the attributes that are handled by ComponentMedia and lazily-resolved
-COMP_MEDIA_LAZY_ATTRS = ("media", "template", "template_name", "js", "js_file", "css", "css_file")
+COMP_MEDIA_LAZY_ATTRS = ("media", "template", "template_file", "js", "js_file", "css", "css_file")
 
 
 ComponentMediaInputPath = Union[
@@ -176,7 +176,7 @@ class ComponentMedia:
     media: Optional[MediaCls] = None
     media_class: Type[MediaCls] = MediaCls
     template: Optional[str] = None
-    template_name: Optional[str] = None
+    template_file: Optional[str] = None
     js: Optional[str] = None
     js_file: Optional[str] = None
     css: Optional[str] = None
@@ -185,9 +185,9 @@ class ComponentMedia:
 
 # This metaclass is all about one thing - lazily resolving the media files.
 #
-# All the CSS/JS/HTML associated with a component - e.g. the `js`, `js_file`, `template_name` or `Media` class,
+# All the CSS/JS/HTML associated with a component - e.g. the `js`, `js_file`, `template_file` or `Media` class,
 # are all class attributes. And some of these attributes need to be resolved, e.g. to find the files
-# that `js_file`, `css_file` and `template_name` point to.
+# that `js_file`, `css_file` and `template_file` point to.
 #
 # Some of the resolutions we need to do is:
 # - Component's HTML/JS/CSS files can be defined as relative to the component class file. So for each file,
@@ -254,7 +254,7 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
         media=attrs.get("media", None),
         media_class=attrs.get("media_class", None),
         template=attrs.get("template", None),
-        template_name=attrs.get("template_name", None),
+        template_file=attrs.get("template_file", None),
         js=attrs.get("js", None),
         js_file=attrs.get("js_file", None),
         css=attrs.get("css", None),
@@ -292,8 +292,8 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
                     continue
                 else:
                     return value
-            if attr in ("template", "template_name"):
-                if check_pair_empty("template", "template_name"):
+            if attr in ("template", "template_file"):
+                if check_pair_empty("template", "template_file"):
                     continue
                 else:
                     return value
@@ -544,7 +544,7 @@ def _resolve_component_relative_files(
     # HTML/JS/CSS files, just skip.
     will_resolve_files = False
     if (
-        getattr(comp_media, "template_name", None)
+        getattr(comp_media, "template_file", None)
         or getattr(comp_media, "js_file", None)
         or getattr(comp_media, "css_file", None)
     ):
@@ -609,8 +609,8 @@ def _resolve_component_relative_files(
         return filepath
 
     # Check if template name is a local file or not
-    if getattr(comp_media, "template_name", None):
-        comp_media.template_name = resolve_media_file(comp_media.template_name)
+    if getattr(comp_media, "template_file", None):
+        comp_media.template_file = resolve_media_file(comp_media.template_file)
     if getattr(comp_media, "js_file", None):
         comp_media.js_file = resolve_media_file(comp_media.js_file)
     if getattr(comp_media, "css_file", None):

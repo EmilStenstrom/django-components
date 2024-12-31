@@ -11,11 +11,11 @@ setup_test_config({"autodiscover": False})
 
 
 class SlottedComponent(Component):
-    template_name = "slotted_template.html"
+    template_file = "slotted_template.html"
 
 
 class BlockedAndSlottedComponent(Component):
-    template_name = "blocked_and_slotted_template.html"
+    template_file = "blocked_and_slotted_template.html"
 
 
 #######################
@@ -418,7 +418,7 @@ class ExtendsCompatTests(BaseTestCase):
 
         @register("extended_component")
         class _ExtendedComponent(Component):
-            template_name = "included.html"
+            template_file = "included.html"
 
         template: types.django_html = """
             {% extends 'block.html' %}
@@ -587,7 +587,7 @@ class ExtendsCompatTests(BaseTestCase):
 
         @register("block_in_component_parent")
         class BlockInCompParent(Component):
-            template_name = "block_in_component_parent.html"
+            template_file = "block_in_component_parent.html"
 
         template: types.django_html = """
             {% load component_tags %}
@@ -620,7 +620,7 @@ class ExtendsCompatTests(BaseTestCase):
 
         @register("block_inside_slot_v1")
         class BlockInSlotInComponent(Component):
-            template_name = "block_in_slot_in_component.html"
+            template_file = "block_in_slot_in_component.html"
 
         template: types.django_html = """
             {% load component_tags %}

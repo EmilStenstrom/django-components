@@ -23,7 +23,7 @@ from django_components import Component, register
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     ...
     def get_context_data(self):
         return {
@@ -71,7 +71,7 @@ from django_components import Component, register
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     ...
     def get_context_data(self, date: date, extra_class: str | None = None):
         return {
@@ -135,7 +135,7 @@ We need to group the list items by size into following buckets by population:
 
 - 0-10,000,000
 - 10,000,001-20,000,000
-- 20,000,001-30,000,000 
+- 20,000,001-30,000,000
 - +30,000,001
 
 So we want to end up with following data:
@@ -179,7 +179,7 @@ def group_by_pop(data):
 
 @register("population_table")
 class PopulationTable(Component):
-    template_name = "population_table.html"
+    template_file = "population_table.html"
 
     def get_context_data(self, data):
         return {
@@ -200,7 +200,7 @@ def to_workweek_date(d: date):
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     ...
     def get_context_data(self, date: date, extra_class: str | None = None):
         workweek_date = to_workweek_date(date)  # <--- new

@@ -208,7 +208,7 @@ class ComponentTest(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_name_static(self):
         class SimpleComponent(Component):
-            template_name = "simple_template.html"
+            template_file = "simple_template.html"
 
             def get_context_data(self, variable=None):
                 return {

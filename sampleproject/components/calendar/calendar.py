@@ -6,8 +6,8 @@ class Calendar(Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir
     # will be automatically found.
     #
-    # `template_name` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
-    template_name = "calendar/calendar.html"
+    # `template_file` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
+    template_file = "calendar/calendar.html"
 
     css_file = "calendar/calendar.css"
     js_file = "calendar/calendar.js"
@@ -31,8 +31,8 @@ class CalendarRelative(Component):
     # Templates inside `[your apps]/components` dir and `[project root]/components` dir
     # will be automatically found.
     #
-    # `template_name` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
-    template_name = "calendar.html"
+    # `template_file` can be relative to dir where `calendar.py` is, or relative to COMPONENTS.dirs
+    template_file = "calendar.html"
 
     css_file = "calendar.css"
     js_file = "calendar.js"

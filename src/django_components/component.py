@@ -205,14 +205,14 @@ class Component(
     # PUBLIC API (Configurable by users)
     # #####################################
 
-    template_name: Optional[str] = None
+    template_file: Optional[str] = None
     """
     Filepath to the Django template associated with this component.
 
     The filepath must be relative to either the file where the component class was defined,
     or one of the roots of `STATIFILES_DIRS`.
 
-    Only one of [`template_name`](../api#django_components.Component.template_name),
+    Only one of [`template_file`](../api#django_components.Component.template_file),
     [`get_template_name`](../api#django_components.Component.get_template_name),
     [`template`](../api#django_components.Component.template)
     or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -221,7 +221,7 @@ class Component(
 
     ```py
     class MyComponent(Component):
-        template_name = "path/to/template.html"
+        template_file = "path/to/template.html"
 
         def get_context_data(self):
             return {"name": "World"}
@@ -235,7 +235,7 @@ class Component(
         The filepath must be relative to either the file where the component class was defined,
         or one of the roots of `STATIFILES_DIRS`.
 
-        Only one of [`template_name`](../api#django_components.Component.template_name),
+        Only one of [`template_file`](../api#django_components.Component.template_file),
         [`get_template_name`](../api#django_components.Component.get_template_name),
         [`template`](../api#django_components.Component.template)
         or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -246,7 +246,7 @@ class Component(
     """
     Inlined Django template associated with this component. Can be a plain string or a Template instance.
 
-    Only one of [`template_name`](../api#django_components.Component.template_name),
+    Only one of [`template_file`](../api#django_components.Component.template_file),
     [`get_template_name`](../api#django_components.Component.get_template_name),
     [`template`](../api#django_components.Component.template)
     or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -266,7 +266,7 @@ class Component(
         """
         Inlined Django template associated with this component. Can be a plain string or a Template instance.
 
-        Only one of [`template_name`](../api#django_components.Component.template_name),
+        Only one of [`template_file`](../api#django_components.Component.template_file),
         [`get_template_name`](../api#django_components.Component.get_template_name),
         [`template`](../api#django_components.Component.template)
         or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -596,21 +596,21 @@ class Component(
 
         return ctx.is_filled
 
-    # NOTE: When the template is taken from a file (AKA specified via `template_name`),
+    # NOTE: When the template is taken from a file (AKA specified via `template_file`),
     # then we leverage Django's template caching. This means that the same instance
     # of Template is reused. This is important to keep in mind, because the implication
     # is that we should treat Templates AND their nodelists as IMMUTABLE.
     def _get_template(self, context: Context) -> Template:
         # Resolve template name
-        template_name = self.template_name
-        if self.template_name is not None:
+        template_file = self.template_file
+        if self.template_file is not None:
             if self.get_template_name(context) is not None:
                 raise ImproperlyConfigured(
-                    "Received non-null value from both 'template_name' and 'get_template_name' in"
+                    "Received non-null value from both 'template_file' and 'get_template_name' in"
                     f" Component {type(self).__name__}. Only one of the two must be set."
                 )
         else:
-            template_name = self.get_template_name(context)
+            template_file = self.get_template_name(context)
 
         # Resolve template str
         template_input = self.template
@@ -625,14 +625,14 @@ class Component(
             template_getter = getattr(self, "get_template_string", self.get_template)
             template_input = template_getter(context)
 
-        if template_name is not None and template_input is not None:
+        if template_file is not None and template_input is not None:
             raise ImproperlyConfigured(
-                f"Received both 'template_name' and 'template' in Component {type(self).__name__}."
+                f"Received both 'template_file' and 'template' in Component {type(self).__name__}."
                 " Only one of the two must be set."
             )
 
-        if template_name is not None:
-            return get_template(template_name).template
+        if template_file is not None:
+            return get_template(template_file).template
 
         elif template_input is not None:
             # We got template string, so we convert it to Template
@@ -644,7 +644,7 @@ class Component(
             return template
 
         raise ImproperlyConfigured(
-            f"Either 'template_name' or 'template' must be set for Component {type(self).__name__}."
+            f"Either 'template_file' or 'template' must be set for Component {type(self).__name__}."
         )
 
     def inject(self, key: str, default: Optional[Any] = None) -> Any:

@@ -7,7 +7,7 @@ from django_components import Component, register
 
 @register("relative_file_component")
 class RelativeFileComponent(Component):
-    template_name = "relative_file.html"
+    template_file = "relative_file.html"
 
     class Media:
         js = "relative_file.js"

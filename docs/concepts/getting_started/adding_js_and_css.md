@@ -49,6 +49,7 @@ Inside `calendar.css`, write:
 Be sure to prefix your rules with unique CSS class like `calendar`, so the CSS doesn't clash with other rules.
 
 <!-- TODO: UPDATE AFTER SCOPED CSS ADDED -->
+
 !!! note
 
     Soon, django-components will automatically scope your CSS by default, so you won't have to worry
@@ -99,6 +100,7 @@ an [anonymous self-invoking function](https://developer.mozilla.org/en-US/docs/G
 This makes all variables defined only be defined inside this component and not affect other components.
 
 <!-- TODO: UPDATE AFTER FUNCTIONS WRAPPED -->
+
 !!! note
 
     Soon, django-components will automatically wrap your JS in a self-invoking function by default
@@ -172,7 +174,6 @@ So in your HTML, you may see something like this:
     </html>
     ```
 
-
 ### 4. Link JS and CSS to a component
 
 Finally, we return to our Python component in `calendar.py` to tie this together.
@@ -184,7 +185,7 @@ and [`css_file`](../../../reference/api#django_components.Component.css_file) at
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     js_file = "calendar.js"   # <--- new
     css_file = "calendar.css"   # <--- new
 
@@ -207,7 +208,6 @@ automatically embed the associated JS and CSS.
     and/or [`COMPONENTS.app_dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
     (e.g. `[your apps]/components` dir and `[project root]/components`)
     3. Relative to any of the directories defined by `STATICFILES_DIRS`.
-
 
 <!-- TODO: UPDATE AFTER AT LEAST ONE IMPLEMENTED
 !!! info
@@ -243,7 +243,7 @@ with a few differences:
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     js_file = "calendar.js"
     css_file = "calendar.css"
 
@@ -272,7 +272,6 @@ class Calendar(Component):
     [`COMPONENTS.dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
     and/or [`COMPONENTS.app_dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
     (e.g. `[your apps]/components` dir and `[project root]/components`)
-
 
 !!! info
 
@@ -312,7 +311,7 @@ Additionally to `Media.js` applies that:
 
 1. JS in `Media.js` is executed **before** the component's primary JS.
 2. JS in `Media.js` is executed **in the same order** as it was defined.
-3. If there is multiple components that specify the same JS path or URL in `Media.js`, 
+3. If there is multiple components that specify the same JS path or URL in `Media.js`,
    this JS will be still loaded and executed only once.
 
 Putting all of this together, our `Calendar` component above would render HTML like so:
@@ -322,8 +321,12 @@ Putting all of this together, our `Calendar` component above would render HTML l
   <head>
     ...
     <!-- CSS from Media.css -->
-    <link href="/static/path/to/shared.css" media="all" rel="stylesheet">
-    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" media="all" rel="stylesheet">
+    <link href="/static/path/to/shared.css" media="all" rel="stylesheet" />
+    <link
+      href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
+      media="all"
+      rel="stylesheet"
+    />
     <!-- CSS from Component.css_file -->
     <style>
       .calendar {
