@@ -206,7 +206,7 @@ class ComponentTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_template_name_static(self):
+    def test_template_file_static(self):
         class SimpleComponent(Component):
             template_file = "simple_template.html"
 
@@ -228,7 +228,58 @@ class ComponentTest(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_template_name_dynamic(self):
+    def test_template_file_static__compat(self):
+        class SimpleComponent(Component):
+            template_name = "simple_template.html"
+
+            def get_context_data(self, variable=None):
+                return {
+                    "variable": variable,
+                }
+
+            class Media:
+                css = "style.css"
+                js = "script.js"
+
+        self.assertEqual(SimpleComponent.template_name, "simple_template.html")
+        self.assertEqual(SimpleComponent.template_file, "simple_template.html")
+
+        SimpleComponent.template_name = "other_template.html"
+        self.assertEqual(SimpleComponent.template_name, "other_template.html")
+        self.assertEqual(SimpleComponent.template_file, "other_template.html")
+
+        SimpleComponent.template_name = "simple_template.html"
+        rendered = SimpleComponent.render(kwargs={"variable": "test"})
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
+            """,
+        )
+
+        comp = SimpleComponent()
+        self.assertEqual(comp.template_name, "simple_template.html")
+        self.assertEqual(comp.template_file, "simple_template.html")
+
+        # NOTE: Setting `template_file` on INSTANCE is not supported, as users should work
+        #       with classes and not instances. This is tested for completeness.
+        comp.template_name = "other_template_2.html"
+        self.assertEqual(comp.template_name, "other_template_2.html")
+        self.assertEqual(comp.template_file, "other_template_2.html")
+        self.assertEqual(SimpleComponent.template_name, "other_template_2.html")
+        self.assertEqual(SimpleComponent.template_file, "other_template_2.html")
+
+        SimpleComponent.template_name = "simple_template.html"
+        rendered = comp.render(kwargs={"variable": "test"})
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3f>test</strong>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_template_file_dynamic(self):
         class SvgComponent(Component):
             def get_context_data(self, name, css_class="", title="", **attrs):
                 return {

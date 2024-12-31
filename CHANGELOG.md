@@ -20,6 +20,12 @@
 
 #### Refactor
 
+- The canonical way to define a template file was changed from `template_name` to `template_file`,
+  to align with the rest of the API.
+  
+   `template_name` remains for backwards compatibility. When you get / set `template_name`,
+   internally this is proxied to `template_file`.
+
 - The undocumented `Component.component_id` was removed. Instead, use `Component.id`. Changes:
 
     - While `component_id` was unique every time you instantiated `Component`, the new `id` is unique

@@ -240,7 +240,14 @@ class ComponentMediaMeta(type):
                     " already resolved. This may lead to unexpected behavior."
                 )
 
-        super().__setattr__(name, value)
+        # NOTE: When a metaclass specifies a `__setattr__` method, this overrides the normal behavior of
+        #       setting an attribute on the class with Descriptors. So we need to call the normal behavior explicitly.
+        # NOTE 2: `__dict__` is used to access the class attributes directly, without triggering the descriptors.
+        desc = cls.__dict__.get(name, None)
+        if hasattr(desc, '__set__'):
+            desc.__set__(cls, value)
+        else:
+            super().__setattr__(name, value)
 
 
 # This sets up the lazy resolution of the media attributes.

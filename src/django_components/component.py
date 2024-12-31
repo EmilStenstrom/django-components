@@ -158,14 +158,32 @@ class ComponentVars(NamedTuple):
     """
 
 
+# Descriptor to pass getting/setting of `template_name` onto `template_file`
+class ComponentTemplateNameDescriptor:
+    def __get__(self, instance: Optional["Component"], cls: Type["Component"]) -> Any:
+        obj = instance if instance is not None else cls
+        return obj.template_file  # type: ignore[attr-defined]
+
+    def __set__(self, instance_or_cls: Union["Component", Type["Component"]], value: Any) -> None:
+        cls = instance_or_cls if isinstance(instance_or_cls, type) else instance_or_cls.__class__
+        cls.template_file = value
+
+
 class ComponentMeta(ComponentMediaMeta):
-    pass
+    def __new__(mcs, name: Any, bases: Tuple, attrs: Dict) -> Any:
+        # If user set `template_name` on the class, we instead set it to `template_file`,
+        # because we want `template_name` to be the descriptor that proxies to `template_file`.
+        if "template_name" in attrs:
+            attrs["template_file"] = attrs.pop("template_name")
+        attrs["template_name"] = ComponentTemplateNameDescriptor()
+
+        return super().__new__(mcs, name, bases, attrs)
 
 
 # NOTE: We use metaclass to automatically define the HTTP methods as defined
 # in `View.http_method_names`.
 class ComponentViewMeta(type):
-    def __new__(cls, name: str, bases: Any, dct: Dict) -> Any:
+    def __new__(mcs, name: str, bases: Any, dct: Dict) -> Any:
         # Default implementation shared by all HTTP methods
         def create_handler(method: str) -> Callable:
             def handler(self, request: HttpRequest, *args: Any, **kwargs: Any):  # type: ignore[no-untyped-def]
@@ -179,7 +197,7 @@ class ComponentViewMeta(type):
             if method_name not in dct:
                 dct[method_name] = create_handler(method_name)
 
-        return super().__new__(cls, name, bases, dct)
+        return super().__new__(mcs, name, bases, dct)
 
 
 class ComponentView(View, metaclass=ComponentViewMeta):
@@ -226,6 +244,20 @@ class Component(
         def get_context_data(self):
             return {"name": "World"}
     ```
+    """
+
+    # NOTE: This attribute is managed by `ComponentTemplateNameDescriptor` that's set in the metaclass.
+    #       But we still define it here for documenting and type hinting.
+    template_name: Optional[str]
+    """
+    Alias for [`template_file`](../api#django_components.Component.template_file).
+
+    For historical reasons, django-components used `template_name` to align with Django's
+    [TemplateView](https://docs.djangoproject.com/en/5.1/ref/class-based-views/base/#django.views.generic.base.TemplateView).
+
+    `template_file` was introduced to align with `js/js_file` and `css/css_file`.
+
+    Setting and accessing this attribute is proxied to `template_file`.
     """
 
     def get_template_name(self, context: Context) -> Optional[str]:
