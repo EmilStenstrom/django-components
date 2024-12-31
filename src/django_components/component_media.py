@@ -244,7 +244,7 @@ class ComponentMediaMeta(type):
         #       setting an attribute on the class with Descriptors. So we need to call the normal behavior explicitly.
         # NOTE 2: `__dict__` is used to access the class attributes directly, without triggering the descriptors.
         desc = cls.__dict__.get(name, None)
-        if hasattr(desc, '__set__'):
+        if hasattr(desc, "__set__"):
             desc.__set__(cls, value)
         else:
             super().__setattr__(name, value)
