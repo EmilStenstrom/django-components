@@ -3,10 +3,13 @@ title: Single-file components
 weight: 1
 ---
 
-Components can be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_name` and `Media`. For example, here's the calendar component from above, defined in a single file:
+Components can be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_file`, `js_file`,  and `css_file`.
+
+For example, here's the calendar component from
+the [Getting started](../getting_started/your_first_component.md) tutorial,
+defined in a single file:
 
 ```python title="[project root]/components/calendar.py"
-# In a file called [project root]/components/calendar.py
 from django_components import Component, register, types
 
 @register("calendar")
@@ -17,18 +20,27 @@ class Calendar(Component):
         }
 
     template: types.django_html = """
-        <div class="calendar-component">Today's date is <span>{{ date }}</span></div>
+        <div class="calendar">
+            Today's date is <span>{{ date }}</span>
+        </div>
     """
 
     css: types.css = """
-        .calendar-component { width: 200px; background: pink; }
-        .calendar-component span { font-weight: bold; }
+        .calendar {
+            width: 200px;
+            background: pink;
+        }
+        .calendar span {
+            font-weight: bold;
+        }
     """
 
     js: types.js = """
         (function(){
-            if (document.querySelector(".calendar-component")) {
-                document.querySelector(".calendar-component").onclick = function(){ alert("Clicked calendar!"); };
+            if (document.querySelector(".calendar")) {
+                document.querySelector(".calendar").onclick = () => {
+                    alert("Clicked calendar!");
+                };
             }
         })()
     """

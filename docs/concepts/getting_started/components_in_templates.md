@@ -31,7 +31,7 @@ from django_components import Component, register  # <--- new
 
 @register("calendar")  # <--- new
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     js_file = "calendar.js"
     css_file = "calendar.css"
 

@@ -31,7 +31,7 @@ class MainMediaTest(BaseTestCase):
 
     def test_html_filepath(self):
         class Test(Component):
-            template_name = "simple_template.html"
+            template_file = "simple_template.html"
 
         rendered = Test.render(context={"variable": "test"})
 
@@ -86,7 +86,7 @@ class MainMediaTest(BaseTestCase):
         from tests.test_app.components.app_lvl_comp.app_lvl_comp import AppLvlCompComponent
 
         class TestComponent(AppLvlCompComponent):
-            template_name = None
+            template_file = None
             template = """
                 {% load component_tags %}
                 {% component_js_dependencies %}
@@ -167,7 +167,7 @@ class MainMediaTest(BaseTestCase):
         from tests.test_app.components.app_lvl_comp.app_lvl_comp import AppLvlCompComponent
 
         class TestComponent(AppLvlCompComponent):
-            template_name = None
+            template_file = None
             template = """
                 {% load component_tags %}
                 {% component_js_dependencies %}

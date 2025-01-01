@@ -10,7 +10,7 @@ HTML / JS / CSS with a component:
   [`Component.css`](../../reference/api.md#django_components.Component.css) and
   [`Component.js`](../../reference/api.md#django_components.Component.js) to define the main HTML / CSS / JS for a component
   as inlined code.
-- You can set [`Component.template_name`](../../reference/api.md#django_components.Component.template_name),
+- You can set [`Component.template_file`](../../reference/api.md#django_components.Component.template_file),
   [`Component.css_file`](../../reference/api.md#django_components.Component.css_file) and
   [`Component.js_file`](../../reference/api.md#django_components.Component.js_file) to define the main HTML / CSS / JS
   for a component in separate files.
@@ -22,7 +22,7 @@ HTML / JS / CSS with a component:
 
     You **cannot** use both inlined code **and** separate file for a single language type:
 
-    - You can only either set `Component.template` or `Component.template_name`
+    - You can only either set `Component.template` or `Component.template_file`
     - You can only either set `Component.css` or `Component.css_file`
     - You can only either set `Component.js` or `Component.js_file`
 
@@ -51,7 +51,7 @@ HTML / JS / CSS with a component:
 
 As seen in the [getting started example](../getting_started/your_first_component.md), to associate HTML / JS / CSS
 files with a component, you can set them as
-[`Component.template_name`](../../reference/api.md#django_components.Component.template_name),
+[`Component.template_file`](../../reference/api.md#django_components.Component.template_file),
 [`Component.js_file`](../../reference/api.md#django_components.Component.js_file)
 and
 [`Component.css_file`](../../reference/api.md#django_components.Component.css_file) respectively:
@@ -61,7 +61,7 @@ from django_components import Component, register
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "template.html"
+    template_file = "template.html"
     css_file = "style.css"
     js_file = "script.js"
 ```
@@ -70,7 +70,7 @@ In the example above, we defined the files relative to the directory where the c
 
 Alternatively, you can specify the file paths relative to the directories set in
 [`COMPONENTS.dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
-or 
+or
 [`COMPONENTS.app_dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs).
 
 If you specify the paths relative to component's directory, django-componenents does the conversion automatically
@@ -85,7 +85,7 @@ from django_components import Component, register
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar/template.html"
+    template_file = "calendar/template.html"
     css_file = "calendar/style.css"
     js_file = "calendar/script.js"
 ```
@@ -94,59 +94,59 @@ class Calendar(Component):
 
     **File path resolution in-depth**
 
-    At component class creation, django-components checks all file paths defined on the component (e.g. `Component.template_name`).
+    At component class creation, django-components checks all file paths defined on the component (e.g. `Component.template_file`).
 
     For each file path, it checks if the file path is relative to the component's directory.
     And such file exists, the component's file path is re-written to be defined relative to a first matching directory
     in [`COMPONENTS.dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
-    or 
+    or
     [`COMPONENTS.app_dirs`](../../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs).
 
     **Example:**
 
     ```py title="[root]/components/mytable/mytable.py"
     class MyTable(Component):
-        template_name = "mytable.html"
+        template_file = "mytable.html"
     ```
 
     1. Component `MyTable` is defined in file `[root]/components/mytable/mytable.py`.
     2. The component's directory is thus `[root]/components/mytable/`.
-    3. Because `MyTable.template_name` is `mytable.html`, django-components tries to
+    3. Because `MyTable.template_file` is `mytable.html`, django-components tries to
         resolve it as `[root]/components/mytable/mytable.html`.
     4. django-components checks the filesystem. If there's no such file, nothing happens.
     5. If there IS such file, django-components tries to rewrite the path.
     6. django-components searches `COMPONENTS.dirs` and `COMPONENTS.app_dirs` for a first
         directory that contains `[root]/components/mytable/mytable.html`.
     7. It comes across `[root]/components/`, which DOES contain the path to `mytable.html`.
-    8. Thus, it rewrites `template_name` from `mytable.html` to `mytable/mytable.html`.
+    8. Thus, it rewrites `template_file` from `mytable.html` to `mytable/mytable.html`.
 
     NOTE: In case of ambiguity, the preference goes to resolving the files relative to the component's directory.
 
 ## Defining additional JS and CSS files
 
-Each component can have only a single template, and single main JS and CSS. However, you can define additional JS or CSS 
+Each component can have only a single template, and single main JS and CSS. However, you can define additional JS or CSS
 using the nested [`Component.Media` class](../../../reference/api#django_components.Component.Media).
 
 This `Media` class behaves similarly to
 [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition):
 
 - Paths are generally handled as static file paths, and resolved URLs are rendered to HTML with
-    `media_class.render_js()` or `media_class.render_css()`.
+  `media_class.render_js()` or `media_class.render_css()`.
 - A path that starts with `http`, `https`, or `/` is considered a URL, skipping the static file resolution.
-    This path is still rendered to HTML with `media_class.render_js()` or `media_class.render_css()`.
+  This path is still rendered to HTML with `media_class.render_js()` or `media_class.render_css()`.
 - A [`SafeString`](https://docs.djangoproject.com/en/5.1/ref/utils/#django.utils.safestring.SafeString),
-    or a function (with `__html__` method) is considered an already-formatted HTML tag, skipping both static file
-    resolution and rendering with `media_class.render_js()` or `media_class.render_css()`.
+  or a function (with `__html__` method) is considered an already-formatted HTML tag, skipping both static file
+  resolution and rendering with `media_class.render_js()` or `media_class.render_css()`.
 
 However, there's a few differences from Django's Media class:
 
 1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list,
-    or (CSS-only) a dictonary (See [`ComponentMediaInput`](../../../reference/api#django_components.ComponentMediaInput)).
+   or (CSS-only) a dictonary (See [`ComponentMediaInput`](../../../reference/api#django_components.ComponentMediaInput)).
 2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
-    [`SafeString`](https://docs.djangoproject.com/en/5.1/ref/utils/#django.utils.safestring.SafeString), or a function
-    (See [`ComponentMediaInputPath`](../../../reference/api#django_components.ComponentMediaInputPath)).
+   [`SafeString`](https://docs.djangoproject.com/en/5.1/ref/utils/#django.utils.safestring.SafeString), or a function
+   (See [`ComponentMediaInputPath`](../../../reference/api#django_components.ComponentMediaInputPath)).
 3. Our Media class does NOT support
-    [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
+   [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
 
 ```py
 class MyTable(Component):
@@ -268,7 +268,7 @@ class ModuleJsPath:
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar/template.html"
+    template_file = "calendar/template.html"
 
     def get_context_data(self, date):
         return {
@@ -314,7 +314,7 @@ class MyMedia(Media):
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar/template.html"
+    template_file = "calendar/template.html"
     css_file = "calendar/style.css"
     js_file = "calendar/script.js"
 
@@ -331,27 +331,28 @@ class Calendar(Component):
 Component's HTML / CSS / JS is resolved and loaded lazily.
 
 This means that, when you specify any of
-[`template_name`](../../reference/api.md#django_components.Component.template_name),
+[`template_file`](../../reference/api.md#django_components.Component.template_file),
 [`js_file`](../../reference/api.md#django_components.Component.js_file),
 [`css_file`](../../reference/api.md#django_components.Component.css_file),
 or [`Media.js/css`](../../reference/api.md#django_components.Component.Media),
 these file paths will be resolved only once you either:
 
 1. Access any of the following attributes on the component:
-    - [`media`](../../reference/api.md#django_components.Component.media),
-      [`template`](../../reference/api.md#django_components.Component.template),
-      [`template_name`](../../reference/api.md#django_components.Component.template_name),
-      [`js`](../../reference/api.md#django_components.Component.js),
-      [`js_file`](../../reference/api.md#django_components.Component.js_file),
-      [`css`](../../reference/api.md#django_components.Component.css),
-      [`css_file`](../../reference/api.md#django_components.Component.css_file)
+
+   - [`media`](../../reference/api.md#django_components.Component.media),
+     [`template`](../../reference/api.md#django_components.Component.template),
+     [`template_file`](../../reference/api.md#django_components.Component.template_file),
+     [`js`](../../reference/api.md#django_components.Component.js),
+     [`js_file`](../../reference/api.md#django_components.Component.js_file),
+     [`css`](../../reference/api.md#django_components.Component.css),
+     [`css_file`](../../reference/api.md#django_components.Component.css_file)
 
 2. Render the component.
 
 Once the component's media files have been loaded once, they will remain in-memory
 on the Component class:
 
-- HTML from [`Component.template_name`](../../reference/api.md#django_components.Component.template_name)
+- HTML from [`Component.template_file`](../../reference/api.md#django_components.Component.template_file)
   will be available under [`Component.template`](../../reference/api.md#django_components.Component.template)
 - CSS from [`Component.css_file`](../../reference/api.md#django_components.Component.css_file)
   will be available under [`Component.css`](../../reference/api.md#django_components.Component.css)
@@ -359,7 +360,7 @@ on the Component class:
   will be available under [`Component.js`](../../reference/api.md#django_components.Component.js)
 
 Thus, whether you define HTML via
-[`Component.template_name`](../../reference/api.md#django_components.Component.template_name)
+[`Component.template_file`](../../reference/api.md#django_components.Component.template_file)
 or [`Component.template`](../../reference/api.md#django_components.Component.template),
 you can always access the HTML content under [`Component.template`](../../reference/api.md#django_components.Component.template).
 And the same applies for JS and CSS.
@@ -371,7 +372,7 @@ And the same applies for JS and CSS.
 # are not yet loaded!
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar/template.html"
+    template_file = "calendar/template.html"
     css_file = "calendar/style.css"
     js_file = "calendar/script.js"
 
@@ -395,7 +396,7 @@ print(Calendar.css)
     django-components assumes that the component's media files like `js_file` or `Media.js/css` are static.
 
     If you need to dynamically change these media files, consider instead defining multiple Components.
-    
+
     Modifying these files AFTER the component has been loaded at best does nothing. However, this is
     an untested behavior.
 

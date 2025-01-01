@@ -13,7 +13,7 @@ setup_test_config({"autodiscover": False})
 
 
 class SlottedComponent(Component):
-    template_name = "slotted_template.html"
+    template_file = "slotted_template.html"
 
 
 #######################
@@ -42,7 +42,7 @@ class TemplateInstrumentationTest(BaseTestCase):
 
         @register("inner_component")
         class SimpleComponent(Component):
-            template_name = "simple_template.html"
+            template_file = "simple_template.html"
 
             def get_context_data(self, variable, variable2="default"):
                 return {

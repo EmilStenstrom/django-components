@@ -9,7 +9,7 @@ setup_test_config({"autodiscover": False})
 
 
 class SlottedComponent(Component):
-    template_name = "slotted_template.html"
+    template_file = "slotted_template.html"
 
 
 class SlottedComponentWithContext(Component):

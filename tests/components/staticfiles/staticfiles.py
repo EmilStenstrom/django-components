@@ -6,7 +6,7 @@ from django_components import Component, register
 # Used for testing the staticfiles finder in `test_staticfiles.py`
 @register("staticfiles_component")
 class RelativeFileWithPathObjComponent(Component):
-    template_name = "staticfiles.html"
+    template_file = "staticfiles.html"
 
     class Media:
         js = "staticfiles.js"

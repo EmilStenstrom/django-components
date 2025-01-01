@@ -2,10 +2,10 @@
 title: Welcome to Django Components
 weight: 1
 ---
+
 <img src="https://raw.githubusercontent.com/EmilStenstrom/django-components/master/logo/logo-black-on-white.svg" alt="django-components" style="max-width: 100%; background: white; color: black;">
 
 [![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://github.com/EmilStenstrom/django-components/blob/master/LICENSE/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
-
 
 django-components introduces component-based architecture to Django's server-side rendering.
 It combines Django's templating system with the modularity seen in modern frontend frameworks like Vue or React.
@@ -22,7 +22,7 @@ A component in django-components can be as simple as a Django template and Pytho
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
 ```
 
 Or a combination of Django template, Python, CSS, and Javascript:
@@ -50,7 +50,7 @@ document.querySelector(".calendar").onclick = function () {
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     js_file = "calendar.js"
     css_file = "calendar.css"
 ```
@@ -100,13 +100,14 @@ Django-components can be particularly useful for larger Django projects that req
 
 ## Quickstart
 
-django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app. 
+django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app.
 
 Define a component in `components/calendar/calendar.py` like this:
+
 ```python
 @register("calendar")
 class Calendar(Component):
-    template_name = "template.html"
+    template_file = "template.html"
 
     def get_context_data(self, date):
         return {"date": date}

@@ -18,7 +18,7 @@ A component in django-components can be as simple as a Django template and Pytho
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
 ```
 
 Or a combination of Django template, Python, CSS, and Javascript:
@@ -46,7 +46,7 @@ document.querySelector(".calendar").onclick = function () {
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     js_file = "calendar.js"
     css_file = "calendar.css"
 ```
@@ -77,7 +77,6 @@ class Calendar(Component):
     """
 ```
 
-
 ## Features
 
 1. 🧩 **Reusability:** Allows creation of self-contained, reusable UI elements.
@@ -97,13 +96,14 @@ Django-components can be particularly useful for larger Django projects that req
 
 ## Quickstart
 
-django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app. 
+django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app.
 
 Define a component in `components/calendar/calendar.py` like this:
+
 ```python
 @register("calendar")
 class Calendar(Component):
-    template_name = "template.html"
+    template_file = "template.html"
 
     def get_context_data(self, date):
         return {"date": date}

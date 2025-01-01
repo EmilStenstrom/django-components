@@ -158,14 +158,32 @@ class ComponentVars(NamedTuple):
     """
 
 
+# Descriptor to pass getting/setting of `template_name` onto `template_file`
+class ComponentTemplateNameDescriptor:
+    def __get__(self, instance: Optional["Component"], cls: Type["Component"]) -> Any:
+        obj = instance if instance is not None else cls
+        return obj.template_file  # type: ignore[attr-defined]
+
+    def __set__(self, instance_or_cls: Union["Component", Type["Component"]], value: Any) -> None:
+        cls = instance_or_cls if isinstance(instance_or_cls, type) else instance_or_cls.__class__
+        cls.template_file = value
+
+
 class ComponentMeta(ComponentMediaMeta):
-    pass
+    def __new__(mcs, name: Any, bases: Tuple, attrs: Dict) -> Any:
+        # If user set `template_name` on the class, we instead set it to `template_file`,
+        # because we want `template_name` to be the descriptor that proxies to `template_file`.
+        if "template_name" in attrs:
+            attrs["template_file"] = attrs.pop("template_name")
+        attrs["template_name"] = ComponentTemplateNameDescriptor()
+
+        return super().__new__(mcs, name, bases, attrs)
 
 
 # NOTE: We use metaclass to automatically define the HTTP methods as defined
 # in `View.http_method_names`.
 class ComponentViewMeta(type):
-    def __new__(cls, name: str, bases: Any, dct: Dict) -> Any:
+    def __new__(mcs, name: str, bases: Any, dct: Dict) -> Any:
         # Default implementation shared by all HTTP methods
         def create_handler(method: str) -> Callable:
             def handler(self, request: HttpRequest, *args: Any, **kwargs: Any):  # type: ignore[no-untyped-def]
@@ -179,7 +197,7 @@ class ComponentViewMeta(type):
             if method_name not in dct:
                 dct[method_name] = create_handler(method_name)
 
-        return super().__new__(cls, name, bases, dct)
+        return super().__new__(mcs, name, bases, dct)
 
 
 class ComponentView(View, metaclass=ComponentViewMeta):
@@ -205,14 +223,14 @@ class Component(
     # PUBLIC API (Configurable by users)
     # #####################################
 
-    template_name: Optional[str] = None
+    template_file: Optional[str] = None
     """
     Filepath to the Django template associated with this component.
 
     The filepath must be relative to either the file where the component class was defined,
     or one of the roots of `STATIFILES_DIRS`.
 
-    Only one of [`template_name`](../api#django_components.Component.template_name),
+    Only one of [`template_file`](../api#django_components.Component.template_file),
     [`get_template_name`](../api#django_components.Component.get_template_name),
     [`template`](../api#django_components.Component.template)
     or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -221,11 +239,25 @@ class Component(
 
     ```py
     class MyComponent(Component):
-        template_name = "path/to/template.html"
+        template_file = "path/to/template.html"
 
         def get_context_data(self):
             return {"name": "World"}
     ```
+    """
+
+    # NOTE: This attribute is managed by `ComponentTemplateNameDescriptor` that's set in the metaclass.
+    #       But we still define it here for documenting and type hinting.
+    template_name: Optional[str]
+    """
+    Alias for [`template_file`](../api#django_components.Component.template_file).
+
+    For historical reasons, django-components used `template_name` to align with Django's
+    [TemplateView](https://docs.djangoproject.com/en/5.1/ref/class-based-views/base/#django.views.generic.base.TemplateView).
+
+    `template_file` was introduced to align with `js/js_file` and `css/css_file`.
+
+    Setting and accessing this attribute is proxied to `template_file`.
     """
 
     def get_template_name(self, context: Context) -> Optional[str]:
@@ -235,7 +267,7 @@ class Component(
         The filepath must be relative to either the file where the component class was defined,
         or one of the roots of `STATIFILES_DIRS`.
 
-        Only one of [`template_name`](../api#django_components.Component.template_name),
+        Only one of [`template_file`](../api#django_components.Component.template_file),
         [`get_template_name`](../api#django_components.Component.get_template_name),
         [`template`](../api#django_components.Component.template)
         or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -246,7 +278,7 @@ class Component(
     """
     Inlined Django template associated with this component. Can be a plain string or a Template instance.
 
-    Only one of [`template_name`](../api#django_components.Component.template_name),
+    Only one of [`template_file`](../api#django_components.Component.template_file),
     [`get_template_name`](../api#django_components.Component.get_template_name),
     [`template`](../api#django_components.Component.template)
     or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -266,7 +298,7 @@ class Component(
         """
         Inlined Django template associated with this component. Can be a plain string or a Template instance.
 
-        Only one of [`template_name`](../api#django_components.Component.template_name),
+        Only one of [`template_file`](../api#django_components.Component.template_file),
         [`get_template_name`](../api#django_components.Component.get_template_name),
         [`template`](../api#django_components.Component.template)
         or [`get_template`](../api#django_components.Component.get_template) must be defined.
@@ -596,21 +628,21 @@ class Component(
 
         return ctx.is_filled
 
-    # NOTE: When the template is taken from a file (AKA specified via `template_name`),
+    # NOTE: When the template is taken from a file (AKA specified via `template_file`),
     # then we leverage Django's template caching. This means that the same instance
     # of Template is reused. This is important to keep in mind, because the implication
     # is that we should treat Templates AND their nodelists as IMMUTABLE.
     def _get_template(self, context: Context) -> Template:
         # Resolve template name
-        template_name = self.template_name
-        if self.template_name is not None:
+        template_file = self.template_file
+        if self.template_file is not None:
             if self.get_template_name(context) is not None:
                 raise ImproperlyConfigured(
-                    "Received non-null value from both 'template_name' and 'get_template_name' in"
+                    "Received non-null value from both 'template_file' and 'get_template_name' in"
                     f" Component {type(self).__name__}. Only one of the two must be set."
                 )
         else:
-            template_name = self.get_template_name(context)
+            template_file = self.get_template_name(context)
 
         # Resolve template str
         template_input = self.template
@@ -625,14 +657,14 @@ class Component(
             template_getter = getattr(self, "get_template_string", self.get_template)
             template_input = template_getter(context)
 
-        if template_name is not None and template_input is not None:
+        if template_file is not None and template_input is not None:
             raise ImproperlyConfigured(
-                f"Received both 'template_name' and 'template' in Component {type(self).__name__}."
+                f"Received both 'template_file' and 'template' in Component {type(self).__name__}."
                 " Only one of the two must be set."
             )
 
-        if template_name is not None:
-            return get_template(template_name).template
+        if template_file is not None:
+            return get_template(template_file).template
 
         elif template_input is not None:
             # We got template string, so we convert it to Template
@@ -644,7 +676,7 @@ class Component(
             return template
 
         raise ImproperlyConfigured(
-            f"Either 'template_name' or 'template' must be set for Component {type(self).__name__}."
+            f"Either 'template_file' or 'template' must be set for Component {type(self).__name__}."
         )
 
     def inject(self, key: str, default: Optional[Any] = None) -> Any:

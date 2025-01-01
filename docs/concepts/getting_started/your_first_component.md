@@ -15,7 +15,7 @@ A component in django-components can be as simple as a Django template and Pytho
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
 ```
 
 Or a combination of Django template, Python, CSS, and Javascript:
@@ -43,7 +43,7 @@ document.querySelector(".calendar").onclick = function () {
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     js_file = "calendar.js"
     css_file = "calendar.css"
 ```
@@ -79,7 +79,6 @@ class Calendar(Component):
     If you "inline" the HTML, JS and CSS code into the Python class, you can set up
     [syntax highlighting](../../guides/setup/syntax_highlight.md) for better experience.
     However, autocompletion / intellisense does not work with syntax highlighting.
-
 
 We'll start by creating a component that defines only a Django template:
 
@@ -124,14 +123,14 @@ when creating an instance of this component.
 In `calendar.py`, create a subclass of [Component](../../../reference/api#django_components.Component)
 to create a new component.
 
-To link the HTML template with our component, set [`template_name`](../../../reference/api#django_components.Component.template_name)
+To link the HTML template with our component, set [`template_file`](../../../reference/api#django_components.Component.template_file)
 to the name of the HTML file.
 
 ```python title="[project root]/components/calendar/calendar.py"
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
 ```
 
 !!! note
@@ -156,7 +155,7 @@ will become available within the template as variables, e.g. as `{{ date }}`.
 from django_components import Component
 
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
 
     def get_context_data(self):
         return {

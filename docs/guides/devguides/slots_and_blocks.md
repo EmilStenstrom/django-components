@@ -65,7 +65,7 @@
     ```py
     @register("my_comp")
     class MyComp(Component):
-    	template_name = "abc.html"
+    	template_file = "abc.html"
     ```
 
     Then:
@@ -112,7 +112,7 @@
         ````py
         @register("my_comp")
         class MyComp(Component):
-        template_name = """
+        template_file = """
         {% extends "abc.html" %}
 
             		{% block inner %}
@@ -129,7 +129,7 @@
         ```py
         @register("my_comp")
         class MyComp(Component):
-        	template_name = """
+        	template_file = """
         		{% extends "abc.html" %}
 
         		{% load component_tags %}
