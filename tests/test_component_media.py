@@ -133,15 +133,10 @@ class MainMediaTest(BaseTestCase):
                 '  <input type="text" name="variable" value="{{ variable }}">\n'
                 '  <input type="submit">\n'
                 "</form>\n"
-            )
+            ),
         )
 
-        self.assertEqual(
-            TestComponent.css,
-            ".html-css-only {\n"
-            "  color: blue;\n"
-            "}\n"
-        )
+        self.assertEqual(TestComponent.css, ".html-css-only {\n" "  color: blue;\n" "}\n")
         self.assertEqual(
             TestComponent.js,
             'console.log("JS file");\n',
@@ -189,7 +184,7 @@ class MainMediaTest(BaseTestCase):
         rendered = render_dependencies(rendered_raw)
 
         self.assertIn(
-            'Variable: <strong data-djc-id-a1bc41>test</strong>',
+            "Variable: <strong data-djc-id-a1bc41>test</strong>",
             rendered,
         )
         self.assertInHTML(
@@ -250,11 +245,7 @@ class MainMediaTest(BaseTestCase):
 
         self.assertEqual(
             AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
-            (
-                ".html-css-only {\n"
-                "  color: blue;\n"
-                "}\n"
-            ),
+            (".html-css-only {\n" "  color: blue;\n" "}\n"),
         )
         self.assertEqual(
             AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
@@ -270,7 +261,7 @@ class MainMediaTest(BaseTestCase):
                 '  <input type="text" name="variable" value="{{ variable }}">\n'
                 '  <input type="submit">\n'
                 "</form>\n"
-            )
+            ),
         )
         self.assertEqual(
             AppLvlCompComponent._component_media.template_file,  # type: ignore[attr-defined]

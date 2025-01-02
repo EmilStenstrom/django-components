@@ -18,6 +18,7 @@ class SlottedComponent(Component):
 # TESTS
 #######################
 
+
 class MultilineTagsTests(BaseTestCase):
     @parametrize_context_behavior(["django", "isolated"])
     def test_multiline_tags(self):
