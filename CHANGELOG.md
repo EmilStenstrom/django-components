@@ -42,6 +42,8 @@
 
     Read more on [Accessing component's HTML / JS / CSS](https://EmilStenstrom.github.io/django-components/0.124/concepts/fundamentals/defining_js_css_html_files/#customize-how-paths-are-rendered-into-html-tags).
 
+- The [Signals](https://docs.djangoproject.com/en/5.1/topics/signals/) emitted by or during the use of django-components are now documented, together the `template_rendered` signal.
+
 ## v0.123
 
 #### Fix
