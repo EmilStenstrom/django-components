@@ -8,8 +8,10 @@
     them to their own files, and link the JS/CSS files with `Component.js_file`  and `Component.css_file`.
 
     Even when you specify the JS/CSS with `Component.js_file` or `Component.css_file`, then you can still
-    access the content under `Component.js/css` - behind the scenes, the content of the JS/CSS files
-    will be set to `Component.js/css` upon first access.
+    access the content under `Component.js` or `Component.css` - behind the scenes, the content of the JS/CSS files
+    will be set to `Component.js` / `Component.css` upon first access.
+
+    The same applies to `Component.template_file`, which will populate `Component.template` upon first access.
 
     With this change, the role of `Component.js/css` and the JS/CSS in `Component.Media` has changed:
 
@@ -32,7 +34,7 @@
     every time you render the component (e.g. with `Component.render()`)
     - The new `id` is available only during render, so e.g. from within `get_context_data()`
 
-- Component's HTML / CSS / JS are now resolved and loaded lazily. That is, if you specify `template_name`,
+- Component's HTML / CSS / JS are now resolved and loaded lazily. That is, if you specify `template_name`/`template_file`,
   `js_file`, `css_file`, or `Media.js/css`, the file paths will be resolved only once you:
   
     1. Try to access component's HTML / CSS / JS, or

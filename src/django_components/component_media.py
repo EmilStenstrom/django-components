@@ -2,11 +2,13 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Tuple, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Protocol, Tuple, Type, Union, cast
 
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media as MediaCls
+from django.template import Template, TemplateDoesNotExist
+from django.template.loader import get_template
 from django.utils.safestring import SafeData
 
 from django_components.util.loader import get_component_dirs, resolve_file
@@ -377,14 +379,24 @@ def _resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> N
     # as relative to the directory where the component class is defined.
     _resolve_component_relative_files(comp_cls, comp_media, comp_dirs=comp_dirs)
 
-    # If the component defined `js_file` or `css_file`, instead of `js`/`css` resolve them now.
-    # Effectively, even if the Component class defined `js_file`, at "runtime" the `js` attribute
+    # If the component defined `template_file`, `js_file` or `css_file`, instead of `template`/`js`/`css`,
+    # we resolve them now.
+    # Effectively, even if the Component class defined `js_file` (or others), at "runtime" the `js` attribute
     # will be set to the content of the file.
-    comp_media.js = _get_static_asset(
-        comp_cls, comp_media, inlined_attr="js", file_attr="js_file", comp_dirs=comp_dirs
+    # So users can access `Component.js` even if they defined `Component.js_file`.
+    comp_media.template = _get_asset(
+        comp_cls,
+        comp_media,
+        inlined_attr="template",
+        file_attr="template_file",
+        comp_dirs=comp_dirs,
+        type="template",
     )
-    comp_media.css = _get_static_asset(
-        comp_cls, comp_media, inlined_attr="css", file_attr="css_file", comp_dirs=comp_dirs
+    comp_media.js = _get_asset(
+        comp_cls, comp_media, inlined_attr="js", file_attr="js_file", comp_dirs=comp_dirs, type="static"
+    )
+    comp_media.css = _get_asset(
+        comp_cls, comp_media, inlined_attr="css", file_attr="css_file", comp_dirs=comp_dirs, type="static"
     )
 
     media_cls = comp_media.media_class or MediaCls
@@ -656,12 +668,13 @@ def _get_dir_path_from_component_path(
     return comp_dir_path_abs, comp_dir_path_rel
 
 
-def _get_static_asset(
+def _get_asset(
     comp_cls: Type["Component"],
     comp_media: ComponentMedia,
     inlined_attr: str,
     file_attr: str,
     comp_dirs: List[Path],
+    type: Literal["template", "static"],
 ) -> Optional[str]:
     """
     In case of Component's JS or CSS, one can either define that as "inlined" or as a file.
@@ -698,9 +711,18 @@ def _get_static_asset(
     if asset_file is not None:
         # Check if the file is in one of the components' directories
         full_path = resolve_file(asset_file, comp_dirs)
-        # If not, check if it's in the static files
+
         if full_path is None:
-            full_path = finders.find(asset_file)
+            # If not, check if it's in the static files
+            if type == "static":
+                full_path = finders.find(asset_file)
+            # Or in the templates
+            elif type == "template":
+                try:
+                    template: Template = get_template(asset_file)
+                    full_path = template.origin.name
+                except TemplateDoesNotExist:
+                    pass
 
         if full_path is None:
             # NOTE: The short name, e.g. `js` or `css` is used in the error message for convenience
