@@ -1,5 +1,3 @@
-"""Catch-all for tests that use template tags and don't fit other files"""
-
 from typing import Callable
 
 from django.template import Context, Template
