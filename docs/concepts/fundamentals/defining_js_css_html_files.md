@@ -339,7 +339,7 @@ these file paths will be resolved only once you either:
 
 1. Access any of the following attributes on the component:
 
-   - [`media`](../../reference/api.md#django_components.Component.media),
+    - [`media`](../../reference/api.md#django_components.Component.media),
      [`template`](../../reference/api.md#django_components.Component.template),
      [`template_file`](../../reference/api.md#django_components.Component.template_file),
      [`js`](../../reference/api.md#django_components.Component.js),
@@ -398,7 +398,7 @@ print(Calendar.css)
     If you need to dynamically change these media files, consider instead defining multiple Components.
 
     Modifying these files AFTER the component has been loaded at best does nothing. However, this is
-    an untested behavior.
+    an untested behavior, which may lead to unexpected errors.
 
 ## Accessing component's Media files
 

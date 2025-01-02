@@ -31,6 +31,7 @@ from django.template.base import NodeList, Template, TextNode
 from django.template.context import Context, RequestContext
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
+from django.test.signals import template_rendered
 from django.utils.html import conditional_escape
 from django.views import View
 
@@ -227,8 +228,15 @@ class Component(
     """
     Filepath to the Django template associated with this component.
 
-    The filepath must be relative to either the file where the component class was defined,
-    or one of the roots of `STATIFILES_DIRS`.
+    The filepath must be either:
+
+    - Relative to the directory where the Component's Python file is defined.
+    - Relative to one of the component directories, as set by
+      [`COMPONENTS.dirs`](../settings.md#django_components.app_settings.ComponentsSettings.dirs)
+      or
+      [`COMPONENTS.app_dirs`](../settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+      (e.g. `<root>/components/`).
+    - Relative to the template directories, as set by Django's `TEMPLATES` setting (e.g. `<root>/templates/`).
 
     Only one of [`template_file`](../api#django_components.Component.template_file),
     [`get_template_name`](../api#django_components.Component.get_template_name),
@@ -327,6 +335,16 @@ class Component(
     """
     Main JS associated with this component as file path.
 
+    The filepath must be either:
+
+    - Relative to the directory where the Component's Python file is defined.
+    - Relative to one of the component directories, as set by
+      [`COMPONENTS.dirs`](../settings.md#django_components.app_settings.ComponentsSettings.dirs)
+      or
+      [`COMPONENTS.app_dirs`](../settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+      (e.g. `<root>/components/`).
+    - Relative to the staticfiles directories, as set by Django's `STATICFILES_DIRS` setting (e.g. `<root>/static/`).
+
     When you create a Component class with `js_file`, these will happen:
 
     1. If the file path is relative to the directory where the component's Python file is,
@@ -373,6 +391,16 @@ class Component(
     css_file: Optional[str] = None
     """
     Main CSS associated with this component as file path.
+
+    The filepath must be either:
+
+    - Relative to the directory where the Component's Python file is defined.
+    - Relative to one of the component directories, as set by
+      [`COMPONENTS.dirs`](../settings.md#django_components.app_settings.ComponentsSettings.dirs)
+      or
+      [`COMPONENTS.app_dirs`](../settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+      (e.g. `<root>/components/`).
+    - Relative to the staticfiles directories, as set by Django's `STATICFILES_DIRS` setting (e.g. `<root>/static/`).
 
     When you create a Component class with `css_file`, these will happen:
 
@@ -628,50 +656,52 @@ class Component(
 
         return ctx.is_filled
 
-    # NOTE: When the template is taken from a file (AKA specified via `template_file`),
-    # then we leverage Django's template caching. This means that the same instance
-    # of Template is reused. This is important to keep in mind, because the implication
-    # is that we should treat Templates AND their nodelists as IMMUTABLE.
+    # NOTE: We cache the Template instance. When the template is taken from a file
+    #       via `get_template_name`, then we leverage Django's template caching with `get_template()`.
+    #       Otherwise, we use our own `cached_template()` to cache the template.
+    #
+    #       This is important to keep in mind, because the implication is that we should
+    #       treat Templates AND their nodelists as IMMUTABLE.
     def _get_template(self, context: Context) -> Template:
-        # Resolve template name
-        template_file = self.template_file
-        if self.template_file is not None:
-            if self.get_template_name(context) is not None:
-                raise ImproperlyConfigured(
-                    "Received non-null value from both 'template_file' and 'get_template_name' in"
-                    f" Component {type(self).__name__}. Only one of the two must be set."
-                )
-        else:
-            template_file = self.get_template_name(context)
+        template_name = self.get_template_name(context)
+        # TODO_REMOVE_IN_V1 - Remove `self.get_template_string` in v1
+        template_getter = getattr(self, "get_template_string", self.get_template)
+        template_body = template_getter(context)
 
-        # Resolve template str
-        template_input = self.template
-        if self.template is not None:
-            if self.get_template(context) is not None:
-                raise ImproperlyConfigured(
-                    "Received non-null value from both 'template' and 'get_template' in"
-                    f" Component {type(self).__name__}. Only one of the two must be set."
-                )
-        else:
-            # TODO_REMOVE_IN_V1 - Remove `self.get_template_string` in v1
-            template_getter = getattr(self, "get_template_string", self.get_template)
-            template_input = template_getter(context)
-
-        if template_file is not None and template_input is not None:
+        # `get_template_name()`, `get_template()`, and `template` are mutually exclusive
+        #
+        # Note that `template` and `template_name` are also mutually exclusive, but this
+        # is checked when lazy-loading the template from `template_name`. So if user specified
+        # `template_name`, then `template` will be populated with the content of that file.
+        if self.template is not None and template_name is not None:
             raise ImproperlyConfigured(
-                f"Received both 'template_file' and 'template' in Component {type(self).__name__}."
-                " Only one of the two must be set."
+                "Received non-null value from both 'template/template_name' and 'get_template_name' in"
+                f" Component {type(self).__name__}. Only one of the two must be set."
+            )
+        if self.template is not None and template_body is not None:
+            raise ImproperlyConfigured(
+                "Received non-null value from both 'template/template_name' and 'get_template' in"
+                f" Component {type(self).__name__}. Only one of the two must be set."
+            )
+        if template_name is not None and template_body is not None:
+            raise ImproperlyConfigured(
+                "Received non-null value from both 'get_template_name' and 'get_template' in"
+                f" Component {type(self).__name__}. Only one of the two must be set."
             )
 
-        if template_file is not None:
-            return get_template(template_file).template
+        if template_name is not None:
+            return get_template(template_name).template
 
-        elif template_input is not None:
+        template_body = template_body if template_body is not None else self.template
+        if template_body is not None:
             # We got template string, so we convert it to Template
-            if isinstance(template_input, str):
-                template: Template = cached_template(template_input)
+            if isinstance(template_body, str):
+                template: Template = cached_template(
+                    template_string=template_body,
+                    name=self.template_file,
+                )
             else:
-                template = template_input
+                template = template_body
 
             return template
 
@@ -1022,6 +1052,8 @@ class Component(
             ):
                 self.on_render_before(context, template)
 
+                # Emit signal that the template is about to be rendered
+                template_rendered.send(sender=self, template=self, context=context)
                 # Get the component's HTML
                 html_content = template.render(context)
 
