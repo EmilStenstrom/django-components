@@ -228,8 +228,15 @@ class Component(
     """
     Filepath to the Django template associated with this component.
 
-    The filepath must be relative to either the file where the component class was defined,
-    or one of the roots of `STATIFILES_DIRS`.
+    The filepath must be either:
+
+    - Relative to the directory where the Component's Python file is defined.
+    - Relative to one of the component directories, as set by
+      [`COMPONENTS.dirs`](../settings.md#django_components.app_settings.ComponentsSettings.dirs)
+      or
+      [`COMPONENTS.app_dirs`](../settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+      (e.g. `<root>/components/`).
+    - Relative to the template directories, as set by Django's `TEMPLATES` setting (e.g. `<root>/templates/`).
 
     Only one of [`template_file`](../api#django_components.Component.template_file),
     [`get_template_name`](../api#django_components.Component.get_template_name),
@@ -328,6 +335,16 @@ class Component(
     """
     Main JS associated with this component as file path.
 
+    The filepath must be either:
+
+    - Relative to the directory where the Component's Python file is defined.
+    - Relative to one of the component directories, as set by
+      [`COMPONENTS.dirs`](../settings.md#django_components.app_settings.ComponentsSettings.dirs)
+      or
+      [`COMPONENTS.app_dirs`](../settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+      (e.g. `<root>/components/`).
+    - Relative to the staticfiles directories, as set by Django's `STATICFILES_DIRS` setting (e.g. `<root>/static/`).
+
     When you create a Component class with `js_file`, these will happen:
 
     1. If the file path is relative to the directory where the component's Python file is,
@@ -374,6 +391,16 @@ class Component(
     css_file: Optional[str] = None
     """
     Main CSS associated with this component as file path.
+
+    The filepath must be either:
+
+    - Relative to the directory where the Component's Python file is defined.
+    - Relative to one of the component directories, as set by
+      [`COMPONENTS.dirs`](../settings.md#django_components.app_settings.ComponentsSettings.dirs)
+      or
+      [`COMPONENTS.app_dirs`](../settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
+      (e.g. `<root>/components/`).
+    - Relative to the staticfiles directories, as set by Django's `STATICFILES_DIRS` setting (e.g. `<root>/static/`).
 
     When you create a Component class with `css_file`, these will happen:
 
