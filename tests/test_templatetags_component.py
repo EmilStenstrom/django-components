@@ -615,7 +615,7 @@ class MultiComponentTests(BaseTestCase):
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
-            <custom-template { second_id }>
+            <custom-template {second_id}>
                 <header>
                     Default header
                 </header>
