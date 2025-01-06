@@ -66,7 +66,7 @@ django==5.1.4
     # via hatch.envs.docs
 ghp-import==2.1.0
     # via mkdocs
-gitdb==4.0.11
+gitdb==4.0.12
     # via gitpython
 gitpython==3.1.43
     # via mkdocs-git-revision-date-localized-plugin
