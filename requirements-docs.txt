@@ -169,7 +169,7 @@ pathspec==0.12.1
     # via
     #   black
     #   mkdocs
-pillow==11.0.0
+pillow==11.1.0
     # via
     #   cairosvg
     #   mkdocs-material
