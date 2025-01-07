@@ -241,7 +241,7 @@ def _search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:
             name_part = rel_dir_parts.pop()
             if any(part.startswith("_") for part in rel_dir_parts):
                 continue
-            if name_part.startswith("_") and not name_part != "__init__.py":
+            if name_part.startswith("_") and name_part != "__init__.py":
                 continue
 
             matched_files.append(path)
