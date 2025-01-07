@@ -451,8 +451,10 @@ def _get_comp_cls_media(comp_cls: Type["Component"]) -> Any:
                 continue
 
             # Add JS / CSS from the base class's Media to the current class's Media.
-            # While Django's Media class does this with `__add__` method, the addition converts
-            # the class to the Django's Media class. So they we have to convert it back to `media_cls`.
+            # We make use of the fact that Django's Media class does this with `__add__` method.
+            #
+            # However, the `__add__` converts our `media_cls` to Django's Media class.
+            # So we also have to convert it back to `media_cls`.
             merged_media = media + base_media
             media = media_cls(js=merged_media._js, css=merged_media._css)
 
