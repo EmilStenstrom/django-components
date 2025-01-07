@@ -8,7 +8,7 @@ our colleague - The calendar date needs to be shown on 3 different pages:
 
 1. On one page, it needs to be shown as is
 2. On the second, the date needs to be **bold**
-3. On the third, the date needs to be in *italics*
+3. On the third, the date needs to be in _italics_
 
 As a reminder, this is what the component's template looks like:
 
@@ -43,7 +43,7 @@ In the example below we introduce two tags that work hand in hand to make this w
 
 - `{% slot <name> %}`/`{% endslot %}`: Declares a new slot in the component template.
 - `{% fill <name> %}`/`{% endfill %}`: (Used inside a [`{% component %}`](../../reference/template_tags.md#component)
-   tag pair.) Fills a declared slot with the specified content.
+  tag pair.) Fills a declared slot with the specified content.
 
 ### 2. Add a slot tag
 
@@ -122,7 +122,7 @@ Which will render as:
         {% endcomponent %}
         ```
 
-    2. Implicitly as the [default slot](../fundamentals/slots.md#default-slot) (Omitting the 
+    2. Implicitly as the [default slot](../fundamentals/slots.md#default-slot) (Omitting the
         [`{% fill %}`](../../reference/template_tags.md#fill) tag)
         ```htmldjango
         {% component "calendar" date="2024-12-13" %}
@@ -177,7 +177,7 @@ def to_workweek_date(d: date):
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "calendar.html"
+    template_file = "calendar.html"
     ...
     def get_context_data(self, date: date, extra_class: str | None = None):
         workweek_date = to_workweek_date(date)
@@ -187,7 +187,7 @@ class Calendar(Component):
         }
 ```
 
-And the issue is that in our template, we used the `date` value that we used *as input*,
+And the issue is that in our template, we used the `date` value that we used _as input_,
 which is NOT the same as the `date` variable used inside Calendar's template.
 
 ### 5. Adding data to slots

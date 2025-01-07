@@ -5,7 +5,7 @@ During actual rendering, the HTML is then picked up by the JS-side dependency ma
 
 import re
 
-from django.template import Template
+from django.template import Context, Template
 
 from django_components import Component, registry, types
 
@@ -456,8 +456,8 @@ class DependencyRenderingTests(BaseTestCase):
         # `c3R5bGUyLmNzcw==` -> `style2.css`
         # `eHl6MS5jc3M=` -> `xyz1.css`
         # `L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==` -> `/components/cache/OtherComponent_6329ae.css`
-        # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=` -> `/components/cache/SimpleComponentNested_f02d32.css`
         # `L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz` -> `/components/cache/OtherComponent_6329ae.js`
+        # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=` -> `/components/cache/SimpleComponentNested_f02d32.css`
         # `L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==` -> `/components/cache/SimpleComponentNested_f02d32.js`
         # `c2NyaXB0Lmpz` -> `script.js`
         # `c2NyaXB0Mi5qcw==` -> `script2.js`
@@ -465,8 +465,16 @@ class DependencyRenderingTests(BaseTestCase):
         self.assertInHTML(
             """
             <script type="application/json" data-djc>
-                {"loadedCssUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==", "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=", "c3R5bGUuY3Nz", "c3R5bGUyLmNzcw==", "eHl6MS5jc3M="],
-                "loadedJsUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz", "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==", "c2NyaXB0Lmpz", "c2NyaXB0Mi5qcw==", "eHl6MS5qcw=="],
+                {"loadedCssUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmNzcw==",
+                    "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5jc3M=",
+                    "c3R5bGUuY3Nz",
+                    "c3R5bGUyLmNzcw==",
+                    "eHl6MS5jc3M="],
+                "loadedJsUrls": ["L2NvbXBvbmVudHMvY2FjaGUvT3RoZXJDb21wb25lbnRfNjMyOWFlLmpz",
+                    "L2NvbXBvbmVudHMvY2FjaGUvU2ltcGxlQ29tcG9uZW50TmVzdGVkX2YwMmQzMi5qcw==",
+                    "c2NyaXB0Lmpz",
+                    "c2NyaXB0Mi5qcw==",
+                    "eHl6MS5qcw=="],
                 "toLoadCssTags": [],
                 "toLoadJsTags": []}
             </script>
@@ -491,3 +499,131 @@ class DependencyRenderingTests(BaseTestCase):
         template = Template(template_str)
         rendered = create_and_process_template_response(template)
         self.assertNotIn("_RENDERED", rendered)
+
+    def test_adds_component_id_html_attr_single(self):
+        registry.register(name="test", component=SimpleComponent)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' variable='foo' / %}
+        """
+        template = Template(template_str)
+        rendered = create_and_process_template_response(template)
+
+        self.assertHTMLEqual(rendered, "Variable: <strong data-djc-id-a1bc3f>foo</strong>")
+
+    def test_adds_component_id_html_attr_single_multiroot(self):
+        class SimpleMultiroot(SimpleComponent):
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+                Variable2: <div>{{ variable }}</div>
+                Variable3: <span>{{ variable }}</span>
+            """
+
+        registry.register(name="test", component=SimpleMultiroot)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' variable='foo' / %}
+        """
+        template = Template(template_str)
+        rendered = create_and_process_template_response(template)
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3f>foo</strong>
+            Variable2: <div data-djc-id-a1bc3f>foo</div>
+            Variable3: <span data-djc-id-a1bc3f>foo</span>
+            """,
+        )
+
+    # Test that, if multiple components share the same root HTML elements,
+    # then those elemens will have the `data-djc-id-` attribute added for each component.
+    def test_adds_component_id_html_attr_nested(self):
+        class SimpleMultiroot(SimpleComponent):
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+                Variable2: <div>{{ variable }}</div>
+                Variable3: <span>{{ variable }}</span>
+            """
+
+        class SimpleOuter(SimpleComponent):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component 'multiroot' variable='foo' / %}
+                <div>Another</div>
+            """
+
+        registry.register(name="multiroot", component=SimpleMultiroot)
+        registry.register(name="outer", component=SimpleOuter)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'outer' variable='foo' / %}
+        """
+        template = Template(template_str)
+        rendered = create_and_process_template_response(template)
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc41>foo</strong>
+            Variable2: <div data-djc-id-a1bc3f data-djc-id-a1bc41>foo</div>
+            Variable3: <span data-djc-id-a1bc3f data-djc-id-a1bc41>foo</span>
+            <div data-djc-id-a1bc3f>Another</div>
+            """,
+        )
+
+    # `data-djc-id-` attribute should be added on each instance in the RESULTING HTML.
+    # So if in a loop, each iteration creates a new component, and each of those should
+    # have a unique `data-djc-id-` attribute.
+    def test_adds_component_id_html_attr_loops(self):
+        class SimpleMultiroot(SimpleComponent):
+            template: types.django_html = """
+                Variable: <strong>{{ variable }}</strong>
+                Variable2: <div>{{ variable }}</div>
+                Variable3: <span>{{ variable }}</span>
+            """
+
+        class SimpleOuter(SimpleComponent):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component 'multiroot' variable='foo' / %}
+                <div>Another</div>
+            """
+
+        registry.register(name="multiroot", component=SimpleMultiroot)
+        registry.register(name="outer", component=SimpleOuter)
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% for i in lst %}
+                {% component 'outer' variable='foo' / %}
+            {% endfor %}
+        """
+        template = Template(template_str)
+        rendered = create_and_process_template_response(
+            template,
+            context=Context({"lst": range(3)}),
+        )
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc41>foo</strong>
+            Variable2: <div data-djc-id-a1bc3f data-djc-id-a1bc41>foo</div>
+            Variable3: <span data-djc-id-a1bc3f data-djc-id-a1bc41>foo</span>
+            <div data-djc-id-a1bc3f>Another</div>
+
+            Variable: <strong data-djc-id-a1bc42 data-djc-id-a1bc43>foo</strong>
+            Variable2: <div data-djc-id-a1bc42 data-djc-id-a1bc43>foo</div>
+            Variable3: <span data-djc-id-a1bc42 data-djc-id-a1bc43>foo</span>
+            <div data-djc-id-a1bc42>Another</div>
+
+            Variable: <strong data-djc-id-a1bc44 data-djc-id-a1bc45>foo</strong>
+            Variable2: <div data-djc-id-a1bc44 data-djc-id-a1bc45>foo</div>
+            Variable3: <span data-djc-id-a1bc44 data-djc-id-a1bc45>foo</span>
+            <div data-djc-id-a1bc44>Another</div>
+            """,
+        )

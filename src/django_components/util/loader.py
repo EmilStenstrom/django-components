@@ -222,7 +222,7 @@ def _filepath_to_python_module(
     # Combine with the base module path
     full_module_name = f"{root_module_path}.{module_name}" if root_module_path else module_name
     if full_module_name.endswith(".__init__"):
-        full_module_name = full_module_name[:-9]  # Remove the trailing `.__init__
+        full_module_name = full_module_name[:-9]  # Remove the trailing `.__init__`
 
     return full_module_name
 
@@ -247,3 +247,12 @@ def _search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:
             matched_files.append(path)
 
     return matched_files
+
+
+def resolve_file(filepath: str, dirs: Optional[List[Path]] = None) -> Optional[Path]:
+    dirs = dirs if dirs is not None else get_component_dirs()
+    for directory in dirs:
+        full_path = Path(directory) / filepath
+        if full_path.exists():
+            return full_path
+    return None

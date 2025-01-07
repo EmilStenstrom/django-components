@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django_components"
-version = "0.122"
+version = "0.123"
 requires-python = ">=3.8, <4.0"
 description = "A way to create simple reusable template components in Django."
 keywords = ["django", "components", "css", "js", "html"]
@@ -33,8 +33,13 @@ dependencies = [
 ]
 license = {text = "MIT"}
 
+# See https://docs.pypi.org/project_metadata/#icons
 [project.urls]
 Homepage = "https://github.com/EmilStenstrom/django-components/"
+Documentation = "https://emilstenstrom.github.io/django-components/"
+Changelog = "https://emilstenstrom.github.io/django-components/latest/release_notes/"
+Issues = "https://github.com/EmilStenstrom/django-components/issues"
+Donate = "https://github.com/sponsors/EmilStenstrom"
 
 
 [tool.setuptools.packages.find]

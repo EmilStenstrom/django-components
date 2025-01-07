@@ -31,11 +31,9 @@ from django_components import Component, register  # <--- new
 
 @register("calendar")  # <--- new
 class Calendar(Component):
-    template_name = "calendar.html"
-
-    class Media:
-        js = "calendar.js"
-        css = "calendar.css"
+    template_file = "calendar.html"
+    js_file = "calendar.js"
+    css_file = "calendar.css"
 
     def get_context_data(self):
         return {
@@ -48,7 +46,7 @@ by calling `{% load component_tags %}` inside the template.
 
 !!! info
 
-    Why do we have to register components?
+    **Why do we have to register components?**
 
     We want to use our component as a template tag (`{% ... %}`) in Django template.
 
@@ -170,7 +168,7 @@ and keeping your CSS and Javascript in the static directory.
 
 !!! info
 
-    How does django-components pick up registered components?
+    **How does django-components pick up registered components?**
 
     Notice that it was enough to add [`@register`](../../../reference/api#django_components.register) to the component.
     We didn't need to import the component file anywhere to execute it.
@@ -191,6 +189,9 @@ and keeping your CSS and Javascript in the static directory.
             ...
     ```
 
-You can now render the components! But our component will render the same content now matter where
-and how many times we use it. [Let's parametrise some of its state, so that our Calendar component
+You can now render the components in templates!
+
+---
+
+Currently our component always renders the same content. [Let's parametrise it, so that our Calendar component
 is configurable from within the template ➡️](./parametrising_components.md)

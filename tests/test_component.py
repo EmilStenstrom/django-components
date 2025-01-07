@@ -101,7 +101,7 @@ class ComponentOldTemplateApiTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -175,7 +175,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -201,14 +201,14 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_template_name_static(self):
+    def test_template_file_static(self):
         class SimpleComponent(Component):
-            template_name = "simple_template.html"
+            template_file = "simple_template.html"
 
             def get_context_data(self, variable=None):
                 return {
@@ -223,12 +223,63 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_template_name_dynamic(self):
+    def test_template_file_static__compat(self):
+        class SimpleComponent(Component):
+            template_name = "simple_template.html"
+
+            def get_context_data(self, variable=None):
+                return {
+                    "variable": variable,
+                }
+
+            class Media:
+                css = "style.css"
+                js = "script.js"
+
+        self.assertEqual(SimpleComponent.template_name, "simple_template.html")
+        self.assertEqual(SimpleComponent.template_file, "simple_template.html")
+
+        SimpleComponent.template_name = "other_template.html"
+        self.assertEqual(SimpleComponent.template_name, "other_template.html")
+        self.assertEqual(SimpleComponent.template_file, "other_template.html")
+
+        SimpleComponent.template_name = "simple_template.html"
+        rendered = SimpleComponent.render(kwargs={"variable": "test"})
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
+            """,
+        )
+
+        comp = SimpleComponent()
+        self.assertEqual(comp.template_name, "simple_template.html")
+        self.assertEqual(comp.template_file, "simple_template.html")
+
+        # NOTE: Setting `template_file` on INSTANCE is not supported, as users should work
+        #       with classes and not instances. This is tested for completeness.
+        comp.template_name = "other_template_2.html"
+        self.assertEqual(comp.template_name, "other_template_2.html")
+        self.assertEqual(comp.template_file, "other_template_2.html")
+        self.assertEqual(SimpleComponent.template_name, "other_template_2.html")
+        self.assertEqual(SimpleComponent.template_file, "other_template_2.html")
+
+        SimpleComponent.template_name = "simple_template.html"
+        rendered = comp.render(kwargs={"variable": "test"})
+        self.assertHTMLEqual(
+            rendered,
+            """
+            Variable: <strong data-djc-id-a1bc3f>test</strong>
+            """,
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_template_file_dynamic(self):
         class SvgComponent(Component):
             def get_context_data(self, name, css_class="", title="", **attrs):
                 return {
@@ -244,13 +295,13 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             SvgComponent.render(kwargs={"name": "svg1"}),
             """
-            <svg>Dynamic1</svg>
+            <svg data-djc-id-a1bc3e>Dynamic1</svg>
             """,
         )
         self.assertHTMLEqual(
             SvgComponent.render(kwargs={"name": "svg2"}),
             """
-            <svg>Dynamic2</svg>
+            <svg data-djc-id-a1bc3f>Dynamic2</svg>
             """,
         )
 
@@ -270,7 +321,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             """,
         )
 
@@ -314,7 +365,7 @@ class ComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong> MY_SLOT
+            Variable: <strong data-djc-id-a1bc3e>test</strong> MY_SLOT
             """,
         )
 
@@ -407,7 +458,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             Slot 1: MY_SLOT
             Slot 2: abc
             """,
@@ -536,7 +587,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             Slot 1: 123.5
             Slot 2: abc
             """,
@@ -568,7 +619,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Variable: <strong>test</strong>
+            Variable: <strong data-djc-id-a1bc3e>test</strong>
             Slot 1: MY_SLOT
             Slot 2: abc
             """,
@@ -655,7 +706,7 @@ class ComponentValidationTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Name: <strong>TestComponent</strong>
+            Name: <strong data-djc-id-a1bc3e>TestComponent</strong>
             """,
         )
 
@@ -960,7 +1011,7 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <custom-template>
+            <custom-template data-djc-id-a1bc3e>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
@@ -982,7 +1033,7 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <custom-template>
+            <custom-template data-djc-id-a1bc3e>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
@@ -1005,7 +1056,7 @@ class ComponentRenderTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <custom-template>
+            <custom-template data-djc-id-a1bc3e>
                 <header>Default header</header>
                 <main>Default main</main>
                 <footer>Default footer</footer>
@@ -1057,7 +1108,7 @@ class ComponentRenderTest(BaseTestCase):
         # """
         self.assertInHTML(
             """
-            <kbd>
+            <kbd data-djc-id-a1bc3e>
                 Rendered via GET request
             </kbd>
             """,
@@ -1150,7 +1201,7 @@ class ComponentRenderTest(BaseTestCase):
             rendered,
             """
             <!DOCTYPE html>
-            <html lang="en">
+            <html data-djc-id-a1bc3e lang="en">
             <body>
                 <main role="main">
                 <div class='container main-container'>
@@ -1169,13 +1220,13 @@ class ComponentRenderTest(BaseTestCase):
 
             def get_context_data(self, **attrs):
                 return {
-                    "id": self.component_id,
+                    "id": self.id,
                 }
 
-        rendered = TestComponent(component_id="123").render()
+        rendered = TestComponent.render()
         self.assertHTMLEqual(
             rendered,
-            "Variable: <strong>123</strong>",
+            "Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>",
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -1185,13 +1236,13 @@ class ComponentRenderTest(BaseTestCase):
 
             def get_context_data(self, **attrs):
                 return {
-                    "id": self.component_id,
+                    "id": self.id,
                 }
 
-        rendered_resp = TestComponent(component_id="123").render_to_response()
+        rendered_resp = TestComponent.render_to_response()
         self.assertHTMLEqual(
             rendered_resp.content.decode("utf-8"),
-            "Variable: <strong>123</strong>",
+            "Variable: <strong data-djc-id-a1bc3e>a1bc3e</strong>",
         )
 
 

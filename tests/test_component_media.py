@@ -17,17 +17,10 @@ from .testutils import BaseTestCase, autodiscover_with_cleanup
 setup_test_config({"autodiscover": False})
 
 
-class InlineComponentTest(BaseTestCase):
-    def test_html(self):
-        class InlineHTMLComponent(Component):
-            template = "<div class='inline'>Hello Inline</div>"
-
-        self.assertHTMLEqual(
-            InlineHTMLComponent.render(),
-            "<div class='inline'>Hello Inline</div>",
-        )
-
-    def test_inlined_js_and_css(self):
+# "Main media" refer to the HTML, JS, and CSS set on the Component class itself
+# (as opposed via the `Media` class). These have special handling in the Component.
+class MainMediaTest(BaseTestCase):
+    def test_html_js_css_inlined(self):
         class TestComponent(Component):
             template = """
                 {% load component_tags %}
@@ -38,10 +31,19 @@ class InlineComponentTest(BaseTestCase):
             css = ".html-css-only { color: blue; }"
             js = "console.log('HTML and JS only');"
 
+        self.assertEqual(
+            TestComponent.css,
+            ".html-css-only { color: blue; }",
+        )
+        self.assertEqual(
+            TestComponent.js,
+            "console.log('HTML and JS only');",
+        )
+
         rendered = TestComponent.render()
 
         self.assertInHTML(
-            "<div class='html-css-only'>Content</div>",
+            '<div class="html-css-only" data-djc-id-a1bc3e>Content</div>',
             rendered,
         )
         self.assertInHTML(
@@ -53,6 +55,228 @@ class InlineComponentTest(BaseTestCase):
             rendered,
         )
 
+        # Check that the HTML / JS / CSS can be accessed on the component class
+        self.assertEqual(
+            TestComponent.template,
+            """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+                <div class='html-css-only'>Content</div>
+            """,
+        )
+        self.assertEqual(
+            TestComponent.css,
+            ".html-css-only { color: blue; }",
+        )
+        self.assertEqual(
+            TestComponent.js,
+            "console.log('HTML and JS only');",
+        )
+
+    @override_settings(
+        STATICFILES_DIRS=[
+            os.path.join(Path(__file__).resolve().parent, "static_root"),
+        ],
+    )
+    def test_html_js_css_filepath_rel_to_component(self):
+        from tests.test_app.components.app_lvl_comp.app_lvl_comp import AppLvlCompComponent
+
+        class TestComponent(AppLvlCompComponent):
+            pass
+
+        registry.register("test", TestComponent)
+
+        self.assertIn(
+            ".html-css-only {\n  color: blue;\n}",
+            TestComponent.css,
+        )
+        self.assertIn(
+            'console.log("JS file");',
+            TestComponent.js,
+        )
+
+        rendered_raw = Template(
+            """
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
+            {% component "test" variable="test" / %}
+            """
+        ).render(Context())
+        rendered = render_dependencies(rendered_raw)
+
+        self.assertInHTML(
+            """
+            <form data-djc-id-a1bc41 method="post">
+                <input name="variable" type="text" value="test"/>
+                <input type="submit"/>
+            </form>
+            """,
+            rendered,
+        )
+        self.assertInHTML(
+            "<style>.html-css-only {  color: blue;  }</style>",
+            rendered,
+        )
+        self.assertInHTML(
+            '<script>console.log("JS file");</script>',
+            rendered,
+        )
+
+        # Check that the HTML / JS / CSS can be accessed on the component class
+        self.assertEqual(
+            TestComponent.template,
+            (
+                '<form method="post">\n'
+                "  {% csrf_token %}\n"
+                '  <input type="text" name="variable" value="{{ variable }}">\n'
+                '  <input type="submit">\n'
+                "</form>\n"
+            ),
+        )
+
+        self.assertEqual(TestComponent.css, ".html-css-only {\n" "  color: blue;\n" "}\n")
+        self.assertEqual(
+            TestComponent.js,
+            'console.log("JS file");\n',
+        )
+
+    @override_settings(
+        STATICFILES_DIRS=[
+            os.path.join(Path(__file__).resolve().parent, "static_root"),
+        ],
+    )
+    def test_html_js_css_filepath_from_static(self):
+        class TestComponent(Component):
+            template_file = "test_app_simple_template.html"
+            css_file = "style.css"
+            js_file = "script.js"
+
+            def get_context_data(self, variable):
+                return {
+                    "variable": variable,
+                }
+
+        registry.register("test", TestComponent)
+
+        self.assertIn(
+            "Variable: <strong>{{ variable }}</strong>",
+            TestComponent.template,
+        )
+        self.assertIn(
+            ".html-css-only {\n    color: blue;\n}",
+            TestComponent.css,
+        )
+        self.assertIn(
+            'console.log("HTML and JS only");',
+            TestComponent.js,
+        )
+
+        rendered_raw = Template(
+            """
+            {% load component_tags %}
+            {% component_js_dependencies %}
+            {% component_css_dependencies %}
+            {% component "test" variable="test" / %}
+            """
+        ).render(Context())
+        rendered = render_dependencies(rendered_raw)
+
+        self.assertIn(
+            "Variable: <strong data-djc-id-a1bc41>test</strong>",
+            rendered,
+        )
+        self.assertInHTML(
+            "<style>/* Used in `MainMediaTest` tests in `test_component_media.py` */\n.html-css-only {\n    color: blue;\n}</style>",
+            rendered,
+        )
+        self.assertInHTML(
+            '<script>/* Used in `MainMediaTest` tests in `test_component_media.py` */\nconsole.log("HTML and JS only");</script>',
+            rendered,
+        )
+
+        # Check that the HTML / JS / CSS can be accessed on the component class
+        self.assertEqual(
+            TestComponent.template,
+            "Variable: <strong>{{ variable }}</strong>\n",
+        )
+        self.assertEqual(
+            TestComponent.css,
+            (
+                "/* Used in `MainMediaTest` tests in `test_component_media.py` */\n"
+                ".html-css-only {\n"
+                "    color: blue;\n"
+                "}"
+            ),
+        )
+        self.assertEqual(
+            TestComponent.js,
+            (
+                "/* Used in `MainMediaTest` tests in `test_component_media.py` */\n"
+                'console.log("HTML and JS only");\n'
+            ),
+        )
+
+    @override_settings(
+        STATICFILES_DIRS=[
+            os.path.join(Path(__file__).resolve().parent, "static_root"),
+        ],
+    )
+    def test_html_js_css_filepath_lazy_loaded(self):
+        from tests.test_app.components.app_lvl_comp.app_lvl_comp import AppLvlCompComponent
+
+        class TestComponent(AppLvlCompComponent):
+            pass
+
+        # NOTE: Since this is a subclass, actual CSS is defined on the parent class, and thus
+        # the corresponding ComponentMedia instance is also on the parent class.
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
+            None,
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
+            "app_lvl_comp.css",
+        )
+
+        # Access the property to load the CSS
+        _ = TestComponent.css
+
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css,  # type: ignore[attr-defined]
+            (".html-css-only {\n" "  color: blue;\n" "}\n"),
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.css_file,  # type: ignore[attr-defined]
+            "app_lvl_comp/app_lvl_comp.css",
+        )
+
+        # Also check JS and HTML while we're at it
+        self.assertEqual(
+            AppLvlCompComponent._component_media.template,  # type: ignore[attr-defined]
+            (
+                '<form method="post">\n'
+                "  {% csrf_token %}\n"
+                '  <input type="text" name="variable" value="{{ variable }}">\n'
+                '  <input type="submit">\n'
+                "</form>\n"
+            ),
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.template_file,  # type: ignore[attr-defined]
+            "app_lvl_comp/app_lvl_comp.html",
+        )
+
+        self.assertEqual(
+            AppLvlCompComponent._component_media.js,  # type: ignore[attr-defined]
+            'console.log("JS file");\n',
+        )
+        self.assertEqual(
+            AppLvlCompComponent._component_media.js_file,  # type: ignore[attr-defined]
+            "app_lvl_comp/app_lvl_comp.js",
+        )
+
     def test_html_variable(self):
         class VariableHTMLComponent(Component):
             def get_template(self, context):
@@ -62,7 +286,7 @@ class InlineComponentTest(BaseTestCase):
         context = Context({"variable": "Dynamic Content"})
         self.assertHTMLEqual(
             comp.render(context),
-            "<div class='variable-html'>Dynamic Content</div>",
+            '<div class="variable-html" data-djc-id-a1bc3e>Dynamic Content</div>',
         )
 
     def test_html_variable_filtered(self):
@@ -82,8 +306,8 @@ class InlineComponentTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            Var1: <strong>test1</strong>
-            Var2 (uppercased): <strong>TEST2</strong>
+            Var1: <strong data-djc-id-a1bc3e>test1</strong>
+            Var2 (uppercased): <strong data-djc-id-a1bc3e>TEST2</strong>
             """,
         )
 
@@ -691,7 +915,7 @@ class MediaRelativePathTests(BaseTestCase):
 
             self.assertInHTML(
                 """
-                <form method="post">
+                <form data-djc-id-a1bc41 method="post">
                     <input type="text" name="variable" value="test">
                     <input type="submit">
                 </form>
@@ -730,7 +954,7 @@ class MediaRelativePathTests(BaseTestCase):
             """
             template = Template(template_str)
             rendered = template.render(Context({}))
-            self.assertIn('<input type="text" name="variable" value="hello">', rendered, rendered)
+            self.assertInHTML('<input type="text" name="variable" value="hello">', rendered)
 
     # Settings required for autodiscover to work
     @override_settings(

@@ -36,7 +36,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc40> injected: DepInject(key='hi', another=123) </div>
             """,
         )
 
@@ -87,8 +87,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> key: hi </div>
-            <div> another: 123 </div>
+            <div data-djc-id-a1bc40> key: hi </div>
+            <div data-djc-id-a1bc40> another: 123 </div>
             """,
         )
 
@@ -120,8 +120,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> key: hi </div>
-            <div> another: 123 </div>
+            <div data-djc-id-a1bc40> key: hi </div>
+            <div data-djc-id-a1bc40> another: 123 </div>
             """,
         )
 
@@ -150,7 +150,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: default </div>
+            <div data-djc-id-a1bc40> injected: default </div>
             """,
         )
 
@@ -183,8 +183,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject() </div>
-            <div> injected: default </div>
+            <div data-djc-id-a1bc41> injected: DepInject() </div>
+            <div data-djc-id-a1bc42> injected: default </div>
         """,
         )
 
@@ -216,8 +216,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div></div>
-            <div></div>
+            <div data-djc-id-a1bc41></div>
+            <div data-djc-id-a1bc42></div>
         """,
         )
 
@@ -248,8 +248,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(key='hi', another=123) </div>
-            <div> injected: default </div>
+            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc42> injected: default </div>
         """,
         )
 
@@ -286,8 +286,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(key='hi', another=123) </div>
-            <div> injected: default </div>
+            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc42> injected: default </div>
         """,
         )
 
@@ -328,8 +328,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(key='hi', another=123) </div>
-            <div> injected: default </div>
+            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc42> injected: default </div>
         """,
         )
 
@@ -431,7 +431,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(var1={'key': 'hi', 'another': 123}, var2={'x': 'y'}) </div>
+            <div data-djc-id-a1bc40> injected: DepInject(var1={'key': 'hi', 'another': 123}, var2={'x': 'y'}) </div>
             """,
         )
 
@@ -505,9 +505,9 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(key='hi1', another=1231, new=3) </div>
-            <div> injected: DepInject(key='hi', another=123, lost=0) </div>
-            <div> injected: default </div>
+            <div data-djc-id-a1bc43> injected: DepInject(key='hi1', another=1231, new=3) </div>
+            <div data-djc-id-a1bc44> injected: DepInject(key='hi', another=123, lost=0) </div>
+            <div data-djc-id-a1bc45> injected: default </div>
             """,
         )
 
@@ -545,8 +545,8 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> first_provide: DepInject(key='hi', another=123, lost=0) </div>
-            <div> second_provide: DepInject(key='hi1', another=1231, new=3) </div>
+            <div data-djc-id-a1bc41> first_provide: DepInject(key='hi', another=123, lost=0) </div>
+            <div data-djc-id-a1bc41> second_provide: DepInject(key='hi1', another=1231, new=3) </div>
             """,
         )
 
@@ -575,7 +575,7 @@ class ProvideTemplateTagTest(BaseTestCase):
             rendered,
             """
             <div>
-                <div> injected: DepInject(key='hi', another=123) </div>
+                <div data-djc-id-a1bc40> injected: DepInject(key='hi', another=123) </div>
             </div>
             """,
         )
@@ -613,7 +613,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div>
+            <div data-djc-id-a1bc40 data-djc-id-a1bc43>
                 injected: DepInject(key='hi', another=123)
             </div>
             """,
@@ -646,7 +646,7 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc40> injected: DepInject(key='hi', another=123) </div>
             """,
         )
 
@@ -694,7 +694,7 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div> injected: default </div>
+            <div data-djc-id-a1bc3f> injected: default </div>
             """,
         )
 
@@ -799,10 +799,12 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div>
+            <div data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc45 data-djc-id-a1bc48>
                 injected: DepInject(key='hi', data=123)
             </div>
-            <main>456</main>
+            <main data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc45 data-djc-id-a1bc48>
+                456
+            </main>
             """,
         )
 
@@ -861,9 +863,10 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div>
+            <div data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc44 data-djc-id-a1bc47>
                 injected: DepInject(key='hi', data=123)
             </div>
-            <main></main>
+            <main data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc44 data-djc-id-a1bc47>
+            </main>
             """,
         )

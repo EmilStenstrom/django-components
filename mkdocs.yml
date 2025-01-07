@@ -27,7 +27,8 @@ validation:
 
 theme:
   name: "material"
-  custom_dir: docs/overrides
+  # Uncomment to extend / override files from the theme
+  # custom_dir: docs/overrides
   features:
     - content.action.edit
     - content.action.view

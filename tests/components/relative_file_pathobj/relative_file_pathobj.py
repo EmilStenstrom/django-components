@@ -26,7 +26,7 @@ class PathObj:
 
 @register("relative_file_pathobj_component")
 class RelativeFileWithPathObjComponent(Component):
-    template_name = "relative_file_pathobj.html"
+    template_file = "relative_file_pathobj.html"
 
     class Media:
         js = PathObj("relative_file_pathobj.js")

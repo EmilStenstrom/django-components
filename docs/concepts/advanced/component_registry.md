@@ -14,7 +14,7 @@ from django_components import Component, register
 
 @register("calendar")
 class Calendar(Component):
-    template_name = "template.html"
+    template_file = "template.html"
 
     # This component takes one parameter, a date string to show in the template
     def get_context_data(self, date):
@@ -127,6 +127,7 @@ NOTE: The Library instance can be accessed under `library` attribute of `Compone
 When you are creating an instance of `ComponentRegistry`, you can define the components' behavior within the template.
 
 The registry accepts these settings:
+
 - `context_behavior`
 - `tag_formatter`
 

@@ -197,7 +197,7 @@ class Command(BaseCommand):
 
                         @register("{name}")
                         class {name.capitalize()}(Component):
-                            template_name = "{name}/{template_filename}"
+                            template_file = "{name}/{template_filename}"
 
                             def get_context_data(self, value):
                                 return {{
