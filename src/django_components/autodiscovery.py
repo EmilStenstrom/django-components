@@ -17,6 +17,8 @@ def autodiscover(
 
     See [Autodiscovery](../../concepts/fundamentals/autodiscovery).
 
+    NOTE: Subdirectories and files starting with an underscore `_` (except for `__init__.py` are ignored.
+
     Args:
         map_module (Callable[[str], str], optional): Map the module paths with `map_module` function.\
         This serves as an escape hatch for when you need to use this function in tests.

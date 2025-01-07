@@ -15,7 +15,7 @@ class Calendar(Component):
     ...
 ```
 
-But for the component to be registered, the code needs to be executed - the file needs to be imported as a module.
+But for the component to be registered, the code needs to be executed - and for that, the file needs to be imported as a module.
 
 One way to do that is by importing all your components in `apps.py`:
 
@@ -43,8 +43,9 @@ hook of the `apps.py` file.
 If you are using autodiscovery, keep a few points in mind:
 
 - Avoid defining any logic on the module-level inside the `components` dir, that you would not want to run anyway.
-- Components inside the auto-imported files still need to be registered with [`@register`](django_components.component_registry.register)p
+- Components inside the auto-imported files still need to be registered with [`@register`](django_components.component_registry.register)
 - Auto-imported component files must be valid Python modules, they must use suffix `.py`, and module name should follow [PEP-8](https://peps.python.org/pep-0008/#package-and-module-names).
+- Subdirectories and files starting with an underscore `_` (except `__init__.py`) are ignored.
 
 Autodiscovery can be disabled in the [settings](django_components.app_settings.ComponentsSettings.autodiscovery).
 

@@ -126,6 +126,8 @@ def get_component_files(suffix: Optional[str] = None) -> List[ComponentFileEntry
 
     Requires `BASE_DIR` setting to be set.
 
+    Subdirectories and files starting with an underscore `_` (except `__init__.py`) are ignored.
+
     Args:
         suffix (Optional[str], optional): The suffix to search for. E.g. `.py`, `.js`, `.css`.\
             Defaults to `None`, which will search for all files.
@@ -232,8 +234,17 @@ def _search_dirs(dirs: List[Path], search_glob: str) -> List[Path]:
     """
     matched_files: List[Path] = []
     for directory in dirs:
-        for path in glob.iglob(str(Path(directory) / search_glob), recursive=True):
-            matched_files.append(Path(path))
+        for path_str in glob.iglob(str(Path(directory) / search_glob), recursive=True):
+            path = Path(path_str)
+            # Skip any subdirectory or file (under the top-level directory) that starts with an underscore
+            rel_dir_parts = list(path.relative_to(directory).parts)
+            name_part = rel_dir_parts.pop()
+            if any(part.startswith("_") for part in rel_dir_parts):
+                continue
+            if name_part.startswith("_") and name_part != "__init__.py":
+                continue
+
+            matched_files.append(path)
 
     return matched_files
 
