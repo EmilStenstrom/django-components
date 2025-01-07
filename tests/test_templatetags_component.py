@@ -581,8 +581,16 @@ class MultiComponentTests(BaseTestCase):
             """,
         )
 
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_both_components_render_correctly_when_only_first_has_slots(self):
+    @parametrize_context_behavior(
+        # TODO: Why is this the only place where this needs to be parametrized?
+        cases=[
+            ("django", "data-djc-id-a1bc48"),
+            ("isolated", "data-djc-id-a1bc45"),
+        ]
+    )
+    def test_both_components_render_correctly_when_only_first_has_slots(self, context_behavior_data):
+        second_id = context_behavior_data
+
         registry.register("first_component", SlottedComponent)
         registry.register("second_component", SlottedComponentWithContext)
 
@@ -599,7 +607,7 @@ class MultiComponentTests(BaseTestCase):
 
         self.assertHTMLEqual(
             rendered,
-            """
+            f"""
             <custom-template data-djc-id-a1bc41>
                 <header>
                     <p>Slot #1</p>
@@ -607,7 +615,7 @@ class MultiComponentTests(BaseTestCase):
                 <main>Default main</main>
                 <footer>Default footer</footer>
             </custom-template>
-            <custom-template data-djc-id-a1bc45>
+            <custom-template {second_id}>
                 <header>
                     Default header
                 </header>

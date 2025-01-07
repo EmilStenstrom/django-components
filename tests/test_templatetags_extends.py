@@ -638,7 +638,7 @@ class ExtendsCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html data-djc-id-a1bc40 lang="en">
             <body>
-                <custom-template data-djc-id-a1bc45>
+                <custom-template data-djc-id-a1bc49>
                     <header></header>
                     <main>BODY_FROM_FILL</main>
                     <footer>Default footer</footer>
