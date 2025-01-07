@@ -1,7 +1,7 @@
 <!-- See Pydantic for inspo https://docs.pydantic.dev/latest  -->
-- [Get Started](overview/)
+- [Overview](overview/)
+- [Getting Started](getting_started/)
 - Concepts
-  - [Getting started](concepts/getting_started/)
   - [Fundamentals](concepts/fundamentals/)
   - [Advanced](concepts/advanced/)
 - Guides

@@ -6,7 +6,7 @@ weight: 1
 Components can be defined in a single file, which is useful for small components. To do this, you can use the `template`, `js`, and `css` class attributes instead of the `template_file`, `js_file`,  and `css_file`.
 
 For example, here's the calendar component from
-the [Getting started](../getting_started/your_first_component.md) tutorial,
+the [Getting started](../../getting_started/your_first_component.md) tutorial,
 defined in a single file:
 
 ```python title="[project root]/components/calendar.py"
