@@ -85,6 +85,10 @@
          <lastmod>2025-01-07</lastmod>
     </url>
     <url>
+         <loc>https://emilstenstrom.github.io/django-components/latest/concepts/fundamentals/subclassing_components/</loc>
+         <lastmod>2025-01-07</lastmod>
+    </url>
+    <url>
          <loc>https://emilstenstrom.github.io/django-components/latest/concepts/fundamentals/template_tag_syntax/</loc>
          <lastmod>2025-01-07</lastmod>
     </url>
