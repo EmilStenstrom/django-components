@@ -484,8 +484,8 @@ class DynamicExprTests(BaseTestCase):
             (
                 "<!-- _RENDERED SimpleComponent_5c8766,a1bc41,, -->\n"
                 "<div data-djc-id-a1bc41><!-- _RENDERED SimpleComponent_5c8766,a1bc40,, -->\n"
-                '<div data-djc-id-a1bc40>3</div>\n'
-                '<div data-djc-id-a1bc40>True</div>\n'
+                "<div data-djc-id-a1bc40>3</div>\n"
+                "<div data-djc-id-a1bc40>True</div>\n"
                 "</div>\n"
                 "<div data-djc-id-a1bc41>True</div>"
             ),

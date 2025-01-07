@@ -153,8 +153,8 @@ class ContextTests(BaseTestCase):
         template = Template(template_str)
         rendered = template.render(Context())
 
-        self.assertInHTML('<h1 data-djc-id-a1bc45>Uniquely named variable = unique_val</h1>', rendered)
-        self.assertInHTML('<h1 data-djc-id-a1bc46>Uniquely named variable = unique_from_slot</h1>', rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc45>Uniquely named variable = unique_val</h1>", rendered)
+        self.assertInHTML("<h1 data-djc-id-a1bc46>Uniquely named variable = unique_from_slot</h1>", rendered)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_component_context_shadows_outer_context_with_unfilled_slots_and_component_tag(
