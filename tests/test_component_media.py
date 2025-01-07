@@ -1111,6 +1111,7 @@ class SubclassingMediaTests(BaseTestCase):
                 {% component_js_dependencies %}
                 {% component_css_dependencies %}
             """
+
             class Media:
                 css = "child.css"
                 js = "child.js"
@@ -1152,12 +1153,12 @@ class SubclassingMediaTests(BaseTestCase):
 
         rendered = ChildComponent.render()
 
-        self.assertNotIn('parent1.css', rendered)
-        self.assertNotIn('parent2.css', rendered)
+        self.assertNotIn("parent1.css", rendered)
+        self.assertNotIn("parent2.css", rendered)
         self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
 
-        self.assertNotIn('parent1.js', rendered)
-        self.assertNotIn('parent2.js', rendered)
+        self.assertNotIn("parent1.js", rendered)
+        self.assertNotIn("parent2.js", rendered)
         self.assertInHTML('<script src="child.js"></script>', rendered)
 
     def test_extend_false_in_parent(self):
@@ -1190,12 +1191,12 @@ class SubclassingMediaTests(BaseTestCase):
 
         rendered = ChildComponent.render()
 
-        self.assertNotIn('grandparent.css', rendered)
+        self.assertNotIn("grandparent.css", rendered)
         self.assertInHTML('<link href="parent1.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="parent2.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
 
-        self.assertNotIn('grandparent.js', rendered)
+        self.assertNotIn("grandparent.js", rendered)
         self.assertInHTML('<script src="parent1.js"></script>', rendered)
         self.assertInHTML('<script src="parent2.js"></script>', rendered)
         self.assertInHTML('<script src="child.js"></script>', rendered)
@@ -1235,14 +1236,14 @@ class SubclassingMediaTests(BaseTestCase):
 
         rendered = ChildComponent.render()
 
-        self.assertNotIn('parent1.css', rendered)
-        self.assertNotIn('parent2.css', rendered)
+        self.assertNotIn("parent1.css", rendered)
+        self.assertNotIn("parent2.css", rendered)
         self.assertInHTML('<link href="other1.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="other2.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
 
-        self.assertNotIn('parent1.js', rendered)
-        self.assertNotIn('parent2.js', rendered)
+        self.assertNotIn("parent1.js", rendered)
+        self.assertNotIn("parent2.js", rendered)
         self.assertInHTML('<script src="other1.js"></script>', rendered)
         self.assertInHTML('<script src="other2.js"></script>', rendered)
         self.assertInHTML('<script src="child.js"></script>', rendered)
@@ -1287,14 +1288,14 @@ class SubclassingMediaTests(BaseTestCase):
 
         rendered = ChildComponent.render()
 
-        self.assertNotIn('grandparent.css', rendered)
+        self.assertNotIn("grandparent.css", rendered)
         self.assertInHTML('<link href="other1.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="other2.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="parent1.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="parent2.css" media="all" rel="stylesheet">', rendered)
         self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
 
-        self.assertNotIn('grandparent.js', rendered)
+        self.assertNotIn("grandparent.js", rendered)
         self.assertInHTML('<script src="other1.js"></script>', rendered)
         self.assertInHTML('<script src="other2.js"></script>', rendered)
         self.assertInHTML('<script src="parent1.js"></script>', rendered)
