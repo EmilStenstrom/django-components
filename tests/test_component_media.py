@@ -993,3 +993,310 @@ class MediaRelativePathTests(BaseTestCase):
             self.assertInHTML('<link href="relative_file_pathobj.css" rel="stylesheet">', rendered)
 
             self.assertInHTML('<script type="module" src="relative_file_pathobj.js"></script>', rendered)
+
+
+class SubclassingMediaTests(BaseTestCase):
+    def test_media_in_child_and_parent(self):
+        class ParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "parent.css"
+                js = "parent.js"
+
+        class ChildComponent(ParentComponent):
+            class Media:
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="parent.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertInHTML('<script src="child.js"></script>', rendered)
+        self.assertInHTML('<script src="parent.js"></script>', rendered)
+
+    def test_media_in_child_and_grandparent(self):
+        class GrandParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "grandparent.css"
+                js = "grandparent.js"
+
+        class ParentComponent(GrandParentComponent):
+            Media = None
+
+        class ChildComponent(ParentComponent):
+            class Media:
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="grandparent.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertInHTML('<script src="child.js"></script>', rendered)
+        self.assertInHTML('<script src="grandparent.js"></script>', rendered)
+
+    def test_media_in_parent_and_grandparent(self):
+        class GrandParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "grandparent.css"
+                js = "grandparent.js"
+
+        class ParentComponent(GrandParentComponent):
+            class Media:
+                css = "parent.css"
+                js = "parent.js"
+
+        class ChildComponent(ParentComponent):
+            pass
+
+        rendered = ChildComponent.render()
+
+        self.assertInHTML('<link href="parent.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="grandparent.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertInHTML('<script src="parent.js"></script>', rendered)
+        self.assertInHTML('<script src="grandparent.js"></script>', rendered)
+
+    def test_media_in_multiple_bases(self):
+        class GrandParent1Component(Component):
+            class Media:
+                css = "grandparent1.css"
+                js = "grandparent1.js"
+
+        class GrandParent2Component(Component):
+            pass
+
+        # NOTE: The bases don't even have to be Component classes,
+        # as long as they have the nested `Media` class.
+        class GrandParent3Component:
+            # NOTE: When we don't subclass `Component`, we have to correctly format the `Media` class
+            class Media:
+                css = {"all": ["grandparent3.css"]}
+                js = ["grandparent3.js"]
+
+        class GrandParent4Component:
+            pass
+
+        class Parent1Component(GrandParent1Component, GrandParent2Component):
+            class Media:
+                css = "parent1.css"
+                js = "parent1.js"
+
+        class Parent2Component(GrandParent3Component, GrandParent4Component):
+            Media = None
+
+        class ChildComponent(Parent1Component, Parent2Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+            class Media:
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="parent1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="grandparent1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="grandparent3.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertInHTML('<script src="child.js"></script>', rendered)
+        self.assertInHTML('<script src="parent1.js"></script>', rendered)
+        self.assertInHTML('<script src="grandparent1.js"></script>', rendered)
+        self.assertInHTML('<script src="grandparent3.js"></script>', rendered)
+
+    def test_extend_false_in_child(self):
+        class Parent1Component(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "parent1.css"
+                js = "parent1.js"
+
+        class Parent2Component(Component):
+            class Media:
+                css = "parent2.css"
+                js = "parent2.js"
+
+        class ChildComponent(Parent1Component, Parent2Component):
+            class Media:
+                extend = False
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertNotIn('parent1.css', rendered)
+        self.assertNotIn('parent2.css', rendered)
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertNotIn('parent1.js', rendered)
+        self.assertNotIn('parent2.js', rendered)
+        self.assertInHTML('<script src="child.js"></script>', rendered)
+
+    def test_extend_false_in_parent(self):
+        class GrandParentComponent(Component):
+            class Media:
+                css = "grandparent.css"
+                js = "grandparent.js"
+
+        class Parent1Component(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "parent1.css"
+                js = "parent1.js"
+
+        class Parent2Component(GrandParentComponent):
+            class Media:
+                extend = False
+                css = "parent2.css"
+                js = "parent2.js"
+
+        class ChildComponent(Parent1Component, Parent2Component):
+            class Media:
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertNotIn('grandparent.css', rendered)
+        self.assertInHTML('<link href="parent1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="parent2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertNotIn('grandparent.js', rendered)
+        self.assertInHTML('<script src="parent1.js"></script>', rendered)
+        self.assertInHTML('<script src="parent2.js"></script>', rendered)
+        self.assertInHTML('<script src="child.js"></script>', rendered)
+
+    def test_extend_list_in_child(self):
+        class Parent1Component(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "parent1.css"
+                js = "parent1.js"
+
+        class Parent2Component(Component):
+            class Media:
+                css = "parent2.css"
+                js = "parent2.js"
+
+        class Other1Component(Component):
+            class Media:
+                css = "other1.css"
+                js = "other1.js"
+
+        class Other2Component:
+            class Media:
+                css = {"all": ["other2.css"]}
+                js = ["other2.js"]
+
+        class ChildComponent(Parent1Component, Parent2Component):
+            class Media:
+                extend = [Other1Component, Other2Component]
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertNotIn('parent1.css', rendered)
+        self.assertNotIn('parent2.css', rendered)
+        self.assertInHTML('<link href="other1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="other2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertNotIn('parent1.js', rendered)
+        self.assertNotIn('parent2.js', rendered)
+        self.assertInHTML('<script src="other1.js"></script>', rendered)
+        self.assertInHTML('<script src="other2.js"></script>', rendered)
+        self.assertInHTML('<script src="child.js"></script>', rendered)
+
+    def test_extend_list_in_parent(self):
+        class Other1Component(Component):
+            class Media:
+                css = "other1.css"
+                js = "other1.js"
+
+        class Other2Component:
+            class Media:
+                css = {"all": ["other2.css"]}
+                js = ["other2.js"]
+
+        class GrandParentComponent(Component):
+            class Media:
+                css = "grandparent.css"
+                js = "grandparent.js"
+
+        class Parent1Component(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component_js_dependencies %}
+                {% component_css_dependencies %}
+            """
+
+            class Media:
+                css = "parent1.css"
+                js = "parent1.js"
+
+        class Parent2Component(GrandParentComponent):
+            class Media:
+                extend = [Other1Component, Other2Component]
+                css = "parent2.css"
+                js = "parent2.js"
+
+        class ChildComponent(Parent1Component, Parent2Component):
+            class Media:
+                css = "child.css"
+                js = "child.js"
+
+        rendered = ChildComponent.render()
+
+        self.assertNotIn('grandparent.css', rendered)
+        self.assertInHTML('<link href="other1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="other2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="parent1.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="parent2.css" media="all" rel="stylesheet">', rendered)
+        self.assertInHTML('<link href="child.css" media="all" rel="stylesheet">', rendered)
+
+        self.assertNotIn('grandparent.js', rendered)
+        self.assertInHTML('<script src="other1.js"></script>', rendered)
+        self.assertInHTML('<script src="other2.js"></script>', rendered)
+        self.assertInHTML('<script src="parent1.js"></script>', rendered)
+        self.assertInHTML('<script src="parent2.js"></script>', rendered)
+        self.assertInHTML('<script src="child.js"></script>', rendered)

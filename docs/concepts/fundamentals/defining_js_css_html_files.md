@@ -402,8 +402,8 @@ print(Calendar.css)
 
 ## Accessing component's Media files
 
-To access the files defined under [`Component.Media`](../../../reference/api#django_components.Component.Media),
-you can access [`Component.media`](../../reference/api.md#django_components.Component.media) (lowercase).
+To access the files that you defined under [`Component.Media`](../../../reference/api#django_components.Component.Media),
+use [`Component.media`](../../reference/api.md#django_components.Component.media) (lowercase).
 This is consistent behavior with
 [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#assets-as-a-static-definition).
 
@@ -419,6 +419,95 @@ print(MyComponent.media)
 # <link href="/static/path/to/style.css" media="all" rel="stylesheet">
 ```
 
+### `Component.Media` vs `Component.media`
+
+When working with component media files, there are a few important concepts to understand:
+
+- `Component.Media`
+
+    - Is the "raw" media definition, or the input, which holds only the component's **own** media definition
+    - This class is NOT instantiated, it merely holds the JS / CSS files.
+
+- `Component.media`
+    - Returns all resolved media files, **including** those inherited from parent components
+    - Is an instance of [`Component.media_class`](../../reference/api.md#django_components.Component.media_class)
+
+```python
+class ParentComponent(Component):
+    class Media:
+        js = ["parent.js"]
+
+class ChildComponent(ParentComponent):
+    class Media:
+        js = ["child.js"]
+
+# Access only this component's media
+print(ChildComponent.Media.js)  # ["child.js"]
+
+# Access all inherited media
+print(ChildComponent.media._js)  # ["parent.js", "child.js"]
+```
+
+!!! note
+
+    You should **not** manually modify `Component.media` or `Component.Media` after the component has been resolved, as this may lead to unexpected behavior.
+
 If you want to modify the class that is instantiated for [`Component.media`](../../reference/api.md#django_components.Component.media),
 you can configure [`Component.media_class`](../../reference/api.md#django_components.Component.media_class)
 ([See example](#customize-how-paths-are-rendered-into-html-tags)).
+
+## Controlling Media Inheritance
+
+By default, the media files are inherited from the parent component.
+
+```python
+class ParentComponent(Component):
+    class Media:
+        js = ["parent.js"]
+
+class MyComponent(ParentComponent):
+    class Media:
+        js = ["script.js"]
+
+print(MyComponent.media._js)  # ["parent.js", "script.js"]
+```
+
+You can set the component NOT to inherit from the parent component by setting the [`extend`](../../reference/api.md#django_components.ComponentMediaInput.extend) attribute to `False`:
+
+```python
+class ParentComponent(Component):
+    class Media:
+        js = ["parent.js"]
+
+class MyComponent(ParentComponent):
+    class Media:
+        extend = False  # Don't inherit parent media
+        js = ["script.js"]
+
+print(MyComponent.media._js)  # ["script.js"]
+```
+
+Alternatively, you can specify which components to inherit from. In such case, the media files are inherited ONLY from the specified components, and NOT from the original parent components:
+
+```python
+class ParentComponent(Component):
+    class Media:
+        js = ["parent.js"]
+
+class MyComponent(ParentComponent):
+    class Media:
+        # Only inherit from these, ignoring the files from the parent
+        extend = [OtherComponent1, OtherComponent2]
+
+        js = ["script.js"]
+
+print(MyComponent.media._js)  # ["script.js", "other1.js", "other2.js"]
+```
+
+!!! info
+
+    The `extend` behaves consistently with
+    [Django's Media class](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend),
+    with one exception:
+
+    - When you set `extend` to a list, the list is expected to contain Component classes (or other classes that have a nested `Media` class).
