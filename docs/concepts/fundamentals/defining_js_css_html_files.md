@@ -137,6 +137,9 @@ This `Media` class behaves similarly to
 - A [`SafeString`](https://docs.djangoproject.com/en/5.1/ref/utils/#django.utils.safestring.SafeString),
   or a function (with `__html__` method) is considered an already-formatted HTML tag, skipping both static file
   resolution and rendering with `media_class.render_js()` or `media_class.render_css()`.
+- You can set [`extend`](../../../reference/api#django_components.ComponentMediaInput.extend) to configure
+    whether to inherit JS / CSS from parent components. See
+    [Controlling Media Inheritance](../../fundamentals/defining_js_css_html_files/#controlling-media-inheritance).
 
 However, there's a few differences from Django's Media class:
 
@@ -145,8 +148,6 @@ However, there's a few differences from Django's Media class:
 2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
    [`SafeString`](https://docs.djangoproject.com/en/5.1/ref/utils/#django.utils.safestring.SafeString), or a function
    (See [`ComponentMediaInputPath`](../../../reference/api#django_components.ComponentMediaInputPath)).
-3. Our Media class does NOT support
-   [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
 
 ```py
 class MyTable(Component):
