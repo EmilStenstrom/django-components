@@ -61,7 +61,7 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = template.render(Context({}))
 
         # Placeholders
-        self.assertEqual(rendered_raw.count('<link name="CSS_PLACEHOLDER"/>'), 1)
+        self.assertEqual(rendered_raw.count('<link name="CSS_PLACEHOLDER">'), 1)
         self.assertEqual(rendered_raw.count('<script name="JS_PLACEHOLDER"></script>'), 1)
 
         self.assertEqual(rendered_raw.count("<script"), 1)
@@ -510,7 +510,7 @@ class MiddlewareTests(BaseTestCase):
 
         assert_dependencies(rendered1)
         self.assertEqual(
-            rendered1.count('Variable: <strong data-djc-id-a1bc41 data-djc-id-a1bc42="">value</strong>'),
+            rendered1.count('Variable: <strong data-djc-id-a1bc41 data-djc-id-a1bc42>value</strong>'),
             1,
         )
 
@@ -520,7 +520,7 @@ class MiddlewareTests(BaseTestCase):
         )
         assert_dependencies(rendered2)
         self.assertEqual(
-            rendered2.count('Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44="">value</strong>'),
+            rendered2.count('Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44>value</strong>'),
             1,
         )
 
@@ -531,6 +531,6 @@ class MiddlewareTests(BaseTestCase):
 
         assert_dependencies(rendered3)
         self.assertEqual(
-            rendered3.count('Variable: <strong data-djc-id-a1bc45 data-djc-id-a1bc46="">value</strong>'),
+            rendered3.count('Variable: <strong data-djc-id-a1bc45 data-djc-id-a1bc46>value</strong>'),
             1,
         )

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Sequence
 
-from bs4 import BeautifulSoup, CData, Comment, Doctype, Tag
+from bs4 import BeautifulSoup, CData, Comment, Doctype, NavigableString, Tag
 
 
 class HTMLNode(ABC):
@@ -63,8 +63,11 @@ class SoupNode(HTMLNode):
             return f"<!-- {self.node} -->"
         elif isinstance(self.node, Doctype):
             return f"<!DOCTYPE {self.node}>"
-        else:
+        elif isinstance(self.node, NavigableString):
             return str(self.node)
+        else:
+            # See https://github.com/EmilStenstrom/django-components/pull/861#discussion_r1898516210
+            return self.node.encode(formatter="html5").decode()
 
     def name(self) -> str:
         return self.node.name

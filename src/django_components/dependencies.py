@@ -394,7 +394,7 @@ CSS_PLACEHOLDER_NAME_B = CSS_PLACEHOLDER_NAME.encode()
 JS_PLACEHOLDER_NAME = "JS_PLACEHOLDER"
 JS_PLACEHOLDER_NAME_B = JS_PLACEHOLDER_NAME.encode()
 
-CSS_DEPENDENCY_PLACEHOLDER = f'<link name="{CSS_PLACEHOLDER_NAME}"/>'
+CSS_DEPENDENCY_PLACEHOLDER = f'<link name="{CSS_PLACEHOLDER_NAME}">'
 JS_DEPENDENCY_PLACEHOLDER = f'<script name="{JS_PLACEHOLDER_NAME}"></script>'
 COMPONENT_DEPS_COMMENT = "<!-- _RENDERED {data} -->"
 
@@ -415,7 +415,7 @@ MAYBE_COMP_CSS_ID = r"(?: data-djc-css-\w{6})?"
 
 PLACEHOLDER_REGEX = re.compile(
     r"{css_placeholder}|{js_placeholder}".format(
-        css_placeholder=f'<link{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{CSS_PLACEHOLDER_NAME}"/>',
+        css_placeholder=f'<link{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{CSS_PLACEHOLDER_NAME}"/?>',
         js_placeholder=f'<script{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{JS_PLACEHOLDER_NAME}"></script>',
     ).encode()
 )
