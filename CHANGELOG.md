@@ -22,11 +22,10 @@
 
 #### Refactor
 
-- The canonical way to define a template file was changed from `template_name` to `template_file`,
-  to align with the rest of the API.
+- The canonical way to define a template file was changed from `template_name` to `template_file`, to align with the rest of the API.
   
-   `template_name` remains for backwards compatibility. When you get / set `template_name`,
-   internally this is proxied to `template_file`.
+    `template_name` remains for backwards compatibility. When you get / set `template_name`,
+    internally this is proxied to `template_file`.
 
 - The undocumented `Component.component_id` was removed. Instead, use `Component.id`. Changes:
 
@@ -41,6 +40,12 @@
     2. Render the component.
 
     Read more on [Accessing component's HTML / JS / CSS](https://EmilStenstrom.github.io/django-components/0.124/concepts/fundamentals/defining_js_css_html_files/#customize-how-paths-are-rendered-into-html-tags).
+
+- Component inheritance:
+
+    - When you subclass a component, the JS and CSS defined on parent's `Media` class is now inherited by the child component.
+    - You can disable or customize Media inheritance by setting `extend` attribute on the `Component.Media` nested class. This work similarly to Django's [`Media.extend`](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend).
+    - When child component defines either `template` or `template_file`, both of parent's `template` and `template_file` are ignored. The same applies to `js_file` and `css_file`.
 
 - The [Signals](https://docs.djangoproject.com/en/5.1/topics/signals/) emitted by or during the use of django-components are now documented, together the `template_rendered` signal.
 
