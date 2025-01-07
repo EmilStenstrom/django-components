@@ -519,7 +519,7 @@ class Component(
                 "print": ["path/to/style2.css"],
             }
     ```
-    """
+    """  # noqa: E501
 
     response_class = HttpResponse
     """This allows to configure what class is used to generate response from `render_to_response`"""
