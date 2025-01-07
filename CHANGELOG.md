@@ -18,7 +18,7 @@
     - The JS/CSS defined in `Component.js/css` or `Component.js/css_file` is the "main" JS/CSS
     - The JS/CSS defined in `Component.Media.js/css` are secondary or additional
 
-    See the updated ["Getting Started" tutorial](https://EmilStenstrom.github.io/django-components/0.124/concepts/getting_started/adding_js_and_css/)
+    See the updated ["Getting Started" tutorial](https://EmilStenstrom.github.io/django-components/0.124/getting_started/adding_js_and_css/)
 
 #### Refactor
 

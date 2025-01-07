@@ -3,7 +3,7 @@ title: Defining HTML / JS / CSS files
 weight: 8
 ---
 
-As you could have seen in [the tutorial](../../concepts/getting_started/adding_js_and_css.md), there's multiple ways how you can associate
+As you could have seen in [the tutorial](../../getting_started/adding_js_and_css.md), there's multiple ways how you can associate
 HTML / JS / CSS with a component:
 
 - You can set [`Component.template`](../../reference/api.md#django_components.Component.template),
@@ -49,7 +49,7 @@ HTML / JS / CSS with a component:
 
 ## Defining file paths relative to component
 
-As seen in the [getting started example](../getting_started/your_first_component.md), to associate HTML / JS / CSS
+As seen in the [getting started example](../../getting_started/your_first_component.md), to associate HTML / JS / CSS
 files with a component, you can set them as
 [`Component.template_file`](../../reference/api.md#django_components.Component.template_file),
 [`Component.js_file`](../../reference/api.md#django_components.Component.js_file)
