@@ -47,6 +47,8 @@
     - You can disable or customize Media inheritance by setting `extend` attribute on the `Component.Media` nested class. This work similarly to Django's [`Media.extend`](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend).
     - When child component defines either `template` or `template_file`, both of parent's `template` and `template_file` are ignored. The same applies to `js_file` and `css_file`.
 
+- Autodiscovery now ignores files and directories that start with an underscore (`_`), except `__init__.py`
+
 - The [Signals](https://docs.djangoproject.com/en/5.1/topics/signals/) emitted by or during the use of django-components are now documented, together the `template_rendered` signal.
 
 ## v0.123

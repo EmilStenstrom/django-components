@@ -142,6 +142,8 @@ One of our goals with `django-components` is to make it easy to share components
 
 - [django-htmx-components](https://github.com/iwanalabs/django-htmx-components): A set of components for use with [htmx](https://htmx.org/). Try out the [live demo](https://dhc.iwanalabs.com/).
 
+- [djc-heroicons](https://pypi.org/project/djc-heroicons/): A component that renders icons from [Heroicons.com](https://heroicons.com/).
+
 ## Contributing and development
 
 Get involved or sponsor this project - [See here](https://emilstenstrom.github.io/django-components/dev/overview/contributing/)
