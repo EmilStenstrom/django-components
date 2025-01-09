@@ -235,7 +235,7 @@ with a few differences:
 
 1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list, or (CSS-only) a dictonary (see below).
 2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`, [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
-3. Our Media class does NOT support [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend).
+3. If you set `Media.extend` to a list, it should be a list of `Component` classes.
 
 [Learn more](../fundamentals/defining_js_css_html_files.md) about using Media.
 

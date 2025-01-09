@@ -49,8 +49,8 @@ from django.urls import URLPattern, URLResolver
 
 from django_components import ComponentVars, TagFormatterABC
 from django_components.component import Component
-from django_components.templatetags.component_tags import TagSpec
 from django_components.util.misc import get_import_path
+from django_components.util.template_tag import TagSpec
 
 # NOTE: This file is an entrypoint for the `gen-files` plugin in `mkdocs.yml`.
 #       However, `gen-files` plugin runs this file as a script, NOT as a module.

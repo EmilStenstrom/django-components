@@ -497,6 +497,9 @@ class Component(
       This path is still rendered to HTML with `media_class.render_js()` or `media_class.render_css()`.
     - A `SafeString` (with `__html__` method) is considered an already-formatted HTML tag, skipping both static file
         resolution and rendering with `media_class.render_js()` or `media_class.render_css()`.
+    - You can set [`extend`](../api#django_components.ComponentMediaInput.extend) to configure
+      whether to inherit JS / CSS from parent components. See
+      [Controlling Media Inheritance](../../concepts/fundamentals/defining_js_css_html_files/#controlling-media-inheritance).
 
     However, there's a few differences from Django's Media class:
 
@@ -505,8 +508,6 @@ class Component(
     2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
        [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function
        (See [`ComponentMediaInputPath`](../api#django_components.ComponentMediaInputPath)).
-    3. Our Media class does NOT support
-       [Django's `extend` keyword](https://docs.djangoproject.com/en/5.1/topics/forms/media/#extend)
 
     **Example:**
 
@@ -525,7 +526,7 @@ class Component(
                 "print": ["path/to/style2.css"],
             }
     ```
-    """
+    """  # noqa: E501
 
     response_class = HttpResponse
     """This allows to configure what class is used to generate response from `render_to_response`"""

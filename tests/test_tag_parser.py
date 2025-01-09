@@ -1,3 +1,5 @@
+from django.template import TemplateSyntaxError
+
 from django_components.util.tag_parser import TagAttr, TagValue, TagValuePart, TagValueStruct, parse_tag
 
 from .django_test_setup import setup_test_config
@@ -999,16 +1001,12 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="val", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                     ],
@@ -1050,16 +1048,12 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="val", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                     ],
@@ -1071,15 +1065,15 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(attrs, expected_attrs)
 
     def test_dict_missing_colon(self):
-        with self.assertRaisesMessage(ValueError, "Dictionary key is missing a value"):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Dictionary key is missing a value"):
             parse_tag('component data={ "key" }')
 
     def test_dict_missing_colon_2(self):
-        with self.assertRaisesMessage(ValueError, "Dictionary key is missing a value"):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Dictionary key is missing a value"):
             parse_tag('component data={ "key", "val" }')
 
     def test_dict_extra_colon(self):
-        with self.assertRaisesMessage(ValueError, "Unexpected colon"):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Unexpected colon"):
             _, attrs = parse_tag("component data={ key:: key }")
 
     def test_dict_spread(self):
@@ -1113,9 +1107,7 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="spread", quoted=None, spread="**", translation=False, filter=None
-                                ),
+                                TagValuePart(value="spread", quoted=None, spread="**", translation=False, filter=None),
                             ]
                         )
                     ],
@@ -1157,37 +1149,27 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="spread", quoted=None, spread="**", translation=False, filter=None
-                                ),
+                                TagValuePart(value="spread", quoted=None, spread="**", translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="key2", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="key2", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val2", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="val2", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                     ],
@@ -1231,22 +1213,14 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="filter", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="filter", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="arg", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="value", quoted='"', spread=None, translation=False, filter=":"
-                                ),
+                                TagValuePart(value="arg", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="value", quoted='"', spread=None, translation=False, filter=":"),
                             ]
                         ),
                     ],
@@ -1287,23 +1261,17 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="1", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="2", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="2", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="3", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="3", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                     ],
@@ -1345,23 +1313,17 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="1", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="2", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="2", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="3", quoted=None, spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="3", quoted=None, spread=None, translation=False, filter=None),
                             ]
                         ),
                     ],
@@ -1421,30 +1383,18 @@ class TagParserTests(BaseTestCase):
                     spread=None,
                     entries=[
                         TagValue(
+                            parts=[TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None)]
+                        ),
+                        TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="1", quoted=None, spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="2", quoted=None, spread=None, translation=False, filter=None),
+                                TagValuePart(value="add", quoted=None, spread=None, translation=False, filter="|"),
+                                TagValuePart(value="3", quoted=None, spread=None, translation=False, filter=":"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="2", quoted=None, spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="add", quoted=None, spread=None, translation=False, filter="|"
-                                ),
-                                TagValuePart(
-                                    value="3", quoted=None, spread=None, translation=False, filter=":"
-                                ),
-                            ]
-                        ),
-                        TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="spread", quoted=None, spread="*", translation=False, filter=None
-                                )
+                                TagValuePart(value="spread", quoted=None, spread="*", translation=False, filter=None)
                             ]
                         ),
                     ],
@@ -1460,35 +1410,21 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="a", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="upper", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="a", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="upper", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="b", quoted="'", spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="lower", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="b", quoted="'", spread=None, translation=False, filter=None),
+                                TagValuePart(value="lower", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="c", quoted=None, spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="default", quoted=None, spread=None, translation=False, filter="|"
-                                ),
-                                TagValuePart(
-                                    value="d", quoted='"', spread=None, translation=False, filter=":"
-                                ),
+                                TagValuePart(value="c", quoted=None, spread=None, translation=False, filter=None),
+                                TagValuePart(value="default", quoted=None, spread=None, translation=False, filter="|"),
+                                TagValuePart(value="d", quoted='"', spread=None, translation=False, filter=":"),
                             ]
                         ),
                     ],
@@ -1503,11 +1439,7 @@ class TagParserTests(BaseTestCase):
                     spread=None,
                     entries=[
                         TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="1", quoted=None, spread=None, translation=False, filter=None
-                                )
-                            ]
+                            parts=[TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None)]
                         ),
                         TagValueStruct(
                             type="list",
@@ -1622,23 +1554,13 @@ class TagParserTests(BaseTestCase):
                     meta={},
                     entries=[
                         TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="a", quoted='"', spread=None, translation=False, filter=None
-                                )
-                            ]
+                            parts=[TagValuePart(value="a", quoted='"', spread=None, translation=False, filter=None)]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="1", quoted=None, spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="add", quoted=None, spread=None, translation=False, filter="|"
-                                ),
-                                TagValuePart(
-                                    value="2", quoted=None, spread=None, translation=False, filter=":"
-                                ),
+                                TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None),
+                                TagValuePart(value="add", quoted=None, spread=None, translation=False, filter="|"),
+                                TagValuePart(value="2", quoted=None, spread=None, translation=False, filter=":"),
                             ]
                         ),
                     ],
@@ -1654,37 +1576,23 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="upper", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="upper", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val", quoted=None, spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="lower", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None),
+                                TagValuePart(value="lower", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="spread", quoted=None, spread="**", translation=False, filter=None
-                                )
+                                TagValuePart(value="spread", quoted=None, spread="**", translation=False, filter=None)
                             ]
                         ),
                         TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="obj", quoted='"', spread=None, translation=False, filter=None
-                                )
-                            ]
+                            parts=[TagValuePart(value="obj", quoted='"', spread=None, translation=False, filter=None)]
                         ),
                         TagValueStruct(
                             type="dict",
@@ -1730,48 +1638,28 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="a", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="lower", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="a", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="lower", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="b", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="upper", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="b", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="upper", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="c", quoted=None, spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="default", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="c", quoted=None, spread=None, translation=False, filter=None),
+                                TagValuePart(value="default", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="d", quoted='"', spread=None, translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="e", quoted='"', spread=None, translation=False, filter=":"
-                                ),
-                                TagValuePart(
-                                    value="yesno", quoted=None, spread=None, translation=False, filter="|"
-                                ),
-                                TagValuePart(
-                                    value="yes,no", quoted='"', spread=None, translation=False, filter=":"
-                                ),
+                                TagValuePart(value="d", quoted='"', spread=None, translation=False, filter=None),
+                                TagValuePart(value="e", quoted='"', spread=None, translation=False, filter=":"),
+                                TagValuePart(value="yesno", quoted=None, spread=None, translation=False, filter="|"),
+                                TagValuePart(value="yes,no", quoted='"', spread=None, translation=False, filter=":"),
                             ]
                         ),
                     ],
@@ -1846,9 +1734,7 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="items", quoted='"', spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="items", quoted='"', spread=None, translation=False, filter=None)
                             ]
                         ),
                         TagValueStruct(
@@ -1939,18 +1825,14 @@ class TagParserTests(BaseTestCase):
                                             translation=False,
                                             filter="|",
                                         ),
-                                        TagValuePart(
-                                            value="", quoted='"', spread=None, translation=False, filter=":"
-                                        ),
+                                        TagValuePart(value="", quoted='"', spread=None, translation=False, filter=":"),
                                     ]
                                 ),
                             ],
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="nested", quoted='"', spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="nested", quoted='"', spread=None, translation=False, filter=None)
                             ]
                         ),
                         TagValueStruct(
@@ -2083,29 +1965,17 @@ class TagParserTests(BaseTestCase):
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="rest", quoted=None, spread="**", translation=False, filter=None
-                                ),
-                                TagValuePart(
-                                    value="default", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="rest", quoted=None, spread="**", translation=False, filter=None),
+                                TagValuePart(value="default", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                         TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                )
-                            ]
+                            parts=[TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="value", quoted="'", spread=None, translation=True, filter=None
-                                ),
-                                TagValuePart(
-                                    value="upper", quoted=None, spread=None, translation=False, filter="|"
-                                ),
+                                TagValuePart(value="value", quoted="'", spread=None, translation=True, filter=None),
+                                TagValuePart(value="upper", quoted=None, spread=None, translation=False, filter="|"),
                             ]
                         ),
                     ],
@@ -2119,25 +1989,28 @@ class TagParserTests(BaseTestCase):
             [a.serialize() for a in attrs],
             [
                 "component",
-                'data={"items": [1|add:2, {"x"|upper: 2|add:3}, *spread_items|default:""], "nested": {"a": [1|add:2, *nums|default:""], "b": {"x": [*more|default:""]}}, **rest|default, "key": _(\'value\')|upper}',
+                'data={"items": [1|add:2, {"x"|upper: 2|add:3}, *spread_items|default:""], "nested": {"a": [1|add:2, *nums|default:""], "b": {"x": [*more|default:""]}}, **rest|default, "key": _(\'value\')|upper}',  # noqa: E501
             ],
         )
 
     # Test that spread operator cannot be used as dictionary value
     def test_spread_as_dictionary_value(self):
-        with self.assertRaisesMessage(ValueError, "Spread syntax cannot be used in place of a dictionary value"):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Spread syntax cannot be used in place of a dictionary value",
+        ):
             parse_tag('component data={"key": **spread}')
 
     def test_spread_with_colon_interpreted_as_key(self):
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax cannot be used in place of a dictionary key",
         ):
             _, attrs = parse_tag("component data={**spread|abc: 123 }")
 
     def test_spread_in_filter_position(self):
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax cannot be used inside of a filter",
         ):
             _, attrs = parse_tag("component data=val|...spread|abc }")
@@ -2145,7 +2018,7 @@ class TagParserTests(BaseTestCase):
     def test_spread_whitespace(self):
         # NOTE: Separating `...` from its variable is NOT valid, and will result in error.
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '...' is missing a value",
         ):
             _, attrs = parse_tag("component ... attrs")
@@ -2180,16 +2053,12 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="a", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="a", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="b", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="b", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
@@ -2212,16 +2081,12 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="a", quoted='"', spread=None, translation=False, filter=None
-                                ),
+                                TagValuePart(value="a", quoted='"', spread=None, translation=False, filter=None),
                             ]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="my_list", quoted=None, spread="*", translation=False, filter=None
-                                ),
+                                TagValuePart(value="my_list", quoted=None, spread="*", translation=False, filter=None),
                             ]
                         ),
                     ],
@@ -2234,49 +2099,49 @@ class TagParserTests(BaseTestCase):
     # Test that one cannot use e.g. `...`, `**`, `*` in wrong places
     def test_spread_incorrect_syntax(self):
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '*' found outside of a list",
         ):
             _, attrs = parse_tag('component dict={"a": "b", *my_attr}')
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '...' found in dict. It must be used on tag attributes only",
         ):
             _, attrs = parse_tag('component dict={"a": "b", ...my_attr}')
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '**' found outside of a dictionary",
         ):
             _, attrs = parse_tag('component list=["a", "b", **my_list]')
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '...' found in list. It must be used on tag attributes only",
         ):
             _, attrs = parse_tag('component list=["a", "b", ...my_list]')
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '*' found outside of a list",
         ):
             _, attrs = parse_tag("component *attrs")
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '**' found outside of a dictionary",
         ):
             _, attrs = parse_tag("component **attrs")
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '*' found outside of a list",
         ):
             _, attrs = parse_tag("component key=*attrs")
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '**' found outside of a dictionary",
         ):
             _, attrs = parse_tag("component key=**attrs")
@@ -2284,19 +2149,19 @@ class TagParserTests(BaseTestCase):
     # Test that one cannot do `key=...{"a": "b"}`
     def test_spread_onto_key(self):
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '...' cannot follow a key ('key=...attrs')",
         ):
             _, attrs = parse_tag('component key=...{"a": "b"}')
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '...' cannot follow a key ('key=...attrs')",
         ):
             _, attrs = parse_tag('component key=...["a", "b"]')
 
         with self.assertRaisesMessage(
-            ValueError,
+            TemplateSyntaxError,
             "Spread syntax '...' cannot follow a key ('key=...attrs')",
         ):
             _, attrs = parse_tag("component key=...attrs")
@@ -2360,17 +2225,11 @@ class TagParserTests(BaseTestCase):
                             ],
                         ),
                         TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                )
-                            ]
+                            parts=[TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val1", quoted=None, spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="val1", quoted=None, spread=None, translation=False, filter=None)
                             ]
                         ),
                     ],
@@ -2418,17 +2277,11 @@ class TagParserTests(BaseTestCase):
                     meta={},
                     entries=[
                         TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="key", quoted='"', spread=None, translation=False, filter=None
-                                )
-                            ]
+                            parts=[TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val2", quoted=None, spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="val2", quoted=None, spread=None, translation=False, filter=None)
                             ]
                         ),
                     ],
@@ -2495,9 +2348,7 @@ class TagParserTests(BaseTestCase):
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val2", quoted=None, spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="val2", quoted=None, spread=None, translation=False, filter=None)
                             ]
                         ),
                     ],
@@ -2546,9 +2397,7 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(
-                                    value="val1", quoted=None, spread=None, translation=False, filter=None
-                                )
+                                TagValuePart(value="val1", quoted=None, spread=None, translation=False, filter=None)
                             ]
                         ),
                     ],

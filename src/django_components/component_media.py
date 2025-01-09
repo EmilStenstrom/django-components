@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Protocol, Tuple, Type, Union, cast
@@ -170,13 +171,57 @@ class ComponentMediaInput(Protocol):
     ```
     """
 
+    extend: Union[bool, List[Type["Component"]]] = True
+    """
+    Configures whether the component should inherit the media files from the parent component.
+
+    - If `True`, the component inherits the media files from the parent component.
+    - If `False`, the component does not inherit the media files from the parent component.
+    - If a list of components classes, the component inherits the media files ONLY from these specified components.
+
+    Read more in [Controlling Media Inheritance](../concepts/fundamentals/defining_js_css_html_files.md#controlling-media-inheritance) section.
+
+    **Example:**
+
+    Disable media inheritance:
+
+    ```python
+    class ParentComponent(Component):
+        class Media:
+            js = ["parent.js"]
+
+    class MyComponent(ParentComponent):
+        class Media:
+            extend = False  # Don't inherit parent media
+            js = ["script.js"]
+
+    print(MyComponent.media._js)  # ["script.js"]
+    ```
+
+    Specify which components to inherit from. In this case, the media files are inherited ONLY
+    from the specified components, and NOT from the original parent components:
+
+    ```python
+    class ParentComponent(Component):
+        class Media:
+            js = ["parent.js"]
+
+    class MyComponent(ParentComponent):
+        class Media:
+            # Only inherit from these, ignoring the files from the parent
+            extend = [OtherComponent1, OtherComponent2]
+
+            js = ["script.js"]
+
+    print(MyComponent.media._js)  # ["script.js", "other1.js", "other2.js"]
+    ```
+    """  # noqa: E501
+
 
 @dataclass
 class ComponentMedia:
     resolved: bool = False
     Media: Optional[Type[ComponentMediaInput]] = None
-    media: Optional[MediaCls] = None
-    media_class: Type[MediaCls] = MediaCls
     template: Optional[str] = None
     template_file: Optional[str] = None
     js: Optional[str] = None
@@ -260,8 +305,6 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
         # NOTE: We take the values from `attrs` so we consider only the values that were set on THIS class,
         #       and not the values that were inherited from the parent classes.
         Media=attrs.get("Media", None),
-        media=attrs.get("media", None),
-        media_class=attrs.get("media_class", None),
         template=attrs.get("template", None),
         template_file=attrs.get("template_file", None),
         js=attrs.get("js", None),
@@ -270,47 +313,11 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
         css_file=attrs.get("css_file", None),
     )
 
-    # Because the media values are not defined directly on the instance, but held in `_component_media`,
-    # then simply accessing `_component_media.js` will NOT get the values from parent classes.
-    #
-    # So this function is like `getattr`, but for searching for values inside `_component_media`.
     def get_comp_media_attr(attr: str) -> Any:
-        for base in comp_cls.mro():
-            comp_media: Optional[ComponentMedia] = getattr(base, "_component_media", None)
-            if comp_media is None:
-                continue
-            if not comp_media.resolved:
-                _resolve_media(base, comp_media)
-            value = getattr(comp_media, attr, None)
-
-            # For each of the pairs of inlined_content + file (e.g. `js` + `js_file`), if at least one of the two
-            # is defined, we interpret it such that this (sub)class has overriden what was set by the parent class(es),
-            # and we won't search further up the MRO.
-            def check_pair_empty(inline_attr: str, file_attr: str) -> bool:
-                inline_attr_empty = getattr(comp_media, inline_attr, None) is None
-                file_attr_empty = getattr(comp_media, file_attr, None) is None
-                return inline_attr_empty and file_attr_empty
-
-            if attr in ("js", "js_file"):
-                if check_pair_empty("js", "js_file"):
-                    continue
-                else:
-                    return value
-            if attr in ("css", "css_file"):
-                if check_pair_empty("css", "css_file"):
-                    continue
-                else:
-                    return value
-            if attr in ("template", "template_file"):
-                if check_pair_empty("template", "template_file"):
-                    continue
-                else:
-                    return value
-
-            # For the other attributes, simply search for the closest non-null
-            if value is not None:
-                return value
-        return None
+        if attr == "media":
+            return _get_comp_cls_media(comp_cls)
+        else:
+            return _get_comp_cls_attr(comp_cls, attr)
 
     # Because of the lazy resolution, we want to know when the user tries to access the media attributes.
     # And because these fields are class attributes, we can't use `@property` decorator.
@@ -327,6 +334,134 @@ def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]
 
     for attr in COMP_MEDIA_LAZY_ATTRS:
         setattr(comp_cls, attr, InterceptDescriptor(attr))
+
+
+# Because the media values are not defined directly on the instance, but held in `_component_media`,
+# then simply accessing `_component_media.js` will NOT get the values from parent classes.
+#
+# So this function is like `getattr`, but for searching for values inside `_component_media`.
+def _get_comp_cls_attr(comp_cls: Type["Component"], attr: str) -> Any:
+    for base in comp_cls.mro():
+        comp_media: Optional[ComponentMedia] = getattr(base, "_component_media", None)
+        if comp_media is None:
+            continue
+        if not comp_media.resolved:
+            _resolve_media(base, comp_media)
+        value = getattr(comp_media, attr, None)
+
+        # For each of the pairs of inlined_content + file (e.g. `js` + `js_file`), if at least one of the two
+        # is defined, we interpret it such that this (sub)class has overriden what was set by the parent class(es),
+        # and we won't search further up the MRO.
+        def check_pair_empty(inline_attr: str, file_attr: str) -> bool:
+            inline_attr_empty = getattr(comp_media, inline_attr, None) is None
+            file_attr_empty = getattr(comp_media, file_attr, None) is None
+            return inline_attr_empty and file_attr_empty
+
+        if attr in ("js", "js_file"):
+            if check_pair_empty("js", "js_file"):
+                continue
+            else:
+                return value
+        if attr in ("css", "css_file"):
+            if check_pair_empty("css", "css_file"):
+                continue
+            else:
+                return value
+        if attr in ("template", "template_file"):
+            if check_pair_empty("template", "template_file"):
+                continue
+            else:
+                return value
+
+        # For the other attributes, simply search for the closest non-null
+        if value is not None:
+            return value
+    return None
+
+
+media_cache: Dict[Type["Component"], MediaCls] = {}
+
+
+def _get_comp_cls_media(comp_cls: Type["Component"]) -> Any:
+    # Component's `media` attribute is a special case, because it should inherit all the JS/CSS files
+    # from the parent classes. So we need to walk up the MRO and merge all the Media classes.
+    #
+    # But before we do that, we need to ensure that all parent classes have resolved their `media` attributes.
+    # Because to be able to construct `media` for a Component class, all its parent classes must have resolved
+    # their `media`.
+    #
+    # So we will:
+    # 0. Cache the resolved media, so we don't have to resolve it again, and so we can store it even for classes
+    #   that don't have `Media` attribute.
+    # 1. If the current class HAS `media` in the cache, we used that
+    # 2. Otherwise, we check if its parent bases have `media` in the cache,
+    # 3. If ALL parent bases have `media` in the cache, we can resolve the child class's `media`,
+    #    and put it in the cache.
+    # 4. If ANY of the parent bases DOESN'T, then we add those parent bases to the stack (so they are processed
+    #    right after this. And we add the child class right after that.
+    #
+    #    E.g. `stack = [*cls.__bases__, cls, *stack]`
+    #
+    #    That way, we go up one level of the bases, and then we eventually come back down to the
+    #    class that we tried to resolve. But the second time, we will have `media` resolved for all its parent bases.
+    bases_stack = deque([comp_cls])
+    while bases_stack:
+        curr_cls = bases_stack.popleft()
+
+        if curr_cls in media_cache:
+            continue
+
+        # Prepare base classes
+        media_input = getattr(curr_cls, "Media", None)
+        media_extend = getattr(media_input, "extend", True)
+
+        # This ensures the same behavior as Django's Media class, where:
+        # - If `Media.extend == True`, then the media files are inherited from the parent classes.
+        # - If `Media.extend == False`, then the media files are NOT inherited from the parent classes.
+        # - If `Media.extend == [Component1, Component2, ...]`, then the media files are inherited only
+        #   from the specified classes.
+        if media_extend is True:
+            bases = curr_cls.__bases__
+        elif media_extend is False:
+            bases = tuple()
+        else:
+            bases = media_extend
+
+        unresolved_bases = [base for base in bases if base not in media_cache]
+        if unresolved_bases:
+            # Put the current class's bases at the FRONT of the queue, and put the current class back right after that.
+            # E.g. `[parentCls1, parentCls2, currCls, ...]`
+            # That way, we first resolve the parent classes, and then the current class.
+            bases_stack.extendleft(reversed([*unresolved_bases, curr_cls]))
+            continue
+
+        # Now, if we got here, then either all the bases of the current class have had their `media` resolved,
+        # or the current class has NO bases. So now we construct the `media` for the current class.
+        media_cls = getattr(curr_cls, "media_class", MediaCls)
+        # NOTE: If the class is a component and and it was not yet resolved, accessing `Media` should resolve it.
+        media_js = getattr(media_input, "js", [])
+        media_css = getattr(media_input, "css", {})
+        media: MediaCls = media_cls(js=media_js, css=media_css)
+
+        # We have the current class's `media`, now we add the JS and CSS from the parent classes.
+        # NOTE: Django's implementation of `Media` should ensure that duplicate files are not added.
+        for base in bases:
+            base_media = media_cache.get(base, None)
+            if base_media is None:
+                continue
+
+            # Add JS / CSS from the base class's Media to the current class's Media.
+            # We make use of the fact that Django's Media class does this with `__add__` method.
+            #
+            # However, the `__add__` converts our `media_cls` to Django's Media class.
+            # So we also have to convert it back to `media_cls`.
+            merged_media = media + base_media
+            media = media_cls(js=merged_media._js, css=merged_media._css)
+
+        # Lastly, cache the merged-up Media, so we don't have to search further up the MRO the next time
+        media_cache[curr_cls] = media
+
+    return media_cache[comp_cls]
 
 
 def _resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> None:
@@ -398,11 +533,6 @@ def _resolve_media(comp_cls: Type["Component"], comp_media: ComponentMedia) -> N
     comp_media.css = _get_asset(
         comp_cls, comp_media, inlined_attr="css", file_attr="css_file", comp_dirs=comp_dirs, type="static"
     )
-
-    media_cls = comp_media.media_class or MediaCls
-    media_js = getattr(comp_media.Media, "js", [])
-    media_css = getattr(comp_media.Media, "css", {})
-    comp_media.media = media_cls(js=media_js, css=media_css) if comp_media.Media is not None else None
 
     comp_media.resolved = True
 

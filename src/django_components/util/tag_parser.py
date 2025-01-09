@@ -163,7 +163,8 @@ class TagValuePart:
         )
 
 
-class TagValueStruct(NamedTuple):
+@dataclass
+class TagValueStruct:
     """
     TagValueStruct represents a potential container (list or dict) that holds other tag values.
 
@@ -436,7 +437,7 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
             key = take_until(["=", "'", '"', '_("', "_('", "|", "[", "{", *TAG_SPREAD, *TAG_WHITESPACE])
 
             # We've reached the end of the text
-            if is_at_end():
+            if not key and is_at_end():
                 break
 
             if not is_next_token(["="]):
@@ -516,7 +517,9 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
                         if entry.spread:
                             # Case: `{ "key": **{"key2": val2} }`
                             if dict_pair:
-                                raise TemplateSyntaxError("Spread syntax cannot be used in place of a dictionary value")
+                                raise TemplateSyntaxError(
+                                    "Spread syntax cannot be used in place of a dictionary value"
+                                )
                             # Case: `{ **{"key": val2} }`
                             continue
                         else:
@@ -535,7 +538,9 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
                         if entry.is_spread:
                             # Case: `{ "key": **my_attrs }`
                             if dict_pair:
-                                raise TemplateSyntaxError("Spread syntax cannot be used in place of a dictionary value")
+                                raise TemplateSyntaxError(
+                                    "Spread syntax cannot be used in place of a dictionary value"
+                                )
                             # Case: `{ **my_attrs }`
                             continue
                         # Non-spread value can be both key and value.
@@ -637,6 +642,9 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
                 # - `*` - Inside lists: `{% component key=[ *spread ] %}`
                 # - `**` - Inside dicts: `{% component key={ **spread } %}`
                 spread_token = extract_spread_token(curr_value, filter_token)
+                # Handle top-level spread `{% component ...attrs %}`
+                if curr_value.type == "simple":
+                    curr_value.spread = spread_token
 
                 # IMPORTANT!!! Depending on whether we're in a list or dict, there may be extra terminal tokens.
                 #
@@ -760,10 +768,10 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
         # TagValueStruct(type="simple", entries=[
         #     TagValueStruct(type="list", entries=[
         #         TagValuePart(value="my_comp", quoted=None, spread=False, translation=False, filter=None),
-        #         TagValuePart(value="'height=\"20\" | yesno : \"1,2,3\" | lower'", quoted="'", spread=False, translation=False, filter=None),
+        #         TagValuePart(value="'height=\"20\" | yesno : \"1,2,3\" | lower'", quoted="'", spread=False, translation=False, filter=None),  # noqa: E501
         #         TagValueStruct(type="dict", entries=[
         #             TagValuePart(value="key1", quoted=None, spread=False, translation=False, filter=None),
-        #             TagValuePart(value="value1|filter2 : \"1,2,3\"", quoted="'", spread=False, translation=False, filter=None),
+        #             TagValuePart(value="value1|filter2 : \"1,2,3\"", quoted="'", spread=False, translation=False, filter=None),  # noqa: E501
         #         ]),
         #     ]),
         # ])

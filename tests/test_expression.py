@@ -827,7 +827,7 @@ class SpreadOperatorTests(BaseTestCase):
             )
         )
 
-        with self.assertRaisesMessage(TemplateSyntaxError, "Syntax operator is missing a value"):
+        with self.assertRaisesMessage(TemplateSyntaxError, "Spread syntax '...' is missing a value"):
             Template(template_str)
 
     @parametrize_context_behavior(["django", "isolated"])
