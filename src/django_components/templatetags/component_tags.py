@@ -12,7 +12,7 @@
 #   During documentation generation, we access the `fn._tag_spec`.
 
 import functools
-from typing import Any, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Tuple, Union, cast
 
 import django.template
 from django.template.base import FilterExpression, NodeList, Parser, TextNode, Token, TokenType
@@ -34,7 +34,6 @@ from django_components.expression import (
     SpreadOperator,
     is_aggregate_key,
     is_dynamic_expression,
-    is_spread_operator,
 )
 from django_components.provide import PROVIDE_NAME_KWARG, ProvideNode
 from django_components.slots import (
@@ -49,7 +48,7 @@ from django_components.slots import (
 from django_components.tag_formatter import get_tag_formatter
 from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
-from django_components.util.tag_parser import TagAttr, parse_tag_attrs
+from django_components.util.tag_parser import TagAttr, TagValue, parse_tag
 
 # NOTE: Variable name `register` is required by Django to recognize this as a template tag library
 # See https://docs.djangoproject.com/en/dev/howto/custom-template-tags
@@ -856,11 +855,11 @@ def _parse_tag_preprocess(
 ) -> Tuple[str, List[str], List[TagKwarg], Set[str], bool]:
     _fix_nested_tags(parser, token)
 
-    _, attrs = parse_tag_attrs(token.contents)
+    _, attrs = parse_tag(token.contents)
 
     # First token is tag name, e.g. `slot` in `{% slot <name> ... %}`
     tag_name_attr = attrs.pop(0)
-    tag_name = tag_name_attr.formatted_value()
+    tag_name = tag_name_attr.serialize(omit_key=True)
 
     # Sanity check
     if tag_name != tag_spec.tag:
@@ -872,7 +871,8 @@ def _parse_tag_preprocess(
     # Otherwise, depending on the tag spec, the tag may be:
     # 2. Block tag - With corresponding end tag, e.g. `{% endslot %}`
     # 3. Inlined tag - Without the end tag.
-    last_token = attrs[-1].formatted_value() if len(attrs) else None
+    last_token = attrs[-1].serialize(omit_key=True) if len(attrs) else None
+
     if last_token == "/":
         attrs.pop()
         is_inline = True
@@ -901,10 +901,10 @@ def _parse_tag_input(tag_name: str, attrs: List[TagAttr]) -> Tuple[List[str], Li
     flags = set()
     seen_spreads = 0
     for attr in attrs:
-        value = attr.formatted_value()
+        value = attr.serialize(omit_key=True)
 
         # Spread
-        if is_spread_operator(value):
+        if attr.value.spread:
             if value == "...":
                 raise TemplateSyntaxError("Syntax operator is missing a value")
 
@@ -1161,20 +1161,27 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     #
     # We can parse the tag's tokens so we can find the last one, and so we consider
     # the unclosed `{%` only for the last bit.
-    _, attrs = parse_tag_attrs(block_token.contents)
+    _, attrs = parse_tag(block_token.contents)
 
     # If there are no attributes, then there are no nested tags
     if not attrs:
         return
 
     last_attr = attrs[-1]
-    last_attr_part = last_attr.parts[-1]
-    last_token = last_attr_part.value
+
+    # TODO: Currently, using a nested template inside a list or dict
+    #    e.g. `{% component ... key=["{% nested %}"] %}` is NOT supported.
+    #    Hence why we leave if value is not "simple" (which means the value is list or dict).
+    if last_attr.value.type != "simple":
+        return
+
+    last_attr_value = cast(TagValue, last_attr.value.entries[0])
+    last_token = last_attr_value.parts[-1]
 
     # User probably forgot to wrap the nested tag in quotes, or this is the end of the input.
     # `{% component ... key={% nested %} %}`
     # `{% component ... key= %}`
-    if not last_token:
+    if not last_token.value:
         return
 
     # When our template tag contains a nested tag, e.g.:
@@ -1187,7 +1194,7 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
     # and includes `{%`. So that's what we use to identify if we need to fix
     # nested tags or not.
     has_unclosed_tag = (
-        (last_token.count("{%") > last_token.count("%}"))
+        (last_token.value.count("{%") > last_token.value.count("%}"))
         # Moreover we need to also check for unclosed quotes for this edge case:
         # `{% component 'test' "{%}" %}`
         #
@@ -1200,12 +1207,12 @@ def _fix_nested_tags(parser: Parser, block_token: Token) -> None:
         # only within the last 'bit'. Consider this:
         # `{% component 'test' '"' "{%}" %}`
         #
-        or (last_token in ("'{", '"{'))
+        or (last_token.value in ("'{", '"{'))
     )
 
     # There is 3 double quotes, but if the contents get split at the first `%}`
     # then there will be a single unclosed double quote in the last bit.
-    has_unclosed_quote = not last_attr_part.quoted and last_token and last_token[0] in ('"', "'")
+    has_unclosed_quote = not last_token.quoted and last_token.value and last_token.value[0] in ('"', "'")
 
     needs_fixing = has_unclosed_tag and has_unclosed_quote
 
