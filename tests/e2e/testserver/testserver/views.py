@@ -1,9 +1,9 @@
 from django.http import HttpResponse
 from django.template import Context, Template
-from testserver.components import FragComp, FragMedia
 
 from django_components import render_dependencies, types
 
+from testserver.components import FragComp, FragMedia, OuterComponent
 
 def single_component_view(request):
     template_str: types.django_html = """
@@ -123,6 +123,47 @@ def check_js_order_vars_not_available_before_view(request):
     """
     template = Template(template_str)
     rendered_raw = template.render(Context({}))
+    rendered = render_dependencies(rendered_raw)
+    return HttpResponse(rendered)
+
+
+def check_css_scope_view(request):
+    template_str: types.django_html = """
+        {% load component_tags %}
+        <!DOCTYPE html>
+        <html>
+            <head>
+                {% component_css_dependencies %}
+            </head>
+            <body>
+                {% component 'css_scope_outer' variable='variable' / %}
+                {% component 'css_scope_inner' variable='variable' / %}
+                <div class="outer ext">
+                    <strong>
+                        EXT_OUTER
+                    </strong>
+                </div>
+                <div class="inner ext">
+                    <strong>
+                        EXT_INNER
+                    </strong>
+                </div>
+                <div class="foo ext">
+                    <strong>
+                        EXT_FOO
+                    </strong>
+                </div>
+            </body>
+        </html>
+    """
+    template = Template(template_str)
+
+    # For the purpose of this test, make ComponentOuter unscoped
+    orig_css_scope = OuterComponent.css_scoped
+    OuterComponent.css_scoped = False
+    rendered_raw = template.render(Context({}))
+    OuterComponent.css_scoped = orig_css_scope
+
     rendered = render_dependencies(rendered_raw)
     return HttpResponse(rendered)
 

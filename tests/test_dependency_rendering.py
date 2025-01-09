@@ -412,8 +412,8 @@ class DependencyRenderingTests(BaseTestCase):
         # NOTE: Each of these should be present only ONCE!
         self.assertInHTML(
             """
-            <style>.my-class { color: red; }</style>
-            <style>.xyz { color: red; }</style>
+            <style>.my-class[data-djc-scope-f02d32] { color: red; }</style>
+            <style>.xyz[data-djc-scope-6329ae] { color: red; }</style>
             """,
             rendered,
             count=1,

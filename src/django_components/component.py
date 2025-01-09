@@ -431,6 +431,13 @@ class Component(
     ```
     """
 
+    # TODO
+    # TODO
+    # TODO
+    # TODO
+    # TODO
+    css_scoped: bool = True  # TODO
+
     media: Optional[MediaCls] = None
     """
     Normalized definition of JS and CSS media files associated with this component.
@@ -1025,8 +1032,17 @@ class Component(
             is_filled = SlotIsFilled(slots_untyped)
             self._render_stack[-1].is_filled = is_filled
 
+            # If any slot fills were defined within the template, we want to scope them
+            # to the CSS of the parent component. Thus we keep track of the parent component.
+            if context.get(_COMPONENT_SLOT_CTX_CONTEXT_KEY, None):
+                outer_comp_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
+                parent_comp = outer_comp_ctx.component
+            else:
+                parent_comp = None
+
             component_slot_ctx = ComponentSlotContext(
-                component_name=self.name,
+                component=self,
+                parent_component=parent_comp,
                 template_name=template.name,
                 fills=slots_untyped,
                 is_dynamic_component=getattr(self, "_is_dynamic_component", False),
@@ -1093,7 +1109,8 @@ class Component(
                 rendered = content(ctx, slot_data, slot_ref)
                 return conditional_escape(rendered) if escape_content else rendered
 
-            slot = Slot(content_func=cast(SlotFunc, content_fn))
+            apply_css = getattr(content, "apply_css", False)
+            slot = Slot(content_func=cast(SlotFunc, content_fn), apply_css=apply_css)
             return slot
 
         for slot_name, content in fills.items():

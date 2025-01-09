@@ -32,12 +32,15 @@ from django_components.context import (
     _REGISTRY_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
 )
+from django_components.dependencies import link_dependencies_with_component_html
 from django_components.expression import RuntimeKwargs, is_identifier
 from django_components.node import BaseNode
+from django_components.util.css import gen_css_scope_id
 from django_components.util.logger import trace_msg
 from django_components.util.misc import get_last_index
 
 if TYPE_CHECKING:
+    from django_components.component import Component
     from django_components.component_registry import ComponentRegistry
 
 TSlotData = TypeVar("TSlotData", bound=Mapping, contravariant=True)
@@ -68,6 +71,8 @@ class Slot(Generic[TSlotData]):
     """This class holds the slot content function along with related metadata."""
 
     content_func: SlotFunc[TSlotData]
+    apply_css: bool = False
+    """Whether it is possible to apply CSS scoping and CSS variables to the slot content."""
 
     def __post_init__(self) -> None:
         if not callable(self.content_func):
@@ -77,6 +82,7 @@ class Slot(Generic[TSlotData]):
         if isinstance(self.content_func, Slot):
             inner_slot = self.content_func
             self.content_func = inner_slot.content_func
+            self.apply_css = inner_slot.apply_css
 
     # Allow to treat the instances as functions
     def __call__(self, ctx: Context, slot_data: TSlotData, slot_ref: "SlotRef") -> SlotResult:
@@ -91,21 +97,6 @@ class Slot(Generic[TSlotData]):
 
 # Internal type aliases
 SlotName = str
-
-
-@dataclass(frozen=True)
-class SlotFill(Generic[TSlotData]):
-    """
-    SlotFill describes what WILL be rendered.
-
-    The fill may be provided by the user from the outside (`is_filled=True`),
-    or it may be the default content of the slot (`is_filled=False`).
-    """
-
-    name: str
-    """Name of the slot."""
-    is_filled: bool
-    slot: Slot[TSlotData]
 
 
 class SlotRef:
@@ -142,7 +133,8 @@ class SlotIsFilled(dict):
 
 @dataclass
 class ComponentSlotContext:
-    component_name: str
+    component: "Component"
+    parent_component: Optional["Component"]
     template_name: str
     is_dynamic_component: bool
     default_slot: Optional[str]
@@ -217,7 +209,7 @@ class SlotNode(BaseNode):
             )
 
         component_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
-        slot_name, kwargs = self.resolve_kwargs(context, component_ctx.component_name)
+        slot_name, kwargs = self.resolve_kwargs(context, component_ctx.component.name)
 
         # Check for errors
         if self.is_default and not component_ctx.is_dynamic_component:
@@ -229,7 +221,7 @@ class SlotNode(BaseNode):
                     "Only one component slot may be marked as 'default', "
                     f"found '{default_slot_name}' and '{slot_name}'. "
                     f"To fix, check template '{component_ctx.template_name}' "
-                    f"of component '{component_ctx.component_name}'."
+                    f"of component '{component_ctx.component.name}'."
                 )
 
             if default_slot_name is None:
@@ -243,7 +235,7 @@ class SlotNode(BaseNode):
                 and component_ctx.fills.get(DEFAULT_SLOT_KEY, False)
             ):
                 raise TemplateSyntaxError(
-                    f"Slot '{slot_name}' of component '{component_ctx.component_name}' was filled twice: "
+                    f"Slot '{slot_name}' of component '{component_ctx.component.name}' was filled twice: "
                     "once explicitly and once implicitly as 'default'."
                 )
 
@@ -255,23 +247,16 @@ class SlotNode(BaseNode):
             fill_name = slot_name
 
         if fill_name in component_ctx.fills:
+            slot_is_filled = True
             slot_fill_fn = component_ctx.fills[fill_name]
-            slot_fill = SlotFill(
-                name=slot_name,
-                is_filled=True,
-                slot=slot_fill_fn,
-            )
         else:
             # No fill was supplied, render the slot's default content
-            slot_fill = SlotFill(
-                name=slot_name,
-                is_filled=False,
-                slot=_nodelist_to_slot_render_func(
-                    slot_name=slot_name,
-                    nodelist=self.nodelist,
-                    data_var=None,
-                    default_var=None,
-                ),
+            slot_is_filled = False
+            slot_fill_fn = _nodelist_to_slot_render_func(
+                slot_name=slot_name,
+                nodelist=self.nodelist,
+                data_var=None,
+                default_var=None,
             )
 
         # Check: If a slot is marked as 'required', it must be filled.
@@ -284,7 +269,7 @@ class SlotNode(BaseNode):
         # Note: Finding a good `cutoff` value may require further trial-and-error.
         # Higher values make matching stricter. This is probably preferable, as it
         # reduces false positives.
-        if self.is_required and not slot_fill.is_filled and not component_ctx.is_dynamic_component:
+        if self.is_required and not slot_is_filled and not component_ctx.is_dynamic_component:
             msg = (
                 f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
                 f"yet no fill is provided. Check template.'"
@@ -336,7 +321,7 @@ class SlotNode(BaseNode):
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
-        used_ctx = self._resolve_slot_context(context, slot_fill)
+        used_ctx = self._resolve_slot_context(context, slot_is_filled)
         with used_ctx.update(extra_context):
             # Required for compatibility with Django's {% extends %} tag
             # This makes sure that the render context used outside of a component
@@ -347,17 +332,34 @@ class SlotNode(BaseNode):
                 # Render slot as a function
                 # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
                 #       the render function ALWAYS receives them.
-                output = slot_fill.slot(used_ctx, kwargs, slot_ref)
+                output = slot_fill_fn(used_ctx, kwargs, slot_ref)
+
+                # If the component is set to apply CSS scoping, we want to apply it to the slot fills
+                # that were defined as part of the original template file - AKA the content inside
+                # the `{% fill %}` tags that you can see in the template file - This is consistent with
+                # Vue's scoped CSS behavior.
+                #
+                # As for the other slot fills, e.g. those that were passed in as functions, those are NOT scoped
+                # by default. And instead, users can opt-in by passing in a Slot instance with `apply_css=True`.
+                if component_ctx.parent_component and slot_fill_fn.apply_css:
+                    css_scope_id = gen_css_scope_id(component_ctx.parent_component.__class__)
+                    if css_scope_id:
+                        output = link_dependencies_with_component_html(
+                            component_id=None,
+                            css_scope_id=css_scope_id,
+                            html_content=output,
+                            css_input_hash=None,
+                        )
 
         trace_msg("RENDR", "SLOT", self.trace_id, self.node_id, msg="...Done!")
         return output
 
-    def _resolve_slot_context(self, context: Context, slot_fill: "SlotFill") -> Context:
+    def _resolve_slot_context(self, context: Context, slot_is_filled: bool) -> Context:
         """Prepare the context used in a slot fill based on the settings."""
         # If slot is NOT filled, we use the slot's default AKA content between
         # the `{% slot %}` tags. These should be evaluated as if the `{% slot %}`
         # tags weren't even there, which means that we use the current context.
-        if not slot_fill.is_filled:
+        if not slot_is_filled:
             return context
 
         registry: "ComponentRegistry" = context[_REGISTRY_CONTEXT_KEY]
@@ -619,6 +621,7 @@ def resolve_fills(
                 nodelist,
                 data_var=None,
                 default_var=None,
+                apply_css=True,
             )
 
     # The content has fills
@@ -632,6 +635,7 @@ def resolve_fills(
                 data_var=fill.data_var,
                 default_var=fill.default_var,
                 extra_context=fill.extra_context,
+                apply_css=True,
             )
 
     return slots
@@ -703,6 +707,7 @@ def _nodelist_to_slot_render_func(
     data_var: Optional[str] = None,
     default_var: Optional[str] = None,
     extra_context: Optional[Dict[str, Any]] = None,
+    apply_css: bool = False,
 ) -> Slot:
     if data_var:
         if not data_var.isidentifier():
@@ -769,7 +774,10 @@ def _nodelist_to_slot_render_func(
 
         return rendered
 
-    return Slot(content_func=cast(SlotFunc, render_func))
+    return Slot(
+        content_func=cast(SlotFunc, render_func),
+        apply_css=apply_css,
+    )
 
 
 def _is_extracting_fill(context: Context) -> bool:

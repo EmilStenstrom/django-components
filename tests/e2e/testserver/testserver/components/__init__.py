@@ -2,7 +2,7 @@ from django_components import Component, register, types
 
 
 @register("inner")
-class SimpleComponent(Component):
+class InnerComponent(Component):
     template: types.django_html = """
         Variable: <strong class="inner">{{ variable }}</strong>
     """
@@ -14,7 +14,7 @@ class SimpleComponent(Component):
     """
 
     js: types.js = """
-        globalThis.testSimpleComponent = 'kapowww!'
+        globalThis.testInnerComponent = 'kapowww!'
     """
 
     def get_context_data(self, variable, variable2="default"):
@@ -29,7 +29,7 @@ class SimpleComponent(Component):
 
 
 @register("outer")
-class SimpleComponentNested(Component):
+class OuterComponent(Component):
     template: types.django_html = """
         {% load component_tags %}
         <div class="outer">
@@ -45,7 +45,7 @@ class SimpleComponentNested(Component):
     """
 
     js: types.js = """
-        globalThis.testSimpleComponentNested = 'bongo!'
+        globalThis.testOuterComponent = 'bongo!'
     """
 
     def get_context_data(self, variable):
@@ -80,6 +80,24 @@ class OtherComponent(Component):
         js = "script.js"
 
 
+@register("css_scope_inner")
+class CssScopeInner(InnerComponent):
+    css_scoped = True
+    css: types.css = """
+        .inner {
+            font-size: 4px;
+        }
+        :root .foo {
+            color: red;
+        }
+    """
+
+
+@register("css_scope_outer")
+class CssScopeOuter(OuterComponent):
+    css_scoped = False
+
+
 @register("check_script_order_in_js")
 class CheckScriptOrderInJs(Component):
     template = "<check_script_order>"
@@ -89,13 +107,13 @@ class CheckScriptOrderInJs(Component):
     # - script.js               - testMsg
     # - script2.js              - testMsg2
     # Components:
-    # - SimpleComponent         - testSimpleComponent
-    # - SimpleComponentNested   - testSimpleComponentNested
+    # - InnerComponent         - testInnerComponent
+    # - OuterComponent          - testOuterComponent
     # - OtherComponent          - testOtherComponent
     js: types.js = """
         globalThis.checkVars = {
-            testSimpleComponent,
-            testSimpleComponentNested,
+            testInnerComponent,
+            testOuterComponent,
             testOtherComponent,
             testMsg,
             testMsg2,
