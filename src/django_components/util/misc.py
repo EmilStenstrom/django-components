@@ -1,12 +1,7 @@
 import re
-from functools import lru_cache
-from hashlib import md5
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Type, TypeVar
+from typing import Any, Callable, List, Optional, Type, TypeVar
 
 from django_components.util.nanoid import generate
-
-if TYPE_CHECKING:
-    from django_components.component import Component
 
 T = TypeVar("T")
 
@@ -53,16 +48,6 @@ def get_import_path(cls_or_fn: Type[Any]) -> str:
     if module == "builtins":
         return cls_or_fn.__qualname__  # avoid outputs like 'builtins.str'
     return module + "." + cls_or_fn.__qualname__
-
-
-# Convert Component class to something like `TableComp_a91d03`
-@lru_cache(None)
-def hash_comp_cls(comp_cls: Type["Component"], include_name: bool = True) -> str:
-    full_name = get_import_path(comp_cls)
-    comp_cls_hash = md5(full_name.encode()).hexdigest()[0:6]
-    if not include_name:
-        return comp_cls_hash
-    return comp_cls.__name__ + "_" + comp_cls_hash
 
 
 def default(val: Optional[T], default: T) -> T:

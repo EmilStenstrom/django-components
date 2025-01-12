@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 from bs4 import BeautifulSoup, CData, Comment, Doctype, NavigableString, Tag
 
@@ -26,9 +26,6 @@ class HTMLNode(ABC):
     def find_tag(self, tag: str) -> Optional["HTMLNode"]: ...  # noqa: E704
 
     @abstractmethod
-    def children(self) -> Sequence["HTMLNode"]: ...  # noqa: E704
-
-    @abstractmethod
     def append_children(self, children: Sequence[Any]) -> None: ...  # noqa: E704
 
     @abstractmethod
@@ -38,9 +35,6 @@ class HTMLNode(ABC):
     def set_attr(self, attr: str, value: Any) -> None: ...  # noqa: E704
 
     @abstractmethod
-    def get_attrs(self) -> Dict[str, Any]: ...  # noqa: E704
-
-    @abstractmethod
     def is_element(self) -> bool: ...  # noqa: E704
 
     """Returns `False` if the node is a text, comment, or doctype node. `True` otherwise."""
@@ -48,22 +42,6 @@ class HTMLNode(ABC):
     @classmethod
     def to_html_multiroot(cls, elems: Sequence["HTMLNode"]) -> str:
         return "".join([elem.to_html() for elem in elems])
-
-    def walk(self, on_node: Callable[["HTMLNode", Callable], None]) -> None:
-        stack: List["HTMLNode"] = [self]
-        while stack:
-            current = stack.pop()
-            will_stop = False
-
-            def stop() -> None:
-                nonlocal will_stop
-                will_stop = True
-
-            on_node(current, stop)
-
-            # If the stop function WAS called, we don't walk the children of the current node
-            if not will_stop and current.is_element():
-                stack.extend(current.children())
 
 
 class SoupNode(HTMLNode):
@@ -103,9 +81,6 @@ class SoupNode(HTMLNode):
                 return SoupNode(match)
         return None
 
-    def children(self) -> List["SoupNode"]:
-        return [SoupNode(child) for child in self.node.children]
-
     def append_children(self, children: Sequence["SoupNode"]) -> None:
         if isinstance(self.node, Tag):
             for child in children:
@@ -132,13 +107,5 @@ class SoupNode(HTMLNode):
         else:
             self.node[attr] = value
 
-    def get_attrs(self) -> Dict[str, Any]:
-        if isinstance(self.node, Tag):
-            return self.node.attrs
-        return {}
-
     def is_element(self) -> bool:
         return isinstance(self.node, Tag)
-
-    def walk(self, on_node: Callable[["SoupNode", Callable], None]) -> None:
-        return super().walk(on_node)  # type:ignore[arg-type]

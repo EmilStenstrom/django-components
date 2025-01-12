@@ -49,6 +49,7 @@ class ExtendsCompatTests(BaseTestCase):
             {% endblock %}
         """
         rendered = Template(template).render(Context())
+
         expected = """
             <!DOCTYPE html>
             <html lang="en">
@@ -230,6 +231,7 @@ class ExtendsCompatTests(BaseTestCase):
             {% endblock %}
         """
         rendered = Template(template).render(Context())
+
         expected = """
             <!DOCTYPE html>
             <html lang="en">

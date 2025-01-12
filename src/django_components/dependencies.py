@@ -5,6 +5,7 @@ import json
 import re
 import sys
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from hashlib import md5
 from typing import (
     TYPE_CHECKING,
@@ -32,9 +33,8 @@ from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.util.css import gen_css_scope_id, scope_css
 from django_components.util.html import SoupNode
-from django_components.util.misc import hash_comp_cls, is_nonempty_str
+from django_components.util.misc import get_import_path, is_nonempty_str
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -100,6 +100,14 @@ else:
     comp_hash_mapping: WeakValueDictionary[str, Type["Component"]] = WeakValueDictionary()
 
 
+# Convert Component class to something like `TableComp_a91d03`
+@lru_cache(None)
+def _hash_comp_cls(comp_cls: Type["Component"]) -> str:
+    full_name = get_import_path(comp_cls)
+    comp_cls_hash = md5(full_name.encode()).hexdigest()[0:6]
+    return comp_cls.__name__ + "_" + comp_cls_hash
+
+
 def _gen_cache_key(
     comp_cls_hash: str,
     script_type: ScriptType,
@@ -116,7 +124,7 @@ def _is_script_in_cache(
     script_type: ScriptType,
     input_hash: Optional[str],
 ) -> bool:
-    comp_cls_hash = hash_comp_cls(comp_cls)
+    comp_cls_hash = _hash_comp_cls(comp_cls)
     cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
     return comp_media_cache.has(cache_key)
 
@@ -131,7 +139,7 @@ def _cache_script(
     Given a component and it's inlined JS or CSS, store the JS/CSS in a cache,
     so it can be retrieved via URL endpoint.
     """
-    comp_cls_hash = hash_comp_cls(comp_cls)
+    comp_cls_hash = _hash_comp_cls(comp_cls)
 
     # E.g. `__components:MyButton:js:df7c6d10`
     if script_type in ("js", "css"):
@@ -195,7 +203,7 @@ def cache_component_js_vars(comp_cls: Type["Component"], js_vars: Dict) -> Optio
     return input_hash
 
 
-def wrap_component_js(comp_cls: Type["Component"], content: str) -> str:
+def wrap_component_js(comp_cls: Type["Component"], content: str) -> SafeString:
     if "</script" in content:
         raise RuntimeError(
             f"Content of `Component.js` for component '{comp_cls.__name__}' contains '</script>' end tag. "
@@ -213,16 +221,9 @@ def cache_component_css(comp_cls: Type["Component"]) -> None:
     if not comp_cls.css or not is_nonempty_str(comp_cls.css) or _is_script_in_cache(comp_cls, "css", None):
         return None
 
-    # Apply the CSS part of Vue-like CSS scoping
-    css_content = comp_cls.css
-    if comp_cls.css_scoped:
-        comp_cls_hash = hash_comp_cls(comp_cls, include_name=False)
-        scope = f"[data-djc-scope-{comp_cls_hash}]"
-        css_content = scope_css(css_code=comp_cls.css, scope_id=scope)
-
     _cache_script(
         comp_cls=comp_cls,
-        script=css_content,
+        script=comp_cls.css,
         script_type="css",
         input_hash=None,
     )
@@ -252,7 +253,7 @@ def cache_component_css_vars(comp_cls: Type["Component"], css_vars: Dict) -> Opt
     return input_hash
 
 
-def wrap_component_css(comp_cls: Type["Component"], content: str) -> str:
+def wrap_component_css(comp_cls: Type["Component"], content: str) -> SafeString:
     if "</style" in content:
         raise RuntimeError(
             f"Content of `Component.css` for component '{comp_cls.__name__}' contains '</style>' end tag. "
@@ -269,9 +270,8 @@ def wrap_component_css(comp_cls: Type["Component"], content: str) -> str:
 #########################################################
 
 
-def link_dependencies_with_component_html(
-    component_id: Optional[str],
-    css_scope_id: Optional[str],
+def _link_dependencies_with_component_html(
+    component_id: str,
     html_content: str,
     css_input_hash: Optional[str],
 ) -> str:
@@ -283,32 +283,13 @@ def link_dependencies_with_component_html(
         if not elem.is_element():
             continue
 
-        # Apply the HTML part of Vue-like CSS scoping.
-        # That is, for each HTML element that the component renders, we add a `data-djc-scope-a1b2c3` attribute.
-        # And we stop when we come across a nested components.
-        #
-        # NOTE: This MUST be applied before the component ID, to discern own HTML from nested components.
-        if css_scope_id:
-
-            def _walk_and_set_scope(elem: SoupNode, stop: Callable) -> None:
-                # If the element already has a scope or ID attribute, we don't walk further down that branch
-                attrs = elem.get_attrs()
-                if any(attr.startswith("data-djc-scope-") or attr.startswith("data-djc-id-") for attr in attrs):
-                    return stop()
-
-                # Otherwise, we set the scope attribute and continue walking the children
-                elem.set_attr(f"data-djc-scope-{css_scope_id}", True)
-
-            elem.walk(_walk_and_set_scope)
-
         # Component ID is used for executing JS script, e.g. `data-djc-id-a1b2c3`
         #
         # NOTE: We use `data-djc-css-a1b2c3` and `data-djc-id-a1b2c3` instead of
         # `data-djc-css="a1b2c3"` and `data-djc-id="a1b2c3"`, to allow
         # multiple values to be associated with the same element, which may happen if
-        # one component renders another.
-        if component_id is not None:
-            elem.set_attr(f"data-djc-id-{component_id}", True)
+        # One component renders another.
+        elem.set_attr(f"data-djc-id-{component_id}", True)
 
         # Attribute by which we bind the CSS variables to the component's CSS,
         # e.g. `data-djc-css-a1b2c3`
@@ -333,7 +314,7 @@ def _insert_component_comment(
     declared JS / CSS scripts.
     """
     # Add components to the cache
-    comp_cls_hash = hash_comp_cls(component_cls)
+    comp_cls_hash = _hash_comp_cls(component_cls)
     comp_hash_mapping[comp_cls_hash] = component_cls
 
     data = f"{comp_cls_hash},{component_id},{js_input_hash or ''},{css_input_hash or ''}"
@@ -356,9 +337,8 @@ def postprocess_component_html(
     render_dependencies: bool,
 ) -> str:
     # Make the HTML work with JS and CSS dependencies
-    html_content = link_dependencies_with_component_html(
+    html_content = _link_dependencies_with_component_html(
         component_id=component_id,
-        css_scope_id=gen_css_scope_id(component_cls),
         html_content=html_content,
         css_input_hash=css_input_hash,
     )
@@ -432,18 +412,11 @@ SCRIPT_NAME_REGEX = re.compile(
 MAYBE_COMP_ID = r"(?: data-djc-id-\w{6})?"
 # E.g. `data-djc-css-99914b`
 MAYBE_COMP_CSS_ID = r"(?: data-djc-css-\w{6})?"
-# E.g. `data-djc-scope-99914b`
-MAYBE_SCOPE_CSS_ID = r"(?: data-djc-scope-\w{6})?"
 
 PLACEHOLDER_REGEX = re.compile(
     r"{css_placeholder}|{js_placeholder}".format(
-        # NOTE: Optionally, the CSS and JS placeholders may have any of the following attributes,
-        # as these attributes are assigned BEFORE we replace the placeholders with actual <script> / <link> tags:
-        # - `data-djc-scope-xxxxxx`
-        # - `data-djc-id-xxxxxx`
-        # - `data-djc-css-xxxxxx`
-        css_placeholder=f'<link{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID}{MAYBE_SCOPE_CSS_ID} name="{CSS_PLACEHOLDER_NAME}"/?>',  # noqa: E501
-        js_placeholder=f'<script{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID}{MAYBE_SCOPE_CSS_ID} name="{JS_PLACEHOLDER_NAME}"></script>',  # noqa: E501
+        css_placeholder=f'<link{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{CSS_PLACEHOLDER_NAME}"/?>',
+        js_placeholder=f'<script{MAYBE_COMP_CSS_ID}{MAYBE_COMP_ID} name="{JS_PLACEHOLDER_NAME}"></script>',
     ).encode()
 )
 
@@ -813,7 +786,7 @@ def _prepare_tags_and_urls(
     for comp_cls_hash, script_type, input_hash in data:
         # NOTE: When CSS is scoped, then EVERY component instance will have different
         # copy of the style, because each copy will have component's ID embedded.
-        # So, in that case we inline the style into the HTML (See `link_dependencies_with_component_html`),
+        # So, in that case we inline the style into the HTML (See `_link_dependencies_with_component_html`),
         # which means that we are NOT going to load / inline it again.
         comp_cls = comp_hash_mapping[comp_cls_hash]
 
@@ -855,8 +828,8 @@ def get_script_content(
     script_type: ScriptType,
     comp_cls: Type["Component"],
     input_hash: Optional[str],
-) -> Optional[str]:
-    comp_cls_hash = hash_comp_cls(comp_cls)
+) -> SafeString:
+    comp_cls_hash = _hash_comp_cls(comp_cls)
     cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
     script = comp_media_cache.get(cache_key)
 
@@ -867,10 +840,8 @@ def get_script_tag(
     script_type: ScriptType,
     comp_cls: Type["Component"],
     input_hash: Optional[str],
-) -> str:
+) -> SafeString:
     content = get_script_content(script_type, comp_cls, input_hash)
-    if content is None:
-        raise ValueError(f"Could not find script for '{comp_cls.__name__}'")
 
     if script_type == "js":
         content = wrap_component_js(comp_cls, content)
@@ -887,7 +858,7 @@ def get_script_url(
     comp_cls: Type["Component"],
     input_hash: Optional[str],
 ) -> str:
-    comp_cls_hash = hash_comp_cls(comp_cls)
+    comp_cls_hash = _hash_comp_cls(comp_cls)
 
     return reverse(
         CACHE_ENDPOINT_NAME,

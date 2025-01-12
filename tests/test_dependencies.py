@@ -61,7 +61,7 @@ class RenderDependenciesTests(BaseTestCase):
         rendered_raw = template.render(Context({}))
 
         # Placeholders
-        self.assertEqual(rendered_raw.count('<link name="CSS_PLACEHOLDER"/>'), 1)
+        self.assertEqual(rendered_raw.count('<link name="CSS_PLACEHOLDER">'), 1)
         self.assertEqual(rendered_raw.count('<script name="JS_PLACEHOLDER"></script>'), 1)
 
         self.assertEqual(rendered_raw.count("<script"), 1)
@@ -74,14 +74,8 @@ class RenderDependenciesTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertInHTML(
-            "<style>.xyz[data-djc-scope-311097] { color: red; }</style>",
-            rendered,
-            count=1
-        )  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
 
@@ -100,14 +94,8 @@ class RenderDependenciesTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertInHTML(
-            "<style>.xyz[data-djc-scope-311097] { color: red; }</style>",
-            rendered,
-            count=1,
-        )  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
@@ -133,14 +121,8 @@ class RenderDependenciesTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertInHTML(
-            "<style>.xyz[data-djc-scope-b7817c] { color: red; }</style>",
-            rendered,
-            count=1,
-        )  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', rendered, count=1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
@@ -202,14 +184,8 @@ class RenderDependenciesTests(BaseTestCase):
         # Dependency manager script
         self.assertInHTML('<script src="django_components/django_components.min.js"></script>', rendered, count=1)
 
-        self.assertInHTML(
-            "<style>.xyz[data-djc-scope-9a52cb] { color: red; }</style>",
-            rendered,
-            count=1,
-        )  # Inlined CSS
-        self.assertInHTML(
-            '<script>console.log("xyz");</script>', rendered, count=1
-        )  # Inlined JS
+        self.assertInHTML("<style>.xyz { color: red; }</style>", rendered, count=1)  # Inlined CSS
+        self.assertInHTML('<script>console.log("xyz");</script>', rendered, count=1)  # Inlined JS
 
         self.assertEqual(rendered.count('<link href="style.css" media="all" rel="stylesheet">'), 1)  # Media.css
         self.assertEqual(rendered.count("<link"), 1)
@@ -239,7 +215,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML(
             """
             <head>
-                <style>.xyz[data-djc-scope-311097] { color: red; }</style>
+                <style>.xyz { color: red; }</style>
                 <link href="style.css" media="all" rel="stylesheet">
             </head>
             """,
@@ -289,9 +265,9 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML(
             """
             <body>
-                Variable: <strong data-djc-id-a1bc41 data-djc-scope-311097>foo</strong>
+                Variable: <strong data-djc-id-a1bc41>foo</strong>
 
-                <style>.xyz[data-djc-scope-311097] { color: red; }</style>
+                <style>.xyz { color: red; }</style>
                 <link href="style.css" media="all" rel="stylesheet">
             </body>
             """,
@@ -446,7 +422,7 @@ class RenderDependenciesTests(BaseTestCase):
                         <td class="whitespace-nowrap w-fit text-center px-4 w-px"
                             aria-colindex="1">
                             1
-                            Variable: <strong data-djc-id-a1bc3f data-djc-scope-311097>hi</strong>
+                            Variable: <strong data-djc-id-a1bc3f>hi</strong>
                         </td>
                     </tr>
                 </tbody>
@@ -480,10 +456,10 @@ class RenderDependenciesTests(BaseTestCase):
     def test_raises_if_script_end_tag_inside_component_css(self):
         class ComponentWithScript(SimpleComponent):
             css: types.css = """
+                /* </style  > */
                 .xyz {
                     color: red;
                 }
-                </style>
             """
 
         registry.register(name="test", component=ComponentWithScript)
@@ -521,11 +497,9 @@ class MiddlewareTests(BaseTestCase):
             self.assertInHTML('<script src="django_components/django_components.min.js"></script>', content, count=1)
 
             # Inlined JS
-            self.assertInHTML(
-                '<script>console.log("xyz");</script>', content, count=1
-            )
+            self.assertInHTML('<script>console.log("xyz");</script>', content, count=1)
             # Inlined CSS
-            self.assertInHTML("<style>.xyz[data-djc-scope-311097] { color: red; }</style>", content, count=1)
+            self.assertInHTML("<style>.xyz { color: red; }</style>", content, count=1)
             # Media.css
             self.assertInHTML('<link href="style.css" media="all" rel="stylesheet">', content, count=1)
 
@@ -536,9 +510,7 @@ class MiddlewareTests(BaseTestCase):
 
         assert_dependencies(rendered1)
         self.assertEqual(
-            rendered1.count(
-                'Variable: <strong data-djc-id-a1bc41 data-djc-id-a1bc42="" data-djc-scope-311097="">value</strong>',
-            ),
+            rendered1.count("Variable: <strong data-djc-id-a1bc41 data-djc-id-a1bc42>value</strong>"),
             1,
         )
 
@@ -548,9 +520,7 @@ class MiddlewareTests(BaseTestCase):
         )
         assert_dependencies(rendered2)
         self.assertEqual(
-            rendered2.count(
-                'Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44="" data-djc-scope-311097="">value</strong>',
-            ),
+            rendered2.count("Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44>value</strong>"),
             1,
         )
 
@@ -561,8 +531,6 @@ class MiddlewareTests(BaseTestCase):
 
         assert_dependencies(rendered3)
         self.assertEqual(
-            rendered3.count(
-                'Variable: <strong data-djc-id-a1bc45 data-djc-id-a1bc46="" data-djc-scope-311097="">value</strong>',
-            ),
+            rendered3.count("Variable: <strong data-djc-id-a1bc45 data-djc-id-a1bc46>value</strong>"),
             1,
         )

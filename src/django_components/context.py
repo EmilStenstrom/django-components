@@ -30,8 +30,6 @@ def make_isolated_context_copy(context: Context) -> Context:
     context_copy[_REGISTRY_CONTEXT_KEY] = context.get(_REGISTRY_CONTEXT_KEY, None)
     if _ROOT_CTX_CONTEXT_KEY in context:
         context_copy[_ROOT_CTX_CONTEXT_KEY] = context[_ROOT_CTX_CONTEXT_KEY]
-    if _COMPONENT_SLOT_CTX_CONTEXT_KEY in context:
-        context_copy[_COMPONENT_SLOT_CTX_CONTEXT_KEY] = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
 
     # Make inject/provide to work in isolated mode
     context_keys = context.flatten().keys()
