@@ -211,7 +211,7 @@ requests==2.32.3
     # via mkdocs-material
 six==1.17.0
     # via python-dateutil
-smmap==5.0.1
+smmap==5.0.2
     # via gitdb
 soupsieve==2.6
     # via beautifulsoup4
