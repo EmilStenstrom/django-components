@@ -1,46 +1,22 @@
 import functools
-from typing import Any, Callable, Dict, List, Literal, NamedTuple, Optional, Set, Tuple, Union, cast
+import inspect
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, cast
 
-from django.template import NodeList
+from django.template import Context, NodeList
 from django.template.base import Parser, Token, TokenType
 from django.template.exceptions import TemplateSyntaxError
 
-from django_components.expression import (
-    DynamicFilterExpression,
-    Expression,
-    FilterExpression,
-    Operator,
-    RuntimeKwargPairs,
-    RuntimeKwargPairsInput,
-    RuntimeKwargs,
-    RuntimeKwargsInput,
-    SpreadOperator,
-    is_aggregate_key,
-    is_dynamic_expression,
-)
+from django_components.expression import process_aggregate_kwargs
 from django_components.util.tag_parser import TagAttr, TagValue, parse_tag
 
 
-class ParsedTag(NamedTuple):
-    id: str
-    name: str
-    flags: Dict[str, bool]
-    args: List[Expression]
-    named_args: Dict[str, Expression]
-    kwargs: RuntimeKwargs
-    kwarg_pairs: RuntimeKwargPairs
-    is_inline: bool
-    parse_body: Callable[[], NodeList]
-
-
-class TagArg(NamedTuple):
-    name: str
-    positional_only: bool
-
-
-class TagSpec(NamedTuple):
+@dataclass
+class TagSpec:
     """Definition of args, kwargs, flags, etc, for a template tag."""
 
+    signature: inspect.Signature
+    """Input to the tag as a Python function signature."""
     tag: str
     """Tag name. E.g. `"slot"` means the tag is written like so `{% slot ... %}`"""
     end_tag: Optional[str] = None
@@ -49,34 +25,6 @@ class TagSpec(NamedTuple):
 
     E.g. `"endslot"` means anything between the start tag and `{% endslot %}`
     is considered the slot's body.
-    """
-    positional_only_args: Optional[List[str]] = None
-    """Arguments that MUST be given as positional args."""
-    positional_args_allow_extra: bool = False
-    """
-    If `True`, allows variable number of positional args, e.g. `{% mytag val1 1234 val2 890 ... %}`
-    """
-    pos_or_keyword_args: Optional[List[str]] = None
-    """Like regular Python kwargs, these can be given EITHER as positional OR as keyword arguments."""
-    keywordonly_args: Optional[Union[bool, List[str]]] = False
-    """
-    Parameters that MUST be given only as kwargs (not accounting for `pos_or_keyword_args`).
-
-    - If `False`, NO extra kwargs allowed.
-    - If `True`, ANY number of extra kwargs allowed.
-    - If a list of strings, e.g. `["class", "style"]`, then only those kwargs are allowed.
-    """
-    optional_kwargs: Optional[List[str]] = None
-    """Specify which kwargs can be optional."""
-    repeatable_kwargs: Optional[Union[bool, List[str]]] = False
-    """
-    Whether this tag allows all or certain kwargs to be repeated.
-
-    - If `False`, NO kwargs can repeat.
-    - If `True`, ALL kwargs can repeat.
-    - If a list of strings, e.g. `["class", "style"]`, then only those kwargs can repeat.
-
-    E.g. `["class"]` means one can write `{% mytag class="one" class="two" %}`
     """
     flags: Optional[List[str]] = None
     """
@@ -87,9 +35,106 @@ class TagSpec(NamedTuple):
     - and treated as `only=False` and `required=False` if omitted
     """
 
+    def copy(self) -> "TagSpec":
+        sig_parameters_copy = [param.replace() for param in self.signature.parameters.values()]
+        signature = inspect.Signature(sig_parameters_copy)
+        flags = self.flags.copy() if self.flags else None
+        return self.__class__(
+            signature=signature,
+            tag=self.tag,
+            end_tag=self.end_tag,
+            flags=flags,
+        )
+
+    def validate_params(self, params: List["TagParam"]) -> Tuple[List[Any], Dict[str, Any]]:
+        """
+        Validates a list of TagParam objects against this tag spec's function signature.
+
+        The validation preserves the order of parameters as they appeared in the template.
+
+        Args:
+            params: List of TagParam objects representing the parameters as they appeared
+                   in the template tag.
+
+        Returns:
+            A tuple of (args, kwargs) containing the validated parameters.
+
+        Raises:
+            TypeError: If the parameters don't match the tag spec's rules.
+        """
+
+        # Create a function with this signature that captures the input and sorts
+        # it into args and kwargs
+        def validator(*args: Any, **kwargs: Any) -> Tuple[List[Any], Dict[str, Any]]:
+            # Let Python do the signature validation
+            bound = self.signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+
+            # Extract positional args
+            pos_args: List[Any] = []
+            for name, param in self.signature.parameters.items():
+                # Case: `name` (positional)
+                if param.kind == inspect.Parameter.POSITIONAL_ONLY:
+                    pos_args.append(bound.arguments[name])
+                # Case: `*args`
+                elif param.kind == inspect.Parameter.VAR_POSITIONAL:
+                    pos_args.extend(bound.arguments[name])
+
+            # Extract kwargs
+            kw_args: Dict[str, Any] = {}
+            for name, param in self.signature.parameters.items():
+                # Case: `name=...`
+                if param.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY):
+                    if name in bound.arguments:
+                        kw_args[name] = bound.arguments[name]
+                # Case: `**kwargs`
+                elif param.kind == inspect.Parameter.VAR_KEYWORD:
+                    kw_args.update(bound.arguments[name])
+
+            return pos_args, kw_args
+
+        # Set the signature on the function
+        validator.__signature__ = self.signature  # type: ignore[attr-defined]
+
+        call_args = []
+        call_kwargs = []
+        for param in params:
+            if param.key is None:
+                call_args.append(param.value)
+            else:
+                call_kwargs.append({param.key: param.value})
+
+        # Call the validator with our args and kwargs, in such a way to
+        # let the Python interpreter validate on repeated kwargs.
+        #
+        # E.g. `args, kwargs = validator(*call_args, **call_kwargs[0], **call_kwargs[1])`
+        #
+        # NOTE: Although we use `exec()` here, it's safe, because we control the input -
+        #       we pass in only the list index.
+        validator_call_script = "args, kwargs = validator(*call_args, "
+        for kw_index, _ in enumerate(call_kwargs):
+            validator_call_script += f"**call_kwargs[{kw_index}], "
+        validator_call_script += ")"
+
+        try:
+            # Create function namespace
+            namespace: Dict[str, Any] = {"validator": validator, "call_args": call_args, "call_kwargs": call_kwargs}
+            exec(validator_call_script, namespace)
+            new_args, new_kwargs = namespace["args"], namespace["kwargs"]
+            return new_args, new_kwargs
+        except TypeError as e:
+            # Enhance the error message
+            raise TypeError(f"Invalid parameters for tag '{self.tag}': {str(e)}") from None
+
 
 def with_tag_spec(tag_spec: TagSpec) -> Callable:
-    """"""
+    """
+    Decorator that binds a `tag_spec` to a template tag function,
+    there's a single source of truth for the tag spec, while also:
+
+    1. Making the tag spec available inside the tag function as `tag_spec`.
+    2. Making the tag spec accessible from outside as `_tag_spec` for documentation generation.
+    """
 
     def decorator(fn: Callable) -> Any:
         fn._tag_spec = tag_spec  # type: ignore[attr-defined]
@@ -103,43 +148,89 @@ def with_tag_spec(tag_spec: TagSpec) -> Callable:
     return decorator
 
 
+@dataclass
+class TagParam:
+    """
+    TagParam is practically what `TagAttr` gets resolved to.
+
+    While TagAttr represents an item within template tag call, e.g.:
+
+    {% component key=value ... %}
+
+    TagParam represents an arg or kwarg that was resolved from TagAttr, and will
+    be passed to the tag function. E.g.:
+
+    component(key="value", ...)
+    """
+
+    # E.g. `attrs:class` in `attrs:class="my-class"`
+    key: Optional[str]
+    # E.g. `"my-class"` in `attrs:class="my-class"`
+    value: Any
+
+
+class TagParams(NamedTuple):
+    """
+    TagParams holds the parsed tag attributes and the tag spec, so that, at render time,
+    when we are able to resolve the tag inputs with the given Context, we are also able to validate
+    the inputs against the tag spec.
+
+    This is done so that the tag's public API (as defined in the tag spec) can be defined
+    next to the tag implementation. Otherwise the input validation would have to be defined by
+    the internal `Node` classes.
+    """
+
+    params: List[TagAttr]
+    tag_spec: TagSpec
+
+    def resolve(self, context: Context) -> Tuple[List[Any], Dict[str, Any]]:
+        # First, resolve any spread operators. Spreads can introduce both positional
+        # args (e.g. `*args`) and kwargs (e.g. `**kwargs`).
+        resolved_params: List[TagParam] = []
+        for param in self.params:
+            resolved = param.value.resolve(context)
+
+            if param.value.spread:
+                if param.key:
+                    raise ValueError(f"Cannot spread a value onto a key: {param.key}")
+
+                if isinstance(resolved, Mapping):
+                    for key, value in resolved.items():
+                        resolved_params.append(TagParam(key=key, value=value))
+                elif isinstance(resolved, Iterable):
+                    for value in resolved:
+                        resolved_params.append(TagParam(key=None, value=value))
+                else:
+                    raise ValueError(
+                        f"Cannot spread non-iterable value: '{param.value.serialize()}' resolved to {resolved}"
+                    )
+            else:
+                resolved_params.append(TagParam(key=param.key, value=resolved))
+
+        if self.tag_spec.tag == "html_attrs":
+            resolved_params = merge_repeated_kwargs(resolved_params)
+        resolved_params = process_aggregate_kwargs(resolved_params)
+
+        args, kwargs = self.tag_spec.validate_params(resolved_params)
+        return args, kwargs
+
+
+# Data obj to give meaning to the parsed tag fields
+class ParsedTag(NamedTuple):
+    tag_name: str
+    flags: Dict[str, bool]
+    params: TagParams
+    parse_body: Callable[[], NodeList]
+
+
 def parse_template_tag(
     parser: Parser,
     token: Token,
     tag_spec: TagSpec,
-    tag_id: str,
 ) -> ParsedTag:
-    tag_name, raw_args, raw_kwargs, raw_flags, is_inline = _parse_tag_preprocess(parser, token, tag_spec)
-
-    parsed_tag = _parse_tag_process(
-        parser=parser,
-        tag_id=tag_id,
-        tag_name=tag_name,
-        tag_spec=tag_spec,
-        raw_args=raw_args,
-        raw_kwargs=raw_kwargs,
-        raw_flags=raw_flags,
-        is_inline=is_inline,
-    )
-    return parsed_tag
-
-
-class TagKwarg(NamedTuple):
-    type: Literal["kwarg", "spread"]
-    key: str
-    # E.g. `class` in `attrs:class="my-class"`
-    inner_key: Optional[str]
-    value: str
-
-
-def _parse_tag_preprocess(
-    parser: Parser,
-    token: Token,
-    tag_spec: TagSpec,
-) -> Tuple[str, List[str], List[TagKwarg], Set[str], bool]:
     fix_nested_tags(parser, token)
 
-    _, attrs = parse_tag(token.contents)
+    _, attrs = parse_tag(token.contents, parser)
 
     # First token is tag name, e.g. `slot` in `{% slot <name> ... %}`
     tag_name_attr = attrs.pop(0)
@@ -155,287 +246,99 @@ def _parse_tag_preprocess(
     # Otherwise, depending on the tag spec, the tag may be:
     # 2. Block tag - With corresponding end tag, e.g. `{% endslot %}`
     # 3. Inlined tag - Without the end tag.
-    last_token = attrs[-1].serialize(omit_key=True) if len(attrs) else None
-
-    if last_token == "/":
+    last_token = attrs[-1].value if len(attrs) else None
+    if last_token and last_token.serialize() == "/":
         attrs.pop()
         is_inline = True
     else:
         is_inline = not tag_spec.end_tag
 
-    raw_args, raw_kwargs, raw_flags = _parse_tag_input(tag_name, attrs)
+    raw_params, flags = _extract_flags(tag_name, attrs, tag_spec.flags or [])
 
-    return tag_name, raw_args, raw_kwargs, raw_flags, is_inline
-
-
-def _parse_tag_input(tag_name: str, attrs: List[TagAttr]) -> Tuple[List[str], List[TagKwarg], Set[str]]:
-    # Given a list of attributes passed to a tag, categorise them into args, kwargs, and flags.
-    # The result of this will be passed to plugins to allow them to modify the tag inputs.
-    # And only once we get back the modified inputs, we will parse the data into
-    # internal structures like `DynamicFilterExpression`, or `SpreadOperator`.
-    #
-    # NOTES:
-    # - When args end, kwargs start. Positional args cannot follow kwargs
-    # - There can be multiple kwargs with same keys
-    # - Flags can be anywhere
-    # - Each flag can be present only once
-    is_args = True
-    args_or_flags: List[str] = []
-    kwarg_pairs: List[TagKwarg] = []
-    flags = set()
-    seen_spreads = 0
-    for attr in attrs:
-        value = attr.serialize(omit_key=True)
-
-        # Spread
-        if attr.value.spread:
-            if value == "...":
-                raise TemplateSyntaxError("Syntax operator is missing a value")
-
-            kwarg = TagKwarg(type="spread", key=f"...{seen_spreads}", inner_key=None, value=value[3:])
-            kwarg_pairs.append(kwarg)
-            is_args = False
-            seen_spreads += 1
-            continue
-
-        # Positional or flag
-        elif is_args and not attr.key:
-            args_or_flags.append(value)
-            continue
-
-        # Keyword
-        elif attr.key:
-            if is_aggregate_key(attr.key):
-                key, inner_key = attr.key.split(":", 1)
-            else:
-                key, inner_key = attr.key, None
-
-            kwarg = TagKwarg(type="kwarg", key=key, inner_key=inner_key, value=value)
-            kwarg_pairs.append(kwarg)
-            is_args = False
-            continue
-
-        # Either flag or a misplaced positional arg
-        elif not is_args and not attr.key:
-            # NOTE: By definition, dynamic expressions CANNOT be identifiers, because
-            # they contain quotes. So we can catch those early.
-            if not value.isidentifier():
-                raise TemplateSyntaxError(
-                    f"'{tag_name}' received positional argument '{value}' after keyword argument(s)"
-                )
-
-            # Otherwise, we assume that the token is a flag. It is up to the tag logic
-            # to decide whether this is a recognized flag or a misplaced positional arg.
-            if value in flags:
-                raise TemplateSyntaxError(f"'{tag_name}' received flag '{value}' multiple times")
-
-            flags.add(value)
-            continue
-    return args_or_flags, kwarg_pairs, flags
-
-
-def _parse_tag_process(
-    parser: Parser,
-    tag_id: str,
-    tag_name: str,
-    tag_spec: TagSpec,
-    raw_args: List[str],
-    raw_kwargs: List[TagKwarg],
-    raw_flags: Set[str],
-    is_inline: bool,
-) -> ParsedTag:
-    seen_kwargs = set([kwarg.key for kwarg in raw_kwargs if kwarg.key and kwarg.type == "kwarg"])
-
-    seen_regular_kwargs = set()
-    seen_agg_kwargs = set()
-
-    def check_kwarg_for_agg_conflict(kwarg: TagKwarg) -> None:
-        # Skip spread operators
-        if kwarg.type == "spread":
-            return
-
-        is_agg_kwarg = kwarg.inner_key
-        if (
-            (is_agg_kwarg and (kwarg.key in seen_regular_kwargs))
-            or (not is_agg_kwarg and (kwarg.key in seen_agg_kwargs))
-        ):  # fmt: skip
-            raise TemplateSyntaxError(
-                f"Received argument '{kwarg.key}' both as a regular input ({kwarg.key}=...)"
-                f" and as an aggregate dict ('{kwarg.key}:key=...'). Must be only one of the two"
-            )
-
-        if is_agg_kwarg:
-            seen_agg_kwargs.add(kwarg.key)
+    def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
+        if inline:
+            body = NodeList()
         else:
-            seen_regular_kwargs.add(kwarg.key)
-
-    for raw_kwarg in raw_kwargs:
-        check_kwarg_for_agg_conflict(raw_kwarg)
-
-    # Params that may be passed as positional args
-    pos_params: List[TagArg] = [
-        *[TagArg(name=name, positional_only=True) for name in (tag_spec.positional_only_args or [])],
-        *[TagArg(name=name, positional_only=False) for name in (tag_spec.pos_or_keyword_args or [])],
-    ]
-
-    args: List[Expression] = []
-    # For convenience, allow to access named args by their name instead of index
-    named_args: Dict[str, Expression] = {}
-    kwarg_pairs: RuntimeKwargPairsInput = []
-    flags = set()
-    # When we come across a flag within positional args, we need to remember
-    # the offset, so we can correctly assign the args to the correct params
-    flag_offset = 0
-
-    for index, arg_input in enumerate(raw_args):
-        # Flags may be anywhere, so we need to check if the arg is a flag
-        if tag_spec.flags and arg_input in tag_spec.flags:
-            if arg_input in raw_flags or arg_input in flags:
-                raise TemplateSyntaxError(f"'{tag_name}' received flag '{arg_input}' multiple times")
-            flags.add(arg_input)
-            flag_offset += 1
-            continue
-
-        # Allow to use dynamic expressions as args, e.g. `"{{ }}"`
-        if is_dynamic_expression(arg_input):
-            arg = DynamicFilterExpression(parser, arg_input)
-        else:
-            arg = FilterExpression(arg_input, parser)
-
-        if (index - flag_offset) >= len(pos_params):
-            if tag_spec.positional_args_allow_extra:
-                args.append(arg)
-                continue
-            else:
-                # Allow only as many positional args as given
-                raise TemplateSyntaxError(
-                    f"Tag '{tag_name}' received too many positional arguments: {raw_args[index:]}"
-                )
-
-        param = pos_params[index - flag_offset]
-        if param.positional_only:
-            args.append(arg)
-            named_args[param.name] = arg
-        else:
-            kwarg = TagKwarg(type="kwarg", key=param.name, inner_key=None, value=arg_input)
-            check_kwarg_for_agg_conflict(kwarg)
-            if param.name in seen_kwargs:
-                raise TemplateSyntaxError(
-                    f"'{tag_name}' received argument '{param.name}' both as positional and keyword argument"
-                )
-
-            kwarg_pairs.append((param.name, arg))
-
-    if len(raw_args) - flag_offset < len(tag_spec.positional_only_args or []):
-        raise TemplateSyntaxError(
-            f"Tag '{tag_name}' received too few positional arguments. "
-            f"Expected {len(tag_spec.positional_only_args or [])}, got {len(raw_args) - flag_offset}"
-        )
-
-    for kwarg_input in raw_kwargs:
-        # Allow to use dynamic expressions with spread operator, e.g.
-        # `..."{{ }}"` or as kwargs values `key="{{ }}"`
-        if is_dynamic_expression(kwarg_input.value):
-            expr: Union[Expression, Operator] = DynamicFilterExpression(parser, kwarg_input.value)
-        else:
-            expr = FilterExpression(kwarg_input.value, parser)
-
-        if kwarg_input.type == "spread":
-            expr = SpreadOperator(expr)
-
-        if kwarg_input.inner_key:
-            full_key = f"{kwarg_input.key}:{kwarg_input.inner_key}"
-        else:
-            full_key = kwarg_input.key
-
-        kwarg_pairs.append((full_key, expr))
-
-    # Flags
-    flags_dict: Dict[str, bool] = {
-        # Base state, as defined in the tag spec
-        **{flag: False for flag in (tag_spec.flags or [])},
-        # Flags found among positional args
-        **{flag: True for flag in flags},
-    }
-
-    # Flags found among kwargs
-    for flag in raw_flags:
-        if flag in flags:
-            raise TemplateSyntaxError(f"'{tag_name}' received flag '{flag}' multiple times")
-        if flag not in (tag_spec.flags or []):
-            raise TemplateSyntaxError(f"'{tag_name}' received unknown flag '{flag}'")
-        flags.add(flag)
-        flags_dict[flag] = True
-
-    # Validate that there are no name conflicts between kwargs and flags
-    if flags.intersection(seen_kwargs):
-        raise TemplateSyntaxError(
-            f"'{tag_name}' received flags that conflict with keyword arguments: {flags.intersection(seen_kwargs)}"
-        )
-
-    # Validate kwargs
-    kwargs: RuntimeKwargsInput = {}
-    extra_keywords: Set[str] = set()
-    for key, val in kwarg_pairs:
-        # Operators are resolved at render-time, so skip them
-        if isinstance(val, Operator):
-            kwargs[key] = val
-            continue
-
-        # Check if key allowed
-        if not tag_spec.keywordonly_args:
-            is_key_allowed = False
-        else:
-            is_key_allowed = (
-                tag_spec.keywordonly_args == True or key in tag_spec.keywordonly_args  # noqa: E712
-            ) or bool(tag_spec.pos_or_keyword_args and key in tag_spec.pos_or_keyword_args)
-        if not is_key_allowed:
-            is_optional = key in tag_spec.optional_kwargs if tag_spec.optional_kwargs else False
-            if not is_optional:
-                extra_keywords.add(key)
-
-        # Check for repeated keys
-        if key in kwargs:
-            if not tag_spec.repeatable_kwargs:
-                is_key_repeatable = False
-            else:
-                is_key_repeatable = (
-                    tag_spec.repeatable_kwargs == True or key in tag_spec.repeatable_kwargs  # noqa: E712
-                )
-            if not is_key_repeatable:
-                # The keyword argument has already been supplied once
-                raise TemplateSyntaxError(f"'{tag_name}' received multiple values for keyword argument '{key}'")
-        # All ok
-        kwargs[key] = val
-
-    if len(extra_keywords):
-        extra_keys = ", ".join(extra_keywords)
-        raise TemplateSyntaxError(f"'{tag_name}' received unexpected kwargs: {extra_keys}")
+            body = parser.parse(parse_until=[end_tag])
+            parser.delete_first_token()
+        return body
 
     return ParsedTag(
-        id=tag_id,
-        name=tag_name,
-        flags=flags_dict,
-        args=args,
-        named_args=named_args,
-        kwargs=RuntimeKwargs(kwargs),
-        kwarg_pairs=RuntimeKwargPairs(kwarg_pairs),
+        tag_name=tag_name,
+        params=TagParams(params=raw_params, tag_spec=tag_spec),
+        flags=flags,
         # NOTE: We defer parsing of the body, so we have the chance to call the tracing
         # loggers before the parsing. This is because, if the body contains any other
         # tags, it will trigger their tag handlers. So the code called AFTER
         # `parse_body()` is already after all the nested tags were processed.
         parse_body=lambda: _parse_tag_body(parser, tag_spec.end_tag, is_inline) if tag_spec.end_tag else NodeList(),
-        is_inline=is_inline,
     )
 
 
-def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
-    if inline:
-        body = NodeList()
-    else:
-        body = parser.parse(parse_until=[end_tag])
-        parser.delete_first_token()
-    return body
+def _extract_flags(
+    tag_name: str, attrs: List[TagAttr], allowed_flags: List[str]
+) -> Tuple[List[TagAttr], Dict[str, bool]]:
+    found_flags = set()
+    remaining_attrs = []
+    for attr in attrs:
+        value = attr.serialize(omit_key=True)
+
+        if value not in allowed_flags:
+            remaining_attrs.append(attr)
+            continue
+
+        if attr.value.spread:
+            raise TemplateSyntaxError(f"'{tag_name}' - keyword '{value}' is a reserved flag, and cannot be spread")
+
+        if value in found_flags:
+            raise TemplateSyntaxError(f"'{tag_name}' received flag '{value}' multiple times")
+
+        found_flags.add(value)
+
+    flags_dict: Dict[str, bool] = {
+        # Base state, as defined in the tag spec
+        **{flag: False for flag in (allowed_flags or [])},
+        # Flags found on the template tag
+        **{flag: True for flag in found_flags},
+    }
+
+    return remaining_attrs, flags_dict
+
+
+# TODO_REMOVE_IN_V1 - Disallow specifying the same key multiple times once in v1.
+def merge_repeated_kwargs(params: List[TagParam]) -> List[TagParam]:
+    resolved_params: List[TagParam] = []
+    params_by_key: Dict[str, TagParam] = {}
+    param_indices_by_key: Dict[str, int] = {}
+    replaced_param_indices: Set[int] = set()
+
+    for index, param in enumerate(params):
+        if param.key is None:
+            resolved_params.append(param)
+            continue
+
+        # Case: First time we see a kwarg
+        if param.key not in params_by_key:
+            params_by_key[param.key] = param
+            param_indices_by_key[param.key] = index
+            resolved_params.append(param)
+        # Case: A kwarg is repeated - we merge the values into a single string, with a space in between.
+        else:
+            # We want to avoid mutating the items of the original list in place.
+            # So when it actually comes to merging the values, we create a new TagParam onto
+            # which we can merge values of all the repeated params. Thus, we keep track of this
+            # with `replaced_param_indices`.
+            if index not in replaced_param_indices:
+                orig_param = params_by_key[param.key]
+                orig_param_index = param_indices_by_key[param.key]
+                param_copy = TagParam(key=orig_param.key, value=str(orig_param.value))
+                resolved_params[orig_param_index] = param_copy
+                params_by_key[param.key] = param_copy
+                replaced_param_indices.add(orig_param_index)
+
+            params_by_key[param.key].value += " " + str(param.value)
+
+    return resolved_params
 
 
 def fix_nested_tags(parser: Parser, block_token: Token) -> None:
@@ -445,7 +348,7 @@ def fix_nested_tags(parser: Parser, block_token: Token) -> None:
     #
     # We can parse the tag's tokens so we can find the last one, and so we consider
     # the unclosed `{%` only for the last bit.
-    _, attrs = parse_tag(block_token.contents)
+    _, attrs = parse_tag(block_token.contents, parser)
 
     # If there are no attributes, then there are no nested tags
     if not attrs:
@@ -496,7 +399,12 @@ def fix_nested_tags(parser: Parser, block_token: Token) -> None:
 
     # There is 3 double quotes, but if the contents get split at the first `%}`
     # then there will be a single unclosed double quote in the last bit.
-    has_unclosed_quote = not last_token.quoted and last_token.value and last_token.value[0] in ('"', "'")
+    first_char_index = len(last_token.spread or "")
+    has_unclosed_quote = (
+        not last_token.quoted
+        and last_token.value
+        and last_token.value[first_char_index] in ('"', "'")
+    )  # fmt: skip
 
     needs_fixing = has_unclosed_tag and has_unclosed_quote
 

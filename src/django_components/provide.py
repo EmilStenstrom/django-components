@@ -5,9 +5,9 @@ from django.template.base import NodeList
 from django.utils.safestring import SafeString
 
 from django_components.context import set_provided_context_var
-from django_components.expression import RuntimeKwargs
 from django_components.node import BaseNode
 from django_components.util.logger import trace_msg
+from django_components.util.template_tag import TagParams
 
 PROVIDE_NAME_KWARG = "name"
 
@@ -21,11 +21,11 @@ class ProvideNode(BaseNode):
     def __init__(
         self,
         nodelist: NodeList,
+        params: TagParams,
         trace_id: str,
         node_id: Optional[str] = None,
-        kwargs: Optional[RuntimeKwargs] = None,
     ):
-        super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
+        super().__init__(nodelist=nodelist, params=params, node_id=node_id)
 
         self.trace_id = trace_id
 
@@ -50,7 +50,7 @@ class ProvideNode(BaseNode):
         return output
 
     def resolve_kwargs(self, context: Context) -> Tuple[str, Dict[str, Optional[str]]]:
-        kwargs = self.kwargs.resolve(context)
+        args, kwargs = self.params.resolve(context)
         name = kwargs.pop(PROVIDE_NAME_KWARG, None)
 
         if not name:

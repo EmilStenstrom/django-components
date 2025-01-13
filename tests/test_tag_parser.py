@@ -1,5 +1,10 @@
-from django.template import TemplateSyntaxError
+from unittest import skip
 
+from django.template import Context, Template, TemplateSyntaxError
+from django.template.base import Parser
+from django.template.engine import Engine
+
+from django_components import Component, register, types
 from django_components.util.tag_parser import TagAttr, TagValue, TagValuePart, TagValueStruct, parse_tag
 
 from .django_test_setup import setup_test_config
@@ -8,9 +13,20 @@ from .testutils import BaseTestCase
 setup_test_config({"autodiscover": False})
 
 
+# NOTE: We have to define the parser to be able to resolve filters
+def _get_parser() -> Parser:
+    engine = Engine.get_default()
+    return Parser(
+        tokens=[],
+        libraries=engine.template_libraries,
+        builtins=engine.template_builtins,
+        origin=None,
+    )
+
+
 class TagParserTests(BaseTestCase):
     def test_args_kwargs(self):
-        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 two' ")
+        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 two' ", None)
 
         expected_attrs = [
             TagAttr(
@@ -20,6 +36,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -38,6 +55,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -54,6 +72,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None)]
@@ -68,6 +87,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -91,7 +111,7 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_nested_quotes(self):
-        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" ")
+        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" ", None)
 
         expected_attrs = [
             TagAttr(
@@ -100,6 +120,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -118,6 +139,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -134,6 +156,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None)]
@@ -148,6 +171,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -166,6 +190,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -193,7 +218,7 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_trailing_quote_single(self):
-        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" 'abc")
+        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" 'abc", None)
 
         expected_attrs = [
             TagAttr(
@@ -202,6 +227,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -220,6 +246,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -236,6 +263,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None)]
@@ -250,6 +278,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -268,6 +297,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -286,6 +316,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -312,7 +343,7 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_trailing_quote_double(self):
-        _, attrs = parse_tag('component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' "abc')
+        _, attrs = parse_tag('component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' "abc', None)
 
         expected_attrs = [
             TagAttr(
@@ -321,6 +352,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -339,6 +371,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -355,6 +388,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None)]
@@ -369,6 +403,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -387,6 +422,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -405,6 +441,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -431,7 +468,10 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_trailing_quote_as_value_single(self):
-        _, attrs = parse_tag("component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" value='abc")
+        _, attrs = parse_tag(
+            "component 'my_comp' key=val key2='val2 \"two\"' text=\"organisation's\" value='abc",
+            None,
+        )
 
         expected_attrs = [
             TagAttr(
@@ -440,6 +480,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -458,6 +499,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -474,6 +516,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None)]
@@ -488,6 +531,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -506,6 +550,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -524,6 +569,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -550,7 +596,10 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_trailing_quote_as_value_double(self):
-        _, attrs = parse_tag('component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' value="abc')
+        _, attrs = parse_tag(
+            'component "my_comp" key=val key2="val2 \'two\'" text=\'organisation"s\' value="abc',
+            None,
+        )
 
         expected_attrs = [
             TagAttr(
@@ -559,6 +608,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -577,6 +627,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -593,6 +644,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="val", quoted=None, spread=None, translation=False, filter=None)]
@@ -607,6 +659,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -625,6 +678,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -643,6 +697,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -669,7 +724,7 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_translation(self):
-        _, attrs = parse_tag('component "my_comp" _("one") key=_("two")')
+        _, attrs = parse_tag('component "my_comp" _("one") key=_("two")', None)
 
         expected_attrs = [
             TagAttr(
@@ -678,6 +733,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -696,6 +752,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -712,6 +769,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="one", quoted='"', spread=None, translation=True, filter=None)]
@@ -726,6 +784,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="two", quoted='"', spread=None, translation=True, filter=None)]
@@ -748,7 +807,10 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_tag_parser_filters(self):
-        _, attrs = parse_tag('component "my_comp" value|lower key=val|yesno:"yes,no" key2=val2|default:"N/A"|upper')
+        _, attrs = parse_tag(
+            'component "my_comp" value|lower key=val|yesno:"yes,no" key2=val2|default:"N/A"|upper',
+            None,
+        )
 
         expected_attrs = [
             TagAttr(
@@ -757,6 +819,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -775,6 +838,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -791,6 +855,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -808,6 +873,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -826,6 +892,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -854,7 +921,7 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_translation_whitespace(self):
-        _, attrs = parse_tag('component value=_(  "test"  )')
+        _, attrs = parse_tag('component value=_(  "test"  )', None)
 
         expected_attrs = [
             TagAttr(
@@ -863,6 +930,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -881,6 +949,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -895,7 +964,7 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(attrs, expected_attrs)
 
     def test_filter_whitespace(self):
-        _, attrs = parse_tag("component value  |  lower    key=val  |  upper    key2=val2")
+        _, attrs = parse_tag("component value  |  lower    key=val  |  upper    key2=val2", None)
 
         expected_attrs = [
             TagAttr(
@@ -904,6 +973,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -922,6 +992,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -939,6 +1010,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -956,6 +1028,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -970,8 +1043,15 @@ class TagParserTests(BaseTestCase):
 
         self.assertEqual(attrs, expected_attrs)
 
+    def test_filter_argument_must_follow_filter(self):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Filter argument (':arg') must follow a filter ('|filter')",
+        ):
+            parse_tag('component value=val|yesno:"yes,no":arg', None)
+
     def test_dict_simple(self):
-        _, attrs = parse_tag('component data={ "key": "val" }')
+        _, attrs = parse_tag('component data={ "key": "val" }', None)
 
         expected_attrs = [
             TagAttr(
@@ -980,6 +1060,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -998,6 +1079,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1018,7 +1100,7 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(attrs, expected_attrs)
 
     def test_dict_trailing_comma(self):
-        _, attrs = parse_tag('component data={ "key": "val", }')
+        _, attrs = parse_tag('component data={ "key": "val", }', None)
 
         expected_attrs = [
             TagAttr(
@@ -1027,6 +1109,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1045,6 +1128,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1066,18 +1150,18 @@ class TagParserTests(BaseTestCase):
 
     def test_dict_missing_colon(self):
         with self.assertRaisesMessage(TemplateSyntaxError, "Dictionary key is missing a value"):
-            parse_tag('component data={ "key" }')
+            parse_tag('component data={ "key" }', None)
 
     def test_dict_missing_colon_2(self):
         with self.assertRaisesMessage(TemplateSyntaxError, "Dictionary key is missing a value"):
-            parse_tag('component data={ "key", "val" }')
+            parse_tag('component data={ "key", "val" }', None)
 
     def test_dict_extra_colon(self):
         with self.assertRaisesMessage(TemplateSyntaxError, "Unexpected colon"):
-            _, attrs = parse_tag("component data={ key:: key }")
+            _, attrs = parse_tag("component data={ key:: key }", None)
 
     def test_dict_spread(self):
-        _, attrs = parse_tag("component data={ **spread }")
+        _, attrs = parse_tag("component data={ **spread }", None)
 
         expected_attrs = [
             TagAttr(
@@ -1086,6 +1170,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1104,6 +1189,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1119,7 +1205,7 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(attrs, expected_attrs)
 
     def test_dict_spread_between_key_value_pairs(self):
-        _, attrs = parse_tag('component data={ "key": val, **spread, "key2": val2 }')
+        _, attrs = parse_tag('component data={ "key": val, **spread, "key2": val2 }', None)
 
         expected_attrs = [
             TagAttr(
@@ -1128,6 +1214,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1146,6 +1233,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1181,57 +1269,17 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(attrs, expected_attrs)
 
     # Test that dictionary keys cannot have filter arguments - The `:` is parsed as dictionary key separator
-    # So instead, the content below will be parsed as key `"key"|filter`, and value `"arg":"value"`
+    # So instead, the content below will be parsed as key `"key"|filter`, and value `"arg":"value"'
+    # And the latter is invalid because it's missing the `|` separator.
     def test_colon_in_dictionary_keys(self):
-        _, attrs = parse_tag('component data={"key"|filter:"arg": "value"}')
-
-        expected_attrs = [
-            TagAttr(
-                key=None,
-                value=TagValueStruct(
-                    type="simple",
-                    meta={},
-                    spread=None,
-                    entries=[
-                        TagValue(
-                            parts=[
-                                TagValuePart(
-                                    value="component", quoted=None, spread=None, translation=False, filter=None
-                                ),
-                            ]
-                        )
-                    ],
-                ),
-                start_index=0,
-            ),
-            TagAttr(
-                key="data",
-                value=TagValueStruct(
-                    type="dict",
-                    spread=None,
-                    meta={},
-                    entries=[
-                        TagValue(
-                            parts=[
-                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None),
-                                TagValuePart(value="filter", quoted=None, spread=None, translation=False, filter="|"),
-                            ]
-                        ),
-                        TagValue(
-                            parts=[
-                                TagValuePart(value="arg", quoted='"', spread=None, translation=False, filter=None),
-                                TagValuePart(value="value", quoted='"', spread=None, translation=False, filter=":"),
-                            ]
-                        ),
-                    ],
-                ),
-                start_index=10,
-            ),
-        ]
-        self.assertEqual(attrs, expected_attrs)
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Filter argument (':arg') must follow a filter ('|filter')"
+        ):
+            _, attrs = parse_tag('component data={"key"|filter:"arg": "value"}', None)
 
     def test_list_simple(self):
-        _, attrs = parse_tag("component data=[1, 2, 3]")
+        _, attrs = parse_tag("component data=[1, 2, 3]", None)
 
         expected_attrs = [
             TagAttr(
@@ -1240,6 +1288,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1258,6 +1307,7 @@ class TagParserTests(BaseTestCase):
                     type="list",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1283,7 +1333,7 @@ class TagParserTests(BaseTestCase):
         self.assertEqual(attrs, expected_attrs)
 
     def test_list_trailing_comma(self):
-        _, attrs = parse_tag("component data=[1, 2, 3, ]")
+        _, attrs = parse_tag("component data=[1, 2, 3, ]", None)
 
         expected_attrs = [
             TagAttr(
@@ -1292,6 +1342,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1310,6 +1361,7 @@ class TagParserTests(BaseTestCase):
                     type="list",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1334,7 +1386,7 @@ class TagParserTests(BaseTestCase):
 
         self.assertEqual(attrs, expected_attrs)
 
-    def test_tag_parser_lists(self):
+    def test_lists_complex(self):
         _, attrs = parse_tag(
             """
                 component
@@ -1353,7 +1405,8 @@ class TagParserTests(BaseTestCase):
                     [*nested],
                     {"key": "val"}
                 ]
-            """
+            """,
+            None,
         )
 
         expected_attrs = [
@@ -1363,6 +1416,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1381,6 +1435,7 @@ class TagParserTests(BaseTestCase):
                     type="list",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None)]
@@ -1407,6 +1462,7 @@ class TagParserTests(BaseTestCase):
                     type="list",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1437,6 +1493,7 @@ class TagParserTests(BaseTestCase):
                     type="list",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="1", quoted=None, spread=None, translation=False, filter=None)]
@@ -1445,6 +1502,7 @@ class TagParserTests(BaseTestCase):
                             type="list",
                             meta={},
                             spread=None,
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -1463,6 +1521,7 @@ class TagParserTests(BaseTestCase):
                             type="dict",
                             meta={},
                             spread=None,
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -1505,10 +1564,7 @@ class TagParserTests(BaseTestCase):
             ],
         )
 
-    def test_tag_parser_dicts(self):
-        # NOTE: The case `c|default:"d": "e"|yesno:"yes,no"` tests that the first `:`
-        # is interpreted as a separator between key and value, not as a filter.
-        # So it's as if we wrote `c|default: "d":"e"|yesno:"yes,no"`
+    def test_dicts_complex(self):
         _, attrs = parse_tag(
             """
             component
@@ -1522,9 +1578,10 @@ class TagParserTests(BaseTestCase):
             }
             filters={
                 "a"|lower: "b"|upper,
-                c|default:"d": "e"|yesno:"yes,no"
+                c|default: "e"|yesno:"yes,no"
             }
-            """
+            """,
+            None,
         )
 
         expected_attrs = [
@@ -1534,6 +1591,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1552,6 +1610,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="a", quoted='"', spread=None, translation=False, filter=None)]
@@ -1573,6 +1632,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1598,6 +1658,7 @@ class TagParserTests(BaseTestCase):
                             type="dict",
                             meta={},
                             spread=None,
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -1635,6 +1696,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1656,8 +1718,7 @@ class TagParserTests(BaseTestCase):
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(value="d", quoted='"', spread=None, translation=False, filter=None),
-                                TagValuePart(value="e", quoted='"', spread=None, translation=False, filter=":"),
+                                TagValuePart(value="e", quoted='"', spread=None, translation=False, filter=None),
                                 TagValuePart(value="yesno", quoted=None, spread=None, translation=False, filter="|"),
                                 TagValuePart(value="yes,no", quoted='"', spread=None, translation=False, filter=":"),
                             ]
@@ -1675,11 +1736,11 @@ class TagParserTests(BaseTestCase):
                 "component",
                 'simple={"a": 1|add:2}',
                 'nested={"key"|upper: val|lower, **spread, "obj": {"x": 1|add:2}}',
-                'filters={"a"|lower: "b"|upper, c|default: "d":"e"|yesno:"yes,no"}',
+                'filters={"a"|lower: "b"|upper, c|default: "e"|yesno:"yes,no"}',
             ],
         )
 
-    def test_tag_parser_complex(self):
+    def test_mixed_complex(self):
         _, attrs = parse_tag(
             """
             component
@@ -1703,7 +1764,8 @@ class TagParserTests(BaseTestCase):
                 **rest|default,
                 "key": _('value')|upper
             }
-            """
+            """,
+            None,
         )
 
         expected_attrs = [
@@ -1713,6 +1775,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1731,6 +1794,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -1741,6 +1805,7 @@ class TagParserTests(BaseTestCase):
                             type="list",
                             spread=None,
                             meta={},
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -1763,6 +1828,7 @@ class TagParserTests(BaseTestCase):
                                     type="dict",
                                     spread=None,
                                     meta={},
+                                    parser=None,
                                     entries=[
                                         TagValue(
                                             parts=[
@@ -1839,6 +1905,7 @@ class TagParserTests(BaseTestCase):
                             type="dict",
                             meta={},
                             spread=None,
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -1851,6 +1918,7 @@ class TagParserTests(BaseTestCase):
                                     type="list",
                                     spread=None,
                                     meta={},
+                                    parser=None,
                                     entries=[
                                         TagValue(
                                             parts=[
@@ -1915,6 +1983,7 @@ class TagParserTests(BaseTestCase):
                                     type="dict",
                                     meta={},
                                     spread=None,
+                                    parser=None,
                                     entries=[
                                         TagValue(
                                             parts=[
@@ -1931,6 +2000,7 @@ class TagParserTests(BaseTestCase):
                                             type="list",
                                             meta={},
                                             spread=None,
+                                            parser=None,
                                             entries=[
                                                 TagValue(
                                                     parts=[
@@ -1999,21 +2069,21 @@ class TagParserTests(BaseTestCase):
             TemplateSyntaxError,
             "Spread syntax cannot be used in place of a dictionary value",
         ):
-            parse_tag('component data={"key": **spread}')
+            parse_tag('component data={"key": **spread}', None)
 
     def test_spread_with_colon_interpreted_as_key(self):
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax cannot be used in place of a dictionary key",
         ):
-            _, attrs = parse_tag("component data={**spread|abc: 123 }")
+            _, attrs = parse_tag("component data={**spread|abc: 123 }", None)
 
     def test_spread_in_filter_position(self):
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax cannot be used inside of a filter",
         ):
-            _, attrs = parse_tag("component data=val|...spread|abc }")
+            _, attrs = parse_tag("component data=val|...spread|abc }", None)
 
     def test_spread_whitespace(self):
         # NOTE: Separating `...` from its variable is NOT valid, and will result in error.
@@ -2021,9 +2091,9 @@ class TagParserTests(BaseTestCase):
             TemplateSyntaxError,
             "Spread syntax '...' is missing a value",
         ):
-            _, attrs = parse_tag("component ... attrs")
+            _, attrs = parse_tag("component ... attrs", None)
 
-        _, attrs = parse_tag('component dict={"a": "b", ** my_attr} list=["a", * my_list]')
+        _, attrs = parse_tag('component dict={"a": "b", ** my_attr} list=["a", * my_list]', None)
 
         expected_attrs = [
             TagAttr(
@@ -2032,6 +2102,7 @@ class TagParserTests(BaseTestCase):
                     type="simple",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2050,6 +2121,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread=None,
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2078,6 +2150,7 @@ class TagParserTests(BaseTestCase):
                     type="list",
                     meta={},
                     spread=None,
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2102,49 +2175,49 @@ class TagParserTests(BaseTestCase):
             TemplateSyntaxError,
             "Spread syntax '*' found outside of a list",
         ):
-            _, attrs = parse_tag('component dict={"a": "b", *my_attr}')
+            _, attrs = parse_tag('component dict={"a": "b", *my_attr}', None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '...' found in dict. It must be used on tag attributes only",
         ):
-            _, attrs = parse_tag('component dict={"a": "b", ...my_attr}')
+            _, attrs = parse_tag('component dict={"a": "b", ...my_attr}', None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '**' found outside of a dictionary",
         ):
-            _, attrs = parse_tag('component list=["a", "b", **my_list]')
+            _, attrs = parse_tag('component list=["a", "b", **my_list]', None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '...' found in list. It must be used on tag attributes only",
         ):
-            _, attrs = parse_tag('component list=["a", "b", ...my_list]')
+            _, attrs = parse_tag('component list=["a", "b", ...my_list]', None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '*' found outside of a list",
         ):
-            _, attrs = parse_tag("component *attrs")
+            _, attrs = parse_tag("component *attrs", None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '**' found outside of a dictionary",
         ):
-            _, attrs = parse_tag("component **attrs")
+            _, attrs = parse_tag("component **attrs", None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '*' found outside of a list",
         ):
-            _, attrs = parse_tag("component key=*attrs")
+            _, attrs = parse_tag("component key=*attrs", None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '**' found outside of a dictionary",
         ):
-            _, attrs = parse_tag("component key=**attrs")
+            _, attrs = parse_tag("component key=**attrs", None)
 
     # Test that one cannot do `key=...{"a": "b"}`
     def test_spread_onto_key(self):
@@ -2152,28 +2225,29 @@ class TagParserTests(BaseTestCase):
             TemplateSyntaxError,
             "Spread syntax '...' cannot follow a key ('key=...attrs')",
         ):
-            _, attrs = parse_tag('component key=...{"a": "b"}')
+            _, attrs = parse_tag('component key=...{"a": "b"}', None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '...' cannot follow a key ('key=...attrs')",
         ):
-            _, attrs = parse_tag('component key=...["a", "b"]')
+            _, attrs = parse_tag('component key=...["a", "b"]', None)
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
             "Spread syntax '...' cannot follow a key ('key=...attrs')",
         ):
-            _, attrs = parse_tag("component key=...attrs")
+            _, attrs = parse_tag("component key=...attrs", None)
 
     def test_spread_dict_literal_nested(self):
-        _, attrs = parse_tag('component { **{"key": val2}, "key": val1 }')
+        _, attrs = parse_tag('component { **{"key": val2}, "key": val1 }', None)
 
         expected_attrs = [
             TagAttr(
                 key=None,
                 value=TagValueStruct(
                     type="simple",
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2193,12 +2267,14 @@ class TagParserTests(BaseTestCase):
                 value=TagValueStruct(
                     type="dict",
                     spread=None,
+                    parser=None,
                     meta={},
                     entries=[
                         TagValueStruct(
                             type="dict",
                             spread="**",
                             meta={},
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -2248,13 +2324,16 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_spread_dict_literal_as_attribute(self):
-        _, attrs = parse_tag('component ...{"key": val2}')
+        _, attrs = parse_tag('component ...{"key": val2}', None)
 
         expected_attrs = [
             TagAttr(
                 key=None,
                 value=TagValueStruct(
                     type="simple",
+                    spread=None,
+                    meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2264,8 +2343,6 @@ class TagParserTests(BaseTestCase):
                             ]
                         )
                     ],
-                    spread=None,
-                    meta={},
                 ),
                 start_index=0,
             ),
@@ -2275,6 +2352,7 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     spread="...",
                     meta={},
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)]
@@ -2300,13 +2378,14 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_spread_list_literal_nested(self):
-        _, attrs = parse_tag("component [ *[val1], val2 ]")
+        _, attrs = parse_tag("component [ *[val1], val2 ]", None)
 
         expected_attrs = [
             TagAttr(
                 key=None,
                 value=TagValueStruct(
                     type="simple",
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2326,12 +2405,14 @@ class TagParserTests(BaseTestCase):
                 value=TagValueStruct(
                     type="list",
                     spread=None,
+                    parser=None,
                     meta={},
                     entries=[
                         TagValueStruct(
                             type="list",
                             spread="*",
                             meta={},
+                            parser=None,
                             entries=[
                                 TagValue(
                                     parts=[
@@ -2367,13 +2448,14 @@ class TagParserTests(BaseTestCase):
         )
 
     def test_spread_list_literal_as_attribute(self):
-        _, attrs = parse_tag("component ...[val1]")
+        _, attrs = parse_tag("component ...[val1]", None)
 
         expected_attrs = [
             TagAttr(
                 key=None,
                 value=TagValueStruct(
                     type="simple",
+                    parser=None,
                     entries=[
                         TagValue(
                             parts=[
@@ -2393,6 +2475,7 @@ class TagParserTests(BaseTestCase):
                 value=TagValueStruct(
                     type="list",
                     spread="...",
+                    parser=None,
                     meta={},
                     entries=[
                         TagValue(
@@ -2413,4 +2496,352 @@ class TagParserTests(BaseTestCase):
                 "component",
                 "...[val1]",
             ],
+        )
+
+    def test_dynamic_expressions(self):
+        _, attrs = parse_tag("component '{% lorem w 4 %}'", None)
+
+        expected_attrs = [
+            TagAttr(
+                key=None,
+                value=TagValueStruct(
+                    type='simple',
+                    entries=[
+                        TagValue(
+                            parts=[
+                                TagValuePart(value='component', quoted=None, spread=None, translation=False, filter=None)  # noqa: E501
+                            ],
+                        )
+                    ],
+                    spread=None,
+                    meta={},
+                    parser=None,
+                ),
+                start_index=0,
+            ),
+            TagAttr(
+                key=None,
+                value=TagValueStruct(
+                    type="simple",
+                    entries=[
+                        TagValue(
+                            parts=[
+                                TagValuePart(
+                                    value='{% lorem w 4 %}', quoted="'", spread=None, translation=False, filter=None
+                                )
+                            ],
+                        )
+                    ],
+                    spread=None,
+                    meta={},
+                    parser=None,
+                ),
+                start_index=10
+            ),
+        ]
+        self.assertEqual(attrs, expected_attrs)
+
+    def test_dynamic_expressions_in_dict(self):
+        _, attrs = parse_tag('component { "key": "{% lorem w 4 %}" }', None)
+
+        expected_attrs = [
+            TagAttr(
+                key=None,
+                value=TagValueStruct(
+                    type="simple",
+                    entries=[
+                        TagValue(
+                            parts=[
+                                TagValuePart(value="component", quoted=None, spread=None, translation=False, filter=None)  # noqa: E501
+                            ]
+                        )
+                    ],
+                    spread=None,
+                    meta={},
+                    parser=None,
+                ),
+                start_index=0,
+            ),
+            TagAttr(
+                key=None,
+                value=TagValueStruct(
+                    type="dict",
+                    entries=[
+                        TagValue(
+                            parts=[
+                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)
+                            ]
+                        ),
+                        TagValue(
+                            parts=[
+                                TagValuePart(value='{% lorem w 4 %}', quoted='"', spread=None, translation=False, filter=None)  # noqa: E501
+                            ]
+                        ),
+                    ],
+                    spread=None,
+                    meta={},
+                    parser=None,
+                ),
+                start_index=10,
+            ),
+        ]
+        self.assertEqual(attrs, expected_attrs)
+
+    def test_dynamic_expressions_in_list(self):
+        _, attrs = parse_tag("component [ '{% lorem w 4 %}' ]", None)
+
+        expected_attrs = [
+            TagAttr(
+                key=None,
+                value=TagValueStruct(
+                    type='simple',
+                    entries=[
+                        TagValue(
+                            parts=[
+                                TagValuePart(value='component', quoted=None, spread=None, translation=False, filter=None)  # noqa: E501
+                            ],
+                        )
+                    ],
+                    spread=None,
+                    meta={},
+                    parser=None,
+                ),
+                start_index=0
+            ),
+            TagAttr(
+                key=None,
+                value=TagValueStruct(
+                    type="list",
+                    entries=[
+                        TagValue(
+                            parts=[
+                                TagValuePart(
+                                    value='{% lorem w 4 %}', quoted="'", spread=None, translation=False, filter=None
+                                )
+                            ]
+                        )
+                    ],
+                    spread=None,
+                    meta={},
+                    parser=None,
+                ),
+                start_index=10,
+            ),
+        ]
+        self.assertEqual(attrs, expected_attrs)
+
+
+class ResolverTests(BaseTestCase):
+    def test_resolve_simple(self):
+        _, attrs = parse_tag("123", None)
+        resolved = attrs[0].value.resolve(Context())
+        self.assertEqual(resolved, 123)
+
+        _, attrs = parse_tag("'123'", None)
+        resolved = attrs[0].value.resolve(Context())
+        self.assertEqual(resolved, "123")
+
+        _, attrs = parse_tag("abc", None)
+        resolved = attrs[0].value.resolve(Context({"abc": "foo"}))
+        self.assertEqual(resolved, "foo")
+
+    def test_resolve_list(self):
+        _, attrs = parse_tag("[1, 2, 3,]", None)
+        resolved = attrs[0].value.resolve(Context())
+        self.assertEqual(resolved, [1, 2, 3])
+
+    def test_resolve_list_with_spread(self):
+        _, attrs = parse_tag("[ 1, 2, *[3, val1, *val2, 5], val3, 6 ]", None)
+        resolved = attrs[0].value.resolve(Context({"val1": "foo", "val2": ["bar", "baz"], "val3": "qux"}))
+        self.assertEqual(resolved, [1, 2, 3, "foo", "bar", "baz", 5, "qux", 6])
+
+    def test_resolve_dict(self):
+        _, attrs = parse_tag('{"a": 1, "b": 2,}', None)
+        resolved = attrs[0].value.resolve(Context())
+        self.assertEqual(resolved, {"a": 1, "b": 2})
+
+    def test_resolve_dict_with_spread(self):
+        _, attrs = parse_tag('{ **{"key": val2, **{ val3: val4 }, "key3": val4 } }', None)
+        context = Context({"val2": "foo", "val3": "bar", "val4": "baz"})
+        resolved = attrs[0].value.resolve(context)
+        self.assertEqual(resolved, {"key": "foo", "bar": "baz", "key3": "baz"})
+
+    def test_resolve_dynamic_expr(self):
+        parser = _get_parser()
+        _, attrs = parse_tag("'{% lorem 4 w %}'", parser)
+        resolved = attrs[0].value.resolve(Context())
+        self.assertEqual(resolved, "lorem ipsum dolor sit")
+
+    def test_resolve_complex(self):
+        parser = _get_parser()
+
+        _, attrs = parse_tag(
+            """
+            data={
+                "items": [
+                    1|add:2,
+                    {"x"|upper: 2|add:3},
+                    *spread_items
+                ],
+                "nested": {
+                    "a": [
+                        1|add:2,
+                        *nums|default:"",
+                        *"{% lorem 1 w %}",
+                    ],
+                    "b": {
+                        "x": [
+                            *more|first,
+                        ],
+                        "{% lorem 2 w %}": "{% lorem 3 w %}",
+                    }
+                },
+                **rest,
+                "key": _('value')|upper
+            }
+            """,
+            parser,
+        )
+
+        context = Context({
+            "spread_items": ["foo", "bar"],
+            "nums": [1, 2, 3],
+            "more": ["baz", "qux"],
+            "rest": {"a": "b"},
+        })
+        resolved = attrs[0].value.resolve(context)
+
+        self.assertEqual(
+            resolved,
+            {
+                "items": [3, {"X": 5}, "foo", "bar"],
+                "nested": {
+                    "a": [3, 1, 2, 3, "l", "o", "r", "e", "m"],
+                    "b": {
+                        "x": ["b", "a", "z"],
+                        "lorem ipsum": "lorem ipsum dolor",
+                    },
+                },
+                "a": "b",
+                "key": "VALUE",
+            },
+        )
+
+    @skip("TODO: Enable once template parsing is fixed by us")
+    def test_resolve_complex_as_component(self):
+        captured = None
+
+        @register("test")
+        class Test(Component):
+            def get_context_data(self, **kwargs):
+                nonlocal captured
+                captured = kwargs
+                return {}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test"
+                data={
+                    "items": [
+                        1|add:2,
+                        {"x"|upper: 2|add:3},
+                        *spread_items
+                    ],
+                    "nested": {
+                        "a": [
+                            1|add:2,
+                            *nums|default:"",
+                            *"{% lorem 1 w %}",
+                        ],
+                        "b": {
+                            "x": [
+                                *more|first,
+                            ],
+                            "{% lorem 2 w %}": "{% lorem 3 w %}",
+                        }
+                    },
+                    **rest,
+                    "key": _('value')|upper
+                }
+            / %}
+        """
+
+        template = Template(template_str)
+        template.render(
+            Context({
+                "spread_items": ["foo", "bar"],
+                "nums": [1, 2, 3],
+                "more": ["baz", "qux"],
+                "rest": {"a": "b"},
+            })
+        )
+
+        self.assertEqual(
+            captured,
+            {
+                "items": [3, {"X": 5}, "foo", "bar"],
+                "nested": {
+                    "a": [3, 1, 2, 3, "l", "o", "r", "e", "m"],
+                    "b": {
+                        "x": ["b", "a", "z"],
+                        "lorem ipsum": "lorem ipsum dolor",
+                    },
+                },
+                "a": "b",
+                "key": "VALUE",
+            },
+        )
+
+    def test_component_args_kwargs(self):
+        captured = None
+
+        @register("test")
+        class Test(Component):
+            template = "var"
+
+            def get_context_data(self, *args, **kwargs):
+                nonlocal captured
+                captured = args, kwargs
+                return {}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' 42 myvar key='val' key2=val2 %}
+            {% endcomponent %}
+        """
+        Template(template_str).render(Context({"myvar": "myval", "val2": [1, 2, 3]}))
+
+        self.assertEqual(captured, ((42, "myval"), {"key": "val", "key2": [1, 2, 3]}))
+
+    def test_component_special_kwargs(self):
+        captured = None
+
+        @register("test")
+        class Test(Component):
+            template = "var"
+
+            def get_context_data(self, *args, **kwargs):
+                nonlocal captured
+                captured = args, kwargs
+                return {}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test' date=date @lol=2 na-me=bzz @event:na-me.mod=bzz #my-id=True %}
+            {% endcomponent %}
+        """
+        Template(template_str).render(Context({"date": 2024, "bzz": "fzz"}))
+
+        self.assertEqual(
+            captured,
+            (
+                tuple([]),
+                {
+                    "date": 2024,
+                    "@lol": 2,
+                    "na-me": "fzz",
+                    "@event": {"na-me.mod": "fzz"},
+                    "#my-id": True,
+                },
+            ),
         )

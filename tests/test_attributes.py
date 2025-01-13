@@ -128,7 +128,7 @@ class HtmlAttrsTests(BaseTestCase):
         template = Template(self.template_str)
 
         with self.assertRaisesMessage(
-            TemplateSyntaxError, "'html_attrs' received too many positional arguments: ['class']"
+            TypeError, "Invalid parameters for tag 'html_attrs': too many positional arguments"
         ):
             template.render(Context({"class_var": "padding-top-8"}))
 
@@ -247,6 +247,12 @@ class HtmlAttrsTests(BaseTestCase):
         )
         self.assertNotIn("override-me", rendered)
 
+    # Note: Because there's both `attrs:class` and `defaults:class`, the `attrs`,
+    # it's as if the template tag call was (ignoring the `class` and `data-id` attrs):
+    #
+    # `{% html_attrs attrs={"class": ...} defaults={"class": ...} attrs %}>content</div>`
+    #
+    # Which raises, because `attrs` is passed both as positional and as keyword argument.
     def test_tag_raises_on_aggregate_and_positional_args_for_attrs(self):
         @register("test")
         class AttrsComponent(Component):
@@ -262,7 +268,9 @@ class HtmlAttrsTests(BaseTestCase):
 
         template = Template(self.template_str)
 
-        with self.assertRaisesMessage(TemplateSyntaxError, "Received argument 'attrs' both as a regular input"):
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'html_attrs': multiple values for argument 'attrs'"
+        ):
             template.render(Context({"class_var": "padding-top-8"}))
 
     def test_tag_raises_on_aggregate_and_positional_args_for_defaults(self):
@@ -270,7 +278,14 @@ class HtmlAttrsTests(BaseTestCase):
         class AttrsComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
-                <div {% html_attrs defaults=defaults attrs:class="from_agg_key" defaults:class="override-me" class="added_class" class="another-class" data-id=123 %}>
+                <div {% html_attrs
+                    defaults=defaults
+                    attrs:class="from_agg_key"
+                    defaults:class="override-me"
+                    class="added_class"
+                    class="another-class"
+                    data-id=123
+                %}>
                     content
                 </div>
             """  # noqa: E501

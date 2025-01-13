@@ -354,7 +354,10 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% component "injectee" %}
             {% endcomponent %}
         """
-        with self.assertRaisesMessage(RuntimeError, "Provide tag kwarg 'name' is missing"):
+        with self.assertRaisesMessage(
+            TypeError,
+            "Invalid parameters for tag 'provide': missing a required argument: 'name'",
+        ):
             Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])

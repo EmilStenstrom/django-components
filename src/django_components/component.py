@@ -11,7 +11,6 @@ from typing import (
     Dict,
     Generator,
     Generic,
-    List,
     Literal,
     Mapping,
     NamedTuple,
@@ -54,7 +53,6 @@ from django_components.dependencies import (
     cache_component_js_vars,
     postprocess_component_html,
 )
-from django_components.expression import Expression, RuntimeKwargs, safe_resolve_list
 from django_components.node import BaseNode
 from django_components.slots import (
     ComponentSlotContext,
@@ -72,6 +70,7 @@ from django_components.slots import (
 from django_components.template import cached_template
 from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
+from django_components.util.template_tag import TagParams
 from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 
 # TODO_REMOVE_IN_V1 - Users should use top-level import instead
@@ -1214,14 +1213,13 @@ class ComponentNode(BaseNode):
     def __init__(
         self,
         name: str,
-        args: List[Expression],
-        kwargs: RuntimeKwargs,
         registry: ComponentRegistry,  # noqa F811
+        nodelist: NodeList,
+        params: TagParams,
         isolated_context: bool = False,
-        nodelist: Optional[NodeList] = None,
         node_id: Optional[str] = None,
     ) -> None:
-        super().__init__(nodelist=nodelist or NodeList(), args=args, kwargs=kwargs, node_id=node_id)
+        super().__init__(nodelist=nodelist or NodeList(), params=params, node_id=node_id)
 
         self.name = name
         self.isolated_context = isolated_context
@@ -1246,8 +1244,7 @@ class ComponentNode(BaseNode):
         # Resolve FilterExpressions and Variables that were passed as args to the
         # component, then call component's context method
         # to get values to insert into the context
-        args = safe_resolve_list(context, self.args)
-        kwargs = self.kwargs.resolve(context)
+        args, kwargs = self.params.resolve(context)
 
         slot_fills = resolve_fills(context, self.nodelist, self.name)
 

@@ -593,30 +593,19 @@ def _format_tag_signature(tag_spec: TagSpec) -> str:
     {% endcomponent %}
     ```
     """
-    params: List[str] = [tag_spec.tag]
-
-    if tag_spec.positional_only_args:
-        params.extend([*tag_spec.positional_only_args, "/"])
-
-    optional_kwargs = set(tag_spec.optional_kwargs or [])
-
-    params.extend([f"{name}=None" if name in optional_kwargs else name for name in tag_spec.pos_or_keyword_args or []])
-
-    if tag_spec.positional_args_allow_extra:
-        params.append("[arg, ...]")
-
-    if tag_spec.keywordonly_args is True:
-        params.append("**kwargs")
-    elif tag_spec.keywordonly_args:
-        params.extend(
-            [f"{name}=None" if name in optional_kwargs else name for name in (tag_spec.keywordonly_args or [])]
-        )
+    # The signature returns a string like:
+    # `(arg: Any, **kwargs: Any) -> None`
+    params_str = str(tag_spec.signature)
+    # Remove the return type annotation, the `-> None` part
+    params_str = params_str.rsplit("->", 1)[0]
+    # Remove brackets around the params, to end up only with `arg: Any, **kwargs: Any`
+    params_str = params_str.strip()[1:-1]
 
     if tag_spec.flags:
-        params.extend([f"[{name}]" for name in tag_spec.flags])
+        params_str += " " + " ".join([f"[{name}]" for name in tag_spec.flags])
 
     # Create the function signature
-    full_tag = f"{{% {' '.join(params)} %}}"
+    full_tag = "{% " + tag_spec.tag + " " + params_str + " %}"
     if tag_spec.end_tag:
         full_tag += f"\n{{% {tag_spec.end_tag} %}}"
 

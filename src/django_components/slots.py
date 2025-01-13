@@ -32,10 +32,10 @@ from django_components.context import (
     _REGISTRY_CONTEXT_KEY,
     _ROOT_CTX_CONTEXT_KEY,
 )
-from django_components.expression import RuntimeKwargs, is_identifier
 from django_components.node import BaseNode
 from django_components.util.logger import trace_msg
-from django_components.util.misc import get_last_index
+from django_components.util.misc import get_last_index, is_identifier
+from django_components.util.template_tag import TagParams
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry
@@ -155,13 +155,13 @@ class SlotNode(BaseNode):
     def __init__(
         self,
         nodelist: NodeList,
+        params: TagParams,
         trace_id: str,
         node_id: Optional[str] = None,
-        kwargs: Optional[RuntimeKwargs] = None,
         is_required: bool = False,
         is_default: bool = False,
     ):
-        super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
+        super().__init__(nodelist=nodelist, params=params, node_id=node_id)
 
         self.is_required = is_required
         self.is_default = is_default
@@ -373,7 +373,7 @@ class SlotNode(BaseNode):
         context: Context,
         component_name: Optional[str] = None,
     ) -> Tuple[str, Dict[str, Optional[str]]]:
-        kwargs = self.kwargs.resolve(context)
+        _, kwargs = self.params.resolve(context)
         name = kwargs.pop(SLOT_NAME_KWARG, None)
 
         if not name:
@@ -388,11 +388,11 @@ class FillNode(BaseNode):
     def __init__(
         self,
         nodelist: NodeList,
-        kwargs: RuntimeKwargs,
+        params: TagParams,
         trace_id: str,
         node_id: Optional[str] = None,
     ):
-        super().__init__(nodelist=nodelist, args=None, kwargs=kwargs, node_id=node_id)
+        super().__init__(nodelist=nodelist, params=params, node_id=node_id)
 
         self.trace_id = trace_id
 
@@ -410,7 +410,7 @@ class FillNode(BaseNode):
         return f"<{self.__class__.__name__} ID: {self.node_id}. Contents: {repr(self.nodelist)}.>"
 
     def resolve_kwargs(self, context: Context) -> "FillWithData":
-        kwargs = self.kwargs.resolve(context)
+        _, kwargs = self.params.resolve(context)
 
         name = self._process_kwarg(kwargs, SLOT_NAME_KWARG, identifier=False)
         default_var = self._process_kwarg(kwargs, SLOT_DEFAULT_KWARG)
@@ -452,6 +452,9 @@ class FillNode(BaseNode):
             return None
 
         value = kwargs[key]
+        if value is None:
+            return None
+
         if identifier and not is_identifier(value):
             raise RuntimeError(f"Fill tag kwarg '{key}' does not resolve to a valid Python identifier, got '{value}'")
 

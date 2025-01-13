@@ -31,6 +31,14 @@ def is_str_wrapped_in_quotes(s: str) -> bool:
     return s.startswith(('"', "'")) and s[0] == s[-1] and len(s) >= 2
 
 
+def is_identifier(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    if not value.isidentifier():
+        return False
+    return True
+
+
 def any_regex_match(string: str, patterns: List[re.Pattern]) -> bool:
     return any(p.search(string) is not None for p in patterns)
 
