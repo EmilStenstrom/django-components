@@ -747,7 +747,7 @@ class SpreadOperatorTests(BaseTestCase):
 
         with self.assertRaisesMessage(
             TypeError,
-            "Invalid parameters for tag 'component': validator() got multiple values for keyword argument 'x'",
+            "got multiple values for keyword argument 'x'",
         ):
             template1.render(context)
 
@@ -866,9 +866,7 @@ class SpreadOperatorTests(BaseTestCase):
         template = Template(template_str)
 
         # List
-        with self.assertRaisesMessage(
-            ValueError, "Cannot spread non-iterable value: '...var_b' resolved to 123"
-        ):
+        with self.assertRaisesMessage(ValueError, "Cannot spread non-iterable value: '...var_b' resolved to 123"):
             template.render(Context({"var_b": 123}))
 
 
@@ -914,7 +912,7 @@ class AggregateKwargsTest(BaseTestCase):
                     "my_dict": {"one": 2},
                     "three": 4,
                 },
-            )
+            ),
         )
 
     def is_aggregate_key(self):

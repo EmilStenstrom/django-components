@@ -1273,8 +1273,7 @@ class TagParserTests(BaseTestCase):
     # And the latter is invalid because it's missing the `|` separator.
     def test_colon_in_dictionary_keys(self):
         with self.assertRaisesMessage(
-            TemplateSyntaxError,
-            "Filter argument (':arg') must follow a filter ('|filter')"
+            TemplateSyntaxError, "Filter argument (':arg') must follow a filter ('|filter')"
         ):
             _, attrs = parse_tag('component data={"key"|filter:"arg": "value"}', None)
 
@@ -2505,11 +2504,13 @@ class TagParserTests(BaseTestCase):
             TagAttr(
                 key=None,
                 value=TagValueStruct(
-                    type='simple',
+                    type="simple",
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(value='component', quoted=None, spread=None, translation=False, filter=None)  # noqa: E501
+                                TagValuePart(
+                                    value="component", quoted=None, spread=None, translation=False, filter=None
+                                )  # noqa: E501
                             ],
                         )
                     ],
@@ -2527,7 +2528,7 @@ class TagParserTests(BaseTestCase):
                         TagValue(
                             parts=[
                                 TagValuePart(
-                                    value='{% lorem w 4 %}', quoted="'", spread=None, translation=False, filter=None
+                                    value="{% lorem w 4 %}", quoted="'", spread=None, translation=False, filter=None
                                 )
                             ],
                         )
@@ -2536,7 +2537,7 @@ class TagParserTests(BaseTestCase):
                     meta={},
                     parser=None,
                 ),
-                start_index=10
+                start_index=10,
             ),
         ]
         self.assertEqual(attrs, expected_attrs)
@@ -2552,7 +2553,9 @@ class TagParserTests(BaseTestCase):
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(value="component", quoted=None, spread=None, translation=False, filter=None)  # noqa: E501
+                                TagValuePart(
+                                    value="component", quoted=None, spread=None, translation=False, filter=None
+                                )  # noqa: E501
                             ]
                         )
                     ],
@@ -2568,13 +2571,13 @@ class TagParserTests(BaseTestCase):
                     type="dict",
                     entries=[
                         TagValue(
-                            parts=[
-                                TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)
-                            ]
+                            parts=[TagValuePart(value="key", quoted='"', spread=None, translation=False, filter=None)]
                         ),
                         TagValue(
                             parts=[
-                                TagValuePart(value='{% lorem w 4 %}', quoted='"', spread=None, translation=False, filter=None)  # noqa: E501
+                                TagValuePart(
+                                    value="{% lorem w 4 %}", quoted='"', spread=None, translation=False, filter=None
+                                )  # noqa: E501
                             ]
                         ),
                     ],
@@ -2594,11 +2597,13 @@ class TagParserTests(BaseTestCase):
             TagAttr(
                 key=None,
                 value=TagValueStruct(
-                    type='simple',
+                    type="simple",
                     entries=[
                         TagValue(
                             parts=[
-                                TagValuePart(value='component', quoted=None, spread=None, translation=False, filter=None)  # noqa: E501
+                                TagValuePart(
+                                    value="component", quoted=None, spread=None, translation=False, filter=None
+                                )  # noqa: E501
                             ],
                         )
                     ],
@@ -2606,7 +2611,7 @@ class TagParserTests(BaseTestCase):
                     meta={},
                     parser=None,
                 ),
-                start_index=0
+                start_index=0,
             ),
             TagAttr(
                 key=None,
@@ -2616,7 +2621,7 @@ class TagParserTests(BaseTestCase):
                         TagValue(
                             parts=[
                                 TagValuePart(
-                                    value='{% lorem w 4 %}', quoted="'", spread=None, translation=False, filter=None
+                                    value="{% lorem w 4 %}", quoted="'", spread=None, translation=False, filter=None
                                 )
                             ]
                         )
@@ -2703,12 +2708,14 @@ class ResolverTests(BaseTestCase):
             parser,
         )
 
-        context = Context({
-            "spread_items": ["foo", "bar"],
-            "nums": [1, 2, 3],
-            "more": ["baz", "qux"],
-            "rest": {"a": "b"},
-        })
+        context = Context(
+            {
+                "spread_items": ["foo", "bar"],
+                "nums": [1, 2, 3],
+                "more": ["baz", "qux"],
+                "rest": {"a": "b"},
+            }
+        )
         resolved = attrs[0].value.resolve(context)
 
         self.assertEqual(
@@ -2768,12 +2775,14 @@ class ResolverTests(BaseTestCase):
 
         template = Template(template_str)
         template.render(
-            Context({
-                "spread_items": ["foo", "bar"],
-                "nums": [1, 2, 3],
-                "more": ["baz", "qux"],
-                "rest": {"a": "b"},
-            })
+            Context(
+                {
+                    "spread_items": ["foo", "bar"],
+                    "nums": [1, 2, 3],
+                    "more": ["baz", "qux"],
+                    "rest": {"a": "b"},
+                }
+            )
         )
 
         self.assertEqual(
