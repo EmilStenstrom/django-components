@@ -46,6 +46,7 @@ class TagSpec:
             flags=flags,
         )
 
+    # For details see https://github.com/EmilStenstrom/django-components/pull/902
     def validate_params(self, params: List["TagParam"]) -> Tuple[List[Any], Dict[str, Any]]:
         """
         Validates a list of TagParam objects against this tag spec's function signature.

@@ -31,7 +31,7 @@ class DynamicFilterExpression:
 
     will pass a dictionary to the component input `value_from_tag`.
 
-    But if the text already containes spaces or more tags, e.g.
+    But if the text already contains spaces or more tags, e.g.
 
     `{% component "my_comp" value_from_tag=" {% gen_dict %} " %}`
 
