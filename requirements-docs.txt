@@ -124,7 +124,7 @@ mkdocs==1.6.1
     #   mkdocs-nav-weight
     #   mkdocs-redirects
     #   mkdocstrings
-mkdocs-autorefs==1.2.0
+mkdocs-autorefs==1.3.0
     # via
     #   hatch.envs.docs
     #   mkdocstrings
