@@ -68,6 +68,7 @@ from django_components.slots import (
     resolve_fills,
 )
 from django_components.template import cached_template
+from django_components.util.django_monkeypatch import is_template_cls_patched
 from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
 from django_components.util.template_tag import TagParams
@@ -1272,54 +1273,6 @@ class ComponentNode(BaseNode):
         return output
 
 
-def monkeypatch_template(template_cls: Type[Template]) -> None:
-    # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
-    # based on our custom `Template._dc_is_component_nested`.
-    #
-    # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
-    #
-    # NOTE 1: While we could've subclassed Template, then we would need to either
-    # 1) ask the user to change the backend, so all templates are of our subclass, or
-    # 2) copy the data from user's Template class instance to our subclass instance,
-    # which could lead to doubly parsing the source, and could be problematic if users
-    # used more exotic subclasses of Template.
-    #
-    # Instead, modifying only the `render` method of an already-existing instance
-    # should work well with any user-provided custom subclasses of Template, and it
-    # doesn't require the source to be parsed multiple times. User can pass extra args/kwargs,
-    # and can modify the rendering behavior by overriding the `_render` method.
-    #
-    # NOTE 2: Instead of setting `Template._dc_is_component_nested`, alternatively we could
-    # have passed the value to `monkeypatch_template` directly. However, we intentionally
-    # did NOT do that, so the monkey-patched method is more robust, and can be e.g. copied
-    # to other.
-    if hasattr(template_cls, "_dc_patched"):
-        # Do not patch if done so already. This helps us avoid RecursionError
-        return
-
-    def _template_render(self: Template, context: Context, *args: Any, **kwargs: Any) -> str:
-        #  ---------------- OUR CHANGES START ----------------
-        # We parametrized `isolated_context`, which was `True` in the original method.
-        if not hasattr(self, "_dc_is_component_nested"):
-            isolated_context = True
-        else:
-            # MUST be `True` for templates that are NOT import with `{% extends %}` tag,
-            # and `False` otherwise.
-            isolated_context = not self._dc_is_component_nested
-        #  ---------------- OUR CHANGES END ----------------
-
-        with context.render_context.push_state(self, isolated_context=isolated_context):
-            if context.template is None:
-                with context.bind_template(self):
-                    context.template_name = self.name
-                    return self._render(context, *args, **kwargs)
-            else:
-                return self._render(context, *args, **kwargs)
-
-    template_cls.render = _template_render
-    template_cls._dc_patched = True
-
-
 @contextmanager
 def _maybe_bind_template(context: Context, template: Template) -> Generator[None, Any, None]:
     if context.template is None:
@@ -1342,7 +1295,7 @@ def _prepare_template(
         # And https://github.com/EmilStenstrom/django-components/issues/634
         template = component._get_template(context)
 
-        if not getattr(template, "_dc_patched"):
+        if not is_template_cls_patched(template):
             raise RuntimeError(
                 "Django-components received a Template instance which was not patched."
                 "If you are using Django's Template class, check if you added django-components"
@@ -1350,10 +1303,11 @@ def _prepare_template(
                 "manually patch the class."
             )
 
-        # Set `Template._dc_is_component_nested` based on whether we're currently INSIDE
+        # Set `Template._djc_is_component_nested` based on whether we're currently INSIDE
         # the `{% extends %}` tag.
         # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
-        template._dc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
+        # See django_monkeypatch.py
+        template._djc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
 
         with _maybe_bind_template(context, template):
             yield template

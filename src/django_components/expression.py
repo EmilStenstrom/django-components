@@ -2,7 +2,9 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List
 
 from django.template import Context, Node, NodeList, TemplateSyntaxError
-from django.template.base import Lexer, Parser, VariableNode
+from django.template.base import Parser, VariableNode
+
+from django_components.util.template_parser import parse_template
 
 if TYPE_CHECKING:
     from django_components.util.template_tag import TagParam
@@ -48,8 +50,7 @@ class DynamicFilterExpression:
         # Copy the Parser, and pass through the tags and filters available
         # in the current context. Thus, if user calls `{% load %}` inside
         # the expression, it won't spill outside.
-        lexer = Lexer(self.expr)
-        tokens = lexer.tokenize()
+        tokens = parse_template(self.expr)
         expr_parser = Parser(tokens=tokens)
         expr_parser.tags = {**parser.tags}
         expr_parser.filters = {**parser.filters}
