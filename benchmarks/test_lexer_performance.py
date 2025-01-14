@@ -2,6 +2,7 @@
 
 import timeit
 from typing import List, Tuple
+
 from django.template.base import DebugLexer, Lexer, Token
 
 from django_components.util.template_parser import parse_template
