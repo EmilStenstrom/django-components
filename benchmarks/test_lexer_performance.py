@@ -36,7 +36,7 @@ def print_benchmark_results(template: str, django_time: float, custom_time: floa
     print(f"Django Lexer: {django_time:.6f} seconds")
     print(f"Custom Lexer: {custom_time:.6f} seconds")
     print(f"Difference: {abs(django_time - custom_time):.6f} seconds")
-    print(f"Custom lexer is {(django_time/custom_time):.2f}x {'faster' if custom_time < django_time else 'slower'}")
+    print(f"Custom lexer is {(django_time / custom_time):.2f}x {'faster' if custom_time < django_time else 'slower'}")
 
 
 if __name__ == "__main__":
