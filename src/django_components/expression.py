@@ -1,42 +1,43 @@
 import re
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from django.template import Context, Node, NodeList, TemplateSyntaxError
-from django.template.base import FilterExpression, Lexer, Parser, VariableNode
+from django.template.base import Lexer, Parser, VariableNode
 
-Expression = Union[FilterExpression, "DynamicFilterExpression"]
-RuntimeKwargsInput = Dict[str, Union[Expression, "Operator"]]
-RuntimeKwargPairsInput = List[Tuple[str, Union[Expression, "Operator"]]]
-
-
-class Operator(ABC):
-    """
-    Operator describes something that somehow changes the inputs
-    to template tags (the `{% %}`).
-
-    For example, a SpreadOperator inserts one or more kwargs at the
-    specified location.
-    """
-
-    @abstractmethod
-    def resolve(self, context: Context) -> Any: ...  # noqa E704
-
-
-class SpreadOperator(Operator):
-    """Operator that inserts one or more kwargs at the specified location."""
-
-    def __init__(self, expr: Expression) -> None:
-        self.expr = expr
-
-    def resolve(self, context: Context) -> Dict[str, Any]:
-        data = self.expr.resolve(context)
-        if not isinstance(data, dict):
-            raise RuntimeError(f"Spread operator expression must resolve to a Dict, got {data}")
-        return data
+if TYPE_CHECKING:
+    from django_components.util.template_tag import TagParam
 
 
 class DynamicFilterExpression:
+    """
+    To make working with Django templates easier, we allow to use (nested) template tags `{% %}`
+    inside of strings that are passed to our template tags, e.g.:
+
+    ```django
+    {% component "my_comp" value_from_tag="{% gen_dict %}" %}
+    ```
+
+    We call this the "dynamic" or "nested" expression.
+
+    A string is marked as a dynamic expression only if it contains any one
+    of `{{ }}`, `{% %}`, or `{# #}`.
+
+    If the expression consists of a single tag, with no extra text, we return the tag's
+    value directly. E.g.:
+
+    ```django
+    {% component "my_comp" value_from_tag="{% gen_dict %}" %}
+    ```
+
+    will pass a dictionary to the component input `value_from_tag`.
+
+    But if the text already contains spaces or more tags, e.g.
+
+    `{% component "my_comp" value_from_tag=" {% gen_dict %} " %}`
+
+    Then we treat it as a regular template and pass it as string.
+    """
+
     def __init__(self, parser: Parser, expr_str: str) -> None:
         if not is_dynamic_expression(expr_str):
             raise TemplateSyntaxError(f"Not a valid dynamic expression: '{expr_str}'")
@@ -103,72 +104,6 @@ class StringifiedNode(Node):
         return str(result)
 
 
-class RuntimeKwargs:
-    def __init__(self, kwargs: RuntimeKwargsInput) -> None:
-        self.kwargs = kwargs
-
-    def resolve(self, context: Context) -> Dict[str, Any]:
-        resolved_kwargs = safe_resolve_dict(context, self.kwargs)
-        return process_aggregate_kwargs(resolved_kwargs)
-
-
-class RuntimeKwargPairs:
-    def __init__(self, kwarg_pairs: RuntimeKwargPairsInput) -> None:
-        self.kwarg_pairs = kwarg_pairs
-
-    def resolve(self, context: Context) -> List[Tuple[str, Any]]:
-        resolved_kwarg_pairs: List[Tuple[str, Any]] = []
-        for key, kwarg in self.kwarg_pairs:
-            if isinstance(kwarg, SpreadOperator):
-                spread_kwargs = kwarg.resolve(context)
-                for spread_key, spread_value in spread_kwargs.items():
-                    resolved_kwarg_pairs.append((spread_key, spread_value))
-            else:
-                resolved_kwarg_pairs.append((key, kwarg.resolve(context)))
-
-        return resolved_kwarg_pairs
-
-
-def is_identifier(value: Any) -> bool:
-    if not isinstance(value, str):
-        return False
-    if not value.isidentifier():
-        return False
-    return True
-
-
-def safe_resolve_list(context: Context, args: List[Expression]) -> List:
-    return [arg.resolve(context) for arg in args]
-
-
-def safe_resolve_dict(
-    context: Context,
-    kwargs: Dict[str, Union[Expression, "Operator"]],
-) -> Dict[str, Any]:
-    result = {}
-
-    for key, kwarg in kwargs.items():
-        # If we've come across a Spread Operator (...), we insert the kwargs from it here
-        if isinstance(kwarg, SpreadOperator):
-            spread_dict = kwarg.resolve(context)
-            if spread_dict is not None:
-                for spreadkey, spreadkwarg in spread_dict.items():
-                    result[spreadkey] = spreadkwarg
-        else:
-            result[key] = kwarg.resolve(context)
-    return result
-
-
-def resolve_string(
-    s: str,
-    parser: Optional[Parser] = None,
-    context: Optional[Mapping[str, Any]] = None,
-) -> str:
-    parser = parser or Parser([])
-    context = Context(context or {})
-    return parser.compile_filter(s).resolve(context)
-
-
 def is_aggregate_key(key: str) -> bool:
     # NOTE: If we get a key that starts with `:`, like `:class`, we do not split it.
     # This syntax is used by Vue and AlpineJS.
@@ -203,14 +138,8 @@ def is_dynamic_expression(value: Any) -> bool:
     return True
 
 
-def is_spread_operator(value: Any) -> bool:
-    if not isinstance(value, str) or not value:
-        return False
-
-    return value.startswith("...")
-
-
-def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:
+# TODO - Move this out into a plugin?
+def process_aggregate_kwargs(params: List["TagParam"]) -> List["TagParam"]:
     """
     This function aggregates "prefixed" kwargs into dicts. "Prefixed" kwargs
     start with some prefix delimited with `:` (e.g. `attrs:`).
@@ -264,26 +193,65 @@ def process_aggregate_kwargs(kwargs: Mapping[str, Any]) -> Dict[str, Any]:
     "fallthrough attributes", and sufficiently easy for component authors to process
     that input while still being able to provide their own keys.
     """
-    processed_kwargs = {}
+    from django_components.util.template_tag import TagParam
+
+    _check_kwargs_for_agg_conflict(params)
+
+    processed_params = []
+    seen_keys = set()
     nested_kwargs: Dict[str, Dict[str, Any]] = {}
-    for key, val in kwargs.items():
-        if not is_aggregate_key(key):
-            processed_kwargs[key] = val
+    for param in params:
+        # Positional args
+        if param.key is None:
+            processed_params.append(param)
             continue
 
-        # NOTE: Trim off the prefix from keys
-        prefix, sub_key = key.split(":", 1)
-        if prefix not in nested_kwargs:
-            nested_kwargs[prefix] = {}
-        nested_kwargs[prefix][sub_key] = val
+        # Regular kwargs without `:` prefix
+        if not is_aggregate_key(param.key):
+            outer_key = param.key
+            inner_key = None
+            seen_keys.add(outer_key)
+            processed_params.append(param)
+            continue
+
+        # NOTE: Trim off the outer_key from keys
+        outer_key, inner_key = param.key.split(":", 1)
+        if outer_key not in nested_kwargs:
+            nested_kwargs[outer_key] = {}
+        nested_kwargs[outer_key][inner_key] = param.value
 
     # Assign aggregated values into normal input
     for key, val in nested_kwargs.items():
-        if key in processed_kwargs:
+        if key in seen_keys:
             raise TemplateSyntaxError(
                 f"Received argument '{key}' both as a regular input ({key}=...)"
                 f" and as an aggregate dict ('{key}:key=...'). Must be only one of the two"
             )
-        processed_kwargs[key] = val
+        processed_params.append(TagParam(key=key, value=val))
 
-    return processed_kwargs
+    return processed_params
+
+
+def _check_kwargs_for_agg_conflict(params: List["TagParam"]) -> None:
+    seen_regular_kwargs = set()
+    seen_agg_kwargs = set()
+
+    for param in params:
+        # Ignore positional args
+        if param.key is None:
+            continue
+
+        is_agg_kwarg = is_aggregate_key(param.key)
+        if (
+            (is_agg_kwarg and (param.key in seen_regular_kwargs))
+            or (not is_agg_kwarg and (param.key in seen_agg_kwargs))
+        ):  # fmt: skip
+            raise TemplateSyntaxError(
+                f"Received argument '{param.key}' both as a regular input ({param.key}=...)"
+                f" and as an aggregate dict ('{param.key}:key=...'). Must be only one of the two"
+            )
+
+        if is_agg_kwarg:
+            seen_agg_kwargs.add(param.key)
+        else:
+            seen_regular_kwargs.add(param.key)

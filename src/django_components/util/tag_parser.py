@@ -37,9 +37,13 @@ See `parse_tag()` for details.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
+from django.template.base import FilterExpression, Parser
+from django.template.context import Context
 from django.template.exceptions import TemplateSyntaxError
+
+from django_components.expression import DynamicFilterExpression, is_dynamic_expression
 
 TAG_WHITESPACE = (" ", "\t", "\n", "\r", "\f")
 TAG_FILTER = ("|", ":")
@@ -71,7 +75,8 @@ class TagAttr:
         return s
 
 
-class TagValue(NamedTuple):
+@dataclass
+class TagValue:
     """
     A tag value represents the text to the right of the `=` in a tag attribute.
 
@@ -84,6 +89,7 @@ class TagValue(NamedTuple):
     """
 
     parts: List["TagValuePart"]
+    compiled: Optional[FilterExpression] = None
 
     @property
     def is_spread(self) -> bool:
@@ -93,6 +99,29 @@ class TagValue(NamedTuple):
 
     def serialize(self) -> str:
         return "".join(part.serialize() for part in self.parts)
+
+    def compile(self, parser: Optional[Parser]) -> None:
+        if self.compiled is not None:
+            return
+
+        serialized = self.serialize()
+        # Remove the spread token from the start of the serialized value
+        # E.g. `*val|filter:arg` -> `val|filter:arg`
+        if self.is_spread:
+            spread_token = self.parts[0].spread
+            spread_token_offset = len(spread_token) if spread_token else 0
+            serialized = serialized[spread_token_offset:]
+
+        # Allow to use dynamic expressions as args, e.g. `"{{ }}"` inside of strings
+        if is_dynamic_expression(serialized):
+            self.compiled = DynamicFilterExpression(parser, serialized)
+        else:
+            self.compiled = FilterExpression(serialized, parser)
+
+    def resolve(self, context: Context) -> Any:
+        if self.compiled is None:
+            raise TemplateSyntaxError("Malformed tag: TagValue.resolve() called before compile()")
+        return self.compiled.resolve(context)
 
 
 @dataclass
@@ -170,9 +199,12 @@ class TagValueStruct:
 
     Types:
 
-    - `root`: Plain tag value
+    - `simple`: Plain tag value
     - `list`: A list of tag values
     - `dict`: A dictionary of tag values
+
+    TagValueStruct may be arbitrarily nested, creating JSON-like structures
+    that contains lists, dicts, and simple values.
     """
 
     type: Literal["list", "dict", "simple"]
@@ -182,11 +214,20 @@ class TagValueStruct:
     The prefix used by a spread syntax, e.g. `...`, `*`, or `**`. If present, it means
     this values should be spread into the parent tag / list / dict.
     """
+    # Container for parser-specific metadata
     meta: Dict[str, Any]
+    # Parser is passed through so we can resolve variables with filters
+    parser: Optional[Parser]
+    compiled: bool = False
 
-    # Recursively walks down the value of TagAttr and serializes it to a string.
-    # This is effectively the inverse of `parse_tag()`.
     def serialize(self) -> str:
+        """
+        Recursively walks down the value of potentially nested lists and dicts,
+        and serializes them all to a string.
+
+        This is effectively the inverse of `parse_tag()`.
+        """
+
         def render_value(value: Union[TagValue, TagValueStruct]) -> str:
             if isinstance(value, TagValue):
                 return value.serialize()
@@ -226,8 +267,99 @@ class TagValueStruct:
                     dict_pair = []
             return prefix + "{" + ", ".join(dict_pairs) + "}"
 
+    # When we want to render the TagValueStruct, which may contain nested lists and dicts,
+    # we need to find all leaf nodes (the "simple" types) and compile them to FilterExpression.
+    #
+    # To make sure that the compilation needs to be done only once, the result
+    # each TagValueStruct contains a `compiled` flag to signal to its parent.
+    def compile(self) -> None:
+        if self.compiled:
+            return
 
-def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
+        def compile_value(value: Union[TagValue, TagValueStruct]) -> None:
+            if isinstance(value, TagValue):
+                value.compile(self.parser)
+            else:
+                value.compile()
+
+        if self.type == "simple":
+            value = self.entries[0]
+            compile_value(value)
+        elif self.type == "list":
+            for entry in self.entries:
+                compile_value(entry)
+        elif self.type == "dict":
+            # NOTE: Here we assume that the dict pairs have been validated by the parser and
+            #       that the pairs line up.
+            for entry in self.entries:
+                compile_value(entry)
+
+        self.compiled = True
+
+    # Walk down the TagValueStructs and resolve the expressions.
+    #
+    # NOTE: This is where the TagValueStructs are converted to lists and dicts.
+    def resolve(self, context: Context) -> Any:
+        self.compile()
+
+        if self.type == "simple":
+            value = self.entries[0]
+            if not isinstance(value, TagValue):
+                raise TemplateSyntaxError("Malformed tag: simple value is not a TagValue")
+            return value.resolve(context)
+
+        elif self.type == "list":
+            resolved_list: List[Any] = []
+            for entry in self.entries:
+                resolved = entry.resolve(context)
+                # Case: Spreading a literal list: [ *[1, 2, 3] ]
+                if isinstance(entry, TagValueStruct) and entry.spread:
+                    if not entry.type == "list":
+                        raise TemplateSyntaxError("Malformed tag: cannot spread non-list value into a list")
+                    resolved_list.extend(resolved)
+                # Case: Spreading a variable: [ *val ]
+                elif isinstance(entry, TagValue) and entry.is_spread:
+                    resolved_list.extend(resolved)
+                # Case: Plain value: [ val ]
+                else:
+                    resolved_list.append(resolved)
+            return resolved_list
+
+        elif self.type == "dict":
+            resolved_dict: Dict = {}
+            dict_pair: List = []
+
+            # NOTE: Here we assume that the dict pairs have been validated by the parser and
+            #       that the pairs line up.
+            for entry in self.entries:
+                resolved = entry.resolve(context)
+                if isinstance(entry, TagValueStruct) and entry.spread:
+                    if dict_pair:
+                        raise TemplateSyntaxError(
+                            "Malformed dict: spread operator cannot be used on the position of a dict value"
+                        )
+                    # Case: Spreading a literal dict: { **{"key": val2} }
+                    resolved_dict.update(resolved)
+                elif isinstance(entry, TagValue) and entry.is_spread:
+                    if dict_pair:
+                        raise TemplateSyntaxError(
+                            "Malformed dict: spread operator cannot be used on the position of a dict value"
+                        )
+                    # Case: Spreading a variable: { **val }
+                    resolved_dict.update(resolved)
+                else:
+                    # Case: Plain value: { key: val }
+                    dict_pair.append(resolved)
+
+                if len(dict_pair) == 2:
+                    dict_key = dict_pair[0]
+                    dict_value = dict_pair[1]
+                    resolved_dict[dict_key] = dict_value
+                    dict_pair = []
+            return resolved_dict
+
+
+def parse_tag(text: str, parser: Optional[Parser]) -> Tuple[str, List[TagAttr]]:
     """
     Parse the content of a Django template tag like this:
 
@@ -450,7 +582,7 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
 
         # NOTE: We put a fake root item, so we can modify the list in place.
         # At the end, we'll unwrap the list to get the actual value.
-        total_value = TagValueStruct(type="simple", entries=[], spread=None, meta={})
+        total_value = TagValueStruct(type="simple", entries=[], spread=None, meta={}, parser=parser)
         stack = [total_value]
 
         while len(stack) > 0:
@@ -466,7 +598,7 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
                         raise TemplateSyntaxError("Spread syntax '...' cannot follow a key ('key=...attrs')")
                 # NOTE: The `...`, `**`, `*` are "taken" in `extract_spread_token()`
                 taken_n(1)  # [
-                struct = TagValueStruct(type="list", entries=[], spread=spread_token, meta={})
+                struct = TagValueStruct(type="list", entries=[], spread=spread_token, meta={}, parser=parser)
                 curr_value.entries.append(struct)
                 stack.append(struct)
                 continue
@@ -499,7 +631,7 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
                     else:
                         raise TemplateSyntaxError("Dictionary cannot be used as a dictionary key")
 
-                struct = TagValueStruct(type="dict", entries=[], spread=spread_token, meta={})
+                struct = TagValueStruct(type="dict", entries=[], spread=spread_token, meta={}, parser=parser)
                 curr_value.entries.append(struct)
                 struct.meta["expects_key"] = True
                 stack.append(struct)
@@ -625,10 +757,15 @@ def parse_tag(text: str) -> Tuple[str, List[TagAttr]]:
                 # Get past the filter tokens like `|` or `:`, until the next value part.
                 # E.g. imagine:    `height="20" | yesno : "1,2,3" | lower`
                 # and we're here:               ^
+                # (or here)                             ^
+                # (or here)                                       ^
                 # and we want to parse `yesno` next
                 if not is_first_part:
                     filter_token = taken_n(1)  # | or :
                     take_while(TAG_WHITESPACE)  # Allow whitespace after filter
+
+                    if filter_token == ":" and values_parts[-1].filter != "|":
+                        raise TemplateSyntaxError("Filter argument (':arg') must follow a filter ('|filter')")
                 else:
                     filter_token = None
                     is_first_part = False

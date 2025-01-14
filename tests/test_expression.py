@@ -6,7 +6,7 @@ from django.template import Context, Template, TemplateSyntaxError
 from django.template.base import FilterExpression, Node, Parser, Token
 
 from django_components import Component, register, registry, types
-from django_components.expression import DynamicFilterExpression, safe_resolve_dict, safe_resolve_list
+from django_components.expression import DynamicFilterExpression, is_aggregate_key
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -44,38 +44,6 @@ def make_context(d: Dict):
 #######################
 # TESTS
 #######################
-
-
-class ResolveTests(BaseTestCase):
-    def test_safe_resolve(self):
-        expr = default_parser.compile_filter("var_abc")
-
-        ctx = make_context({"var_abc": 123})
-        self.assertEqual(
-            expr.resolve(ctx),
-            123,
-        )
-
-        ctx2 = make_context({"var_xyz": 123})
-        self.assertEqual(expr.resolve(ctx2), "")
-
-    def test_safe_resolve_list(self):
-        exprs = [default_parser.compile_filter(f"var_{char}") for char in "abc"]
-
-        ctx = make_context({"var_a": 123, "var_b": [{}, {}]})
-        self.assertEqual(
-            safe_resolve_list(ctx, exprs),
-            [123, [{}, {}], ""],
-        )
-
-    def test_safe_resolve_dict(self):
-        exprs = {char: default_parser.compile_filter(f"var_{char}") for char in "abc"}
-
-        ctx = make_context({"var_a": 123, "var_b": [{}, {}]})
-        self.assertEqual(
-            safe_resolve_dict(ctx, exprs),
-            {"a": 123, "b": [{}, {}], "c": ""},
-        )
 
 
 # NOTE: Django calls the `{{ }}` syntax "variables" and `{% %}` "blocks"
@@ -729,7 +697,7 @@ class SpreadOperatorTests(BaseTestCase):
         )
 
     @parametrize_context_behavior(["django", "isolated"])
-    def test_later_spreads_overwrite_earlier(self):
+    def test_later_spreads_do_not_overwrite_earlier(self):
         @register("test")
         class SimpleComponent(Component):
             def get_context_data(
@@ -748,7 +716,20 @@ class SpreadOperatorTests(BaseTestCase):
                 <div>{{ x }}</div>
             """
 
-        template_str: types.django_html = (
+        context = Context(
+            {
+                "my_dict": {
+                    "attrs:@click": "() => {}",
+                    "attrs:style": "height: 20px",
+                    "items": [1, 2, 3],
+                },
+                "list": [{"a": 1, "x": "OVERWRITTEN_X"}, {"a": 2}, {"a": 3}],
+            }
+        )
+
+        # Mergingg like this will raise TypeError, because it's like
+        # a function receiving multiple kwargs with the same name.
+        template_str1: types.django_html = (
             """
             {% load component_tags %}
             {% component 'test'
@@ -762,52 +743,44 @@ class SpreadOperatorTests(BaseTestCase):
             )
         )
 
-        template = Template(template_str)
-        rendered = template.render(
-            Context(
-                {
-                    "my_dict": {
-                        "attrs:@click": "() => {}",
-                        "attrs:style": "height: 20px",
-                        "items": [1, 2, 3],
-                    },
-                    "list": [{"a": 1, "x": "OVERWRITTEN_X"}, {"a": 2}, {"a": 3}],
-                }
-            ),
-        )
+        template1 = Template(template_str1)
 
-        self.assertHTMLEqual(
-            rendered,
-            """
-            <div data-djc-id-a1bc3f>{'@click': '() =&gt; {}', 'style': 'OVERWRITTEN'}</div>
-            <div data-djc-id-a1bc3f>[1, 2, 3]</div>
-            <div data-djc-id-a1bc3f>1</div>
-            <div data-djc-id-a1bc3f>OVERWRITTEN_X</div>
-            """,
-        )
+        with self.assertRaisesMessage(
+            TypeError,
+            "got multiple values for keyword argument 'x'",
+        ):
+            template1.render(context)
 
-    @parametrize_context_behavior(["django", "isolated"])
-    def test_raises_if_positional_arg_after_spread(self):
-        @register("test")
-        class SimpleComponent(Component):
-            pass
-
-        template_str: types.django_html = (
+        # But, similarly to python, we can merge multiple **kwargs by instead
+        # merging them into a single dict, and spreading that.
+        template_str2: types.django_html = (
             """
             {% load component_tags %}
             {% component 'test'
-                ...my_dict
-                var_a
-                ..."{{ list|first }}"
-                x=123
+                ...{
+                    **my_dict,
+                    "x": 123,
+                    **"{{ list|first }}",
+                }
+                attrs:style="OVERWRITTEN"
             / %}
         """.replace(
                 "\n", " "
             )
         )
 
-        with self.assertRaisesMessage(TemplateSyntaxError, "'component' received unknown flag 'var_a'"):
-            Template(template_str)
+        template2 = Template(template_str2)
+        rendered2 = template2.render(context)
+
+        self.assertHTMLEqual(
+            rendered2,
+            """
+            <div data-djc-id-a1bc40>{'@click': '() =&gt; {}', 'style': 'OVERWRITTEN'}</div>
+            <div data-djc-id-a1bc40>[1, 2, 3]</div>
+            <div data-djc-id-a1bc40>1</div>
+            <div data-djc-id-a1bc40>OVERWRITTEN_X</div>
+            """,
+        )
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_raises_on_missing_value(self):
@@ -831,6 +804,49 @@ class SpreadOperatorTests(BaseTestCase):
             Template(template_str)
 
     @parametrize_context_behavior(["django", "isolated"])
+    def test_spread_list_and_iterables(self):
+        captured = None
+
+        @register("test")
+        class SimpleComponent(Component):
+            template = ""
+
+            def get_context_data(self, *args, **kwargs):
+                nonlocal captured
+                captured = args, kwargs
+                return {}
+
+        template_str: types.django_html = (
+            """
+            {% load component_tags %}
+            {% component 'test'
+                ...var_a
+                ...var_b
+            / %}
+        """.replace(
+                "\n", " "
+            )
+        )
+        template = Template(template_str)
+
+        context = Context(
+            {
+                "var_a": "abc",
+                "var_b": [1, 2, 3],
+            }
+        )
+
+        template.render(context)
+
+        self.assertEqual(
+            captured,
+            (
+                ("a", "b", "c", 1, 2, 3),
+                {},
+            ),
+        )
+
+    @parametrize_context_behavior(["django", "isolated"])
     def test_raises_on_non_dict(self):
         @register("test")
         class SimpleComponent(Component):
@@ -840,7 +856,6 @@ class SpreadOperatorTests(BaseTestCase):
             """
             {% load component_tags %}
             {% component 'test'
-                var_a
                 ...var_b
             / %}
         """.replace(
@@ -851,25 +866,63 @@ class SpreadOperatorTests(BaseTestCase):
         template = Template(template_str)
 
         # List
-        with self.assertRaisesMessage(
-            RuntimeError, "Spread operator expression must resolve to a Dict, got [1, 2, 3]"
-        ):
-            template.render(
-                Context(
-                    {
-                        "var_a": "abc",
-                        "var_b": [1, 2, 3],
-                    }
-                )
-            )
+        with self.assertRaisesMessage(ValueError, "Cannot spread non-iterable value: '...var_b' resolved to 123"):
+            template.render(Context({"var_b": 123}))
 
-        # String
-        with self.assertRaisesMessage(RuntimeError, "Spread operator expression must resolve to a Dict, got def"):
-            template.render(
-                Context(
-                    {
-                        "var_a": "abc",
-                        "var_b": "def",
-                    }
-                )
-            )
+
+class AggregateKwargsTest(BaseTestCase):
+    def test_aggregate_kwargs(self):
+        captured = None
+
+        @register("test")
+        class Test(Component):
+            template = ""
+
+            def get_context_data(self, *args, **kwargs):
+                nonlocal captured
+                captured = args, kwargs
+                return {}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component 'test'
+                attrs:@click.stop="dispatch('click_event')"
+                attrs:x-data="{hello: 'world'}"
+                attrs:class=class_var
+                attrs::placeholder="No text"
+                my_dict:one=2
+                three=four
+            / %}
+        """
+
+        template = Template(template_str)
+        template.render(Context({"class_var": "padding-top-8", "four": 4}))
+
+        self.assertEqual(
+            captured,
+            (
+                (),
+                {
+                    "attrs": {
+                        "@click.stop": "dispatch('click_event')",
+                        "x-data": "{hello: 'world'}",
+                        "class": "padding-top-8",
+                        ":placeholder": "No text",
+                    },
+                    "my_dict": {"one": 2},
+                    "three": 4,
+                },
+            ),
+        )
+
+    def is_aggregate_key(self):
+        self.assertEqual(is_aggregate_key(""), False)
+        self.assertEqual(is_aggregate_key(" "), False)
+        self.assertEqual(is_aggregate_key(" : "), False)
+        self.assertEqual(is_aggregate_key("attrs"), False)
+        self.assertEqual(is_aggregate_key(":attrs"), False)
+        self.assertEqual(is_aggregate_key(" :attrs "), False)
+        self.assertEqual(is_aggregate_key("attrs:"), False)
+        self.assertEqual(is_aggregate_key(":attrs:"), False)
+        self.assertEqual(is_aggregate_key("at:trs"), True)
+        self.assertEqual(is_aggregate_key(":at:trs"), False)

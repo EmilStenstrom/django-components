@@ -11,27 +11,20 @@
 #   as the last argument, and will also set the `TagSpec` instance to `fn._tag_spec`.
 #   During documentation generation, we access the `fn._tag_spec`.
 
-from typing import Literal
+import inspect
+from typing import Any, Dict, Literal, Optional
 
 import django.template
 from django.template.base import Parser, TextNode, Token
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.attributes import HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY, HtmlAttrsNode
+from django_components.attributes import HtmlAttrsNode
 from django_components.component import COMP_ONLY_FLAG, ComponentNode
 from django_components.component_registry import ComponentRegistry
 from django_components.dependencies import CSS_DEPENDENCY_PLACEHOLDER, JS_DEPENDENCY_PLACEHOLDER
-from django_components.provide import PROVIDE_NAME_KWARG, ProvideNode
-from django_components.slots import (
-    SLOT_DATA_KWARG,
-    SLOT_DEFAULT_KEYWORD,
-    SLOT_DEFAULT_KWARG,
-    SLOT_NAME_KWARG,
-    SLOT_REQUIRED_KEYWORD,
-    FillNode,
-    SlotNode,
-)
+from django_components.provide import ProvideNode
+from django_components.slots import SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD, FillNode, SlotNode
 from django_components.tag_formatter import get_tag_formatter
 from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
@@ -56,11 +49,15 @@ def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
     return TextNode(mark_safe(placeholder))
 
 
+def component_dependencies_signature() -> None: ...  # noqa: E704
+
+
 @register.tag("component_css_dependencies")
 @with_tag_spec(
     TagSpec(
         tag="component_css_dependencies",
         end_tag=None,  # inline-only
+        signature=inspect.Signature.from_callable(component_dependencies_signature),
     )
 )
 def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
@@ -77,8 +74,7 @@ def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) 
     If you insert this tag multiple times, ALL CSS links will be duplicately inserted into ALL these places.
     """
     # Parse to check that the syntax is valid
-    tag_id = gen_id()
-    parse_template_tag(parser, token, tag_spec, tag_id)
+    parse_template_tag(parser, token, tag_spec)
     return _component_dependencies("css")
 
 
@@ -87,6 +83,7 @@ def component_css_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) 
     TagSpec(
         tag="component_js_dependencies",
         end_tag=None,  # inline-only
+        signature=inspect.Signature.from_callable(component_dependencies_signature),
     )
 )
 def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -> TextNode:
@@ -103,9 +100,11 @@ def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -
     If you insert this tag multiple times, ALL JS scripts will be duplicately inserted into ALL these places.
     """
     # Parse to check that the syntax is valid
-    tag_id = gen_id()
-    parse_template_tag(parser, token, tag_spec, tag_id)
+    parse_template_tag(parser, token, tag_spec)
     return _component_dependencies("js")
+
+
+def slot_signature(name: str, **kwargs: Any) -> None: ...  # noqa: E704
 
 
 @register.tag("slot")
@@ -113,10 +112,7 @@ def component_js_dependencies(parser: Parser, token: Token, tag_spec: TagSpec) -
     TagSpec(
         tag="slot",
         end_tag="endslot",
-        positional_only_args=[],
-        pos_or_keyword_args=[SLOT_NAME_KWARG],
-        keywordonly_args=True,
-        repeatable_kwargs=False,
+        signature=inspect.Signature.from_callable(slot_signature),
         flags=[SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD],
     )
 )
@@ -244,25 +240,26 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     ```
     """
     tag_id = gen_id()
-    tag = parse_template_tag(parser, token, tag_spec, tag_id=tag_id)
+    tag = parse_template_tag(parser, token, tag_spec)
 
-    slot_name_kwarg = tag.kwargs.kwargs.get(SLOT_NAME_KWARG, None)
-    trace_id = f"slot-id-{tag.id} ({slot_name_kwarg})" if slot_name_kwarg else f"slot-id-{tag.id}"
-
-    trace_msg("PARSE", "SLOT", trace_id, tag.id)
+    trace_id = f"slot-id-{tag_id}"
+    trace_msg("PARSE", "SLOT", trace_id, tag_id)
 
     body = tag.parse_body()
     slot_node = SlotNode(
         nodelist=body,
-        node_id=tag.id,
-        kwargs=tag.kwargs,
+        node_id=tag_id,
+        params=tag.params,
         is_required=tag.flags[SLOT_REQUIRED_KEYWORD],
         is_default=tag.flags[SLOT_DEFAULT_KEYWORD],
         trace_id=trace_id,
     )
 
-    trace_msg("PARSE", "SLOT", trace_id, tag.id, "...Done!")
+    trace_msg("PARSE", "SLOT", trace_id, tag_id, "...Done!")
     return slot_node
+
+
+def fill_signature(name: str, *, data: Optional[str] = None, default: Optional[str] = None) -> None: ...  # noqa: E704
 
 
 @register.tag("fill")
@@ -270,11 +267,7 @@ def slot(parser: Parser, token: Token, tag_spec: TagSpec) -> SlotNode:
     TagSpec(
         tag="fill",
         end_tag="endfill",
-        positional_only_args=[],
-        pos_or_keyword_args=[SLOT_NAME_KWARG],
-        keywordonly_args=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
-        optional_kwargs=[SLOT_DATA_KWARG, SLOT_DEFAULT_KWARG],
-        repeatable_kwargs=False,
+        signature=inspect.Signature.from_callable(fill_signature),
     )
 )
 def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
@@ -366,33 +359,31 @@ def fill(parser: Parser, token: Token, tag_spec: TagSpec) -> FillNode:
     ```
     """
     tag_id = gen_id()
-    tag = parse_template_tag(parser, token, tag_spec, tag_id=tag_id)
+    tag = parse_template_tag(parser, token, tag_spec)
 
-    fill_name_kwarg = tag.kwargs.kwargs.get(SLOT_NAME_KWARG, None)
-    trace_id = f"fill-id-{tag.id} ({fill_name_kwarg})" if fill_name_kwarg else f"fill-id-{tag.id}"
-
-    trace_msg("PARSE", "FILL", trace_id, tag.id)
+    trace_id = f"fill-id-{tag_id}"
+    trace_msg("PARSE", "FILL", trace_id, tag_id)
 
     body = tag.parse_body()
     fill_node = FillNode(
         nodelist=body,
-        node_id=tag.id,
-        kwargs=tag.kwargs,
+        node_id=tag_id,
+        params=tag.params,
         trace_id=trace_id,
     )
 
-    trace_msg("PARSE", "FILL", trace_id, tag.id, "...Done!")
+    trace_msg("PARSE", "FILL", trace_id, tag_id, "...Done!")
     return fill_node
+
+
+def component_signature(*args: Any, **kwargs: Any) -> None: ...  # noqa: E704
 
 
 @with_tag_spec(
     TagSpec(
         tag="component",
         end_tag="endcomponent",
-        positional_only_args=[],
-        positional_args_allow_extra=True,  # Allow many args
-        keywordonly_args=True,
-        repeatable_kwargs=False,
+        signature=inspect.Signature.from_callable(component_signature),
         flags=[COMP_ONLY_FLAG],
     )
 )
@@ -509,42 +500,36 @@ def component(
     result = formatter.parse([*bits])
     end_tag = formatter.end_tag(result.component_name)
 
-    # NOTE: The tokens returned from TagFormatter.parse do NOT include the tag itself
+    # NOTE: The tokens returned from TagFormatter.parse do NOT include the tag itself,
+    # so we add it back in.
     bits = [bits[0], *result.tokens]
     token.contents = " ".join(bits)
 
-    tag = parse_template_tag(
-        parser,
-        token,
-        TagSpec(
-            **{
-                **tag_spec._asdict(),
-                "tag": tag_name,
-                "end_tag": end_tag,
-            }
-        ),
-        tag_id=tag_id,
-    )
+    # Set the component-specific start and end tags
+    component_tag_spec = tag_spec.copy()
+    component_tag_spec.tag = tag_name
+    component_tag_spec.end_tag = end_tag
 
-    # Check for isolated context keyword
-    isolated_context = tag.flags[COMP_ONLY_FLAG]
+    tag = parse_template_tag(parser, token, component_tag_spec)
 
-    trace_msg("PARSE", "COMP", result.component_name, tag.id)
+    trace_msg("PARSE", "COMP", result.component_name, tag_id)
 
     body = tag.parse_body()
 
     component_node = ComponentNode(
         name=result.component_name,
-        args=tag.args,
-        kwargs=tag.kwargs,
-        isolated_context=isolated_context,
+        params=tag.params,
+        isolated_context=tag.flags[COMP_ONLY_FLAG],
         nodelist=body,
-        node_id=tag.id,
+        node_id=tag_id,
         registry=registry,
     )
 
-    trace_msg("PARSE", "COMP", result.component_name, tag.id, "...Done!")
+    trace_msg("PARSE", "COMP", result.component_name, tag_id, "...Done!")
     return component_node
+
+
+def provide_signature(name: str, **kwargs: Any) -> None: ...  # noqa: E704
 
 
 @register.tag("provide")
@@ -552,10 +537,7 @@ def component(
     TagSpec(
         tag="provide",
         end_tag="endprovide",
-        positional_only_args=[],
-        pos_or_keyword_args=[PROVIDE_NAME_KWARG],
-        keywordonly_args=True,
-        repeatable_kwargs=False,
+        signature=inspect.Signature.from_callable(provide_signature),
         flags=[],
     )
 )
@@ -631,23 +613,26 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     tag_id = gen_id()
 
     # e.g. {% provide <name> key=val key2=val2 %}
-    tag = parse_template_tag(parser, token, tag_spec, tag_id)
+    tag = parse_template_tag(parser, token, tag_spec)
 
-    name_kwarg = tag.kwargs.kwargs.get(PROVIDE_NAME_KWARG, None)
-    trace_id = f"provide-id-{tag.id} ({name_kwarg})" if name_kwarg else f"fill-id-{tag.id}"
-
-    trace_msg("PARSE", "PROVIDE", trace_id, tag.id)
+    trace_id = f"fill-id-{tag_id}"
+    trace_msg("PARSE", "PROVIDE", trace_id, tag_id)
 
     body = tag.parse_body()
     provide_node = ProvideNode(
         nodelist=body,
-        node_id=tag.id,
-        kwargs=tag.kwargs,
+        node_id=tag_id,
+        params=tag.params,
         trace_id=trace_id,
     )
 
-    trace_msg("PARSE", "PROVIDE", trace_id, tag.id, "...Done!")
+    trace_msg("PARSE", "PROVIDE", trace_id, tag_id, "...Done!")
     return provide_node
+
+
+def html_attrs_signature(  # noqa: E704
+    attrs: Optional[Dict] = None, defaults: Optional[Dict] = None, **kwargs: Any
+) -> None: ...
 
 
 @register.tag("html_attrs")
@@ -655,11 +640,7 @@ def provide(parser: Parser, token: Token, tag_spec: TagSpec) -> ProvideNode:
     TagSpec(
         tag="html_attrs",
         end_tag=None,  # inline-only
-        positional_only_args=[],
-        pos_or_keyword_args=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
-        optional_kwargs=[HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY],
-        keywordonly_args=True,
-        repeatable_kwargs=True,
+        signature=inspect.Signature.from_callable(html_attrs_signature),
         flags=[],
     )
 )
@@ -716,11 +697,11 @@ def html_attrs(parser: Parser, token: Token, tag_spec: TagSpec) -> HtmlAttrsNode
     [HTML attributes](../../concepts/fundamentals/html_attributes#examples-for-html_attrs).**
     """
     tag_id = gen_id()
-    tag = parse_template_tag(parser, token, tag_spec, tag_id)
+    tag = parse_template_tag(parser, token, tag_spec)
 
     return HtmlAttrsNode(
-        kwargs=tag.kwargs,
-        kwarg_pairs=tag.kwarg_pairs,
+        node_id=tag_id,
+        params=tag.params,
     )
 
 

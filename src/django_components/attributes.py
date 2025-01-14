@@ -8,8 +8,8 @@ from django.template import Context
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.expression import RuntimeKwargPairs, RuntimeKwargs
 from django_components.node import BaseNode
+from django_components.util.template_tag import TagParams
 
 HTML_ATTRS_DEFAULTS_KEY = "defaults"
 HTML_ATTRS_ATTRS_KEY = "attrs"
@@ -18,32 +18,19 @@ HTML_ATTRS_ATTRS_KEY = "attrs"
 class HtmlAttrsNode(BaseNode):
     def __init__(
         self,
-        kwargs: RuntimeKwargs,
-        kwarg_pairs: RuntimeKwargPairs,
+        params: TagParams,
         node_id: Optional[str] = None,
     ):
-        super().__init__(nodelist=None, args=None, kwargs=kwargs, node_id=node_id)
-        self.kwarg_pairs = kwarg_pairs
+        super().__init__(nodelist=None, params=params, node_id=node_id)
 
     def render(self, context: Context) -> str:
         append_attrs: List[Tuple[str, Any]] = []
 
         # Resolve all data
-        kwargs = self.kwargs.resolve(context)
+        args, kwargs = self.params.resolve(context)
         attrs = kwargs.pop(HTML_ATTRS_ATTRS_KEY, None) or {}
         defaults = kwargs.pop(HTML_ATTRS_DEFAULTS_KEY, None) or {}
-
-        kwarg_pairs = self.kwarg_pairs.resolve(context)
-
-        for key, value in kwarg_pairs:
-            if (
-                key in [HTML_ATTRS_ATTRS_KEY, HTML_ATTRS_DEFAULTS_KEY]
-                or key.startswith(f"{HTML_ATTRS_ATTRS_KEY}:")
-                or key.startswith(f"{HTML_ATTRS_DEFAULTS_KEY}:")
-            ):
-                continue
-
-            append_attrs.append((key, value))
+        append_attrs = list(kwargs.items())
 
         # Merge it
         final_attrs = {**defaults, **attrs}

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, List, NamedTuple
 from django.template import TemplateSyntaxError
 from django.utils.module_loading import import_string
 
-from django_components.expression import resolve_string
 from django_components.util.misc import is_str_wrapped_in_quotes
 
 if TYPE_CHECKING:
@@ -267,7 +266,7 @@ class ComponentFormatter(TagFormatterABC):
             raise TemplateSyntaxError(f"Component name must be a string 'literal', got: {comp_name}")
 
         # Remove the quotes
-        comp_name = resolve_string(comp_name)
+        comp_name = comp_name[1:-1]
 
         return TagResult(comp_name, final_args)
 

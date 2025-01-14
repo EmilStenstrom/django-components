@@ -1,9 +1,9 @@
-from typing import List, Optional
+from typing import Optional
 
 from django.template.base import Node, NodeList
 
-from django_components.expression import Expression, RuntimeKwargs
 from django_components.util.misc import gen_id
+from django_components.util.template_tag import TagParams
 
 
 class BaseNode(Node):
@@ -11,12 +11,10 @@ class BaseNode(Node):
 
     def __init__(
         self,
+        params: TagParams,
         nodelist: Optional[NodeList] = None,
         node_id: Optional[str] = None,
-        args: Optional[List[Expression]] = None,
-        kwargs: Optional[RuntimeKwargs] = None,
     ):
+        self.params = params
         self.nodelist = nodelist or NodeList()
         self.node_id = node_id or gen_id()
-        self.args = args or []
-        self.kwargs = kwargs or RuntimeKwargs({})
