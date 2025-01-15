@@ -28,7 +28,7 @@ from django_components.slots import SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD,
 from django_components.tag_formatter import get_tag_formatter
 from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
-from django_components.util.template_tag import TagSpec, fix_nested_tags, parse_template_tag, with_tag_spec
+from django_components.util.template_tag import TagSpec, parse_template_tag, with_tag_spec
 
 # NOTE: Variable name `register` is required by Django to recognize this as a template tag library
 # See https://docs.djangoproject.com/en/dev/howto/custom-template-tags
@@ -492,7 +492,6 @@ def component(
     """
     tag_id = gen_id()
 
-    fix_nested_tags(parser, token)
     bits = token.split_contents()
 
     # Let the TagFormatter pre-process the tokens

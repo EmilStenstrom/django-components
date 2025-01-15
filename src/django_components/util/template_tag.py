@@ -1,14 +1,14 @@
 import functools
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, cast
+from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple
 
 from django.template import Context, NodeList
-from django.template.base import Parser, Token, TokenType
+from django.template.base import Parser, Token
 from django.template.exceptions import TemplateSyntaxError
 
 from django_components.expression import process_aggregate_kwargs
-from django_components.util.tag_parser import TagAttr, TagValue, parse_tag
+from django_components.util.tag_parser import TagAttr, parse_tag
 
 
 @dataclass
@@ -97,6 +97,17 @@ class TagSpec:
         # Set the signature on the function
         validator.__signature__ = self.signature  # type: ignore[attr-defined]
 
+        # Call the validator with our args and kwargs, in such a way to
+        # let the Python interpreter validate on repeated kwargs. E.g.
+        #
+        # ```
+        # args, kwargs = validator(
+        #     *call_args,
+        #     **call_kwargs[0],
+        #     **call_kwargs[1],
+        #     ...
+        # )
+        # ```
         call_args = []
         call_kwargs = []
         for param in params:
@@ -105,13 +116,12 @@ class TagSpec:
             else:
                 call_kwargs.append({param.key: param.value})
 
-        # Call the validator with our args and kwargs, in such a way to
-        # let the Python interpreter validate on repeated kwargs.
-        #
-        # E.g. `args, kwargs = validator(*call_args, **call_kwargs[0], **call_kwargs[1])`
-        #
         # NOTE: Although we use `exec()` here, it's safe, because we control the input -
-        #       we pass in only the list index.
+        #       we make dynamic only the list index.
+        #
+        #       We MUST use the indices, because we can't trust neither the param keys nor values,
+        #       so we MUST NOT reference them directly in the exec script, otherwise we'd be at risk
+        #       of injection attack.
         validator_call_script = "args, kwargs = validator(*call_args, "
         for kw_index, _ in enumerate(call_kwargs):
             validator_call_script += f"**call_kwargs[{kw_index}], "
@@ -229,8 +239,6 @@ def parse_template_tag(
     token: Token,
     tag_spec: TagSpec,
 ) -> ParsedTag:
-    fix_nested_tags(parser, token)
-
     _, attrs = parse_tag(token.contents, parser)
 
     # First token is tag name, e.g. `slot` in `{% slot <name> ... %}`
@@ -340,138 +348,3 @@ def merge_repeated_kwargs(params: List[TagParam]) -> List[TagParam]:
             params_by_key[param.key].value += " " + str(param.value)
 
     return resolved_params
-
-
-def fix_nested_tags(parser: Parser, block_token: Token) -> None:
-    # Since the nested tags MUST be wrapped in quotes, e.g.
-    # `{% component 'test' "{% lorem var_a w %}" %}`
-    # `{% component 'test' key="{% lorem var_a w %}" %}`
-    #
-    # We can parse the tag's tokens so we can find the last one, and so we consider
-    # the unclosed `{%` only for the last bit.
-    _, attrs = parse_tag(block_token.contents, parser)
-
-    # If there are no attributes, then there are no nested tags
-    if not attrs:
-        return
-
-    last_attr = attrs[-1]
-
-    # TODO: Currently, using a nested template inside a list or dict
-    #    e.g. `{% component ... key=["{% nested %}"] %}` is NOT supported.
-    #    Hence why we leave if value is not "simple" (which means the value is list or dict).
-    if last_attr.value.type != "simple":
-        return
-
-    last_attr_value = cast(TagValue, last_attr.value.entries[0])
-    last_token = last_attr_value.parts[-1]
-
-    # User probably forgot to wrap the nested tag in quotes, or this is the end of the input.
-    # `{% component ... key={% nested %} %}`
-    # `{% component ... key= %}`
-    if not last_token.value:
-        return
-
-    # When our template tag contains a nested tag, e.g.:
-    # `{% component 'test' "{% lorem var_a w %}" %}`
-    #
-    # Django parses this into:
-    # `TokenType.BLOCK: 'component 'test'     "{% lorem var_a w'`
-    #
-    # Above you can see that the token ends at the end of the NESTED tag,
-    # and includes `{%`. So that's what we use to identify if we need to fix
-    # nested tags or not.
-    has_unclosed_tag = (
-        (last_token.value.count("{%") > last_token.value.count("%}"))
-        # Moreover we need to also check for unclosed quotes for this edge case:
-        # `{% component 'test' "{%}" %}`
-        #
-        # Which Django parses this into:
-        # `TokenType.BLOCK: 'component 'test'  "{'`
-        #
-        # Here we cannot see any unclosed tags, but there is an unclosed double quote at the end.
-        #
-        # But we cannot naively search the full contents for unclosed quotes, but
-        # only within the last 'bit'. Consider this:
-        # `{% component 'test' '"' "{%}" %}`
-        #
-        or (last_token.value in ("'{", '"{'))
-    )
-
-    # There is 3 double quotes, but if the contents get split at the first `%}`
-    # then there will be a single unclosed double quote in the last bit.
-    first_char_index = len(last_token.spread or "")
-    has_unclosed_quote = (
-        not last_token.quoted
-        and last_token.value
-        and last_token.value[first_char_index] in ('"', "'")
-    )  # fmt: skip
-
-    needs_fixing = has_unclosed_tag and has_unclosed_quote
-
-    if not needs_fixing:
-        return
-
-    block_token.contents += "%}" if has_unclosed_quote else " %}"
-    expects_text = True
-    while True:
-        # This is where we need to take parsing in our own hands, because Django parser parsed
-        # only up to the first closing tag `%}`, but that closing tag corresponds to a nested tag,
-        # and not to the end of the outer template tag.
-        #
-        # NOTE: If we run out of tokens, this will raise, and break out of the loop
-        token = parser.next_token()
-
-        # If there is a nested BLOCK `{% %}`, VAR `{{ }}`, or COMMENT `{# #}` tag inside the template tag,
-        # then the way Django parses it results in alternating Tokens of TEXT and non-TEXT types.
-        #
-        # We use `expects_text` to know which type to handle.
-        if expects_text:
-            if token.token_type != TokenType.TEXT:
-                raise TemplateSyntaxError(f"Template parser received TokenType '{token.token_type}' instead of 'TEXT'")
-
-            expects_text = False
-
-            # Once we come across a closing tag in the text, we know that's our original
-            # end tag. Until then, append all the text to the block token and continue
-            if "%}" not in token.contents:
-                block_token.contents += token.contents
-                continue
-
-            # This is the ACTUAL end of the block template tag
-            remaining_block_content, text_content = token.contents.split("%}", 1)
-            block_token.contents += remaining_block_content
-
-            # We put back into the Parser the remaining bit of the text.
-            # NOTE: Looking at the implementation, `parser.prepend_token()` is the opposite
-            # of `parser.next_token()`.
-            parser.prepend_token(Token(TokenType.TEXT, contents=text_content))
-            break
-
-        # In this case we've come across a next block tag `{% %}` inside the template tag
-        # This isn't the first occurence, where the `{%` was ignored. And so, the content
-        # between the `{% %}` is correctly captured, e.g.
-        #
-        # `{% firstof False 0 is_active %}`
-        # gives
-        # `TokenType.BLOCK: 'firstof False 0 is_active'`
-        #
-        # But we don't want to evaluate this as a standalone BLOCK tag, and instead append
-        # it to the block tag that this nested block is part of
-        else:
-            if token.token_type == TokenType.TEXT:
-                raise TemplateSyntaxError(
-                    f"Template parser received TokenType '{token.token_type}' instead of 'BLOCK', 'VAR', 'COMMENT'"
-                )
-
-            if token.token_type == TokenType.BLOCK:
-                block_token.contents += "{% " + token.contents + " %}"
-            elif token.token_type == TokenType.VAR:
-                block_token.contents += "{{ " + token.contents + " }}"
-            elif token.token_type == TokenType.COMMENT:
-                pass  # Comments are ignored
-            else:
-                raise TemplateSyntaxError(f"Unknown token type '{token.token_type}'")
-
-            expects_text = True
-            continue
