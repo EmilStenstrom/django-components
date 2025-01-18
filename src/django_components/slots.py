@@ -13,7 +13,6 @@ from typing import (
     Optional,
     Protocol,
     Set,
-    Tuple,
     TypeVar,
     Union,
     cast,
@@ -33,9 +32,7 @@ from django_components.context import (
     _ROOT_CTX_CONTEXT_KEY,
 )
 from django_components.node import BaseNode
-from django_components.util.logger import trace_msg
 from django_components.util.misc import get_last_index, is_identifier
-from django_components.util.template_tag import TagParams
 
 if TYPE_CHECKING:
     from django_components.component_registry import ComponentRegistry
@@ -150,34 +147,132 @@ class ComponentSlotContext:
 
 
 class SlotNode(BaseNode):
-    """Node corresponding to `{% slot %}`"""
+    """
+    Slot tag marks a place inside a component where content can be inserted
+    from outside.
 
-    def __init__(
-        self,
-        nodelist: NodeList,
-        params: TagParams,
-        trace_id: str,
-        node_id: Optional[str] = None,
-        is_required: bool = False,
-        is_default: bool = False,
-    ):
-        super().__init__(nodelist=nodelist, params=params, node_id=node_id)
+    [Learn more](../../concepts/fundamentals/slots) about using slots.
 
-        self.is_required = is_required
-        self.is_default = is_default
-        self.trace_id = trace_id
+    This is similar to slots as seen in
+    [Web components](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot),
+    [Vue](https://vuejs.org/guide/components/slots.html)
+    or [React's `children`](https://react.dev/learn/passing-props-to-a-component#passing-jsx-as-children).
 
-    @property
-    def active_flags(self) -> List[str]:
-        flags = []
-        if self.is_required:
-            flags.append("required")
-        if self.is_default:
-            flags.append("default")
-        return flags
+    **Args:**
 
-    def __repr__(self) -> str:
-        return f"<Slot Node: {self.node_id}. Contents: {repr(self.nodelist)}. Options: {self.active_flags}>"
+    - `name` (str, required): Registered name of the component to render
+    - `default`: Optional flag. If there is a default slot, you can pass the component slot content
+        without using the [`{% fill %}`](#fill) tag. See
+        [Default slot](../../concepts/fundamentals/slots#default-slot)
+    - `required`: Optional flag. Will raise an error if a slot is required but not given.
+    - `**kwargs`: Any extra kwargs will be passed as the slot data.
+
+    **Example:**
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            {% slot "content" default %}
+              This is shown if not overriden!
+            {% endslot %}
+          </div>
+          <aside>
+            {% slot "sidebar" required / %}
+          </aside>
+        \"\"\"
+    ```
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          <div>
+            {% component "child" %}
+              {% fill "content" %}
+                🗞️📰
+              {% endfill %}
+
+              {% fill "sidebar" %}
+                🍷🧉🍾
+              {% endfill %}
+            {% endcomponent %}
+          </div>
+        \"\"\"
+    ```
+
+    ### Passing data to slots
+
+    Any extra kwargs will be considered as slot data, and will be accessible in the [`{% fill %}`](#fill)
+    tag via fill's `data` kwarg:
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            {# Passing data to the slot #}
+            {% slot "content" user=user %}
+              This is shown if not overriden!
+            {% endslot %}
+          </div>
+        \"\"\"
+    ```
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          {# Parent can access the slot data #}
+          {% component "child" %}
+            {% fill "content" data="data" %}
+              <div class="wrapper-class">
+                {{ data.user }}
+              </div>
+            {% endfill %}
+          {% endcomponent %}
+        \"\"\"
+    ```
+
+    ### Accessing default slot content
+
+    The content between the `{% slot %}..{% endslot %}` tags is the default content that
+    will be rendered if no fill is given for the slot.
+
+    This default content can then be accessed from within the [`{% fill %}`](#fill) tag using
+    the fill's `default` kwarg.
+    This is useful if you need to wrap / prepend / append the original slot's content.
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            {% slot "content" %}
+              This is default content!
+            {% endslot %}
+          </div>
+        \"\"\"
+    ```
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          {# Parent can access the slot's default content #}
+          {% component "child" %}
+            {% fill "content" default="default" %}
+              {{ default }}
+            {% endfill %}
+          {% endcomponent %}
+        \"\"\"
+    ```
+    """
+
+    tag = "slot"
+    end_tag = "endslot"
+    allowed_flags = [SLOT_DEFAULT_KEYWORD, SLOT_REQUIRED_KEYWORD]
 
     # NOTE:
     # In the current implementation, the slots are resolved only at the render time.
@@ -200,9 +295,7 @@ class SlotNode(BaseNode):
     #    for unfilled slots (rendered slots WILL raise an error if the fill is missing).
     # 2. User may provide extra fills, but these may belong to slots we haven't
     #    encountered in this render run. So we CANNOT say which ones are extra.
-    def render(self, context: Context) -> SafeString:
-        trace_msg("RENDR", "SLOT", self.trace_id, self.node_id)
-
+    def render(self, context: Context, name: str, **kwargs: Any) -> SafeString:
         # Do not render `{% slot %}` tags within the `{% component %} .. {% endcomponent %}` tags
         # at the fill discovery stage (when we render the component's body to determine if the body
         # is a default slot, or contains named slots).
@@ -217,10 +310,12 @@ class SlotNode(BaseNode):
             )
 
         component_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
-        slot_name, kwargs = self.resolve_kwargs(context, component_ctx.component_name)
+        slot_name = name
+        is_default = self.flags[SLOT_DEFAULT_KEYWORD]
+        is_required = self.flags[SLOT_REQUIRED_KEYWORD]
 
         # Check for errors
-        if self.is_default and not component_ctx.is_dynamic_component:
+        if is_default and not component_ctx.is_dynamic_component:
             # Allow one slot to be marked as 'default', or multiple slots but with
             # the same name. If there is multiple 'default' slots with different names, raise.
             default_slot_name = component_ctx.default_slot
@@ -249,7 +344,7 @@ class SlotNode(BaseNode):
 
         # If slot is marked as 'default', we use the name 'default' for the fill,
         # IF SUCH FILL EXISTS. Otherwise, we use the slot's name.
-        if self.is_default and DEFAULT_SLOT_KEY in component_ctx.fills:
+        if is_default and DEFAULT_SLOT_KEY in component_ctx.fills:
             fill_name = DEFAULT_SLOT_KEY
         else:
             fill_name = slot_name
@@ -284,7 +379,7 @@ class SlotNode(BaseNode):
         # Note: Finding a good `cutoff` value may require further trial-and-error.
         # Higher values make matching stricter. This is probably preferable, as it
         # reduces false positives.
-        if self.is_required and not slot_fill.is_filled and not component_ctx.is_dynamic_component:
+        if is_required and not slot_fill.is_filled and not component_ctx.is_dynamic_component:
             msg = (
                 f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
                 f"yet no fill is provided. Check template.'"
@@ -349,7 +444,6 @@ class SlotNode(BaseNode):
                 #       the render function ALWAYS receives them.
                 output = slot_fill.slot(used_ctx, kwargs, slot_ref)
 
-        trace_msg("RENDR", "SLOT", self.trace_id, self.node_id, msg="...Done!")
         return output
 
     def _resolve_slot_context(self, context: Context, slot_fill: "SlotFill") -> Context:
@@ -368,99 +462,150 @@ class SlotNode(BaseNode):
         else:
             raise ValueError(f"Unknown value for context_behavior: '{registry.settings.context_behavior}'")
 
-    def resolve_kwargs(
-        self,
-        context: Context,
-        component_name: Optional[str] = None,
-    ) -> Tuple[str, Dict[str, Optional[str]]]:
-        _, kwargs = self.params.resolve(context)
-        name = kwargs.pop(SLOT_NAME_KWARG, None)
-
-        if not name:
-            raise RuntimeError(f"Slot tag kwarg 'name' is missing in component {component_name}")
-
-        return (name, kwargs)
-
 
 class FillNode(BaseNode):
-    """Node corresponding to `{% fill %}`"""
+    """
+    Use this tag to insert content into component's slots.
 
-    def __init__(
-        self,
-        nodelist: NodeList,
-        params: TagParams,
-        trace_id: str,
-        node_id: Optional[str] = None,
-    ):
-        super().__init__(nodelist=nodelist, params=params, node_id=node_id)
+    `{% fill %}` tag may be used only within a `{% component %}..{% endcomponent %}` block.
+    Runtime checks should prohibit other usages.
 
-        self.trace_id = trace_id
+    **Args:**
 
-    def render(self, context: Context) -> str:
-        if _is_extracting_fill(context):
-            self._extract_fill(context)
-            return ""
+    - `name` (str, required): Name of the slot to insert this content into. Use `"default"` for
+        the default slot.
+    - `default` (str, optional): This argument allows you to access the original content of the slot
+        under the specified variable name. See
+        [Accessing original content of slots](../../concepts/fundamentals/slots#accessing-original-content-of-slots)
+    - `data` (str, optional): This argument allows you to access the data passed to the slot
+        under the specified variable name. See [Scoped slots](../../concepts/fundamentals/slots#scoped-slots)
 
-        raise TemplateSyntaxError(
-            "FillNode.render() (AKA {% fill ... %} block) cannot be rendered outside of a Component context. "
-            "Make sure that the {% fill %} tags are nested within {% component %} tags."
-        )
+    **Examples:**
 
-    def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} ID: {self.node_id}. Contents: {repr(self.nodelist)}.>"
+    Basic usage:
+    ```django
+    {% component "my_table" %}
+      {% fill "pagination" %}
+        < 1 | 2 | 3 >
+      {% endfill %}
+    {% endcomponent %}
+    ```
 
-    def resolve_kwargs(self, context: Context) -> "FillWithData":
-        _, kwargs = self.params.resolve(context)
+    ### Accessing slot's default content with the `default` kwarg
 
-        name = self._process_kwarg(kwargs, SLOT_NAME_KWARG, identifier=False)
-        default_var = self._process_kwarg(kwargs, SLOT_DEFAULT_KWARG)
-        data_var = self._process_kwarg(kwargs, SLOT_DATA_KWARG)
+    ```django
+    {# my_table.html #}
+    <table>
+      ...
+      {% slot "pagination" %}
+        < 1 | 2 | 3 >
+      {% endslot %}
+    </table>
+    ```
 
+    ```django
+    {% component "my_table" %}
+      {% fill "pagination" default="default_pag" %}
+        <div class="my-class">
+          {{ default_pag }}
+        </div>
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    ### Accessing slot's data with the `data` kwarg
+
+    ```django
+    {# my_table.html #}
+    <table>
+      ...
+      {% slot "pagination" pages=pages %}
+        < 1 | 2 | 3 >
+      {% endslot %}
+    </table>
+    ```
+
+    ```django
+    {% component "my_table" %}
+      {% fill "pagination" data="slot_data" %}
+        {% for page in slot_data.pages %}
+            <a href="{{ page.link }}">
+              {{ page.index }}
+            </a>
+        {% endfor %}
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    ### Accessing slot data and default content on the default slot
+
+    To access slot data and the default slot content on the default slot,
+    use `{% fill %}` with `name` set to `"default"`:
+
+    ```django
+    {% component "button" %}
+      {% fill name="default" data="slot_data" default="default_slot" %}
+        You clicked me {{ slot_data.count }} times!
+        {{ default_slot }}
+      {% endfill %}
+    {% endcomponent %}
+    ```
+    """
+
+    tag = "fill"
+    end_tag = "endfill"
+    allowed_flags = []
+
+    def render(self, context: Context, name: str, *, data: Optional[str] = None, default: Optional[str] = None) -> str:
+        if not _is_extracting_fill(context):
+            raise TemplateSyntaxError(
+                "FillNode.render() (AKA {% fill ... %} block) cannot be rendered outside of a Component context. "
+                "Make sure that the {% fill %} tags are nested within {% component %} tags."
+            )
+
+        # Validate inputs
         if not isinstance(name, str):
             raise TemplateSyntaxError(f"Fill tag '{SLOT_NAME_KWARG}' kwarg must resolve to a string, got {name}")
 
-        if data_var is not None and not isinstance(data_var, str):
-            raise TemplateSyntaxError(f"Fill tag '{SLOT_DATA_KWARG}' kwarg must resolve to a string, got {data_var}")
+        if data is not None:
+            if not isinstance(data, str):
+                raise TemplateSyntaxError(f"Fill tag '{SLOT_DATA_KWARG}' kwarg must resolve to a string, got {data}")
+            if not is_identifier(data):
+                raise RuntimeError(
+                    f"Fill tag kwarg '{SLOT_DATA_KWARG}' does not resolve to a valid Python identifier, got '{data}'"
+                )
 
-        if default_var is not None and not isinstance(default_var, str):
-            raise TemplateSyntaxError(
-                f"Fill tag '{SLOT_DEFAULT_KWARG}' kwarg must resolve to a string, got {default_var}"
-            )
+        if default is not None:
+            if not isinstance(default, str):
+                raise TemplateSyntaxError(
+                    f"Fill tag '{SLOT_DEFAULT_KWARG}' kwarg must resolve to a string, got {default}"
+                )
+            if not is_identifier(default):
+                raise RuntimeError(
+                    f"Fill tag kwarg '{SLOT_DEFAULT_KWARG}' does not resolve to a valid Python identifier,"
+                    f" got '{default}'"
+                )
 
         # data and default cannot be bound to the same variable
-        if data_var and default_var and data_var == default_var:
+        if data and default and data == default:
             raise RuntimeError(
                 f"Fill '{name}' received the same string for slot default ({SLOT_DEFAULT_KWARG}=...)"
                 f" and slot data ({SLOT_DATA_KWARG}=...)"
             )
 
-        return FillWithData(
+        fill_data = FillWithData(
             fill=self,
             name=name,
-            default_var=default_var,
-            data_var=data_var,
+            default_var=default,
+            data_var=data,
             extra_context={},
         )
 
-    def _process_kwarg(
-        self,
-        kwargs: Dict[str, Any],
-        key: str,
-        identifier: bool = True,
-    ) -> Optional[Any]:
-        if key not in kwargs:
-            return None
+        self._extract_fill(context, fill_data)
 
-        value = kwargs[key]
-        if value is None:
-            return None
+        return ""
 
-        if identifier and not is_identifier(value):
-            raise RuntimeError(f"Fill tag kwarg '{key}' does not resolve to a valid Python identifier, got '{value}'")
-
-        return value
-
-    def _extract_fill(self, context: Context) -> None:
+    def _extract_fill(self, context: Context, data: "FillWithData") -> None:
         # `FILL_GEN_CONTEXT_KEY` is only ever set when we are rendering content between the
         # `{% component %}...{% endcomponent %}` tags. This is done in order to collect all fill tags.
         # E.g.
@@ -473,10 +618,6 @@ class FillNode(BaseNode):
 
         if collected_fills is None:
             return
-
-        # NOTE: It's important that we use the context given to the fill tag, so it accounts
-        #       for any variables set via e.g. for-loops.
-        data = self.resolve_kwargs(context)
 
         # To allow using variables which were defined within the template and to which
         # the `{% fill %}` tag has access, we need to capture those variables too.

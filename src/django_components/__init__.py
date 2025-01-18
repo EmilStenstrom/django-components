@@ -19,6 +19,7 @@ from django_components.component_registry import (
 from django_components.components import DynamicComponent
 from django_components.dependencies import render_dependencies
 from django_components.library import TagProtectedError
+from django_components.node import BaseNode, template_tag
 from django_components.slots import SlotContent, Slot, SlotFunc, SlotRef, SlotResult
 from django_components.tag_formatter import (
     ComponentFormatter,
@@ -40,6 +41,7 @@ __all__ = [
     "AlreadyRegistered",
     "autodiscover",
     "cached_template",
+    "BaseNode",
     "ContextBehavior",
     "ComponentsSettings",
     "Component",
@@ -72,5 +74,6 @@ __all__ = [
     "TagFormatterABC",
     "TagProtectedError",
     "TagResult",
+    "template_tag",
     "types",
 ]

@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal
 
 DEFAULT_TRACE_LEVEL_NUM = 5  # NOTE: MUST be lower than DEBUG which is 10
 
@@ -62,27 +62,18 @@ def trace(logger: logging.Logger, message: str, *args: Any, **kwargs: Any) -> No
 
 
 def trace_msg(
-    action: Literal["PARSE", "RENDR", "GET", "SET"],
-    node_type: Literal["COMP", "FILL", "SLOT", "PROVIDE", "N/A"],
-    node_name: str,
+    action: Literal["PARSE", "RENDR"],
+    node_type: str,
     node_id: str,
     msg: str = "",
-    component_id: Optional[str] = None,
 ) -> None:
     """
     TRACE level logger with opinionated format for tracing interaction of components,
     nodes, and slots. Formats messages like so:
 
-    `"ASSOC SLOT test_slot ID 0088 TO COMP 0087"`
+    `"PARSE slot ID 0088 ...Done!"`
     """
-    msg_prefix = ""
-    if action == "RENDR" and node_type == "FILL":
-        if not component_id:
-            raise ValueError("component_id must be set for the RENDER action")
-        msg_prefix = f"FOR COMP {component_id}"
-
-    msg_parts = [f"{action} {node_type} {node_name} ID {node_id}", *([msg_prefix] if msg_prefix else []), msg]
-    full_msg = " ".join(msg_parts)
+    full_msg = f"{action} {node_type} ID {node_id} {msg}"
 
     # NOTE: When debugging tests during development, it may be easier to change
     # this to `print()`

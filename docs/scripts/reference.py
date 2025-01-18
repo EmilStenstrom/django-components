@@ -49,8 +49,8 @@ from django.urls import URLPattern, URLResolver
 
 from django_components import ComponentVars, TagFormatterABC
 from django_components.component import Component
+from django_components.node import BaseNode
 from django_components.util.misc import get_import_path
-from django_components.util.template_tag import TagSpec
 
 # NOTE: This file is an entrypoint for the `gen-files` plugin in `mkdocs.yml`.
 #       However, `gen-files` plugin runs this file as a script, NOT as a module.
@@ -504,17 +504,18 @@ def gen_reference_templatetags():
                 f"Import as\n```django\n{{% load {mod_name} %}}\n```\n\n"
             )
 
-            for name, obj in inspect.getmembers(tags_module):
+            for _, obj in inspect.getmembers(tags_module):
                 if not _is_template_tag(obj):
                     continue
 
-                tag_spec: TagSpec = obj._tag_spec
-                tag_signature = _format_tag_signature(tag_spec)
-                obj_lineno = inspect.findsource(obj)[1]
+                node_cls: BaseNode = obj
+                name = node_cls.tag
+                tag_signature = _format_tag_signature(node_cls)
+                obj_lineno = inspect.findsource(node_cls)[1]
                 source_code_link = _format_source_code_html(module_rel_path, obj_lineno)
 
                 # Use the tag's function's docstring
-                docstring = dedent(obj.__doc__ or "").strip()
+                docstring = dedent(node_cls.__doc__ or "").strip()
 
                 # Rebuild (almost) the same documentation than as if we used
                 # mkdocstrings' `::: path.to.module` syntax.
@@ -585,29 +586,29 @@ def _list_urls(urlpatterns: Sequence[Union[URLPattern, URLResolver]], prefix="")
     return urls
 
 
-def _format_tag_signature(tag_spec: TagSpec) -> str:
+def _format_tag_signature(node_cls: BaseNode) -> str:
     """
-    Given the TagSpec instance, format the tag's function signature like:
+    Given the Node class, format the tag's function signature like:
     ```django
-    {% component [arg, ...] **kwargs [only] %}
+    {% component arg1: int, arg2: str, *args, **kwargs: Any [only] %}
     {% endcomponent %}
     ```
     """
     # The signature returns a string like:
     # `(arg: Any, **kwargs: Any) -> None`
-    params_str = str(tag_spec.signature)
+    params_str = str(node_cls.signature)
     # Remove the return type annotation, the `-> None` part
     params_str = params_str.rsplit("->", 1)[0]
     # Remove brackets around the params, to end up only with `arg: Any, **kwargs: Any`
     params_str = params_str.strip()[1:-1]
 
-    if tag_spec.flags:
-        params_str += " " + " ".join([f"[{name}]" for name in tag_spec.flags])
+    if node_cls.allowed_flags:
+        params_str += " " + " ".join([f"[{name}]" for name in node_cls.allowed_flags])
 
     # Create the function signature
-    full_tag = "{% " + tag_spec.tag + " " + params_str + " %}"
-    if tag_spec.end_tag:
-        full_tag += f"\n{{% {tag_spec.end_tag} %}}"
+    full_tag = "{% " + node_cls.tag + " " + params_str + " %}"
+    if node_cls.end_tag:
+        full_tag += f"\n{{% {node_cls.end_tag} %}}"
 
     return full_tag
 
@@ -722,7 +723,7 @@ def _is_tag_formatter_instance(obj: Any) -> bool:
 
 
 def _is_template_tag(obj: Any) -> bool:
-    return callable(obj) and hasattr(obj, "_tag_spec")
+    return inspect.isclass(obj) and issubclass(obj, BaseNode)
 
 
 def gen_reference():

@@ -381,7 +381,10 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% component "injectee" %}
             {% endcomponent %}
         """
-        with self.assertRaisesMessage(RuntimeError, "Provide tag kwarg 'name' is missing"):
+        with self.assertRaisesMessage(
+            TemplateSyntaxError,
+            "Provide tag received an empty string. Key must be non-empty and a valid identifier",
+        ):
             Template(template_str).render(Context({}))
 
     @parametrize_context_behavior(["django", "isolated"])

@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING, Callable, Dict, List, NamedTuple, Optional, Set, Type, Union
 
 from django.template import Library
+from django.template.base import Parser, Token
 
 from django_components.app_settings import ContextBehaviorType, app_settings
-from django_components.library import is_tag_protected, mark_protected_tags, register_tag_from_formatter
+from django_components.library import is_tag_protected, mark_protected_tags, register_tag
 from django_components.tag_formatter import TagFormatterABC, get_tag_formatter
 
 if TYPE_CHECKING:
@@ -462,12 +463,39 @@ class ComponentRegistry:
         component: Type["Component"],
     ) -> ComponentRegistryEntry:
         # Lazily import to avoid circular dependencies
-        from django_components.templatetags.component_tags import component as do_component
+        from django_components.component import ComponentNode
 
-        formatter = get_tag_formatter(self)
-        tag = register_tag_from_formatter(self, do_component, formatter, comp_name)
+        registry = self
 
-        return ComponentRegistryEntry(cls=component, tag=tag)
+        # Define a tag function that pre-processes the tokens, extracting
+        # the component name and passing the rest to the actual tag function.
+        def tag_fn(parser: Parser, token: Token) -> ComponentNode:
+            # Let the TagFormatter pre-process the tokens
+            bits = token.split_contents()
+            formatter = get_tag_formatter(registry)
+            result = formatter.parse([*bits])
+            start_tag = formatter.start_tag(result.component_name)
+            end_tag = formatter.end_tag(result.component_name)
+
+            # NOTE: The tokens returned from TagFormatter.parse do NOT include the tag itself,
+            # so we add it back in.
+            bits = [bits[0], *result.tokens]
+            token.contents = " ".join(bits)
+
+            return ComponentNode.parse(
+                parser,
+                token,
+                registry=registry,
+                name=result.component_name,
+                start_tag=start_tag,
+                end_tag=end_tag,
+            )
+
+        formatter = get_tag_formatter(registry)
+        start_tag = formatter.start_tag(comp_name)
+        register_tag(self.library, start_tag, tag_fn)
+
+        return ComponentRegistryEntry(cls=component, tag=start_tag)
 
 
 # This variable represents the global component registry

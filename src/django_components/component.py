@@ -11,6 +11,7 @@ from typing import (
     Dict,
     Generator,
     Generic,
+    List,
     Literal,
     Mapping,
     NamedTuple,
@@ -26,7 +27,7 @@ from typing import (
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media as MediaCls
 from django.http import HttpRequest, HttpResponse
-from django.template.base import NodeList, Template, TextNode
+from django.template.base import NodeList, Parser, Template, TextNode, Token
 from django.template.context import Context, RequestContext
 from django.template.loader import get_template
 from django.template.loader_tags import BLOCK_CONTEXT_KEY
@@ -69,9 +70,8 @@ from django_components.slots import (
 )
 from django_components.template import cached_template
 from django_components.util.django_monkeypatch import is_template_cls_patched
-from django_components.util.logger import trace_msg
 from django_components.util.misc import gen_id
-from django_components.util.template_tag import TagParams
+from django_components.util.template_tag import TagAttr
 from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 
 # TODO_REMOVE_IN_V1 - Users should use top-level import instead
@@ -1209,43 +1209,154 @@ class Component(
 
 
 class ComponentNode(BaseNode):
-    """Django.template.Node subclass that renders a django-components component"""
+    """
+    Renders one of the components that was previously registered with
+    [`@register()`](./api.md#django_components.register)
+    decorator.
+
+    **Args:**
+
+    - `name` (str, required): Registered name of the component to render
+    - All other args and kwargs are defined based on the component itself.
+
+    If you defined a component `"my_table"`
+
+    ```python
+    from django_component import Component, register
+
+    @register("my_table")
+    class MyTable(Component):
+        template = \"\"\"
+          <table>
+            <thead>
+              {% for header in headers %}
+                <th>{{ header }}</th>
+              {% endfor %}
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  {% for cell in row %}
+                    <td>{{ cell }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            <tbody>
+          </table>
+        \"\"\"
+
+        def get_context_data(self, rows: List, headers: List):
+            return {
+                "rows": rows,
+                "headers": headers,
+            }
+    ```
+
+    Then you can render this component by referring to `MyTable` via its
+    registered name `"my_table"`:
+
+    ```django
+    {% component "my_table" rows=rows headers=headers ... / %}
+    ```
+
+    ### Component input
+
+    Positional and keyword arguments can be literals or template variables.
+
+    The component name must be a single- or double-quotes string and must
+    be either:
+
+    - The first positional argument after `component`:
+
+        ```django
+        {% component "my_table" rows=rows headers=headers ... / %}
+        ```
+
+    - Passed as kwarg `name`:
+
+        ```django
+        {% component rows=rows headers=headers name="my_table" ... / %}
+        ```
+
+    ### Inserting into slots
+
+    If the component defined any [slots](../concepts/fundamentals/slots.md), you can
+    pass in the content to be placed inside those slots by inserting [`{% fill %}`](#fill) tags,
+    directly within the `{% component %}` tag:
+
+    ```django
+    {% component "my_table" rows=rows headers=headers ... / %}
+      {% fill "pagination" %}
+        < 1 | 2 | 3 >
+      {% endfill %}
+    {% endcomponent %}
+    ```
+
+    ### Isolating components
+
+    By default, components behave similarly to Django's
+    [`{% include %}`](https://docs.djangoproject.com/en/5.1/ref/templates/builtins/#include),
+    and the template inside the component has access to the variables defined in the outer template.
+
+    You can selectively isolate a component, using the `only` flag, so that the inner template
+    can access only the data that was explicitly passed to it:
+
+    ```django
+    {% component "name" positional_arg keyword_arg=value ... only %}
+    ```
+    """
+
+    tag = "component"
+    end_tag = "endcomponent"
+    allowed_flags = [COMP_ONLY_FLAG]
 
     def __init__(
         self,
+        # ComponentNode inputs
         name: str,
         registry: ComponentRegistry,  # noqa F811
-        nodelist: NodeList,
-        params: TagParams,
-        isolated_context: bool = False,
+        # BaseNode inputs
+        params: List[TagAttr],
+        flags: Optional[Dict[str, bool]] = None,
+        nodelist: Optional[NodeList] = None,
         node_id: Optional[str] = None,
     ) -> None:
-        super().__init__(nodelist=nodelist or NodeList(), params=params, node_id=node_id)
+        super().__init__(params=params, flags=flags, nodelist=nodelist, node_id=node_id)
 
         self.name = name
-        self.isolated_context = isolated_context
         self.registry = registry
 
-    def __repr__(self) -> str:
-        return "<ComponentNode: {}. Contents: {!r}>".format(
-            self.name,
-            getattr(self, "nodelist", None),  # 'nodelist' attribute only assigned later.
+    @classmethod
+    def parse(  # type: ignore[override]
+        cls,
+        parser: Parser,
+        token: Token,
+        registry: ComponentRegistry,  # noqa F811
+        name: str,
+        start_tag: str,
+        end_tag: str,
+    ) -> "ComponentNode":
+        # Set the component-specific start and end tags by subclassing the base node
+        subcls_name = cls.__name__ + "_" + name
+        subcls: Type[ComponentNode] = type(subcls_name, (cls,), {"tag": start_tag, "end_tag": end_tag})
+
+        # Call `BaseNode.parse()` as if with the context of subcls.
+        node: ComponentNode = super().parse.__func__(  # type: ignore[attr-defined]
+            subcls,
+            parser,
+            token,
+            registry=registry,
+            name=name,
         )
+        return node
 
-    def render(self, context: Context) -> str:
-        trace_msg("RENDR", "COMP", self.name, self.node_id)
-
+    def render(self, context: Context, *args: Any, **kwargs: Any) -> str:
         # Do not render nested `{% component %}` tags in other `{% component %}` tags
         # at the stage when we are determining if the latter has named fills or not.
         if _is_extracting_fill(context):
             return ""
 
         component_cls: Type[Component] = self.registry.get(self.name)
-
-        # Resolve FilterExpressions and Variables that were passed as args to the
-        # component, then call component's context method
-        # to get values to insert into the context
-        args, kwargs = self.params.resolve(context)
 
         slot_fills = resolve_fills(context, self.nodelist, self.name)
 
@@ -1256,7 +1367,7 @@ class ComponentNode(BaseNode):
         )
 
         # Prevent outer context from leaking into the template of the component
-        if self.isolated_context or self.registry.settings.context_behavior == ContextBehavior.ISOLATED:
+        if self.flags[COMP_ONLY_FLAG] or self.registry.settings.context_behavior == ContextBehavior.ISOLATED:
             context = make_isolated_context_copy(context)
 
         output = component._render(
@@ -1269,7 +1380,6 @@ class ComponentNode(BaseNode):
             render_dependencies=False,
         )
 
-        trace_msg("RENDR", "COMP", self.name, self.node_id, "...Done!")
         return output
 
 

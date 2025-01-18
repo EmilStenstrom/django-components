@@ -265,7 +265,7 @@ class RenderDependenciesTests(BaseTestCase):
         self.assertInHTML(
             """
             <body>
-                Variable: <strong data-djc-id-a1bc3f>foo</strong>
+                Variable: <strong data-djc-id-a1bc41>foo</strong>
 
                 <style>.xyz { color: red; }</style>
                 <link href="style.css" media="all" rel="stylesheet">
@@ -510,7 +510,7 @@ class MiddlewareTests(BaseTestCase):
 
         assert_dependencies(rendered1)
         self.assertEqual(
-            rendered1.count("Variable: <strong data-djc-id-a1bc3f data-djc-id-a1bc40>value</strong>"),
+            rendered1.count("Variable: <strong data-djc-id-a1bc41 data-djc-id-a1bc42>value</strong>"),
             1,
         )
 
@@ -520,7 +520,7 @@ class MiddlewareTests(BaseTestCase):
         )
         assert_dependencies(rendered2)
         self.assertEqual(
-            rendered2.count("Variable: <strong data-djc-id-a1bc41 data-djc-id-a1bc42>value</strong>"),
+            rendered2.count("Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44>value</strong>"),
             1,
         )
 
@@ -531,6 +531,6 @@ class MiddlewareTests(BaseTestCase):
 
         assert_dependencies(rendered3)
         self.assertEqual(
-            rendered3.count("Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44>value</strong>"),
+            rendered3.count("Variable: <strong data-djc-id-a1bc45 data-djc-id-a1bc46>value</strong>"),
             1,
         )

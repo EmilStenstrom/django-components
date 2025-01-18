@@ -1,6 +1,6 @@
 ---
 title: Tag formatters
-weight: 7
+weight: 8
 ---
 
 ## Customizing component tags with TagFormatter

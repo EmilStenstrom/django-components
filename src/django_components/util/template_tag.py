@@ -1,7 +1,12 @@
-import functools
+"""
+This file is for logic that focuses on transforming the AST of template tags
+(as parsed from tag_parser) into a form that can be used by the Nodes.
+"""
+
 import inspect
+import sys
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
 
 from django.template import Context, NodeList
 from django.template.base import Parser, Token
@@ -11,152 +16,36 @@ from django_components.expression import process_aggregate_kwargs
 from django_components.util.tag_parser import TagAttr, parse_tag
 
 
-@dataclass
-class TagSpec:
-    """Definition of args, kwargs, flags, etc, for a template tag."""
-
-    signature: inspect.Signature
-    """Input to the tag as a Python function signature."""
-    tag: str
-    """Tag name. E.g. `"slot"` means the tag is written like so `{% slot ... %}`"""
-    end_tag: Optional[str] = None
+# For details see https://github.com/EmilStenstrom/django-components/pull/902#discussion_r1913611633
+# and following comments
+def validate_params(
+    tag: str,
+    signature: inspect.Signature,
+    params: List["TagParam"],
+    extra_kwargs: Optional[Dict[str, Any]] = None,
+) -> None:
     """
-    End tag.
+    Validates a list of TagParam objects against this tag's function signature.
 
-    E.g. `"endslot"` means anything between the start tag and `{% endslot %}`
-    is considered the slot's body.
-    """
-    flags: Optional[List[str]] = None
-    """
-    List of allowed flags.
+    The validation preserves the order of parameters as they appeared in the template.
 
-    Flags are like kwargs, but without the value part. E.g. in `{% mytag only required %}`:
-    - `only` and `required` are treated as `only=True` and `required=True` if present
-    - and treated as `only=False` and `required=False` if omitted
+    Raises `TypeError` if the parameters don't match the tag's signature.
     """
 
-    def copy(self) -> "TagSpec":
-        sig_parameters_copy = [param.replace() for param in self.signature.parameters.values()]
-        signature = inspect.Signature(sig_parameters_copy)
-        flags = self.flags.copy() if self.flags else None
-        return self.__class__(
-            signature=signature,
-            tag=self.tag,
-            end_tag=self.end_tag,
-            flags=flags,
-        )
+    # Create a function that uses the given signature
+    def validator(*args: Any, **kwargs: Any) -> None:
+        # Let Python do the signature validation
+        bound = signature.bind(*args, **kwargs)
+        bound.apply_defaults()
 
-    # For details see https://github.com/EmilStenstrom/django-components/pull/902
-    def validate_params(self, params: List["TagParam"]) -> Tuple[List[Any], Dict[str, Any]]:
-        """
-        Validates a list of TagParam objects against this tag spec's function signature.
+    validator.__signature__ = signature  # type: ignore[attr-defined]
 
-        The validation preserves the order of parameters as they appeared in the template.
-
-        Args:
-            params: List of TagParam objects representing the parameters as they appeared
-                   in the template tag.
-
-        Returns:
-            A tuple of (args, kwargs) containing the validated parameters.
-
-        Raises:
-            TypeError: If the parameters don't match the tag spec's rules.
-        """
-
-        # Create a function with this signature that captures the input and sorts
-        # it into args and kwargs
-        def validator(*args: Any, **kwargs: Any) -> Tuple[List[Any], Dict[str, Any]]:
-            # Let Python do the signature validation
-            bound = self.signature.bind(*args, **kwargs)
-            bound.apply_defaults()
-
-            # Extract positional args
-            pos_args: List[Any] = []
-            for name, param in self.signature.parameters.items():
-                # Case: `name` (positional)
-                if param.kind == inspect.Parameter.POSITIONAL_ONLY:
-                    pos_args.append(bound.arguments[name])
-                # Case: `*args`
-                elif param.kind == inspect.Parameter.VAR_POSITIONAL:
-                    pos_args.extend(bound.arguments[name])
-
-            # Extract kwargs
-            kw_args: Dict[str, Any] = {}
-            for name, param in self.signature.parameters.items():
-                # Case: `name=...`
-                if param.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY):
-                    if name in bound.arguments:
-                        kw_args[name] = bound.arguments[name]
-                # Case: `**kwargs`
-                elif param.kind == inspect.Parameter.VAR_KEYWORD:
-                    kw_args.update(bound.arguments[name])
-
-            return pos_args, kw_args
-
-        # Set the signature on the function
-        validator.__signature__ = self.signature  # type: ignore[attr-defined]
-
-        # Call the validator with our args and kwargs, in such a way to
-        # let the Python interpreter validate on repeated kwargs. E.g.
-        #
-        # ```
-        # args, kwargs = validator(
-        #     *call_args,
-        #     **call_kwargs[0],
-        #     **call_kwargs[1],
-        #     ...
-        # )
-        # ```
-        call_args = []
-        call_kwargs = []
-        for param in params:
-            if param.key is None:
-                call_args.append(param.value)
-            else:
-                call_kwargs.append({param.key: param.value})
-
-        # NOTE: Although we use `exec()` here, it's safe, because we control the input -
-        #       we make dynamic only the list index.
-        #
-        #       We MUST use the indices, because we can't trust neither the param keys nor values,
-        #       so we MUST NOT reference them directly in the exec script, otherwise we'd be at risk
-        #       of injection attack.
-        validator_call_script = "args, kwargs = validator(*call_args, "
-        for kw_index, _ in enumerate(call_kwargs):
-            validator_call_script += f"**call_kwargs[{kw_index}], "
-        validator_call_script += ")"
-
-        try:
-            # Create function namespace
-            namespace: Dict[str, Any] = {"validator": validator, "call_args": call_args, "call_kwargs": call_kwargs}
-            exec(validator_call_script, namespace)
-            new_args, new_kwargs = namespace["args"], namespace["kwargs"]
-            return new_args, new_kwargs
-        except TypeError as e:
-            # Enhance the error message
-            raise TypeError(f"Invalid parameters for tag '{self.tag}': {str(e)}") from None
-
-
-def with_tag_spec(tag_spec: TagSpec) -> Callable:
-    """
-    Decorator that binds a `tag_spec` to a template tag function,
-    there's a single source of truth for the tag spec, while also:
-
-    1. Making the tag spec available inside the tag function as `tag_spec`.
-    2. Making the tag spec accessible from outside as `_tag_spec` for documentation generation.
-    """
-
-    def decorator(fn: Callable) -> Any:
-        fn._tag_spec = tag_spec  # type: ignore[attr-defined]
-
-        @functools.wraps(fn)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return fn(*args, **kwargs, tag_spec=tag_spec)
-
-        return wrapper
-
-    return decorator
+    # Call the validator with our args and kwargs in the same order as they appeared
+    # in the template, to let the Python interpreter validate on repeated kwargs.
+    try:
+        apply_params_in_original_order(validator, params, extra_kwargs)
+    except TypeError as e:
+        raise TypeError(f"Invalid parameters for tag '{tag}': {str(e)}") from None
 
 
 @dataclass
@@ -180,64 +69,54 @@ class TagParam:
     value: Any
 
 
-class TagParams(NamedTuple):
-    """
-    TagParams holds the parsed tag attributes and the tag spec, so that, at render time,
-    when we are able to resolve the tag inputs with the given Context, we are also able to validate
-    the inputs against the tag spec.
+def resolve_params(
+    tag: str,
+    params: List[TagAttr],
+    context: Context,
+) -> List[TagParam]:
+    # First, resolve any spread operators. Spreads can introduce both positional
+    # args (e.g. `*args`) and kwargs (e.g. `**kwargs`).
+    resolved_params: List[TagParam] = []
+    for param in params:
+        resolved = param.value.resolve(context)
 
-    This is done so that the tag's public API (as defined in the tag spec) can be defined
-    next to the tag implementation. Otherwise the input validation would have to be defined by
-    the internal `Node` classes.
-    """
+        if param.value.spread:
+            if param.key:
+                raise ValueError(f"Cannot spread a value onto a key: {param.key}")
 
-    params: List[TagAttr]
-    tag_spec: TagSpec
-
-    def resolve(self, context: Context) -> Tuple[List[Any], Dict[str, Any]]:
-        # First, resolve any spread operators. Spreads can introduce both positional
-        # args (e.g. `*args`) and kwargs (e.g. `**kwargs`).
-        resolved_params: List[TagParam] = []
-        for param in self.params:
-            resolved = param.value.resolve(context)
-
-            if param.value.spread:
-                if param.key:
-                    raise ValueError(f"Cannot spread a value onto a key: {param.key}")
-
-                if isinstance(resolved, Mapping):
-                    for key, value in resolved.items():
-                        resolved_params.append(TagParam(key=key, value=value))
-                elif isinstance(resolved, Iterable):
-                    for value in resolved:
-                        resolved_params.append(TagParam(key=None, value=value))
-                else:
-                    raise ValueError(
-                        f"Cannot spread non-iterable value: '{param.value.serialize()}' resolved to {resolved}"
-                    )
+            if isinstance(resolved, Mapping):
+                for key, value in resolved.items():
+                    resolved_params.append(TagParam(key=key, value=value))
+            elif isinstance(resolved, Iterable):
+                for value in resolved:
+                    resolved_params.append(TagParam(key=None, value=value))
             else:
-                resolved_params.append(TagParam(key=param.key, value=resolved))
+                raise ValueError(
+                    f"Cannot spread non-iterable value: '{param.value.serialize()}' resolved to {resolved}"
+                )
+        else:
+            resolved_params.append(TagParam(key=param.key, value=resolved))
 
-        if self.tag_spec.tag == "html_attrs":
-            resolved_params = merge_repeated_kwargs(resolved_params)
-        resolved_params = process_aggregate_kwargs(resolved_params)
+    if tag == "html_attrs":
+        resolved_params = merge_repeated_kwargs(resolved_params)
+    resolved_params = process_aggregate_kwargs(resolved_params)
 
-        args, kwargs = self.tag_spec.validate_params(resolved_params)
-        return args, kwargs
+    return resolved_params
 
 
 # Data obj to give meaning to the parsed tag fields
 class ParsedTag(NamedTuple):
-    tag_name: str
     flags: Dict[str, bool]
-    params: TagParams
+    params: List[TagAttr]
     parse_body: Callable[[], NodeList]
 
 
 def parse_template_tag(
+    tag: str,
+    end_tag: Optional[str],
+    allowed_flags: Optional[List[str]],
     parser: Parser,
     token: Token,
-    tag_spec: TagSpec,
 ) -> ParsedTag:
     _, attrs = parse_tag(token.contents, parser)
 
@@ -246,13 +125,14 @@ def parse_template_tag(
     tag_name = tag_name_attr.serialize(omit_key=True)
 
     # Sanity check
-    if tag_name != tag_spec.tag:
-        raise TemplateSyntaxError(f"Start tag parser received tag '{tag_name}', expected '{tag_spec.tag}'")
+    if tag_name != tag:
+        raise TemplateSyntaxError(f"Start tag parser received tag '{tag_name}', expected '{tag}'")
 
     # There's 3 ways how we tell when a tag ends:
     # 1. If the tag contains `/` at the end, it's a self-closing tag (like `<div />`),
     #    and it doesn't have an end tag. In this case we strip the trailing slash.
-    # Otherwise, depending on the tag spec, the tag may be:
+    #
+    # Otherwise, depending on the end_tag, the tag may be:
     # 2. Block tag - With corresponding end tag, e.g. `{% endslot %}`
     # 3. Inlined tag - Without the end tag.
     last_token = attrs[-1].value if len(attrs) else None
@@ -260,9 +140,9 @@ def parse_template_tag(
         attrs.pop()
         is_inline = True
     else:
-        is_inline = not tag_spec.end_tag
+        is_inline = not end_tag
 
-    raw_params, flags = _extract_flags(tag_name, attrs, tag_spec.flags or [])
+    raw_params, flags = _extract_flags(tag_name, attrs, allowed_flags or [])
 
     def _parse_tag_body(parser: Parser, end_tag: str, inline: bool) -> NodeList:
         if inline:
@@ -273,14 +153,13 @@ def parse_template_tag(
         return body
 
     return ParsedTag(
-        tag_name=tag_name,
-        params=TagParams(params=raw_params, tag_spec=tag_spec),
+        params=raw_params,
         flags=flags,
         # NOTE: We defer parsing of the body, so we have the chance to call the tracing
         # loggers before the parsing. This is because, if the body contains any other
         # tags, it will trigger their tag handlers. So the code called AFTER
         # `parse_body()` is already after all the nested tags were processed.
-        parse_body=lambda: _parse_tag_body(parser, tag_spec.end_tag, is_inline) if tag_spec.end_tag else NodeList(),
+        parse_body=lambda: _parse_tag_body(parser, end_tag, is_inline) if end_tag else NodeList(),
     )
 
 
@@ -305,7 +184,7 @@ def _extract_flags(
         found_flags.add(value)
 
     flags_dict: Dict[str, bool] = {
-        # Base state, as defined in the tag spec
+        # Base state - all flags False
         **{flag: False for flag in (allowed_flags or [])},
         # Flags found on the template tag
         **{flag: True for flag in found_flags},
@@ -348,3 +227,99 @@ def merge_repeated_kwargs(params: List[TagParam]) -> List[TagParam]:
             params_by_key[param.key].value += " " + str(param.value)
 
     return resolved_params
+
+
+def apply_params_in_original_order(
+    fn: Callable[..., Any],
+    params: List[TagParam],
+    extra_kwargs: Optional[Dict[str, Any]] = None,
+) -> Any:
+    """
+    Apply a list of `TagParams` to another function, keeping the order of the params as they
+    appeared in the template.
+
+    If a template tag was called like this:
+
+    ```django
+    {% component key1=value1 arg1 arg2 key2=value2 key3=value3 %}
+    ```
+
+    Then `apply_params_in_original_order()` will call the `fn` like this:
+    ```
+    component(
+        key1=call_params[0], # kwarg 1
+        call_params[1], # arg 1
+        call_params[2], # arg 2
+        key2=call_params[3], # kwarg 2
+        key3=call_params[4], # kwarg 3
+        ...
+        **extra_kwargs,
+    )
+    ```
+
+    This way, this will be effectively the same as:
+
+    ```python
+    component(key1=value1, arg1, arg2, key2=value2, key3=value3, ..., **extra_kwargs)
+    ```
+
+    The problem this works around is that, dynamically, args and kwargs in Python
+    can be passed only with `*args` and `**kwargs`. But in such case, we're already
+    grouping all args and kwargs, which may not represent the original order of the params
+    as they appeared in the template tag.
+
+    If you need to pass kwargs that are not valid Python identifiers, e.g. `data-id`, `class`, `:href`,
+    you can pass them in via `extra_kwargs`. These kwargs will be exempt from the validation, and will be
+    passed to the function as a dictionary spread.
+    """
+    # Generate a script like so:
+    # ```py
+    # component(
+    #     key1=call_params[0],
+    #     call_params[1],
+    #     call_params[2],
+    #     key2=call_params[3],
+    #     key3=call_params[4],
+    #     ...
+    #     **extra_kwargs,
+    # )
+    # ```
+    #
+    # NOTE: Instead of grouping params into args and kwargs, we preserve the original order
+    #       of the params as they appeared in the template.
+    #
+    # NOTE: Because we use `eval()` here, we can't trust neither the param keys nor values.
+    #       So we MUST NOT reference them directly in the exec script, otherwise we'd be at risk
+    #       of injection attack.
+    #
+    #       Currently, the use of `eval()` is safe, because we control the input:
+    #       - List with indices is used so that we don't have to reference directly or try to print the values.
+    #         and instead refer to them as `call_params[0]`, `call_params[1]`, etc.
+    #       - List indices are safe, because we generate them.
+    #       - Kwarg names come from the user. But Python expects the kwargs to be valid identifiers.
+    #         So if a key is not a valid identifier, we'll raise an error. Before passing it to `eval()`
+    validator_call_script = "fn("
+    call_params: List[Union[List, Dict]] = []
+    for index, param in enumerate(params):
+        call_params.append(param.value)
+        if param.key is None:
+            validator_call_script += f"call_params[{index}], "
+        else:
+            validator_call_script += f"{param.key}=call_params[{index}], "
+
+    validator_call_script += "**extra_kwargs, "
+    validator_call_script += ")"
+
+    def applier(fn: Callable[..., Any]) -> Any:
+        locals = {
+            "fn": fn,
+            "call_params": call_params,
+            "extra_kwargs": extra_kwargs or {},
+        }
+        # NOTE: `eval()` changed API in Python 3.13
+        if sys.version_info >= (3, 13):
+            return eval(validator_call_script, globals={}, locals=locals)
+        else:
+            return eval(validator_call_script, {}, locals)
+
+    return applier(fn)
