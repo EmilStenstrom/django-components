@@ -596,7 +596,7 @@ def _format_tag_signature(node_cls: BaseNode) -> str:
     """
     # The signature returns a string like:
     # `(arg: Any, **kwargs: Any) -> None`
-    params_str = str(node_cls.signature)
+    params_str = str(node_cls._signature)
     # Remove the return type annotation, the `-> None` part
     params_str = params_str.rsplit("->", 1)[0]
     # Remove brackets around the params, to end up only with `arg: Any, **kwargs: Any`
