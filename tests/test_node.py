@@ -252,7 +252,7 @@ class NodeTests(BaseTestCase):
             template7.render(Context({}))
 
         # Extra kwargs - non-identifier or kwargs
-        template7 = Template(
+        template8 = Template(
             """
             {% load component_tags %}
             {% mytag 'John' msg='Hello' mode='custom' data-id=123 class="pa-4" @click.once="myVar" %}
@@ -261,7 +261,17 @@ class NodeTests(BaseTestCase):
         with self.assertRaisesMessage(
             TypeError, "Invalid parameters for tag 'mytag': got an unexpected keyword argument 'data-id'"
         ):
-            template7.render(Context({}))
+            template8.render(Context({}))
+
+        # Extra arg after special kwargs
+        template9 = Template(
+            """
+            {% load component_tags %}
+            {% mytag data-id=123 'John' msg='Hello' %}
+        """
+        )
+        with self.assertRaisesMessage(SyntaxError, "positional argument follows keyword argument"):
+            template9.render(Context({}))
 
         TestNode1.unregister(component_tags.register)
 
@@ -505,7 +515,7 @@ class DecoratorTests(BaseTestCase):
             template7.render(Context({}))
 
         # Extra kwargs - non-identifier or kwargs
-        template7 = Template(
+        template8 = Template(
             """
             {% load component_tags %}
             {% mytag 'John' msg='Hello' mode='custom' data-id=123 class="pa-4" @click.once="myVar" %}
@@ -514,7 +524,17 @@ class DecoratorTests(BaseTestCase):
         with self.assertRaisesMessage(
             TypeError, "Invalid parameters for tag 'mytag': got an unexpected keyword argument 'data-id'"
         ):
-            template7.render(Context({}))
+            template8.render(Context({}))
+
+        # Extra arg after special kwargs
+        template9 = Template(
+            """
+            {% load component_tags %}
+            {% mytag data-id=123 'John' msg='Hello' %}
+        """
+        )
+        with self.assertRaisesMessage(SyntaxError, "positional argument follows keyword argument"):
+            template9.render(Context({}))
 
         render._node.unregister(component_tags.register)  # type: ignore[attr-defined]
 

@@ -138,11 +138,23 @@ class NodeMeta(type):
             # See https://github.com/EmilStenstrom/django-components/discussions/900#discussioncomment-11859970
             resolved_params_without_invalid_kwargs = []
             invalid_kwargs = {}
+            did_see_special_kwarg = False
             for resolved_param in resolved_params:
                 key = resolved_param.key
-                if key is not None and (not key.isidentifier() or keyword.iskeyword(key)):
-                    invalid_kwargs[key] = resolved_param.value
+                if key is not None:
+                    # Case: Special kwargs
+                    if not key.isidentifier() or keyword.iskeyword(key):
+                        # NOTE: Since these keys are not part of signature validation,
+                        # we have to check ourselves if any args follow them.
+                        invalid_kwargs[key] = resolved_param.value
+                        did_see_special_kwarg = True
+                    else:
+                        # Case: Regular kwargs
+                        resolved_params_without_invalid_kwargs.append(resolved_param)
                 else:
+                    # Case: Regular positional args
+                    if did_see_special_kwarg:
+                        raise SyntaxError("positional argument follows keyword argument")
                     resolved_params_without_invalid_kwargs.append(resolved_param)
 
             # Validate the params against the signature
