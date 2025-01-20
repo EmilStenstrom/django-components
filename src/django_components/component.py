@@ -1341,8 +1341,7 @@ class ComponentNode(BaseNode):
         subcls: Type[ComponentNode] = type(subcls_name, (cls,), {"tag": start_tag, "end_tag": end_tag})
 
         # Call `BaseNode.parse()` as if with the context of subcls.
-        node: ComponentNode = super().parse.__func__(  # type: ignore[attr-defined]
-            subcls,
+        node: ComponentNode = super(cls, subcls).parse(  # type: ignore[attr-defined]
             parser,
             token,
             registry=registry,
