@@ -62,7 +62,7 @@ cssselect2==0.7.0
     # via cairosvg
 defusedxml==0.7.1
     # via cairosvg
-django==5.1.4
+django==5.1.5
     # via hatch.envs.docs
 ghp-import==2.1.0
     # via mkdocs
@@ -70,7 +70,7 @@ gitdb==4.0.12
     # via gitpython
 gitpython==3.1.44
     # via mkdocs-git-revision-date-localized-plugin
-griffe==1.5.4
+griffe==1.5.5
     # via mkdocstrings-python
 htmlmin2==0.1.13
     # via mkdocs-minify-plugin
@@ -141,7 +141,7 @@ mkdocs-include-markdown-plugin==7.1.2
     # via hatch.envs.docs
 mkdocs-literate-nav==0.6.1
     # via hatch.envs.docs
-mkdocs-material==9.5.49
+mkdocs-material==9.5.50
     # via hatch.envs.docs
 mkdocs-material-extensions==1.3.1
     # via mkdocs-material
