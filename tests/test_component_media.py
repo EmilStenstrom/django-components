@@ -108,7 +108,7 @@ class MainMediaTest(BaseTestCase):
 
         self.assertInHTML(
             """
-            <form data-djc-id-a1bc3f method="post">
+            <form data-djc-id-a1bc41 method="post">
                 <input name="variable" type="text" value="test"/>
                 <input type="submit"/>
             </form>
@@ -184,7 +184,7 @@ class MainMediaTest(BaseTestCase):
         rendered = render_dependencies(rendered_raw)
 
         self.assertIn(
-            "Variable: <strong data-djc-id-a1bc3f>test</strong>",
+            "Variable: <strong data-djc-id-a1bc41>test</strong>",
             rendered,
         )
         self.assertInHTML(
@@ -915,7 +915,7 @@ class MediaRelativePathTests(BaseTestCase):
 
             self.assertInHTML(
                 """
-                <form data-djc-id-a1bc3f method="post">
+                <form data-djc-id-a1bc41 method="post">
                     <input type="text" name="variable" value="test">
                     <input type="submit">
                 </form>

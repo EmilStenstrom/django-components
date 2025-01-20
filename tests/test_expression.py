@@ -745,10 +745,7 @@ class SpreadOperatorTests(BaseTestCase):
 
         template1 = Template(template_str1)
 
-        with self.assertRaisesMessage(
-            TypeError,
-            "got multiple values for keyword argument 'x'",
-        ):
+        with self.assertRaisesMessage(SyntaxError, "keyword argument repeated"):
             template1.render(context)
 
         # But, similarly to python, we can merge multiple **kwargs by instead

@@ -1,42 +1,87 @@
-from typing import Dict, Optional, Tuple
+from typing import Any
 
 from django.template import Context
-from django.template.base import NodeList
 from django.utils.safestring import SafeString
 
 from django_components.context import set_provided_context_var
 from django_components.node import BaseNode
-from django_components.util.logger import trace_msg
-from django_components.util.template_tag import TagParams
-
-PROVIDE_NAME_KWARG = "name"
 
 
 class ProvideNode(BaseNode):
     """
-    Implementation of the `{% provide %}` tag.
-    For more info see `Component.inject`.
+    The "provider" part of the [provide / inject feature](../../concepts/advanced/provide_inject).
+    Pass kwargs to this tag to define the provider's data.
+    Any components defined within the `{% provide %}..{% endprovide %}` tags will be able to access this data
+    with [`Component.inject()`](../api#django_components.Component.inject).
+
+    This is similar to React's [`ContextProvider`](https://react.dev/learn/passing-data-deeply-with-context),
+    or Vue's [`provide()`](https://vuejs.org/guide/components/provide-inject).
+
+    **Args:**
+
+    - `name` (str, required): Provider name. This is the name you will then use in
+        [`Component.inject()`](../api#django_components.Component.inject).
+    - `**kwargs`: Any extra kwargs will be passed as the provided data.
+
+    **Example:**
+
+    Provide the "user_data" in parent component:
+
+    ```python
+    @register("parent")
+    class Parent(Component):
+        template = \"\"\"
+          <div>
+            {% provide "user_data" user=user %}
+              {% component "child" / %}
+            {% endprovide %}
+          </div>
+        \"\"\"
+
+        def get_context_data(self, user: User):
+            return {
+                "user": user,
+            }
+    ```
+
+    Since the "child" component is used within the `{% provide %} / {% endprovide %}` tags,
+    we can request the "user_data" using `Component.inject("user_data")`:
+
+    ```python
+    @register("child")
+    class Child(Component):
+        template = \"\"\"
+          <div>
+            User is: {{ user }}
+          </div>
+        \"\"\"
+
+        def get_context_data(self):
+            user = self.inject("user_data").user
+            return {
+                "user": user,
+            }
+    ```
+
+    Notice that the keys defined on the `{% provide %}` tag are then accessed as attributes
+    when accessing them with [`Component.inject()`](../api#django_components.Component.inject).
+
+    ✅ Do this
+    ```python
+    user = self.inject("user_data").user
+    ```
+
+    ❌ Don't do this
+    ```python
+    user = self.inject("user_data")["user"]
+    ```
     """
 
-    def __init__(
-        self,
-        nodelist: NodeList,
-        params: TagParams,
-        trace_id: str,
-        node_id: Optional[str] = None,
-    ):
-        super().__init__(nodelist=nodelist, params=params, node_id=node_id)
+    tag = "provide"
+    end_tag = "endprovide"
+    allowed_flags = []
 
-        self.trace_id = trace_id
-
-    def __repr__(self) -> str:
-        return f"<Provide Node: {self.node_id}. Contents: {repr(self.nodelist)}>"
-
-    def render(self, context: Context) -> SafeString:
-        trace_msg("RENDR", "PROVIDE", self.trace_id, self.node_id)
-
-        name, kwargs = self.resolve_kwargs(context)
-
+    def render(self, context: Context, name: str, **kwargs: Any) -> SafeString:
         # NOTE: The "provided" kwargs are meant to be shared privately, meaning that components
         # have to explicitly opt in by using the `Component.inject()` method. That's why we don't
         # add the provided kwargs into the Context.
@@ -46,14 +91,4 @@ class ProvideNode(BaseNode):
 
             output = self.nodelist.render(context)
 
-        trace_msg("RENDR", "PROVIDE", self.trace_id, self.node_id, msg="...Done!")
         return output
-
-    def resolve_kwargs(self, context: Context) -> Tuple[str, Dict[str, Optional[str]]]:
-        args, kwargs = self.params.resolve(context)
-        name = kwargs.pop(PROVIDE_NAME_KWARG, None)
-
-        if not name:
-            raise RuntimeError("Provide tag kwarg 'name' is missing")
-
-        return (name, kwargs)

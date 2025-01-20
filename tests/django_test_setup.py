@@ -22,6 +22,11 @@ def setup_test_config(
                     "tests/templates/",
                     "tests/components/",  # Required for template relative imports in tests
                 ],
+                "OPTIONS": {
+                    "builtins": [
+                        "django_components.templatetags.component_tags",
+                    ]
+                },
             }
         ],
         "COMPONENTS": {

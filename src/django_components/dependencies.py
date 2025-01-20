@@ -28,11 +28,13 @@ from asgiref.sync import iscoroutinefunction, markcoroutinefunction
 from django.forms import Media
 from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, HttpResponseNotFound, StreamingHttpResponse
 from django.http.response import HttpResponseBase
+from django.template import Context, TemplateSyntaxError
 from django.templatetags.static import static
 from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 
+from django_components.node import BaseNode
 from django_components.util.html import SoupNode
 from django_components.util.misc import get_import_path, is_nonempty_str
 
@@ -1036,3 +1038,66 @@ class ComponentDependencyMiddleware:
             response.content = render_dependencies(response.content, type="document")
 
         return response
+
+
+#########################################################
+# 6. Template tags
+#########################################################
+
+
+def _component_dependencies(type: Literal["js", "css"]) -> SafeString:
+    """Marks location where CSS link and JS script tags should be rendered."""
+    if type == "css":
+        placeholder = CSS_DEPENDENCY_PLACEHOLDER
+    elif type == "js":
+        placeholder = JS_DEPENDENCY_PLACEHOLDER
+    else:
+        raise TemplateSyntaxError(
+            f"Unknown dependency type in {{% component_dependencies %}}. Must be one of 'css' or 'js', got {type}"
+        )
+
+    return mark_safe(placeholder)
+
+
+class ComponentCssDependenciesNode(BaseNode):
+    """
+    Marks location where CSS link tags should be rendered after the whole HTML has been generated.
+
+    Generally, this should be inserted into the `<head>` tag of the HTML.
+
+    If the generated HTML does NOT contain any `{% component_css_dependencies %}` tags, CSS links
+    are by default inserted into the `<head>` tag of the HTML. (See
+    [JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
+
+    Note that there should be only one `{% component_css_dependencies %}` for the whole HTML document.
+    If you insert this tag multiple times, ALL CSS links will be duplicately inserted into ALL these places.
+    """
+
+    tag = "component_css_dependencies"
+    end_tag = None  # inline-only
+    allowed_flags = []
+
+    def render(self, context: Context) -> str:
+        return _component_dependencies("css")
+
+
+class ComponentJsDependenciesNode(BaseNode):
+    """
+    Marks location where JS link tags should be rendered after the whole HTML has been generated.
+
+    Generally, this should be inserted at the end of the `<body>` tag of the HTML.
+
+    If the generated HTML does NOT contain any `{% component_js_dependencies %}` tags, JS scripts
+    are by default inserted at the end of the `<body>` tag of the HTML. (See
+    [JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
+
+    Note that there should be only one `{% component_js_dependencies %}` for the whole HTML document.
+    If you insert this tag multiple times, ALL JS scripts will be duplicately inserted into ALL these places.
+    """
+
+    tag = "component_js_dependencies"
+    end_tag = None  # inline-only
+    allowed_flags = []
+
+    def render(self, context: Context) -> str:
+        return _component_dependencies("js")
