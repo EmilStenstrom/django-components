@@ -97,7 +97,7 @@ soupsieve==2.6
     # via beautifulsoup4
 sqlparse==0.5.2
     # via django
-tox==4.23.2
+tox==4.24.1
     # via -r requirements-dev.in
 types-requests==2.32.0.20241016
     # via -r requirements-dev.in
