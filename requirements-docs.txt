@@ -221,7 +221,7 @@ tinycss2==1.4.0
     # via
     #   cairosvg
     #   cssselect2
-tzdata==2024.2
+tzdata==2025.1
     # via django
 urllib3==2.3.0
     # via requests
