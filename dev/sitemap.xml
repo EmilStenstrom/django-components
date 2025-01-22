@@ -201,6 +201,10 @@
          <lastmod>2025-01-22</lastmod>
     </url>
     <url>
+         <loc>https://django-components.github.io/django-components/latest/reference/signals/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
          <loc>https://django-components.github.io/django-components/latest/reference/tag_formatters/</loc>
          <lastmod>2025-01-22</lastmod>
     </url>
