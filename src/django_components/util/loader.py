@@ -184,7 +184,7 @@ def get_component_files(suffix: Optional[str] = None) -> List[ComponentFileEntry
     # For for apps, the directories may be outside of the project, e.g. in case of third party
     # apps. So we have to resolve the python import path relative to the package name / the root
     # import path for the app.
-    # See https://github.com/EmilStenstrom/django-components/issues/669
+    # See https://github.com/django-components/django-components/issues/669
     for conf in apps.get_app_configs():
         for app_dir in app_settings.APP_DIRS:
             comps_path = Path(conf.path).joinpath(app_dir)

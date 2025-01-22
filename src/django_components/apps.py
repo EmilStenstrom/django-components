@@ -21,7 +21,7 @@ class ComponentsConfig(AppConfig):
 
         # NOTE: This monkeypatch is applied here, before Django processes any requests.
         #       To make django-components work with django-debug-toolbar-template-profiler
-        #       See https://github.com/EmilStenstrom/django-components/discussions/819
+        #       See https://github.com/django-components/django-components/discussions/819
         monkeypatch_template_cls(Template)
 
         # Import modules set in `COMPONENTS.libraries` setting
@@ -31,7 +31,7 @@ class ComponentsConfig(AppConfig):
             autodiscover()
 
         # Auto-reload Django dev server when any component files changes
-        # See https://github.com/EmilStenstrom/django-components/discussions/567#discussioncomment-10273632
+        # See https://github.com/django-components/django-components/discussions/567#discussioncomment-10273632
         if app_settings.RELOAD_ON_FILE_CHANGE:
             _watch_component_files_for_autoreload()
 
@@ -56,7 +56,7 @@ class ComponentsConfig(AppConfig):
         registry.register(app_settings.DYNAMIC_COMPONENT_NAME, DynamicComponent)
 
 
-# See https://github.com/EmilStenstrom/django-components/issues/586#issue-2472678136
+# See https://github.com/django-components/django-components/issues/586#issue-2472678136
 def _watch_component_files_for_autoreload() -> None:
     from django_components.util.loader import get_component_dirs
 

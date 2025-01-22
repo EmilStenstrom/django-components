@@ -6,7 +6,7 @@ from django.utils.html import format_html, html_safe
 from django_components import Component, register
 
 
-# Format as mentioned in https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
+# Format as mentioned in https://github.com/django-components/django-components/issues/522#issuecomment-2173577094
 @html_safe
 class PathObj:
     def __init__(self, static_path: str) -> None:

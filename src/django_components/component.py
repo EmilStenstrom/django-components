@@ -981,12 +981,12 @@ class Component(
 
         # Allow to provide a dict instead of Context
         # NOTE: This if/else is important to avoid nested Contexts,
-        # See https://github.com/EmilStenstrom/django-components/issues/414
+        # See https://github.com/django-components/django-components/issues/414
         if not isinstance(context, Context):
             context = RequestContext(request, context) if request else Context(context)
 
         # Required for compatibility with Django's {% extends %} tag
-        # See https://github.com/EmilStenstrom/django-components/pull/859
+        # See https://github.com/django-components/django-components/pull/859
         context.render_context.push({BLOCK_CONTEXT_KEY: context.render_context.get(BLOCK_CONTEXT_KEY, {})})
 
         # By adding the current input to the stack, we temporarily allow users
@@ -1045,7 +1045,7 @@ class Component(
                     _COMPONENT_SLOT_CTX_CONTEXT_KEY: component_slot_ctx,
                     _REGISTRY_CONTEXT_KEY: self.registry,
                     # NOTE: Public API for variables accessible from within a component's template
-                    # See https://github.com/EmilStenstrom/django-components/issues/280#issuecomment-2081180940
+                    # See https://github.com/django-components/django-components/issues/280#issuecomment-2081180940
                     "component_vars": ComponentVars(
                         is_filled=is_filled,
                     ),
@@ -1400,8 +1400,8 @@ def _prepare_template(
     with context.update(context_data):
         # Associate the newly-created Context with a Template, otherwise we get
         # an error when we try to use `{% include %}` tag inside the template?
-        # See https://github.com/EmilStenstrom/django-components/issues/580
-        # And https://github.com/EmilStenstrom/django-components/issues/634
+        # See https://github.com/django-components/django-components/issues/580
+        # And https://github.com/django-components/django-components/issues/634
         template = component._get_template(context)
 
         if not is_template_cls_patched(template):
@@ -1414,7 +1414,7 @@ def _prepare_template(
 
         # Set `Template._djc_is_component_nested` based on whether we're currently INSIDE
         # the `{% extends %}` tag.
-        # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
+        # Part of fix for https://github.com/django-components/django-components/issues/508
         # See django_monkeypatch.py
         template._djc_is_component_nested = bool(context.render_context.get(BLOCK_CONTEXT_KEY))
 

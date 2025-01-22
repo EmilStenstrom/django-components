@@ -5,7 +5,7 @@ weight: 7
 
 ## Install locally and run the tests
 
-Start by forking the project by clicking the **Fork button** up in the right corner in the [GitHub](https://github.com/EmilStenstrom/django-components).
+Start by forking the project by clicking the **Fork button** up in the right corner in the [GitHub](https://github.com/django-components/django-components).
 This makes a copy of the repository in your own name. Now you can clone this repository locally and start adding features:
 
 ```sh
@@ -58,15 +58,15 @@ tox
 
 How do you check that your changes to django-components project will work in an actual Django project?
 
-Use the [sampleproject](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject/) demo project to validate the changes:
+Use the [sampleproject](https://github.com/django-components/django-components/tree/master/sampleproject/) demo project to validate the changes:
 
-1. Navigate to [sampleproject](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject/) directory:
+1. Navigate to [sampleproject](https://github.com/django-components/django-components/tree/master/sampleproject/) directory:
 
     ```sh
     cd sampleproject
     ```
 
-2. Install dependencies from the [requirements.txt](https://github.com/EmilStenstrom/django-components/blob/master/sampleproject/requirements.txt) file:
+2. Install dependencies from the [requirements.txt](https://github.com/django-components/django-components/blob/master/sampleproject/requirements.txt) file:
 
     ```sh
     pip install -r requirements.txt
@@ -138,7 +138,7 @@ To publish the package to PyPI, use `twine` ([See Python user guide](https://pac
 twine upload --repository pypi dist/* -u __token__ -p <PyPI_TOKEN>
 ```
 
-[See the full workflow here.](https://github.com/EmilStenstrom/django-components/discussions/557#discussioncomment-10179141)
+[See the full workflow here.](https://github.com/django-components/django-components/discussions/557#discussioncomment-10179141)
 
 ## Development guides
 

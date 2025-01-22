@@ -64,7 +64,7 @@ that accept a list of items via a slot.
 
 In the example below, each `tab_item` component will be rendered on a separate tab page, but they are all defined in the default slot of the `tabs` component.
 
-[See here for how it was done](https://github.com/EmilStenstrom/django-components/discussions/540)
+[See here for how it was done](https://github.com/django-components/django-components/discussions/540)
 
 ```django
 {% component "tabs" %}

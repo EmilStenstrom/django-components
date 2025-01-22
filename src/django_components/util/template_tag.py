@@ -16,7 +16,7 @@ from django_components.expression import process_aggregate_kwargs
 from django_components.util.tag_parser import TagAttr, parse_tag
 
 
-# For details see https://github.com/EmilStenstrom/django-components/pull/902#discussion_r1913611633
+# For details see https://github.com/django-components/django-components/pull/902#discussion_r1913611633
 # and following comments
 def validate_params(
     tag: str,

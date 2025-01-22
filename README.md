@@ -1,8 +1,15 @@
-# <img src="https://raw.githubusercontent.com/EmilStenstrom/django-components/master/logo/logo-black-on-white.svg" alt="django-components" style="max-width: 100%; background: white; color: black;">
+# <img src="https://raw.githubusercontent.com/django-components/django-components/master/logo/logo-black-on-white.svg" alt="django-components" style="max-width: 100%; background: white; color: black;">
 
-[![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://github.com/EmilStenstrom/django-components/blob/master/LICENSE/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EmilStenstrom/django-components/tests.yml)](https://github.com/EmilStenstrom/django-components/actions/workflows/tests.yml)
+[![PyPI - Version](https://img.shields.io/pypi/v/django-components)](https://pypi.org/project/django-components/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-components)](https://pypi.org/project/django-components/) [![PyPI - License](https://img.shields.io/pypi/l/django-components)](https://github.com/django-components/django-components/blob/master/LICENSE/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/django-components)](https://pypistats.org/packages/django-components) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/django-components/django-components/tests.yml)](https://github.com/django-components/django-components/actions/workflows/tests.yml)
 
-### <table><td>[Read the full documentation](https://EmilStenstrom.github.io/django-components/latest/)</td></table>
+### <table><td>[Read the full documentation](https://django-components.github.io/django-components/latest/)</td></table>
+
+<!-- TODO - Remove this banner after a month(?), so March 2025 -->
+> ⚠️ Attention ⚠️ - We migrated from `EmilStenstrom/django-components` to `django-components/django-components`.
+>
+> **Repo name and documentation URL changed. Package name remains the same.**
+>
+> Report any broken links links in [#922](https://github.com/django-components/django-components/issues/922).
 
 Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
 
@@ -127,13 +134,13 @@ And this is what gets rendered:
 <div class="calendar-component">Today's date is <span>2024-11-06</span></div>
 ```
 
-### <table><td>[Read the full documentation](https://EmilStenstrom.github.io/django-components/latest/)</td></table>
+### <table><td>[Read the full documentation](https://django-components.github.io/django-components/latest/)</td></table>
 
-... or jump right into the code, [check out the example project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject))
+... or jump right into the code, [check out the example project](https://github.com/django-components/django-components/tree/master/sampleproject))
 
 ## Release notes
 
-Read the [Release Notes](https://github.com/EmilStenstrom/django-components/tree/master/CHANGELOG.md)
+Read the [Release Notes](https://github.com/django-components/django-components/tree/master/CHANGELOG.md)
 to see the latest features and fixes.
 
 ## Community examples
@@ -146,6 +153,6 @@ One of our goals with `django-components` is to make it easy to share components
 
 ## Contributing and development
 
-Get involved or sponsor this project - [See here](https://emilstenstrom.github.io/django-components/dev/overview/contributing/)
+Get involved or sponsor this project - [See here](https://django-components.github.io/django-components/dev/overview/contributing/)
 
-Running django-components locally for development - [See here](https://emilstenstrom.github.io/django-components/dev/overview/development/)
+Running django-components locally for development - [See here](https://django-components.github.io/django-components/dev/overview/development/)

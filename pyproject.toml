@@ -35,10 +35,10 @@ license = {text = "MIT"}
 
 # See https://docs.pypi.org/project_metadata/#icons
 [project.urls]
-Homepage = "https://github.com/EmilStenstrom/django-components/"
-Documentation = "https://emilstenstrom.github.io/django-components/"
-Changelog = "https://emilstenstrom.github.io/django-components/latest/release_notes/"
-Issues = "https://github.com/EmilStenstrom/django-components/issues"
+Homepage = "https://github.com/django-components/django-components/"
+Documentation = "https://django-components.github.io/django-components/"
+Changelog = "https://django-components.github.io/django-components/latest/release_notes/"
+Issues = "https://github.com/django-components/django-components/issues"
 Donate = "https://github.com/sponsors/EmilStenstrom"
 
 

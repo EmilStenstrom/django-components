@@ -2,12 +2,18 @@
 
 ## v0.125
 
+⚠️ Attention ⚠️ - We migrated from `EmilStenstrom/django-components` to `django-components/django-components`.
+
+**Repo name and documentation URL changed. Package name remains the same.**
+
+If you see any broken links or other issues, please report them in [#922](https://github.com/django-components/django-components/issues/922).
+
 #### Feat
 
 - `@template_tag` and `BaseNode` - A decorator and a class that allow you to define
   custom template tags that will behave similarly to django-components' own template tags.
 
-  Read more on [Template tags](https://EmilStenstrom.github.io/django-components/0.125/concepts/advanced/template_tags/).
+  Read more on [Template tags](https://django-components.github.io/django-components/0.125/concepts/advanced/template_tags/).
 
   Template tags defined with `@template_tag` and `BaseNode` will have the following features:
 
@@ -79,7 +85,7 @@
     - The JS/CSS defined in `Component.js/css` or `Component.js/css_file` is the "main" JS/CSS
     - The JS/CSS defined in `Component.Media.js/css` are secondary or additional
 
-    See the updated ["Getting Started" tutorial](https://EmilStenstrom.github.io/django-components/0.124/getting_started/adding_js_and_css/)
+    See the updated ["Getting Started" tutorial](https://django-components.github.io/django-components/0.124/getting_started/adding_js_and_css/)
 
 #### Refactor
 
@@ -100,7 +106,7 @@
     1. Try to access component's HTML / CSS / JS, or
     2. Render the component.
 
-    Read more on [Accessing component's HTML / JS / CSS](https://EmilStenstrom.github.io/django-components/0.124/concepts/fundamentals/defining_js_css_html_files/#customize-how-paths-are-rendered-into-html-tags).
+    Read more on [Accessing component's HTML / JS / CSS](https://django-components.github.io/django-components/0.124/concepts/fundamentals/defining_js_css_html_files/#customize-how-paths-are-rendered-into-html-tags).
 
 - Component inheritance:
 
@@ -116,19 +122,19 @@
 
 #### Fix
 
-- Fix edge cases around rendering components whose templates used the `{% extends %}` template tag ([#859](https://github.com/EmilStenstrom/django-components/pull/859))
+- Fix edge cases around rendering components whose templates used the `{% extends %}` template tag ([#859](https://github.com/django-components/django-components/pull/859))
 
 ## v0.122
 
 #### Feat
 
-- Add support for HTML fragments. HTML fragments can be rendered by passing `type="fragment"` to `Component.render()` or `Component.render_to_response()`. Read more on how to [use HTML fragments with HTMX, AlpineJS, or vanillaJS](https://EmilStenstrom.github.io/django-components/latest/concepts/advanced/html_tragments).
+- Add support for HTML fragments. HTML fragments can be rendered by passing `type="fragment"` to `Component.render()` or `Component.render_to_response()`. Read more on how to [use HTML fragments with HTMX, AlpineJS, or vanillaJS](https://django-components.github.io/django-components/latest/concepts/advanced/html_tragments).
 
 ## v0.121
 
 #### Fix
 
-- Fix the use of Django template filters (`|lower:"etc"`) with component inputs [#855](https://github.com/EmilStenstrom/django-components/pull/855).
+- Fix the use of Django template filters (`|lower:"etc"`) with component inputs [#855](https://github.com/django-components/django-components/pull/855).
 
 ## v0.120
 
@@ -136,23 +142,23 @@
 
 #### Fix
 
-- Fix the use of translation strings `_("bla")` as inputs to components [#849](https://github.com/EmilStenstrom/django-components/pull/849).
+- Fix the use of translation strings `_("bla")` as inputs to components [#849](https://github.com/django-components/django-components/pull/849).
 
 ## v0.119
 
-⚠️ Attention ⚠️ - This release introduced bugs [#849](https://github.com/EmilStenstrom/django-components/pull/849), [#855](https://github.com/EmilStenstrom/django-components/pull/855). Please update to v0.121.
+⚠️ Attention ⚠️ - This release introduced bugs [#849](https://github.com/django-components/django-components/pull/849), [#855](https://github.com/django-components/django-components/pull/855). Please update to v0.121.
 
 #### Fix
 
 - Fix compatibility with custom subclasses of Django's `Template` that need to access
-  `origin` or other initialization arguments. (https://github.com/EmilStenstrom/django-components/pull/828)
+  `origin` or other initialization arguments. (https://github.com/django-components/django-components/pull/828)
 
 #### Refactor
 
 - Compatibility with `django-debug-toolbar-template-profiler`:
-  - Monkeypatching of Django's `Template` now happens at `AppConfig.ready()` (https://github.com/EmilStenstrom/django-components/pull/825)
+  - Monkeypatching of Django's `Template` now happens at `AppConfig.ready()` (https://github.com/django-components/django-components/pull/825)
 
-- Internal parsing of template tags tag was updated. No API change. (https://github.com/EmilStenstrom/django-components/pull/827)
+- Internal parsing of template tags tag was updated. No API change. (https://github.com/django-components/django-components/pull/827)
 
 ## v0.118
 
@@ -187,7 +193,7 @@
 
 ## v0.116
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 #### Fix
 
@@ -234,7 +240,7 @@
 
 ## v0.115
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 #### Fix
 
@@ -243,7 +249,7 @@
 
 ## v0.114
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 #### Fix
 
@@ -252,7 +258,7 @@
 
 ## v0.113
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 #### Fix
 
@@ -260,7 +266,7 @@
 
 ## v0.112
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 #### Fix
 
@@ -268,7 +274,7 @@
 
 ## v0.111
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 #### Fix
 
@@ -277,7 +283,7 @@
 
 ## 🚨📢 v0.110
 
-⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/EmilStenstrom/django-components/issues/791) and [#789](https://github.com/EmilStenstrom/django-components/issues/789) and [#818](https://github.com/EmilStenstrom/django-components/issues/818).
+⚠️ Attention ⚠️ - Please update to v0.117 to fix known bugs. See [#791](https://github.com/django-components/django-components/issues/791) and [#789](https://github.com/django-components/django-components/issues/789) and [#818](https://github.com/django-components/django-components/issues/818).
 
 ### General
 
@@ -286,7 +292,7 @@
 - Installation changes:
 
     - If your components include JS or CSS, you now must use the middleware and add django-components' URLs to your `urlpatterns`
-    (See "[Adding support for JS and CSS](https://github.com/EmilStenstrom/django-components#adding-support-for-js-and-css)")
+    (See "[Adding support for JS and CSS](https://github.com/django-components/django-components#adding-support-for-js-and-css)")
 
 - Component typing signature changed from
 
@@ -337,7 +343,7 @@ importing them.
 
 #### Refactor
 
-- For advanced use cases, use can omit the middleware and instead manage component JS and CSS dependencies yourself with [`render_dependencies`](https://github.com/EmilStenstrom/django-components#render_dependencies-and-deep-dive-into-rendering-js--css-without-the-middleware)
+- For advanced use cases, use can omit the middleware and instead manage component JS and CSS dependencies yourself with [`render_dependencies`](https://github.com/django-components/django-components#render_dependencies-and-deep-dive-into-rendering-js--css-without-the-middleware)
 
 - The [`ComponentRegistry`](../api#django_components.ComponentRegistry) settings [`RegistrySettings`](../api#django_components.RegistrySettings)
   were lowercased to align with the global settings:
@@ -607,15 +613,15 @@ importing them.
 
 - Installation changes:
 
-    - Instead of defining component directories in `STATICFILES_DIRS`, set them to [`COMPONENTS.dirs`](https://github.com/EmilStenstrom/django-components#dirs).
+    - Instead of defining component directories in `STATICFILES_DIRS`, set them to [`COMPONENTS.dirs`](https://github.com/django-components/django-components#dirs).
     - You now must define `STATICFILES_FINDERS`
 
-    - [See here how to migrate your settings.py](https://github.com/EmilStenstrom/django-components/blob/master/docs/migrating_from_safer_staticfiles.md)
+    - [See here how to migrate your settings.py](https://github.com/django-components/django-components/blob/master/docs/migrating_from_safer_staticfiles.md)
 
 #### Feat
 
 - Beside the top-level `/components` directory, you can now define also app-level components dirs, e.g. `[app]/components`
-  (See [`COMPONENTS.app_dirs`](https://github.com/EmilStenstrom/django-components#app_dirs)).
+  (See [`COMPONENTS.app_dirs`](https://github.com/django-components/django-components#app_dirs)).
 
 #### Refactor
 
@@ -625,7 +631,7 @@ importing them.
 
 #### Fix
 
-- Fixed template caching. You can now also manually create cached templates with [`cached_template()`](https://github.com/EmilStenstrom/django-components#template_cache_size---tune-the-template-cache)
+- Fixed template caching. You can now also manually create cached templates with [`cached_template()`](https://github.com/django-components/django-components#template_cache_size---tune-the-template-cache)
 
 #### Refactor
 
@@ -640,9 +646,9 @@ importing them.
 
 #### Feat
 
-- Run-time type validation for Python 3.11+ - If the `Component` class is typed, e.g. `Component[Args, Kwargs, ...]`, the args, kwargs, slots, and data are validated against the given types. (See [Runtime input validation with types](https://github.com/EmilStenstrom/django-components#runtime-input-validation-with-types))
+- Run-time type validation for Python 3.11+ - If the `Component` class is typed, e.g. `Component[Args, Kwargs, ...]`, the args, kwargs, slots, and data are validated against the given types. (See [Runtime input validation with types](https://github.com/django-components/django-components#runtime-input-validation-with-types))
 
-- Render hooks - Set `on_render_before` and `on_render_after` methods on `Component` to intercept or modify the template or context before rendering, or the rendered result afterwards. (See [Component hooks](https://github.com/EmilStenstrom/django-components#component-hooks))
+- Render hooks - Set `on_render_before` and `on_render_after` methods on `Component` to intercept or modify the template or context before rendering, or the rendered result afterwards. (See [Component hooks](https://github.com/django-components/django-components#component-hooks))
 
 - `component_vars.is_filled` context variable can be accessed from within `on_render_before` and `on_render_after` hooks as `self.is_filled.my_slot`
 
@@ -650,7 +656,7 @@ importing them.
 
 #### Feat
 
-- Added support for dynamic components, where the component name is passed as a variable. (See [Dynamic components](https://github.com/EmilStenstrom/django-components#dynamic-components))
+- Added support for dynamic components, where the component name is passed as a variable. (See [Dynamic components](https://github.com/django-components/django-components#dynamic-components))
 
 #### Refactor
 
@@ -660,17 +666,17 @@ importing them.
 
 #### Feat
 
-- django_components now automatically configures Django to support multi-line tags. (See [Multi-line tags](https://github.com/EmilStenstrom/django-components#multi-line-tags))
+- django_components now automatically configures Django to support multi-line tags. (See [Multi-line tags](https://github.com/django-components/django-components#multi-line-tags))
 
-- New setting `reload_on_template_change`. Set this to `True` to reload the dev server on changes to component template files. (See [Reload dev server on component file changes](https://github.com/EmilStenstrom/django-components#reload-dev-server-on-component-file-changes))
+- New setting `reload_on_template_change`. Set this to `True` to reload the dev server on changes to component template files. (See [Reload dev server on component file changes](https://github.com/django-components/django-components#reload-dev-server-on-component-file-changes))
 
 ## v0.93
 
 #### Feat
 
-- Spread operator `...dict` inside template tags. (See [Spread operator](https://github.com/EmilStenstrom/django-components#spread-operator))
+- Spread operator `...dict` inside template tags. (See [Spread operator](https://github.com/django-components/django-components#spread-operator))
 
-- Use template tags inside string literals in component inputs. (See [Use template tags inside component inputs](https://github.com/EmilStenstrom/django-components#use-template-tags-inside-component-inputs))
+- Use template tags inside string literals in component inputs. (See [Use template tags inside component inputs](https://github.com/django-components/django-components#use-template-tags-inside-component-inputs))
 
 - Dynamic slots, fills and provides - The `name` argument for these can now be a variable, a template expression, or via spread operator
 
@@ -680,13 +686,13 @@ importing them.
 
 #### BREAKING CHANGES
 
-- `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](https://github.com/EmilStenstrom/django-components#modifying-the-view-class))
+- `Component` class is no longer a subclass of `View`. To configure the `View` class, set the `Component.View` nested class. HTTP methods like `get` or `post` can still be defined directly on `Component` class, and `Component.as_view()` internally calls `Component.View.as_view()`. (See [Modifying the View class](https://github.com/django-components/django-components#modifying-the-view-class))
 
 #### Feat
 
-- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](https://github.com/EmilStenstrom/django-components#accessing-data-passed-to-the-component))
+- The inputs (args, kwargs, slots, context, ...) that you pass to `Component.render()` can be accessed from within `get_context_data`, `get_template` and `get_template_name` via `self.input`. (See [Accessing data passed to the component](https://github.com/django-components/django-components#accessing-data-passed-to-the-component))
 
-- Typing: `Component` class supports generics that specify types for `Component.render` (See [Adding type hints with Generics](https://github.com/EmilStenstrom/django-components#adding-type-hints-with-generics))
+- Typing: `Component` class supports generics that specify types for `Component.render` (See [Adding type hints with Generics](https://github.com/django-components/django-components#adding-type-hints-with-generics))
 
 ## v0.90
 
@@ -707,7 +713,7 @@ importing them.
     {% component "button" attrs:class="hidden" %}
     ```
 
-- You can change how the components are written in the template with [TagFormatter](https://github.com/EmilStenstrom/django-components#customizing-component-tags-with-tagformatter).
+- You can change how the components are written in the template with [TagFormatter](https://github.com/django-components/django-components#customizing-component-tags-with-tagformatter).
 
     The default is `django_components.component_formatter`:
 
@@ -764,7 +770,7 @@ importing them.
 
 #### BREAKING CHANGES
 
-- Default value for the `COMPONENTS.context_behavior` setting was changes from `"isolated"` to `"django"`. If you did not set this value explicitly before, this may be a breaking change. See the rationale for change [here](https://github.com/EmilStenstrom/django-components/issues/498).
+- Default value for the `COMPONENTS.context_behavior` setting was changes from `"isolated"` to `"django"`. If you did not set this value explicitly before, this may be a breaking change. See the rationale for change [here](https://github.com/django-components/django-components/issues/498).
 
 ## 🚨📢 v0.77
 
@@ -801,13 +807,13 @@ importing them.
 
 - `{% if_filled "my_slot" %}` tags were replaced with `{{ component_vars.is_filled.my_slot }}` variables.
 
-- Simplified settings - `slot_context_behavior` and `context_behavior` were merged. See the [documentation](https://github.com/EmilStenstrom/django-components#context-behavior) for more details.
+- Simplified settings - `slot_context_behavior` and `context_behavior` were merged. See the [documentation](https://github.com/django-components/django-components#context-behavior) for more details.
 
 ## v0.67
 
 #### Refactor
 
-- Changed the default way how context variables are resolved in slots. See the [documentation](https://github.com/EmilStenstrom/django-components/tree/0.67#isolate-components-slots) for more details.
+- Changed the default way how context variables are resolved in slots. See the [documentation](https://github.com/django-components/django-components/tree/0.67#isolate-components-slots) for more details.
 
 ## 🚨📢 v0.50
 
@@ -823,7 +829,7 @@ importing them.
 
 #### Feat
 
-- Components as views, which allows you to handle requests and render responses from within a component. See the [documentation](https://github.com/EmilStenstrom/django-components#use-components-as-views) for more details.
+- Components as views, which allows you to handle requests and render responses from within a component. See the [documentation](https://github.com/django-components/django-components#use-components-as-views) for more details.
 
 ## v0.28
 
@@ -835,7 +841,7 @@ importing them.
 
 #### Feat
 
-- A second installable app `django_components.safer_staticfiles`. It provides the same behavior as `django.contrib.staticfiles` but with extra security guarantees (more info below in [Security Notes](https://github.com/EmilStenstrom/django-components#security-notes)).
+- A second installable app `django_components.safer_staticfiles`. It provides the same behavior as `django.contrib.staticfiles` but with extra security guarantees (more info below in [Security Notes](https://github.com/django-components/django-components#security-notes)).
 
 ## 🚨📢 v0.26
 

@@ -9,7 +9,7 @@ To configure logging for Django components, set the `django_components` logger i
 [`LOGGING`](https://docs.djangoproject.com/en/5.1/ref/settings/#std-setting-LOGGING) 
 in `settings.py` (below).
 
-Also see the [`settings.py` file in sampleproject](https://github.com/EmilStenstrom/django-components/blob/master/sampleproject/sampleproject/settings.py) for a real-life example.
+Also see the [`settings.py` file in sampleproject](https://github.com/django-components/django-components/blob/master/sampleproject/sampleproject/settings.py) for a real-life example.
 
 ```py
 import logging

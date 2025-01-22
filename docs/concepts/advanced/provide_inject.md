@@ -31,7 +31,7 @@ As the name suggest, using provide / inject consists of 2 steps
 1. Providing data
 2. Injecting provided data
 
-For examples of advanced uses of provide / inject, [see this discussion](https://github.com/EmilStenstrom/django-components/pull/506#issuecomment-2132102584).
+For examples of advanced uses of provide / inject, [see this discussion](https://github.com/django-components/django-components/pull/506#issuecomment-2132102584).
 
 ## Using `{% provide %}` tag
 

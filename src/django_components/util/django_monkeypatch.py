@@ -60,7 +60,7 @@ def monkeypatch_template_render(template_cls: Type[Template]) -> None:
     # Modify `Template.render` to set `isolated_context` kwarg of `push_state`
     # based on our custom `Template._djc_is_component_nested`.
     #
-    # Part of fix for https://github.com/EmilStenstrom/django-components/issues/508
+    # Part of fix for https://github.com/django-components/django-components/issues/508
     #
     # NOTE 1: While we could've subclassed Template, then we would need to either
     # 1) ask the user to change the backend, so all templates are of our subclass, or

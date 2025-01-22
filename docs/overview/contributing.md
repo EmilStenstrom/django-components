@@ -23,5 +23,5 @@ so come aboard!
 
 ## Sponsoring
 
-Another way you can get involved is by [donating](https://github.com/sponsors/EmilStenstrom)
+Another way you can get involved is by [donating](https://github.com/django-components/django-components)
 to the development of django_components.

@@ -5,9 +5,9 @@ weight: 5
 
 ## Community questions
 
-The best place to ask questions is in our [Github Discussion board](https://github.com/EmilStenstrom/django-components/discussions).
+The best place to ask questions is in our [Github Discussion board](https://github.com/django-components/django-components/discussions).
 
-Please, before opening a new discussion, [check if similar discussion wasn't opened already](https://github.com/EmilStenstrom/django-components/discussions?discussions_q=).
+Please, before opening a new discussion, [check if similar discussion wasn't opened already](https://github.com/django-components/django-components/discussions?discussions_q=).
 
 ## Community examples
 

@@ -1019,8 +1019,8 @@ class ComponentRenderTest(BaseTestCase):
             """,
         )
 
-    # See https://github.com/EmilStenstrom/django-components/issues/580
-    # And https://github.com/EmilStenstrom/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
+    # See https://github.com/django-components/django-components/issues/580
+    # And https://github.com/django-components/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_include_and_context(self):
         class SimpleComponent(Component):
@@ -1041,9 +1041,9 @@ class ComponentRenderTest(BaseTestCase):
             """,
         )
 
-    # See https://github.com/EmilStenstrom/django-components/issues/580
-    # And https://github.com/EmilStenstrom/django-components/issues/634
-    # And https://github.com/EmilStenstrom/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
+    # See https://github.com/django-components/django-components/issues/580
+    # And https://github.com/django-components/django-components/issues/634
+    # And https://github.com/django-components/django-components/commit/fee26ec1d8b46b5ee065ca1ce6143889b0f96764
     @parametrize_context_behavior(["django", "isolated"])
     def test_render_with_include_and_request_context(self):
         class SimpleComponent(Component):
@@ -1064,8 +1064,8 @@ class ComponentRenderTest(BaseTestCase):
             """,
         )
 
-    # See https://github.com/EmilStenstrom/django-components/issues/580
-    # And https://github.com/EmilStenstrom/django-components/issues/634
+    # See https://github.com/django-components/django-components/issues/580
+    # And https://github.com/django-components/django-components/issues/634
     @parametrize_context_behavior(["django", "isolated"])
     def test_request_context_is_populated_from_context_processors(self):
         @register("thing")

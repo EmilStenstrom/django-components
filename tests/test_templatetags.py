@@ -61,7 +61,7 @@ class NestedTagsTests(BaseTestCase):
                 "var": var,
             }
 
-    # See https://github.com/EmilStenstrom/django-components/discussions/671
+    # See https://github.com/django-components/django-components/discussions/671
     @parametrize_context_behavior(["django", "isolated"])
     def test_nested_tags(self):
         registry.register("test", self.SimpleComponent)
