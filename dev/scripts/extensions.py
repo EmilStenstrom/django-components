@@ -52,7 +52,7 @@ def _format_source_code_html(relative_filepath: Path, lineno: Optional[int]):
     branch_path = f"tree/{SOURCE_CODE_GIT_BRANCH}"
     lineno_hash = f"#L{lineno}" if lineno is not None else ""
     # Generate URL pointing to the source file like
-    # https://github.com/EmilStenstrom/django-components/blob/master/src/django_components/components/dynamic.py#L8
+    # https://github.com/django-components/django-components/blob/master/src/django_components/components/dynamic.py#L8
     url = f"{repo_url}/{branch_path}/{relative_filepath}{lineno_hash}"
 
     # Open in new tab
