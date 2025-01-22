@@ -3,11 +3,23 @@
 # API
 
 
+::: django_components.BaseNode
+    options:
+      show_if_no_docstring: true
+
 ::: django_components.Component
     options:
       show_if_no_docstring: true
 
 ::: django_components.ComponentFileEntry
+    options:
+      show_if_no_docstring: true
+
+::: django_components.ComponentMediaInput
+    options:
+      show_if_no_docstring: true
+
+::: django_components.ComponentMediaInputPath
     options:
       show_if_no_docstring: true
 
@@ -100,6 +112,10 @@
       show_if_no_docstring: true
 
 ::: django_components.render_dependencies
+    options:
+      show_if_no_docstring: true
+
+::: django_components.template_tag
     options:
       show_if_no_docstring: true
 

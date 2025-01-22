@@ -6,12 +6,57 @@ These are all the [Django management commands](https://docs.djangoproject.com/en
 that will be added by installing `django_components`:
 
 
+## `upgradecomponent`
+
+```txt
+usage: manage.py upgradecomponent [-h] [--path PATH] [--version] [-v {0,1,2,3}] [--settings SETTINGS]
+                                  [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
+                                  [--skip-checks]
+
+```
+
+
+
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/management/commands/upgradecomponent.py#L12" target="_blank">See source code</a>
+
+
+
+Updates component and component_block tags to the new syntax
+
+**Options:**
+
+- `-h`, `--help`
+    - show this help message and exit
+- `--path PATH`
+    - Path to search for components
+- `--version`
+    - Show program's version number and exit.
+- `-v {0,1,2,3}`, `--verbosity {0,1,2,3}`
+    -  Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very verbose output
+- `--settings SETTINGS`
+    - The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
+- `--pythonpath PYTHONPATH`
+    -  A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
+- `--traceback`
+    - Raise on CommandError exceptions.
+- `--no-color`
+    - Don't colorize the command output.
+- `--force-color`
+    - Force colorization of the command output.
+- `--skip-checks`
+    - Skip system checks.
+
+
+
+
+
 ## `startcomponent`
 
 ```txt
-usage: manage.py startcomponent [-h] [--path PATH] [--js JS] [--css CSS] [--template TEMPLATE] [--force] [--verbose]
-                                [--dry-run] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH]
-                                [--traceback] [--no-color] [--force-color] [--skip-checks]
+usage: manage.py startcomponent [-h] [--path PATH] [--js JS] [--css CSS] [--template TEMPLATE] [--force]
+                                [--verbose] [--dry-run] [--version] [-v {0,1,2,3}] [--settings SETTINGS]
+                                [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
+                                [--skip-checks]
                                 name
 
 ```
@@ -120,48 +165,5 @@ python manage.py startcomponent my_component --dry-run
 ```
 
 This will simulate the creation of `my_component` without creating any files.
-
-
-## `upgradecomponent`
-
-```txt
-usage: manage.py upgradecomponent [-h] [--path PATH] [--version] [-v {0,1,2,3}] [--settings SETTINGS]
-                                  [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color] [--skip-checks]
-
-```
-
-
-
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/management/commands/upgradecomponent.py#L12" target="_blank">See source code</a>
-
-
-
-Updates component and component_block tags to the new syntax
-
-**Options:**
-
-- `-h`, `--help`
-    - show this help message and exit
-- `--path PATH`
-    - Path to search for components
-- `--version`
-    - Show program's version number and exit.
-- `-v {0,1,2,3}`, `--verbosity {0,1,2,3}`
-    -  Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very verbose output
-- `--settings SETTINGS`
-    - The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
-- `--pythonpath PYTHONPATH`
-    -  A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
-- `--traceback`
-    - Raise on CommandError exceptions.
-- `--no-color`
-    - Don't colorize the command output.
-- `--force-color`
-    - Force colorization of the command output.
-- `--skip-checks`
-    - Skip system checks.
-
-
-
 
 

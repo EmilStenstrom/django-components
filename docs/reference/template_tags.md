@@ -12,16 +12,62 @@ Import as
 {% load component_tags %}
 ```
 
+## component_css_dependencies
+
+```django
+{% component_css_dependencies  %}
+```
+
+
+
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1170" target="_blank">See source code</a>
+
+
+
+Marks location where CSS link tags should be rendered after the whole HTML has been generated.
+
+Generally, this should be inserted into the `<head>` tag of the HTML.
+
+If the generated HTML does NOT contain any `{% component_css_dependencies %}` tags, CSS links
+are by default inserted into the `<head>` tag of the HTML. (See
+[JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
+
+Note that there should be only one `{% component_css_dependencies %}` for the whole HTML document.
+If you insert this tag multiple times, ALL CSS links will be duplicately inserted into ALL these places.
+
+## component_js_dependencies
+
+```django
+{% component_js_dependencies  %}
+```
+
+
+
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1192" target="_blank">See source code</a>
+
+
+
+Marks location where JS link tags should be rendered after the whole HTML has been generated.
+
+Generally, this should be inserted at the end of the `<body>` tag of the HTML.
+
+If the generated HTML does NOT contain any `{% component_js_dependencies %}` tags, JS scripts
+are by default inserted at the end of the `<body>` tag of the HTML. (See
+[JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
+
+Note that there should be only one `{% component_js_dependencies %}` for the whole HTML document.
+If you insert this tag multiple times, ALL JS scripts will be duplicately inserted into ALL these places.
+
 ## component
 
 ```django
-{% component [arg, ...] **kwargs [only] %}
+{% component *args: Any, **kwargs: Any [only] %}
 {% endcomponent %}
 ```
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1516" target="_blank">See source code</a>
 
 
 
@@ -120,62 +166,16 @@ can access only the data that was explicitly passed to it:
 {% component "name" positional_arg keyword_arg=value ... only %}
 ```
 
-## component_css_dependencies
-
-```django
-{% component_css_dependencies %}
-```
-
-
-
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
-
-
-
-Marks location where CSS link tags should be rendered after the whole HTML has been generated.
-
-Generally, this should be inserted into the `<head>` tag of the HTML.
-
-If the generated HTML does NOT contain any `{% component_css_dependencies %}` tags, CSS links
-are by default inserted into the `<head>` tag of the HTML. (See
-[JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
-
-Note that there should be only one `{% component_css_dependencies %}` for the whole HTML document.
-If you insert this tag multiple times, ALL CSS links will be duplicately inserted into ALL these places.
-
-## component_js_dependencies
-
-```django
-{% component_js_dependencies %}
-```
-
-
-
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
-
-
-
-Marks location where JS link tags should be rendered after the whole HTML has been generated.
-
-Generally, this should be inserted at the end of the `<body>` tag of the HTML.
-
-If the generated HTML does NOT contain any `{% component_js_dependencies %}` tags, JS scripts
-are by default inserted at the end of the `<body>` tag of the HTML. (See
-[JS and CSS output locations](../../concepts/advanced/rendering_js_css/#js-and-css-output-locations))
-
-Note that there should be only one `{% component_js_dependencies %}` for the whole HTML document.
-If you insert this tag multiple times, ALL JS scripts will be duplicately inserted into ALL these places.
-
 ## fill
 
 ```django
-{% fill name data=None default=None %}
+{% fill name: str, *, data: Optional[str] = None, default: Optional[str] = None %}
 {% endfill %}
 ```
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L466" target="_blank">See source code</a>
 
 
 
@@ -268,12 +268,12 @@ use `{% fill %}` with `name` set to `"default"`:
 ## html_attrs
 
 ```django
-{% html_attrs attrs=None defaults=None **kwargs %}
+{% html_attrs attrs: Optional[Dict] = None, defaults: Optional[Dict] = None, **kwargs: Any %}
 ```
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L13" target="_blank">See source code</a>
 
 
 
@@ -330,13 +330,13 @@ renders
 ## provide
 
 ```django
-{% provide name **kwargs %}
+{% provide name: str, **kwargs: Any %}
 {% endprovide %}
 ```
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L9" target="_blank">See source code</a>
 
 
 
@@ -410,13 +410,13 @@ user = self.inject("user_data")["user"]
 ## slot
 
 ```django
-{% slot name **kwargs [default] [required] %}
+{% slot name: str, **kwargs: Any [default] [required] %}
 {% endslot %}
 ```
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L117" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L149" target="_blank">See source code</a>
 
 
 
