@@ -2,6 +2,12 @@
 
 ## v0.125
 
+⚠️ Attention ⚠️ - We migrated from `EmilStenstrom/django-components` to `django-components/django-components`.
+
+**Repo name and documentation URL changed. Package name remains the same.**
+
+If you see any broken links or other issues, please report them in [#922](https://github.com/django-components/django-components/issues/922).
+
 #### Feat
 
 - `@template_tag` and `BaseNode` - A decorator and a class that allow you to define

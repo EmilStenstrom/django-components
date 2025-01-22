@@ -4,6 +4,13 @@
 
 ### <table><td>[Read the full documentation](https://django-components.github.io/django-components/latest/)</td></table>
 
+<!-- TODO - Remove this banner after a month(?), so March 2025 -->
+> ⚠️ Attention ⚠️ - We migrated from `EmilStenstrom/django-components` to `django-components/django-components`.
+>
+> **Repo name and documentation URL changed. Package name remains the same.**
+>
+> Report any broken links links in [#922](https://github.com/django-components/django-components/issues/922).
+
 Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
 
 A component in django-components can be as simple as a Django template and Python code to declare the component:

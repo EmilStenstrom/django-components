@@ -7,6 +7,8 @@ _It is strongly recommended to read this section before using django-components 
 
 ## Static files
 
+**TL;DR: No action needed from v0.100 onwards. Before v0.100, use `safer_staticfiles` to avoid exposing backend logic.**
+
 Components can be organized however you prefer.
 That said, our prefered way is to keep the files of a component close together by bundling them in the same directory.
 
