@@ -135,7 +135,7 @@ class NodeMeta(type):
             # # {'data-id': 1}
             # ```
             #
-            # See https://github.com/EmilStenstrom/django-components/discussions/900#discussioncomment-11859970
+            # See https://github.com/django-components/django-components/discussions/900#discussioncomment-11859970
             resolved_params_without_invalid_kwargs = []
             invalid_kwargs = {}
             did_see_special_kwarg = False

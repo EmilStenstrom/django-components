@@ -23,7 +23,7 @@ def make_isolated_context_copy(context: Context) -> Context:
     copy_forloop_context(context, context_copy)
 
     # Required for compatibility with Django's {% extends %} tag
-    # See https://github.com/EmilStenstrom/django-components/pull/859
+    # See https://github.com/django-components/django-components/pull/859
     context_copy.render_context = context.render_context
 
     # Pass through our internal keys

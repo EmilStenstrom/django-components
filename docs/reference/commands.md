@@ -18,7 +18,7 @@ usage: manage.py startcomponent [-h] [--path PATH] [--js JS] [--css CSS] [--temp
 
 
 
-<a href="https://github.com/EmilStenstrom/django-components/tree/master/src/django_components/management/commands/startcomponent.py#L8" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/management/commands/startcomponent.py#L8" target="_blank">See source code</a>
 
 
 
@@ -132,7 +132,7 @@ usage: manage.py upgradecomponent [-h] [--path PATH] [--version] [-v {0,1,2,3}] 
 
 
 
-<a href="https://github.com/EmilStenstrom/django-components/tree/master/src/django_components/management/commands/upgradecomponent.py#L12" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/management/commands/upgradecomponent.py#L12" target="_blank">See source code</a>
 
 
 

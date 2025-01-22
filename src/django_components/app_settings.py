@@ -236,7 +236,7 @@ class ComponentsSettings(NamedTuple):
     > From v0.67 to v0.78 (incl) the default value was `"isolated"`.
     >
     > For v0.79 and later, the default is again `"django"`. See the rationale for change
-    > [here](https://github.com/EmilStenstrom/django-components/issues/498).
+    > [here](https://github.com/django-components/django-components/issues/498).
     """
 
     dynamic_component_name: Optional[str] = None

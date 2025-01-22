@@ -477,7 +477,7 @@ class MediaPathAsObjectTests(BaseTestCase):
             def __str__(self):
                 return f'<link css_tag href="{self.path}" rel="stylesheet" />'
 
-        # Format as mentioned in https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
+        # Format as mentioned in https://github.com/django-components/django-components/issues/522#issuecomment-2173577094
         @html_safe
         class PathObj:
             def __init__(self, static_path: str) -> None:
@@ -731,7 +731,7 @@ class MediaPathAsObjectTests(BaseTestCase):
 
 
 class MediaStaticfilesTests(BaseTestCase):
-    # For context see https://github.com/EmilStenstrom/django-components/issues/522
+    # For context see https://github.com/django-components/django-components/issues/522
     @override_settings(
         # Configure static files. The dummy files are set up in the `./static_root` dir.
         # The URL should have path prefix /static/.
@@ -777,7 +777,7 @@ class MediaStaticfilesTests(BaseTestCase):
 
         self.assertInHTML('<script defer src="/static/calendar/script.js"></script>', rendered)
 
-    # For context see https://github.com/EmilStenstrom/django-components/issues/522
+    # For context see https://github.com/django-components/django-components/issues/522
     @override_settings(
         # Configure static files. The dummy files are set up in the `./static_root` dir.
         # The URL should have path prefix /static/.
@@ -972,7 +972,7 @@ class MediaRelativePathTests(BaseTestCase):
         then we force to call `static`. And if this happens during `collectstatic` run,
         then this triggers an error, because `static` is called before the static files exist.
 
-        https://github.com/EmilStenstrom/django-components/issues/522#issuecomment-2173577094
+        https://github.com/django-components/django-components/issues/522#issuecomment-2173577094
         """
 
         # Ensure that the module is executed again after import in autodiscovery

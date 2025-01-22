@@ -738,7 +738,7 @@ def _resolve_component_relative_files(
         if isinstance(filepath, str):
             filepath_abs = os.path.join(comp_dir_abs, filepath)
             # NOTE: The paths to resources need to use POSIX (forward slashes) for Django to wor
-            #       See https://github.com/EmilStenstrom/django-components/issues/796
+            #       See https://github.com/django-components/django-components/issues/796
             filepath_rel_to_comp_dir = Path(os.path.join(comp_dir_rel, filepath)).as_posix()
 
             if os.path.isfile(filepath_abs):

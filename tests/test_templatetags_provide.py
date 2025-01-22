@@ -746,7 +746,7 @@ class InjectTest(BaseTestCase):
         with self.assertRaises(RuntimeError):
             comp.inject("abc", "def")
 
-    # See https://github.com/EmilStenstrom/django-components/pull/778
+    # See https://github.com/django-components/django-components/pull/778
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_in_fill(self):
         @register("injectee")
@@ -814,7 +814,7 @@ class InjectTest(BaseTestCase):
             """,
         )
 
-    # See https://github.com/EmilStenstrom/django-components/pull/786
+    # See https://github.com/django-components/django-components/pull/786
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_in_slot_in_fill(self):
         @register("injectee")

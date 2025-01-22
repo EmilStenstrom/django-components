@@ -68,6 +68,6 @@ python manage.py runserver
 ```
 
 For a step-by-step guide on deploying production server with static files,
-[see the demo project](https://github.com/EmilStenstrom/django-components/tree/master/sampleproject).
+[see the demo project](https://github.com/django-components/django-components/tree/master/sampleproject).
 
 See the older versions of the sampleproject for a setup with pre-v0.100 version.

@@ -436,7 +436,7 @@ class SlotNode(BaseNode):
             # Required for compatibility with Django's {% extends %} tag
             # This makes sure that the render context used outside of a component
             # is the same as the one used inside the slot.
-            # See https://github.com/EmilStenstrom/django-components/pull/859
+            # See https://github.com/django-components/django-components/pull/859
             render_ctx_layer = used_ctx.render_context.dicts[-2] if len(used_ctx.render_context.dicts) > 1 else {}
             with used_ctx.render_context.push(render_ctx_layer):
                 # Render slot as a function
