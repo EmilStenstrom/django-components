@@ -2,9 +2,30 @@
 
 ## v0.126
 
+#### Feat
+
+- Similarly to Vue, inside component HTML, you can now shorten `<div></div>` with self-closing tags `<tag />`.
+
+    The shortened version is expanded at render time. So this:
+
+    ```html
+    <div style="background-image: url('...');" />
+    ```
+
+    will be expanded to:
+
+    ```html
+    <div style="background-image: url('...');">
+    </div>
+    ```
+
 #### Refactor
 
 - Replaced [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) with a custom HTML parser.
+- The heuristic for inserting JS and CSS dependenies into the default place has changed.
+    - JS is still inserted at the end of the `<body>`, and CSS at the end of `<head>`.
+    - However, we find end of `<body>` by searching for **last** occurrence of `</body>`
+    - And for the end of `<head>` we search for the **first** occurrence of `</head>`
 
 ## v0.125
 

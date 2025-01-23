@@ -1,6 +1,6 @@
 ---
 title: Template tag syntax
-weight: 5
+weight: 6
 ---
 
 All template tags in django_component, like `{% component %}` or `{% slot %}`, and so on,
