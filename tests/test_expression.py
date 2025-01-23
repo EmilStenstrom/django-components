@@ -118,7 +118,12 @@ class DynamicExprTests(BaseTestCase):
 
         self.assertEqual(
             rendered.strip(),
-            "<!-- _RENDERED SimpleComponent_5b8d97,a1bc3f,, -->\n<div data-djc-id-a1bc3f>lorem</div>\n<div data-djc-id-a1bc3f>True</div>\n<div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>",  # noqa: E501
+            (
+                "<!-- _RENDERED SimpleComponent_5b8d97,a1bc3f,, -->\n"
+                "                <div data-djc-id-a1bc3f>lorem</div>\n"
+                "                <div data-djc-id-a1bc3f>True</div>\n"
+                "                <div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>"
+            ),
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -190,10 +195,10 @@ class DynamicExprTests(BaseTestCase):
             rendered.strip(),
             (
                 "<!-- _RENDERED SimpleComponent_743413,a1bc3f,, -->\n"
-                "<div data-djc-id-a1bc3f>lorem ipsum dolor</div>\n"
-                "<div data-djc-id-a1bc3f>True</div>\n"
-                "<div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>\n"
-                "<div data-djc-id-a1bc3f>{'a': 3}</div>"
+                "                <div data-djc-id-a1bc3f>lorem ipsum dolor</div>\n"
+                "                <div data-djc-id-a1bc3f>True</div>\n"
+                "                <div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>\n"
+                "                <div data-djc-id-a1bc3f>{'a': 3}</div>"
             ),
         )
 
@@ -266,10 +271,10 @@ class DynamicExprTests(BaseTestCase):
             rendered.strip(),
             (
                 "<!-- _RENDERED SimpleComponent_e258c0,a1bc3f,, -->\n"
-                "<div data-djc-id-a1bc3f></div>\n"
-                "<div data-djc-id-a1bc3f>  abc</div>\n"
-                "<div data-djc-id-a1bc3f></div>\n"
-                "<div data-djc-id-a1bc3f> </div>"
+                "                <div data-djc-id-a1bc3f></div>\n"
+                "                <div data-djc-id-a1bc3f>  abc</div>\n"
+                "                <div data-djc-id-a1bc3f></div>\n"
+                "                <div data-djc-id-a1bc3f>  </div>"
             ),
         )
 
@@ -315,7 +320,7 @@ class DynamicExprTests(BaseTestCase):
             {% load component_tags %}
             {% component 'test'
                 " {% lorem var_a w %} "
-                " {% lorem var_a w %} {{ list|slice:':-1' }} "
+                " {% lorem var_a w %} {{ list|slice:':-1'|safe }} "
                 bool_var=" {% noop is_active %} "
                 list_var=" {% noop list %} "
                 dict_var=" {% noop dict %} "
@@ -346,11 +351,11 @@ class DynamicExprTests(BaseTestCase):
             rendered.strip(),
             (
                 "<!-- _RENDERED SimpleComponent_6c8e94,a1bc3f,, -->\n"
-                "<div data-djc-id-a1bc3f> lorem ipsum dolor </div>\n"
-                "<div data-djc-id-a1bc3f> lorem ipsum dolor [{'a': 1}] </div>\n"
-                "<div data-djc-id-a1bc3f> True </div>\n"
-                "<div data-djc-id-a1bc3f> [{'a': 1}, {'a': 2}] </div>\n"
-                "<div data-djc-id-a1bc3f> {'a': 3} </div>"
+                "                <div data-djc-id-a1bc3f> lorem ipsum dolor </div>\n"
+                "                <div data-djc-id-a1bc3f> lorem ipsum dolor [{'a': 1}] </div>\n"
+                "                <div data-djc-id-a1bc3f> True </div>\n"
+                "                <div data-djc-id-a1bc3f> [{'a': 1}, {'a': 2}] </div>\n"
+                "                <div data-djc-id-a1bc3f> {'a': 3} </div>"
             ),
         )
 
@@ -397,9 +402,9 @@ class DynamicExprTests(BaseTestCase):
             rendered.strip(),
             (
                 "<!-- _RENDERED SimpleComponent_c7a5c3,a1bc3f,, -->\n"
-                '<div data-djc-id-a1bc3f>"</div>\n'
-                "<div data-djc-id-a1bc3f>{%}</div>\n"
-                "<div data-djc-id-a1bc3f>True</div>"
+                '                <div data-djc-id-a1bc3f>"</div>\n'
+                "                <div data-djc-id-a1bc3f>{%}</div>\n"
+                "                <div data-djc-id-a1bc3f>True</div>"
             ),
         )
 
@@ -451,11 +456,11 @@ class DynamicExprTests(BaseTestCase):
             rendered.strip(),
             (
                 "<!-- _RENDERED SimpleComponent_5c8766,a1bc41,, -->\n"
-                "<div data-djc-id-a1bc41><!-- _RENDERED SimpleComponent_5c8766,a1bc40,, -->\n"
-                "<div data-djc-id-a1bc40>3</div>\n"
-                "<div data-djc-id-a1bc40>True</div>\n"
-                "</div>\n"
-                "<div data-djc-id-a1bc41>True</div>"
+                "                <div data-djc-id-a1bc41><!-- _RENDERED SimpleComponent_5c8766,a1bc40,, -->\n"
+                "                <div data-djc-id-a1bc40>3</div>\n"
+                "                <div data-djc-id-a1bc40>True</div>\n"
+                "            </div>\n"
+                "                <div data-djc-id-a1bc41>True</div>"
             ),
         )
 

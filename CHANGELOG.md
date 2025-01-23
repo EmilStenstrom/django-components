@@ -1,5 +1,11 @@
 # Release notes
 
+## v0.126
+
+#### Refactor
+
+- Replaced [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) with a custom HTML parser.
+
 ## v0.125
 
 ⚠️ Attention ⚠️ - We migrated from `EmilStenstrom/django-components` to `django-components/django-components`.

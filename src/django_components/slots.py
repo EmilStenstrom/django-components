@@ -140,6 +140,7 @@ class SlotIsFilled(dict):
 @dataclass
 class ComponentSlotContext:
     component_name: str
+    component_id: str
     template_name: str
     is_dynamic_component: bool
     default_slot: Optional[str]

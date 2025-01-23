@@ -20,7 +20,6 @@
 # - pymdown-extensions
 # - black
 # - django>=4.2
-# - beautifulsoup4>=4.12
 #
 
 asgiref==3.8.1
@@ -29,8 +28,6 @@ babel==2.16.0
     # via
     #   mkdocs-git-revision-date-localized-plugin
     #   mkdocs-material
-beautifulsoup4==4.12.3
-    # via hatch.envs.docs
 black==24.10.0
     # via hatch.envs.docs
 bracex==2.5.post1
@@ -213,8 +210,6 @@ six==1.17.0
     # via python-dateutil
 smmap==5.0.2
     # via gitdb
-soupsieve==2.6
-    # via beautifulsoup4
 sqlparse==0.5.3
     # via django
 tinycss2==1.4.0

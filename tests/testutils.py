@@ -36,6 +36,9 @@ class BaseTestCase(SimpleTestCase):
         if template_cache:
             template_cache.clear()
 
+        from django_components.component import component_node_subclasses_by_name
+        component_node_subclasses_by_name.clear()
+
     # Mock the `generate` function used inside `gen_id` so it returns deterministic IDs
     def _start_gen_id_patch(self):
         # Random number so that the generated IDs are "hex-looking", e.g. a1bc3d
@@ -181,6 +184,9 @@ def parametrize_context_behavior(cases: List[ContextBehParam], settings: Optiona
 
                 if template_cache:  # May be None if the cache was not initialized
                     template_cache.clear()
+
+                from django_components.component import component_node_subclasses_by_name
+                component_node_subclasses_by_name.clear()
 
                 case_has_data = not isinstance(case, str)
 

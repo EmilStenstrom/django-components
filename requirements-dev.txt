@@ -6,8 +6,6 @@
 #
 asgiref==3.8.1
     # via django
-beautifulsoup4==4.12.3
-    # via -r requirements-dev.in
 black==24.10.0
     # via -r requirements-dev.in
 cachetools==5.5.0
@@ -93,8 +91,6 @@ pyyaml==6.0.2
     # via pre-commit
 requests==2.32.3
     # via -r requirements-dev.in
-soupsieve==2.6
-    # via beautifulsoup4
 sqlparse==0.5.2
     # via django
 tox==4.24.1

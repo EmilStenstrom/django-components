@@ -1,6 +1,8 @@
 import inspect
 from typing import Any, Dict, Optional, Type, Union, cast
 
+from django.template import Context, Template
+
 from django_components import Component, ComponentRegistry, NotRegistered, types
 from django_components.component_registry import all_registries
 
@@ -110,7 +112,21 @@ class DynamicComponent(Component):
 
         comp_class = self._resolve_component(comp_name_or_class, registry)
 
-        # NOTE: Slots are passed at component instantiation
+        return {
+            "comp_class": comp_class,
+            "args": args,
+            "kwargs": kwargs,
+        }
+    
+    # NOTE: The inner component is rendered in `on_render_before`, so that the `Context` object
+    # is already configured as if the inner component was rendered inside the template.
+    # E.g. the `_COMPONENT_SLOT_CTX_CONTEXT_KEY` is set, which means that the child component
+    # will know that it's a child of this component.
+    def on_render_before(self, context: Context, template: Template) -> Context:
+        comp_class = context["comp_class"]
+        args = context["args"]
+        kwargs = context["kwargs"]
+
         comp = comp_class(
             registered_name=self.registered_name,
             outer_context=self.outer_context,
@@ -128,11 +144,10 @@ class DynamicComponent(Component):
             render_dependencies=self.input.render_dependencies,
         )
 
-        return {
-            "output": output,
-        }
+        context["output"] = output
+        return context
 
-    template: types.django_html = """{{ output }}"""
+    template: types.django_html = """{{ output|safe }}"""
 
     def _resolve_component(
         self,
