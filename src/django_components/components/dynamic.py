@@ -117,7 +117,7 @@ class DynamicComponent(Component):
             "args": args,
             "kwargs": kwargs,
         }
-    
+
     # NOTE: The inner component is rendered in `on_render_before`, so that the `Context` object
     # is already configured as if the inner component was rendered inside the template.
     # E.g. the `_COMPONENT_SLOT_CTX_CONTEXT_KEY` is set, which means that the child component

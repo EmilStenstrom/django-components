@@ -1,13 +1,6 @@
 import re
 from collections import deque
-from typing import (
-    Callable,
-    Deque,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Callable, Deque, Dict, List, Optional, Tuple
 
 from django.utils.safestring import mark_safe
 
@@ -155,7 +148,7 @@ def component_post_render(
 
         # Split component's content by placeholders, and put the pairs of (content, placeholder_id) into the queue
         for match in nested_comp_pattern.finditer(curr_comp_content):
-            part_before_component = curr_comp_content[last_index : match.start()]
+            part_before_component = curr_comp_content[last_index : match.start()]  # noqa: E203
             last_index = match.end()
             comp_part = match[0]
 

@@ -17,10 +17,9 @@ and returns the updated HTML and optionally a record of which tags were modified
 
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union, Sequence, Dict
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 from django.utils.safestring import SafeString, mark_safe
-
 
 HtmlState = Literal[
     "text",
@@ -115,6 +114,17 @@ class HTMLTag:
         return self is other
 
     def get_attr(self, key: Union[str, re.Pattern]) -> Optional[HTMLTagAttr]:
+        """
+        Get an attribute from the tag.
+
+        Given `<div data-id="123">...</div>`
+
+        ```python
+        get_attr("data-id")  # HTMLTagAttr(key="data-id", value="123", ...)
+        get_attr(re.compile(r"^data-.*"))  # HTMLTagAttr(key="data-id", value="123", ...)
+        get_attr("data-djc-id-123")  # None
+        ```
+        """
         for attr in self.attrs:
             if isinstance(key, str):
                 if attr.key == key:
@@ -124,6 +134,18 @@ class HTMLTag:
         return None
 
     def has_attr(self, key: Union[str, re.Pattern]) -> bool:
+        """
+        Check if the tag has a specific attribute.
+        To check for multiple patterns you can pass a regex.
+
+        Given `<div data-id="123">...</div>`
+
+        ```python
+        has_attr("data-id")  # True
+        has_attr(re.compile(r"^data-.*"))  # True
+        has_attr("data-djc-id-123")  # False
+        ```
+        """
         for attr in self.attrs:
             if isinstance(key, str):
                 if attr.key == key:
@@ -133,6 +155,15 @@ class HTMLTag:
         return False
 
     def rename_attr(self, old_key: str, new_key: str) -> None:
+        """
+        Rename an attribute in the tag.
+
+        Given `<div data-id="123">...</div>`
+
+        ```python
+        rename_attr("data-id", "data-id-new")  # <div data-id-new="123">...</div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
@@ -158,8 +189,10 @@ class HTMLTag:
         attr_start_index = self.open_tag_start_index + found_attr.start_index
 
         self._html = (
-            self._html[:attr_start_index] + found_attr.formatted + self._html[attr_start_index + old_attr_length :]
-        )
+            self._html[:attr_start_index]  # noqa: E203
+            + found_attr.formatted  # noqa: E203
+            + self._html[attr_start_index + old_attr_length :]  # noqa: E203
+        )  # fmt: skip
 
         # Update the indices
         key_size_change = len(new_key) - len(old_key)
@@ -172,6 +205,15 @@ class HTMLTag:
             attr.start_index += key_size_change
 
     def delete_attr(self, key: str) -> None:
+        """
+        Remove an attribute from the tag.
+
+        Given `<div data-id="123">...</div>`
+
+        ```python
+        delete_attr("data-id")  # <div>...</div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
@@ -199,9 +241,23 @@ class HTMLTag:
 
         # Update the given HTML - omit the slice containing the attribute
         attr_start_index = self.open_tag_start_index + found_attr.start_index
-        self._html = self._html[:attr_start_index] + self._html[attr_start_index + found_attr.length :]
+        self._html = (
+            self._html[:attr_start_index]  # noqa: E203
+            + self._html[attr_start_index + found_attr.length :]  # noqa: E203
+        )
 
     def add_attr(self, key: str, value: Optional[str], quoted: bool) -> None:
+        """
+        Add an attribute to the tag.
+
+        Given `<div data-id="123">...</div>`
+
+        ```python
+        add_attr("data-djc-id", "123", True)  # <div data-id="123" data-djc-id="123">...</div>
+        add_attr("data-djc-id", "123", False)  # <div data-id="123" data-djc-id=123>...</div>
+        add_attr("data-djc-id-123", None, False)  # <div data-id="123" data-djc-id-123>...</div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
@@ -222,18 +278,36 @@ class HTMLTag:
         self_closing_offset = -1 if is_self_closing else 0
 
         self._html = (
-            self._html[: self.open_tag_start_index + new_attr.start_index + self_closing_offset]
+            self._html[: self.open_tag_start_index + new_attr.start_index + self_closing_offset]  # noqa: E203
             + " "
             + new_attr.formatted
-            + self._html[self.open_tag_start_index + new_attr.start_index + self_closing_offset :]
+            + self._html[self.open_tag_start_index + new_attr.start_index + self_closing_offset :]  # noqa: E203
         )
 
     def clear_attrs(self) -> None:
+        """
+        Remove all attributes from the tag.
+
+        Given `<div class="foo bar">...</div>`
+
+        ```python
+        clear_attrs()  # <div>...</div>
+        ```
+        """
         while len(self.attrs):
             self.delete_attr(self.attrs[-1].key)
 
-    # Insert content inside the tag at the given index
     def insert_content(self, content: str, index: int) -> None:
+        """
+        Insert content inside the tag at the given index.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        insert_content("World", 0)  # <div>World Hello</div>
+        insert_content("World", -1)  # <div>Hello World</div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
@@ -247,27 +321,68 @@ class HTMLTag:
         self.close_tag_start_index += len(content)
 
     def clear_content(self) -> None:
+        """
+        Remove the tag's content.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        clear_content()  # <div></div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
         self._html = (
-            self._html[: self.open_tag_start_index + self.open_tag_length] + self._html[self.close_tag_start_index :]
+            self._html[: self.open_tag_start_index + self.open_tag_length]  # noqa: E203
+            + self._html[self.close_tag_start_index :]  # noqa: E203
         )
         self.close_tag_start_index = self.open_tag_start_index + self.open_tag_length
 
     def replace_content(self, content: str) -> None:
+        """
+        Replace the tag's content with the given content.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        replace_content("World")  # <div>World</div>
+        ```
+        """
         self.clear_content()
         self.insert_content(content, index=0)
 
     def prepend(self, content: str) -> None:
+        """
+        Prepend content BEFORE the tag.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        prepend("World")  # World<div>Hello</div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
-        self._html = self._html[: self.open_tag_start_index] + content + self._html[self.open_tag_start_index :]
+        self._html = (
+            self._html[: self.open_tag_start_index]  # noqa: E203
+            + content
+            + self._html[self.open_tag_start_index :]  # noqa: E203
+        )
         self.open_tag_start_index += len(content)
         self.close_tag_start_index += len(content)
 
     def append(self, content: str) -> None:
+        """
+        Append content AFTER the tag.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        append("World")  # <div>Hello</div>World
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
@@ -275,38 +390,64 @@ class HTMLTag:
         self._html = self._html[:end_index] + content + self._html[end_index:]
 
     def wrap(self, start_tag: str, end_tag: str) -> None:
+        """
+        Wrap the tag with the given start and end tags.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        wrap("<span>", "</span>")  # <span><div>Hello</div></span>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
         content_end_index = self.close_tag_start_index + self.close_tag_length
 
         self._html = (
-            self._html[: self.open_tag_start_index]
+            self._html[: self.open_tag_start_index]  # noqa: E203
             + start_tag
-            + self._html[self.open_tag_start_index : content_end_index]
+            + self._html[self.open_tag_start_index : content_end_index]  # noqa: E203
             + end_tag
-            + self._html[content_end_index:]
+            + self._html[content_end_index:]  # noqa: E203
         )
 
         # NOTE: Attributes' indices are relative to the start tag, so they don't need updating
         self.open_tag_start_index += len(start_tag)
         self.close_tag_start_index += len(start_tag)
 
-    # Remove opening and closing tags, leaving only the content
     def unwrap(self) -> None:
+        """
+        Remove opening and closing tags, leaving only the content.
+
+        Given `<span><div>Hello</div></span>`
+
+        ```python
+        unwrap()  # <div>Hello</div>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
         self._html = (
             # Text BEFORE the opening tag
-            self._html[: self.open_tag_start_index]
+            self._html[: self.open_tag_start_index]  # noqa: E203
             # Content
-            + self._html[self.open_tag_start_index + self.open_tag_length : self.close_tag_start_index]
+            + self._html[self.open_tag_start_index + self.open_tag_length : self.close_tag_start_index]  # noqa: E203
             # Text AFTER the closing tag
-            + self._html[self.close_tag_start_index + self.close_tag_length :]
+            + self._html[self.close_tag_start_index + self.close_tag_length :]  # noqa: E203
         )
 
     def rename_tag(self, new_tag_name: str) -> None:
+        """
+        Rename the tag.
+
+        Given `<div>Hello</div>`
+
+        ```python
+        rename_tag("span")  # <span>Hello</span>
+        ```
+        """
         if self._html is None:
             raise ValueError("HTML is not set")
 
@@ -317,9 +458,9 @@ class HTMLTag:
 
         # Rename start tag
         self._html = (
-            self._html[: tag_name_start_index]  # +1 to offset for the `<`
+            self._html[:tag_name_start_index]  # +1 to offset for the `<`
             + new_tag_name
-            + self._html[tag_name_start_index + tag_name_length :]
+            + self._html[tag_name_start_index + tag_name_length :]  # noqa: E203
         )
 
         # Offset for the change in tag name in START tag
@@ -328,9 +469,11 @@ class HTMLTag:
 
         # Rename end tag
         self._html = (
-            self._html[: self.close_tag_start_index + 2]  # +2 to offset for the `</`
+            # +2 to offset for the `</`
+            self._html[: self.close_tag_start_index + 2]  # noqa: E203
             + new_tag_name
-            + self._html[self.close_tag_start_index + self.close_tag_length - 1 :]  # -1 to offset for the `>`
+            # -1 to offset for the `>`
+            + self._html[self.close_tag_start_index + self.close_tag_length - 1 :]  # noqa: E203
         )
 
         self.name = new_tag_name
@@ -399,7 +542,8 @@ class HTMLTag:
 #
 # 5. Text
 #   5.1. Text allowed only as content (NOT inside tags or attributes)
-#   5.2. If in text, text WILL end at `<` (start of start tag), `</` (start of end tag), `<!--` (start of comment), `<![CDATA[` (start of CDATA)
+#   5.2. If in text, text WILL end at `<` (start of start tag), `</` (start of end tag),
+#        `<!--` (start of comment), `<![CDATA[` (start of CDATA)
 def _parse_html(
     text: str,
     on_tag: Callable[[HTMLTag, List[HTMLTag]], None],
@@ -467,7 +611,7 @@ def _parse_html(
 
     def taken_n(n: int) -> str:
         nonlocal index
-        result = text[index : index + n]
+        result = text[index : index + n]  # noqa: E203
         add_token(result)
         return result
 
@@ -594,7 +738,7 @@ def _parse_html(
     def peek_ahead(n: int) -> str:
         nonlocal index
         nonlocal text
-        return text[index : index + n]
+        return text[index : index + n]  # noqa: E203
 
     # Find the longest token we need to check for
     max_token_len = max(
@@ -687,11 +831,11 @@ def _parse_html(
         next_token = find_next_token()
 
         # Handle states that need exact token matches
-        if state == "comment" and text[index : index + len(COMMENT_END)] == COMMENT_END:
+        if state == "comment" and text[index : index + len(COMMENT_END)] == COMMENT_END:  # noqa: E203
             add_token(COMMENT_END)
             state = "text"
             continue
-        elif state == "cdata" and text[index : index + len(CDATA_END)] == CDATA_END:
+        elif state == "cdata" and text[index : index + len(CDATA_END)] == CDATA_END:  # noqa: E203
             add_token(CDATA_END)
             state = "text"
             continue
@@ -944,7 +1088,8 @@ def set_html_attributes(
         html (str): The HTML string to transform. Can be a fragment or full document.
         root_attributes (List[str]): List of attribute names to add to root elements only.
         all_attributes (List[str]): List of attribute names to add to all elements.
-        watch_on_attribute (Optional[str]): If set, captures which attributes were added to elements with this attribute.
+        watch_on_attribute (Optional[str]): If set, captures which attributes were added to
+            elements with this attribute.
 
     Returns:
         A tuple containing:

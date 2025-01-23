@@ -1093,7 +1093,7 @@ class Component(
         # ```html
         # <div djc-id-a1b3cf djc-id-f3d3cf>...</div>
         # ```
-        def post_processor(extra_attrs: Optional[List[str]] = None) -> Tuple[str, Dict[str, List[str]]]:
+        def post_processor(root_attributes: Optional[List[str]] = None) -> Tuple[str, Dict[str, List[str]]]:
             nonlocal html_content
 
             updated_html, child_components = set_component_attrs_for_js_and_css(
@@ -1101,7 +1101,7 @@ class Component(
                 component_id=render_id,
                 css_input_hash=css_input_hash,
                 css_scope_id=None,  # TODO - Implement
-                extra_attrs=extra_attrs,
+                root_attributes=root_attributes,
             )
 
             updated_html = postprocess_component_html(
@@ -1391,13 +1391,17 @@ class ComponentNode(BaseNode):
         if start_tag not in component_node_subclasses_by_name:
             subcls: Type[ComponentNode] = type(subcls_name, (cls,), {"tag": start_tag, "end_tag": end_tag})
             component_node_subclasses_by_name[start_tag] = (subcls, registry)
-        
+
         cached_subcls, cached_registry = component_node_subclasses_by_name[start_tag]
 
         if cached_registry is not registry:
-            raise RuntimeError(f"Detected two Components from different registries using the same start tag '{start_tag}'")
+            raise RuntimeError(
+                f"Detected two Components from different registries using the same start tag '{start_tag}'"
+            )
         elif cached_subcls.end_tag != end_tag:
-            raise RuntimeError(f"Detected two Components using the same start tag '{start_tag}' but with different end tags")
+            raise RuntimeError(
+                f"Detected two Components using the same start tag '{start_tag}' but with different end tags"
+            )
 
         # Call `BaseNode.parse()` as if with the context of subcls.
         node: ComponentNode = super(cls, cached_subcls).parse(  # type: ignore[attr-defined]

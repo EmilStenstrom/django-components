@@ -14,13 +14,13 @@ class TestHTMLParser(TestCase):
     def test_basic_transformation(self):
         html = "<div><p>Hello</p></div>"
         result, _ = set_html_attributes(html, root_attributes=["data-root"], all_attributes=["data-all"])
-        expected = '<div data-root data-all><p data-all>Hello</p></div>'
+        expected = "<div data-root data-all><p data-all>Hello</p></div>"
         assert result == expected
 
     def test_multiple_roots(self):
         html = "<div>First</div><span>Second</span>"
         result, _ = set_html_attributes(html, root_attributes=["data-root"], all_attributes=["data-all"])
-        expected = '<div data-root data-all>First</div><span data-root data-all>Second</span>'
+        expected = "<div data-root data-all>First</div><span data-root data-all>Second</span>"
         assert result == expected
 
     def test_complex_html(self):
@@ -68,14 +68,14 @@ class TestHTMLParser(TestCase):
             <footer id="footer" data-root data-all data-v-123>
                 <p data-all data-v-123>&copy; 2024</p>
             </footer>
-        """
+        """  # noqa: E501
         assert result == expected
 
     def test_void_elements(self):
         test_cases = [
             ('<meta charset="utf-8">', '<meta charset="utf-8" data-root data-v-123>'),
             ('<meta charset="utf-8"/>', '<meta charset="utf-8" data-root data-v-123/>'),
-            ("<div><br><hr></div>", '<div data-root data-v-123><br data-v-123><hr data-v-123></div>'),
+            ("<div><br><hr></div>", "<div data-root data-v-123><br data-v-123><hr data-v-123></div>"),
             ('<img src="test.jpg" alt="Test">', '<img src="test.jpg" alt="Test" data-root data-v-123>'),
         ]
 
@@ -106,11 +106,11 @@ class TestHTMLParser(TestCase):
     def test_expand_empty_elements(self):
         test_cases = [
             # Non-void elements should expand
-            ("<div/>", '<div data-root data-v-123></div>'),
-            ("<p/>", '<p data-root data-v-123></p>'),
-            ("<div><span/></div>", '<div data-root data-v-123><span data-v-123></span></div>'),
+            ("<div/>", "<div data-root data-v-123></div>"),
+            ("<p/>", "<p data-root data-v-123></p>"),
+            ("<div><span/></div>", "<div data-root data-v-123><span data-v-123></span></div>"),
             # Void elements should always be self-closing
-            ("<div><img/><br/></div>", '<div data-root data-v-123><img data-v-123/><br data-v-123/></div>'),
+            ("<div><img/><br/></div>", "<div data-root data-v-123><img data-v-123/><br data-v-123/></div>"),
         ]
 
         for input_html, expected in test_cases:
@@ -376,7 +376,7 @@ class TestHTMLParserInternal(TestCase):
                 tag.unwrap()
 
         html = '<div class="test" id="main"><p class="inner">Original content</p></div>'
-        expected = '<section><div className="test"  data-new="value"><span>Start</span>Before New content after<span>End</span></div></section>'
+        expected = '<section><div className="test"  data-new="value"><span>Start</span>Before New content after<span>End</span></div></section>'  # noqa: E501
         result = parse_html(html, on_tag, expand_shorthand_tags=True)
 
         self.assertEqual(result, expected)
@@ -415,7 +415,7 @@ class TestHTMLParserInternal(TestCase):
                 <script type="text/javascript">
                     // Single line comment with tags: <div></div>
                     /* Multi-line comment
-                       </script> 
+                       </script>
                     */
                     const template = `<div>${value}</div>`;
                     console.log('</script>');
@@ -443,7 +443,7 @@ class TestHTMLParserInternal(TestCase):
                 <script type="text/javascript">
                     // Single line comment with tags: <div></div>
                     /* Multi-line comment
-                       </script> 
+                       </script>
                     */
                     const template = `<div>${value}</div>`;
                     console.log('</script>');

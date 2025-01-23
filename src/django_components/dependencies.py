@@ -982,7 +982,7 @@ def _insert_js_css_to_default_locations(
         elif tag_name == "body":
             if js_content is not None:
                 last_end_body_tag_index = match.start()
-        
+
         else:
             raise ValueError(f"Unexpected tag name '{tag_name}'")
 
