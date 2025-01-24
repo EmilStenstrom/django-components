@@ -547,8 +547,6 @@ class HTMLTag:
 def _parse_html(
     text: str,
     on_tag: Callable[[HTMLTag, List[HTMLTag]], None],
-    *,
-    expand_shorthand_tags: bool,
 ) -> str:
     # State
     state: HtmlState = "text"
@@ -783,33 +781,20 @@ def _parse_html(
                 return match.group(0), match.start()
         return None
 
-    def process_self_closing_tag(token: str, curr_tag_name: str) -> None:
+    # Case: Self-closing tag (e.g. `<div />`) or void element (e.g. `<input />`)
+    # NOTE: If the tag is a void element, then it doesn't have a closing tag.
+    #       If any other tag is using self-closing syntax, then it's technically invalid.
+    #       See https://developer.mozilla.org/en-US/docs/Glossary/Void_element
+    def process_self_closing_tag(token: str) -> None:
         nonlocal tokens
         nonlocal state
         nonlocal normalized_index
 
         tag = tag_stack[-1]
 
-        # NOTE: If the tag is a void element, then it doesn't have a closing tag.
-        #       If any other tag is using self-closing syntax, then it's technically invalid,
-        #       and we add a closing tag for it.
-        #       See https://developer.mozilla.org/en-US/docs/Glossary/Void_element
-        #
-        #       This way we enable Vue's syntax, where one can use self-closing tags even
-        #       with non-void tags or custom components.
-        if curr_tag_name.lower() in VOID_ELEMENTS or not expand_shorthand_tags:
-            add_token(token)
-            # Mark the end of the start tag
-            tag.open_tag_length = normalized_index - tag.open_tag_start_index
-        else:
-            # Expand self-closing tags by inserting e.g. `></div>` instead of `/>`
-            replace_next(len(TAG_END_SELF_CLOSING), TAG_END)
-
-            tag.open_tag_length = normalized_index - tag.open_tag_start_index
-            tag.close_tag_start_index = tag.open_tag_start_index + tag.open_tag_length
-            tag.close_tag_length = len(f"{END_TAG_START}{curr_tag_name}{TAG_END}")
-
-            replace_next(0, f"{END_TAG_START}{curr_tag_name}{TAG_END}")
+        add_token(token)
+        # Mark the end of the start tag
+        tag.open_tag_length = normalized_index - tag.open_tag_start_index
 
         normalized = "".join(tokens)  # Join tokens for on_tag callback
         tag._html = normalized
@@ -944,7 +929,7 @@ def _parse_html(
 
             # Void elements may omit the `/` in the closing tag e.g. `<input >` instead of `<input />`
             if curr_tag_name.lower() in VOID_ELEMENTS:
-                process_self_closing_tag(token, curr_tag_name)
+                process_self_closing_tag(token)
                 continue
 
             add_token(TAG_END)
@@ -975,7 +960,7 @@ def _parse_html(
             if not curr_tag_name:
                 raise ValueError("Invalid state: Reached self-closing tag without a tag name")
 
-            process_self_closing_tag(token, curr_tag_name)
+            process_self_closing_tag(token)
             continue
 
         # EndTag
@@ -1141,7 +1126,7 @@ def set_html_attributes(
             attrs_set_on_this_tag.append(all_attr_name)
 
     is_safestring = isinstance(html, SafeString)
-    updated_html = _parse_html(html, on_tag, expand_shorthand_tags=True)
+    updated_html = _parse_html(html, on_tag)
     updated_html = mark_safe(updated_html) if is_safestring else updated_html
 
     return updated_html, watched_entries

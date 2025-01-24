@@ -1,6 +1,6 @@
 ---
 title: Defining HTML / JS / CSS files
-weight: 9
+weight: 8
 ---
 
 As you could have seen in [the tutorial](../../getting_started/adding_js_and_css.md), there's multiple ways how you can associate

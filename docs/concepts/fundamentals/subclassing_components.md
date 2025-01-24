@@ -1,6 +1,6 @@
 ---
 title: Subclassing components
-weight: 12
+weight: 11
 ---
 
 In larger projects, you might need to write multiple components with similar behavior.
