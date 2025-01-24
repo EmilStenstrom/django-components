@@ -95,9 +95,7 @@ class DynamicExprTests(BaseTestCase):
                 bool_var="{{ is_active }}"
                 list_var="{{ list|slice:':-1' }}"
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -116,14 +114,14 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["bool_var"], True)
         self.assertEqual(captured["list_var"], [{"a": 1}, {"a": 2}])
 
-        self.assertEqual(
-            rendered.strip(),
-            (
-                "<!-- _RENDERED SimpleComponent_5b8d97,a1bc3f,, -->\n"
-                "                <div data-djc-id-a1bc3f>lorem</div>\n"
-                "                <div data-djc-id-a1bc3f>True</div>\n"
-                "                <div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>"
-            ),
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <!-- _RENDERED SimpleComponent_5b8d97,a1bc3f,, -->
+            <div data-djc-id-a1bc3f>lorem</div>
+            <div data-djc-id-a1bc3f>True</div>
+            <div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>
+            """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -169,9 +167,7 @@ class DynamicExprTests(BaseTestCase):
                 list_var="{% noop list %}"
                 dict_var="{% noop dict %}"
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -191,15 +187,15 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["dict_var"], {"a": 3})
         self.assertEqual(captured["list_var"], [{"a": 1}, {"a": 2}])
 
-        self.assertEqual(
-            rendered.strip(),
-            (
-                "<!-- _RENDERED SimpleComponent_743413,a1bc3f,, -->\n"
-                "                <div data-djc-id-a1bc3f>lorem ipsum dolor</div>\n"
-                "                <div data-djc-id-a1bc3f>True</div>\n"
-                "                <div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>\n"
-                "                <div data-djc-id-a1bc3f>{'a': 3}</div>"
-            ),
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <!-- _RENDERED SimpleComponent_743413,a1bc3f,, -->
+            <div data-djc-id-a1bc3f>lorem ipsum dolor</div>
+            <div data-djc-id-a1bc3f>True</div>
+            <div data-djc-id-a1bc3f>[{'a': 1}, {'a': 2}]</div>
+            <div data-djc-id-a1bc3f>{'a': 3}</div>
+            """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -245,9 +241,7 @@ class DynamicExprTests(BaseTestCase):
                 bool_var="{# noop is_active #}"
                 list_var=" {# noop list #} "
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -267,6 +261,7 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["bool_var"], "")
         self.assertEqual(captured["list_var"], "  ")
 
+        # NOTE: This is whitespace-sensitive test, so we check exact output
         self.assertEqual(
             rendered.strip(),
             (
@@ -325,9 +320,7 @@ class DynamicExprTests(BaseTestCase):
                 list_var=" {% noop list %} "
                 dict_var=" {% noop dict %} "
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -347,6 +340,7 @@ class DynamicExprTests(BaseTestCase):
         self.assertEqual(captured["dict_var"], " {'a': 3} ")
         self.assertEqual(captured["list_var"], " [{'a': 1}, {'a': 2}] ")
 
+        # NOTE: This is whitespace-sensitive test, so we check exact output
         self.assertEqual(
             rendered.strip(),
             (
@@ -388,9 +382,7 @@ class DynamicExprTests(BaseTestCase):
             """
             {% load component_tags %}
             {% component 'test' '"' "{%}" bool_var="{% noop is_active %}" / %}
-            """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -398,14 +390,14 @@ class DynamicExprTests(BaseTestCase):
             Context({"is_active": True}),
         )
 
-        self.assertEqual(
-            rendered.strip(),
-            (
-                "<!-- _RENDERED SimpleComponent_c7a5c3,a1bc3f,, -->\n"
-                '                <div data-djc-id-a1bc3f>"</div>\n'
-                "                <div data-djc-id-a1bc3f>{%}</div>\n"
-                "                <div data-djc-id-a1bc3f>True</div>"
-            ),
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <!-- _RENDERED SimpleComponent_c7a5c3,a1bc3f,, -->
+            <div data-djc-id-a1bc3f>"</div>
+            <div data-djc-id-a1bc3f>{%}</div>
+            <div data-djc-id-a1bc3f>True</div>
+            """,
         )
 
     @parametrize_context_behavior(["django", "isolated"])
@@ -437,9 +429,7 @@ class DynamicExprTests(BaseTestCase):
                 "{% component 'test' '{{ var_a }}' bool_var=is_active / %}"
                 bool_var="{% noop is_active %}"
             / %}
-            """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -452,16 +442,17 @@ class DynamicExprTests(BaseTestCase):
             ),
         )
 
-        self.assertEqual(
-            rendered.strip(),
-            (
-                "<!-- _RENDERED SimpleComponent_5c8766,a1bc41,, -->\n"
-                "                <div data-djc-id-a1bc41><!-- _RENDERED SimpleComponent_5c8766,a1bc40,, -->\n"
-                "                <div data-djc-id-a1bc40>3</div>\n"
-                "                <div data-djc-id-a1bc40>True</div>\n"
-                "            </div>\n"
-                "                <div data-djc-id-a1bc41>True</div>"
-            ),
+        self.assertHTMLEqual(
+            rendered,
+            """
+                <!-- _RENDERED SimpleComponent_5c8766,a1bc41,, -->
+                <div data-djc-id-a1bc41>
+                    <!-- _RENDERED SimpleComponent_5c8766,a1bc40,, -->
+                    <div data-djc-id-a1bc40>3</div>
+                    <div data-djc-id-a1bc40>True</div>
+                </div>
+                <div data-djc-id-a1bc41>True</div>
+            """
         )
 
 
@@ -503,9 +494,7 @@ class SpreadOperatorTests(BaseTestCase):
                 ..."{{ list|first }}"
                 x=123
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
@@ -743,9 +732,7 @@ class SpreadOperatorTests(BaseTestCase):
                 x=123
                 ..."{{ list|first }}"
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template1 = Template(template_str1)
@@ -766,9 +753,7 @@ class SpreadOperatorTests(BaseTestCase):
                 }
                 attrs:style="OVERWRITTEN"
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template2 = Template(template_str2)
@@ -797,9 +782,7 @@ class SpreadOperatorTests(BaseTestCase):
                 var_a
                 ...
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         with self.assertRaisesMessage(TemplateSyntaxError, "Spread syntax '...' is missing a value"):
@@ -825,9 +808,7 @@ class SpreadOperatorTests(BaseTestCase):
                 ...var_a
                 ...var_b
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
         template = Template(template_str)
 
@@ -860,9 +841,7 @@ class SpreadOperatorTests(BaseTestCase):
             {% component 'test'
                 ...var_b
             / %}
-        """.replace(
-                "\n", " "
-            )
+            """
         )
 
         template = Template(template_str)
