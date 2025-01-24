@@ -53,8 +53,10 @@ from django_components.dependencies import (
     cache_component_js,
     cache_component_js_vars,
     postprocess_component_html,
+    set_component_attrs_for_js_and_css,
 )
 from django_components.node import BaseNode
+from django_components.perfutil.component import component_post_render
 from django_components.slots import (
     ComponentSlotContext,
     Slot,
@@ -992,10 +994,11 @@ class Component(
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
         # call `self.inject()` from within `get_context_data()`.
+        render_id = gen_id()
         self._render_stack.append(
             RenderStackItem(
                 input=RenderInput(
-                    id=gen_id(),
+                    id=render_id,
                     context=context,
                     slots=slots,
                     args=args,
@@ -1026,8 +1029,17 @@ class Component(
             is_filled = SlotIsFilled(slots_untyped)
             self._render_stack[-1].is_filled = is_filled
 
+            # If any slot fills were defined within the template, we want to scope them
+            # to the CSS of the parent component. Thus we keep track of the parent component.
+            if context.get(_COMPONENT_SLOT_CTX_CONTEXT_KEY, None):
+                parent_comp_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
+                parent_id = parent_comp_ctx.component_id
+            else:
+                parent_id = None
+
             component_slot_ctx = ComponentSlotContext(
                 component_name=self.name,
+                component_id=render_id,
                 template_name=template.name,
                 fills=slots_untyped,
                 is_dynamic_component=getattr(self, "_is_dynamic_component", False),
@@ -1062,22 +1074,49 @@ class Component(
                 new_output = self.on_render_after(context, template, html_content)
                 html_content = new_output if new_output is not None else html_content
 
-                output = postprocess_component_html(
-                    component_cls=self.__class__,
-                    component_id=self.id,
-                    html_content=html_content,
-                    css_input_hash=css_input_hash,
-                    js_input_hash=js_input_hash,
-                    type=type,
-                    render_dependencies=render_dependencies,
-                )
-
         # After rendering is done, remove the current state from the stack, which means
         # properties like `self.context` will no longer return the current state.
         self._render_stack.pop()
         context.render_context.pop()
 
-        return output
+        # Internal component HTML post-processing:
+        # - Add the HTML attributes to work with JS and CSS variables
+        # - Resolve component's JS / CSS into <script> and <link> (if render_dependencies=True)
+        #
+        # However, to ensure that we run an HTML parser only once over the HTML content,
+        # we have to wrap it in this callback. This callback runs only once we know whether
+        # there are any extra HTML attributes that should be applied to this component's root elements.
+        #
+        # This makes it possible for multiple components to resolve to the same HTML element.
+        # E.g. if CompA renders CompB, and CompB renders a <div>, then the <div> element will have
+        # IDs of both CompA and CompB.
+        # ```html
+        # <div djc-id-a1b3cf djc-id-f3d3cf>...</div>
+        # ```
+        def post_processor(root_attributes: Optional[List[str]] = None) -> Tuple[str, Dict[str, List[str]]]:
+            nonlocal html_content
+
+            updated_html, child_components = set_component_attrs_for_js_and_css(
+                html_content=html_content,
+                component_id=render_id,
+                css_input_hash=css_input_hash,
+                css_scope_id=None,  # TODO - Implement
+                root_attributes=root_attributes,
+            )
+
+            updated_html = postprocess_component_html(
+                component_cls=self.__class__,
+                component_id=render_id,
+                html_content=updated_html,
+                css_input_hash=css_input_hash,
+                js_input_hash=js_input_hash,
+                type=type,
+                render_dependencies=render_dependencies,
+            )
+
+            return updated_html, child_components
+
+        return component_post_render(post_processor, render_id, parent_id)
 
     def _normalize_slot_fills(
         self,
@@ -1208,6 +1247,14 @@ class Component(
         validate_typed_dict(data, data_type, f"Component '{self.name}'", "data")
 
 
+# Perf
+# Each component may use different start and end tags. We represent this
+# as individual subclasses of `ComponentNode`. However, multiple components
+# may use the same start & end tag combination, e.g. `{% component %}` and `{% endcomponent %}`.
+# So we cache the already-created subclasses to be reused.
+component_node_subclasses_by_name: Dict[str, Tuple[Type["ComponentNode"], ComponentRegistry]] = {}
+
+
 class ComponentNode(BaseNode):
     """
     Renders one of the components that was previously registered with
@@ -1336,15 +1383,31 @@ class ComponentNode(BaseNode):
         start_tag: str,
         end_tag: str,
     ) -> "ComponentNode":
-        # Set the component-specific start and end tags by subclassing the base node
+        # Set the component-specific start and end tags by subclassing the BaseNode
         subcls_name = cls.__name__ + "_" + name
-        subcls: Type[ComponentNode] = type(subcls_name, (cls,), {"tag": start_tag, "end_tag": end_tag})
+
+        # We try to reuse the same subclass for the same start tag, so we can
+        # avoid creating a new subclass for each time `{% component %}` is called.
+        if start_tag not in component_node_subclasses_by_name:
+            subcls: Type[ComponentNode] = type(subcls_name, (cls,), {"tag": start_tag, "end_tag": end_tag})
+            component_node_subclasses_by_name[start_tag] = (subcls, registry)
+
+        cached_subcls, cached_registry = component_node_subclasses_by_name[start_tag]
+
+        if cached_registry is not registry:
+            raise RuntimeError(
+                f"Detected two Components from different registries using the same start tag '{start_tag}'"
+            )
+        elif cached_subcls.end_tag != end_tag:
+            raise RuntimeError(
+                f"Detected two Components using the same start tag '{start_tag}' but with different end tags"
+            )
 
         # Call `BaseNode.parse()` as if with the context of subcls.
-        node: ComponentNode = super(cls, subcls).parse(  # type: ignore[attr-defined]
+        node: ComponentNode = super(cls, cached_subcls).parse(  # type: ignore[attr-defined]
             parser,
             token,
-            registry=registry,
+            registry=cached_registry,
             name=name,
         )
         return node

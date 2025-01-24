@@ -5,6 +5,7 @@ if calling `Component.render()` or `render_dependencies()` behave as expected.
 For checking the OUTPUT of the dependencies, see `test_dependency_rendering.py`.
 """
 
+import re
 from unittest.mock import Mock
 
 from django.http import HttpResponseNotModified
@@ -13,7 +14,6 @@ from django.template import Context, Template
 from django_components import Component, registry, render_dependencies, types
 from django_components.components.dynamic import DynamicComponent
 from django_components.middleware import ComponentDependencyMiddleware
-from django_components.util.html import SoupNode
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, create_and_process_template_response
@@ -223,9 +223,8 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
 
-        # Nodes: [Doctype, whitespace, <html>]
-        nodes = SoupNode.from_fragment(rendered.strip())
-        rendered_body = nodes[2].find_tag("body").to_html()  # type: ignore[union-attr]
+        body_re = re.compile(r"<body>(.*?)</body>", re.DOTALL)
+        rendered_body = body_re.search(rendered).group(1)  # type: ignore[union-attr]
 
         self.assertInHTML(
             """<script src="django_components/django_components.min.js">""",
@@ -275,9 +274,8 @@ class RenderDependenciesTests(BaseTestCase):
             count=1,
         )
 
-        # Nodes: [Doctype, whitespace, <html>]
-        nodes = SoupNode.from_fragment(rendered.strip())
-        rendered_head = nodes[2].find_tag("head").to_html()  # type: ignore[union-attr]
+        head_re = re.compile(r"<head>(.*?)</head>", re.DOTALL)
+        rendered_head = head_re.search(rendered).group(1)  # type: ignore[union-attr]
 
         self.assertInHTML(
             """<script src="django_components/django_components.min.js">""",
@@ -518,6 +516,7 @@ class MiddlewareTests(BaseTestCase):
             template,
             context=Context({"component_name": "test-component"}),
         )
+
         assert_dependencies(rendered2)
         self.assertEqual(
             rendered2.count("Variable: <strong data-djc-id-a1bc43 data-djc-id-a1bc44>value</strong>"),

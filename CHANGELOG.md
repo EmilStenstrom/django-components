@@ -1,5 +1,15 @@
 # Release notes
 
+## v0.126
+
+#### Refactor
+
+- Replaced [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) with a custom HTML parser.
+- The heuristic for inserting JS and CSS dependenies into the default place has changed.
+    - JS is still inserted at the end of the `<body>`, and CSS at the end of `<head>`.
+    - However, we find end of `<body>` by searching for **last** occurrence of `</body>`
+    - And for the end of `<head>` we search for the **first** occurrence of `</head>`
+
 ## v0.125
 
 ⚠️ Attention ⚠️ - We migrated from `EmilStenstrom/django-components` to `django-components/django-components`.

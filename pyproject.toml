@@ -29,7 +29,6 @@ classifiers = [
 ]
 dependencies = [
     'Django>=4.2',
-    'beautifulsoup4>=4.12',
 ]
 license = {text = "MIT"}
 
