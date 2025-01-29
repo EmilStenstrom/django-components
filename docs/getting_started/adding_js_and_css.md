@@ -237,7 +237,7 @@ with a few differences:
 2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`, [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function.
 3. If you set `Media.extend` to a list, it should be a list of `Component` classes.
 
-[Learn more](../fundamentals/defining_js_css_html_files.md) about using Media.
+[Learn more](../../concepts/fundamentals/defining_js_css_html_files) about using Media.
 
 ```python title="[project root]/components/calendar/calendar.py"
 from django_components import Component
