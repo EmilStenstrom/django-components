@@ -34,6 +34,7 @@ from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 from djc_core_html_parser import set_html_attributes
+from django_components.component_registry import all_registries
 
 from django_components.node import BaseNode
 from django_components.util.misc import get_import_path, is_nonempty_str
@@ -356,6 +357,18 @@ def _insert_component_comment(
     output = mark_safe(COMPONENT_DEPS_COMMENT.format(data=data) + content)
     return output
 
+def _safe_get_comp_cls(comp_cls_hash: str) -> Type["Component"]:
+    try:
+        return comp_hash_mapping[comp_cls_hash]
+    except KeyError:
+        # NOTE: This should only happen if another worker rendered the component,
+        # and the rendered HTML fragment was cached in a shared cache.
+        for reg in all_registries:
+            for component in reg.all().values():
+                if (comp_cls_hash := _hash_comp_cls(component)) == comp_cls_hash:
+                    comp_hash_mapping[comp_cls_hash] = component
+                    return component
+        raise KeyError(f"Component class with hash '{comp_cls_hash}' not found, even after searching registry.")
 
 # Anything and everything that needs to be done with a Component's HTML
 # script in order to support running JS and CSS per-instance.
@@ -654,7 +667,7 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
     ) = _prepare_tags_and_urls(comp_data, type)
 
     def get_component_media(comp_cls_hash: str) -> Media:
-        comp_cls = comp_hash_mapping[comp_cls_hash]
+        comp_cls = _safe_get_comp_cls(comp_cls_hash)
         # NOTE: We instantiate the component classes so the `Media` are processed into `media`
         comp = comp_cls()
         return comp.media
@@ -827,7 +840,7 @@ def _prepare_tags_and_urls(
         # copy of the style, because each copy will have component's ID embedded.
         # So, in that case we inline the style into the HTML (See `_link_dependencies_with_component_html`),
         # which means that we are NOT going to load / inline it again.
-        comp_cls = comp_hash_mapping[comp_cls_hash]
+        comp_cls = _safe_get_comp_cls(comp_cls_hash)
 
         if type == "document":
             # NOTE: Skip fetching of inlined JS/CSS if it's not defined or empty for given component
@@ -1031,9 +1044,7 @@ def cached_script_view(
     if req.method != "GET":
         return HttpResponseNotAllowed(["GET"])
 
-    comp_cls = comp_hash_mapping.get(comp_cls_hash)
-    if comp_cls is None:
-        return HttpResponseNotFound()
+    comp_cls = _safe_get_comp_cls(comp_cls_hash)
 
     script = get_script_content(script_type, comp_cls, input_hash)
     if script is None:
