@@ -79,7 +79,6 @@ def is_nonempty_str(txt: Optional[str]) -> bool:
     return txt is not None and bool(txt.strip())
 
 
-@lru_cache(None)
 def hash_comp_cls(comp_cls: Type["Component"]) -> str:
     full_name = get_import_path(comp_cls)
     comp_cls_hash = md5(full_name.encode()).hexdigest()[0:6]
