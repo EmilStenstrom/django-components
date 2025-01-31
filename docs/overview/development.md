@@ -10,12 +10,19 @@ This makes a copy of the repository in your own name. Now you can clone this rep
 
 ```sh
 git clone https://github.com/<your GitHub username>/django-components.git
+cd django-components
 ```
 
 To quickly run the tests install the local dependencies by running:
 
 ```sh
 pip install -r requirements-dev.txt
+```
+
+You also have to install this local django-components version, initially and after every change you want to test:
+
+```sh
+pip install .
 ```
 
 Now you can run the tests to make sure everything works as expected:
