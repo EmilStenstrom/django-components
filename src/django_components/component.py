@@ -1020,8 +1020,9 @@ class Component(
             is_filled=None,
         )
 
-        # If any slot fills were defined within the template, we want to scope them
-        # to the CSS of the parent component. Thus we keep track of the parent component.
+        # We pass down the components the info about the component's parent.
+        # This is used for correctly resolving slot fills, correct rendering order,
+        # or CSS scoping.
         if context.get(_COMPONENT_CONTEXT_KEY, None):
             parent_id = cast(str, context[_COMPONENT_CONTEXT_KEY])
             parent_comp_ctx = component_context_cache[parent_id]
@@ -1139,6 +1140,8 @@ class Component(
             del component_context_cache[component_id]  # type: ignore[arg-type]
             unregister_provide_reference(component_id)  # type: ignore[arg-type]
 
+        # After the component and all its children are rendered, we resolve
+        # all inserted HTML comments into <script> and <link> tags (if render_dependencies=True)
         def on_html_rendered(html: str) -> str:
             if render_dependencies:
                 html = _render_dependencies(html, type)
@@ -1180,12 +1183,6 @@ class Component(
     # ```html
     # <div djc-id-a1b3cf djc-id-f3d3cf>...</div>
     # ```
-    #
-    # ---
-    #
-    # After the component is rendered, we post-process the output:
-    # - Add the HTML attributes to work with JS and CSS variables
-    # - Resolve component's JS / CSS into <script> and <link> (if render_dependencies=True)
     def _gen_component_renderer(
         self,
         render_id: str,
@@ -1223,6 +1220,7 @@ class Component(
                 new_output = component.on_render_after(context, template, html_content)
                 html_content = new_output if new_output is not None else html_content
 
+            # Add necessary HTML attributes to work with JS and CSS variables
             updated_html, child_components = set_component_attrs_for_js_and_css(
                 html_content=html_content,
                 component_id=render_id,
@@ -1231,8 +1229,7 @@ class Component(
                 root_attributes=root_attributes,
             )
 
-            # Mark the generated HTML so that we will know which JS and CSS
-            # scripts are associated with it.
+            # Prepend an HTML comment to instructs how and what JS and CSS scripts are associated with it.
             updated_html = insert_component_dependencies_comment(
                 updated_html,
                 component_cls=component_cls,
