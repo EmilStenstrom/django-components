@@ -120,7 +120,7 @@ class DynamicComponent(Component):
 
     # NOTE: The inner component is rendered in `on_render_before`, so that the `Context` object
     # is already configured as if the inner component was rendered inside the template.
-    # E.g. the `_COMPONENT_SLOT_CTX_CONTEXT_KEY` is set, which means that the child component
+    # E.g. the `_COMPONENT_CONTEXT_KEY` is set, which means that the child component
     # will know that it's a child of this component.
     def on_render_before(self, context: Context, template: Template) -> Context:
         comp_class = context["comp_class"]

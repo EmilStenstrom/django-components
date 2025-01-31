@@ -38,8 +38,8 @@ class TemplateCacheTest(BaseTestCase):
                 }
 
         comp = SimpleComponent()
-        template_1 = comp._get_template(Context({}))
+        template_1 = comp._get_template(Context({}), component_id="123")
         template_1._test_id = "123"
 
-        template_2 = comp._get_template(Context({}))
+        template_2 = comp._get_template(Context({}), component_id="123")
         self.assertEqual(template_2._test_id, "123")

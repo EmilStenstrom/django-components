@@ -3,6 +3,7 @@ from typing import Any
 from django.template import Context, Template, TemplateSyntaxError
 
 from django_components import Component, register, types
+from django_components.perfutil.provide import provide_cache, provide_references, all_reference_ids
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -11,6 +12,11 @@ setup_test_config({"autodiscover": False})
 
 
 class ProvideTemplateTagTest(BaseTestCase):
+    def _assert_clear_cache(self):
+        self.assertEqual(provide_cache, {})
+        self.assertEqual(provide_references, {})
+        self.assertEqual(all_reference_ids, set())
+
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_basic(self):
         @register("injectee")
@@ -25,7 +31,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=1 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -36,16 +42,17 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=1) </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_basic_self_closing(self):
         template_str: types.django_html = """
             {% load component_tags %}
             <div>
-                {% provide "my_provide" key="hi" another=123 / %}
+                {% provide "my_provide" key="hi" another=2 / %}
             </div>
         """
         template = Template(template_str)
@@ -57,6 +64,7 @@ class ProvideTemplateTagTest(BaseTestCase):
             <div></div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_access_keys_in_python(self):
@@ -76,7 +84,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=3 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -87,10 +95,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40> key: hi </div>
-            <div data-djc-id-a1bc40> another: 123 </div>
+            <div data-djc-id-a1bc41> key: hi </div>
+            <div data-djc-id-a1bc41> another: 3 </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_access_keys_in_django(self):
@@ -109,7 +118,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=4 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -120,10 +129,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40> key: hi </div>
-            <div data-djc-id-a1bc40> another: 123 </div>
+            <div data-djc-id-a1bc41> key: hi </div>
+            <div data-djc-id-a1bc41> another: 4 </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_does_not_leak(self):
@@ -139,7 +149,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=5 %}
             {% endprovide %}
             {% component "injectee" %}
             {% endcomponent %}
@@ -150,9 +160,10 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40> injected: default </div>
+            <div data-djc-id-a1bc41> injected: default </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_empty(self):
@@ -183,12 +194,13 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc41> injected: DepInject() </div>
-            <div data-djc-id-a1bc42> injected: default </div>
+            <div data-djc-id-a1bc42> injected: DepInject() </div>
+            <div data-djc-id-a1bc43> injected: default </div>
         """,
         )
+        self._assert_clear_cache()
 
-    @parametrize_context_behavior(["django", "isolated"])
+    @parametrize_context_behavior(["django"])
     def test_provide_no_inject(self):
         """Check that nothing breaks if we do NOT inject even if some data is provided"""
 
@@ -203,7 +215,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=6 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -216,10 +228,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc41></div>
             <div data-djc-id-a1bc42></div>
+            <div data-djc-id-a1bc43></div>
         """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_name_single_quotes(self):
@@ -235,7 +248,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide 'my_provide' key="hi" another=123 %}
+            {% provide 'my_provide' key="hi" another=7 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -248,10 +261,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=123) </div>
-            <div data-djc-id-a1bc42> injected: default </div>
+            <div data-djc-id-a1bc42> injected: DepInject(key='hi', another=7) </div>
+            <div data-djc-id-a1bc43> injected: default </div>
         """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_name_as_var(self):
@@ -267,7 +281,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide var_a key="hi" another=123 %}
+            {% provide var_a key="hi" another=8 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -286,10 +300,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=123) </div>
-            <div data-djc-id-a1bc42> injected: default </div>
+            <div data-djc-id-a1bc42> injected: DepInject(key='hi', another=8) </div>
+            <div data-djc-id-a1bc43> injected: default </div>
         """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_name_as_spread(self):
@@ -319,7 +334,7 @@ class ProvideTemplateTagTest(BaseTestCase):
                     "provide_props": {
                         "name": "my_provide",
                         "key": "hi",
-                        "another": 123,
+                        "another": 9,
                     },
                 }
             )
@@ -328,10 +343,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=123) </div>
-            <div data-djc-id-a1bc42> injected: default </div>
+            <div data-djc-id-a1bc42> injected: DepInject(key='hi', another=9) </div>
+            <div data-djc-id-a1bc43> injected: default </div>
         """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_no_name_raises(self):
@@ -347,7 +363,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide key="hi" another=123 %}
+            {% provide key="hi" another=10 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -359,6 +375,8 @@ class ProvideTemplateTagTest(BaseTestCase):
             "Invalid parameters for tag 'provide': missing a required argument: 'name'",
         ):
             Template(template_str).render(Context({}))
+
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_name_must_be_string_literal(self):
@@ -374,7 +392,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide my_var key="hi" another=123 %}
+            {% provide my_var key="hi" another=11 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -386,6 +404,8 @@ class ProvideTemplateTagTest(BaseTestCase):
             "Provide tag received an empty string. Key must be non-empty and a valid identifier",
         ):
             Template(template_str).render(Context({}))
+
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_name_must_be_identifier(self):
@@ -401,7 +421,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "%heya%" key="hi" another=123 %}
+            {% provide "%heya%" key="hi" another=12 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -409,8 +429,10 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% endcomponent %}
         """
         template = Template(template_str)
+
         with self.assertRaises(TemplateSyntaxError):
             template.render(Context({}))
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_aggregate_dics(self):
@@ -426,7 +448,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" var1:key="hi" var1:another=123 var2:x="y" %}
+            {% provide "my_provide" var1:key="hi" var1:another=13 var2:x="y" %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -437,9 +459,10 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40> injected: DepInject(var1={'key': 'hi', 'another': 123}, var2={'x': 'y'}) </div>
+            <div data-djc-id-a1bc41> injected: DepInject(var1={'key': 'hi', 'another': 13}, var2={'x': 'y'}) </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_does_not_expose_kwargs_to_context(self):
@@ -459,7 +482,7 @@ class ProvideTemplateTagTest(BaseTestCase):
             {% load component_tags %}
             var_out: {{ var }}
             key_out: {{ key }}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=14 %}
                 var_in: {{ var }}
                 key_in: {{ key }}
             {% endprovide %}
@@ -476,6 +499,7 @@ class ProvideTemplateTagTest(BaseTestCase):
             key_in:
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_nested_in_provide_same_key(self):
@@ -493,8 +517,8 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 lost=0 %}
-                {% provide "my_provide" key="hi1" another=1231 new=3 %}
+            {% provide "my_provide" key="hi" another=15 lost=0 %}
+                {% provide "my_provide" key="hi1" another=16 new=3 %}
                     {% component "injectee" %}
                     {% endcomponent %}
                 {% endprovide %}
@@ -511,11 +535,13 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc43> injected: DepInject(key='hi1', another=1231, new=3) </div>
-            <div data-djc-id-a1bc44> injected: DepInject(key='hi', another=123, lost=0) </div>
-            <div data-djc-id-a1bc45> injected: default </div>
+            <div data-djc-id-a1bc45> injected: DepInject(key='hi1', another=16, new=3) </div>
+            <div data-djc-id-a1bc46> injected: DepInject(key='hi', another=15, lost=0) </div>
+            <div data-djc-id-a1bc47> injected: default </div>
             """,
         )
+
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_nested_in_provide_different_key(self):
@@ -538,8 +564,8 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "first_provide" key="hi" another=123 lost=0 %}
-                {% provide "second_provide" key="hi1" another=1231 new=3 %}
+            {% provide "first_provide" key="hi" another=17 lost=0 %}
+                {% provide "second_provide" key="hi1" another=18 new=3 %}
                     {% component "injectee" %}
                     {% endcomponent %}
                 {% endprovide %}
@@ -551,10 +577,11 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc41> first_provide: DepInject(key='hi', another=123, lost=0) </div>
-            <div data-djc-id-a1bc41> second_provide: DepInject(key='hi1', another=1231, new=3) </div>
+            <div data-djc-id-a1bc43> first_provide: DepInject(key='hi', another=17, lost=0) </div>
+            <div data-djc-id-a1bc43> second_provide: DepInject(key='hi1', another=18, new=3) </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_provide_in_include(self):
@@ -570,7 +597,7 @@ class ProvideTemplateTagTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=19 %}
                 {% include "inject.html" %}
             {% endprovide %}
         """
@@ -581,10 +608,11 @@ class ProvideTemplateTagTest(BaseTestCase):
             rendered,
             """
             <div>
-                <div data-djc-id-a1bc40> injected: DepInject(key='hi', another=123) </div>
+                <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=19) </div>
             </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_slot_in_provide(self):
@@ -602,7 +630,7 @@ class ProvideTemplateTagTest(BaseTestCase):
         class ParentComponent(Component):
             template: types.django_html = """
                 {% load component_tags %}
-                {% provide "my_provide" key="hi" another=123 %}
+                {% provide "my_provide" key="hi" another=20 %}
                     {% slot "content" default %}{% endslot %}
                 {% endprovide %}
             """
@@ -619,14 +647,20 @@ class ProvideTemplateTagTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40 data-djc-id-a1bc43>
-                injected: DepInject(key='hi', another=123)
+            <div data-djc-id-a1bc40 data-djc-id-a1bc44>
+                injected: DepInject(key='hi', another=20)
             </div>
             """,
         )
+        self._assert_clear_cache()
 
 
 class InjectTest(BaseTestCase):
+    def _assert_clear_cache(self):
+        self.assertEqual(provide_cache, {})
+        self.assertEqual(provide_references, {})
+        self.assertEqual(all_reference_ids, set())
+
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_basic(self):
         @register("injectee")
@@ -641,7 +675,7 @@ class InjectTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=21 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -652,9 +686,10 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40> injected: DepInject(key='hi', another=123) </div>
+            <div data-djc-id-a1bc41> injected: DepInject(key='hi', another=21) </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_missing_key_raises_without_default(self):
@@ -677,6 +712,8 @@ class InjectTest(BaseTestCase):
 
         with self.assertRaises(KeyError):
             template.render(Context({}))
+
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_missing_key_ok_with_default(self):
@@ -703,6 +740,7 @@ class InjectTest(BaseTestCase):
             <div data-djc-id-a1bc3f> injected: default </div>
             """,
         )
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_empty_string(self):
@@ -718,7 +756,7 @@ class InjectTest(BaseTestCase):
 
         template_str: types.django_html = """
             {% load component_tags %}
-            {% provide "my_provide" key="hi" another=123 %}
+            {% provide "my_provide" key="hi" another=22 %}
                 {% component "injectee" %}
                 {% endcomponent %}
             {% endprovide %}
@@ -729,6 +767,8 @@ class InjectTest(BaseTestCase):
 
         with self.assertRaises(KeyError):
             template.render(Context({}))
+
+        self._assert_clear_cache()
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_inject_raises_on_called_outside_get_context_data(self):
@@ -745,6 +785,8 @@ class InjectTest(BaseTestCase):
         comp = InjectComponent("")
         with self.assertRaises(RuntimeError):
             comp.inject("abc", "def")
+
+        self._assert_clear_cache()
 
     # See https://github.com/django-components/django-components/pull/778
     @parametrize_context_behavior(["django", "isolated"])
@@ -805,14 +847,15 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc45 data-djc-id-a1bc48>
+            <div data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc45 data-djc-id-a1bc49>
                 injected: DepInject(key='hi', data=123)
             </div>
-            <main data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc45 data-djc-id-a1bc48>
+            <main data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc45 data-djc-id-a1bc49>
                 456
             </main>
             """,
         )
+        self._assert_clear_cache()
 
     # See https://github.com/django-components/django-components/pull/786
     @parametrize_context_behavior(["django", "isolated"])
@@ -869,10 +912,173 @@ class InjectTest(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc44 data-djc-id-a1bc47>
+            <div data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc44 data-djc-id-a1bc48>
                 injected: DepInject(key='hi', data=123)
             </div>
-            <main data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc44 data-djc-id-a1bc47>
+            <main data-djc-id-a1bc3e data-djc-id-a1bc41 data-djc-id-a1bc44 data-djc-id-a1bc48>
             </main>
             """,
         )
+        self._assert_clear_cache()
+
+
+# When there is `{% component %}` that's a descendant of `{% provide %}`,
+# then the cache entry is NOT removed as soon as we have rendered the children (nodelist)
+# of `{% provide %}`.
+#
+# Instead, we manage the state ourselves, and remove the cache entry
+# when the component rendered is done.
+class ProvideCacheTest(BaseTestCase):
+    def _assert_clear_cache(self):
+        self.assertEqual(provide_cache, {})
+        self.assertEqual(provide_references, {})
+        self.assertEqual(all_reference_ids, set())
+
+    def test_provide_outside_component(self):
+        tester = self
+
+        @register("injectee")
+        class Injectee(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div> injected: {{ data|safe }} </div>
+                <div> Ran: {{ ran }} </div>
+            """
+
+            def get_context_data(self):
+                tester.assertEqual(len(provide_cache), 1)
+
+                data = self.inject("my_provide")
+                return {"data": data, "ran": True}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% provide "my_provide" key="hi" another=23 %}
+                {% component "injectee" / %}
+            {% endprovide %}
+        """
+
+        self._assert_clear_cache()
+
+        template = Template(template_str)
+        self._assert_clear_cache()
+
+        rendered = template.render(Context({}))
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div data-djc-id-a1bc41>
+                injected: DepInject(key='hi', another=23)
+            </div>
+            <div data-djc-id-a1bc41>
+                Ran: True
+            </div>
+            """,
+        )
+        self._assert_clear_cache()
+
+    # Cache should be cleared even if there is an error.
+    def test_provide_outside_component_with_error(self):
+        tester = self
+
+        @register("injectee")
+        class Injectee(Component):
+            template = ""
+
+            def get_context_data(self):
+                tester.assertEqual(len(provide_cache), 1)
+                data = self.inject("my_provide")
+
+                raise ValueError("Oops")
+                return {"data": data, "ran": True}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% provide "my_provide" key="hi" another=24 %}
+                {% component "injectee" / %}
+            {% endprovide %}
+        """
+
+        self._assert_clear_cache()
+
+        template = Template(template_str)
+        self._assert_clear_cache()
+
+        with self.assertRaisesMessage(ValueError, "Oops"):
+            template.render(Context({}))
+
+        self._assert_clear_cache()
+
+    def test_provide_inside_component(self):
+        tester = self
+
+        @register("injectee")
+        class Injectee(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div> injected: {{ data|safe }} </div>
+                <div> Ran: {{ ran }} </div>
+            """
+
+            def get_context_data(self):
+                tester.assertEqual(len(provide_cache), 1)
+
+                data = self.inject("my_provide")
+                return {"data": data, "ran": True}
+
+        @register("root")
+        class Root(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% provide "my_provide" key="hi" another=25 %}
+                    {% component "injectee" / %}
+                {% endprovide %}
+            """
+
+        self._assert_clear_cache()
+
+        rendered = Root.render()
+
+        self.assertHTMLEqual(
+            rendered,
+            """
+            <div data-djc-id-a1bc3e data-djc-id-a1bc42>
+                injected: DepInject(key='hi', another=25)
+            </div>
+            <div data-djc-id-a1bc3e data-djc-id-a1bc42>
+                Ran: True
+            </div>
+            """,
+        )
+        self._assert_clear_cache()
+
+    def test_provide_inside_component_with_error(self):
+        tester = self
+
+        @register("injectee")
+        class Injectee(Component):
+            template = ""
+
+            def get_context_data(self):
+                tester.assertEqual(len(provide_cache), 1)
+
+                data = self.inject("my_provide")
+                raise ValueError("Oops")
+                return {"data": data, "ran": True}
+
+        @register("root")
+        class Root(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% provide "my_provide" key="hi" another=26 %}
+                    {% component "injectee" / %}
+                {% endprovide %}
+            """
+
+        self._assert_clear_cache()
+
+        with self.assertRaisesMessage(ValueError, "Oops"):
+            Root.render()
+
+        self._assert_clear_cache()

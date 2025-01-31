@@ -19,23 +19,21 @@ from typing import (
     runtime_checkable,
 )
 
-from django.template import Context
+from django.template import Context, Template
 from django.template.base import NodeList, TextNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
 from django_components.app_settings import ContextBehavior
-from django_components.context import (
-    _COMPONENT_SLOT_CTX_CONTEXT_KEY,
-    _INJECT_CONTEXT_KEY_PREFIX,
-    _REGISTRY_CONTEXT_KEY,
-    _ROOT_CTX_CONTEXT_KEY,
-)
+from django_components.context import _COMPONENT_CONTEXT_KEY, _INJECT_CONTEXT_KEY_PREFIX
 from django_components.node import BaseNode
-from django_components.util.misc import get_last_index, is_identifier
+from django_components.perfutil.component import component_context_cache
+from django_components.util.exception import add_slot_to_error_message
+from django_components.util.logger import trace_component_msg
+from django_components.util.misc import get_index, get_last_index, is_identifier
 
 if TYPE_CHECKING:
-    from django_components.component_registry import ComponentRegistry
+    from django_components.component import ComponentContext
 
 TSlotData = TypeVar("TSlotData", bound=Mapping, contravariant=True)
 
@@ -65,6 +63,16 @@ class Slot(Generic[TSlotData]):
     """This class holds the slot content function along with related metadata."""
 
     content_func: SlotFunc[TSlotData]
+    escaped: bool = False
+    """Whether the slot content has been escaped."""
+
+    # Following fields are only for debugging
+    component_name: Optional[str] = None
+    """Name of the component that originally defined or accepted this slot fill."""
+    slot_name: Optional[str] = None
+    """Name of the slot that originally defined or accepted this slot fill."""
+    nodelist: Optional[NodeList] = None
+    """Nodelist of the slot content."""
 
     def __post_init__(self) -> None:
         if not callable(self.content_func):
@@ -84,6 +92,11 @@ class Slot(Generic[TSlotData]):
     @property
     def do_not_call_in_templates(self) -> bool:
         return True
+
+    def __repr__(self) -> str:
+        comp_name = f"'{self.component_name}'" if self.component_name else None
+        slot_name = f"'{self.slot_name}'" if self.slot_name else None
+        return f"<{self.__class__.__name__} component_name={comp_name} slot_name={slot_name}>"
 
 
 # Internal type aliases
@@ -135,16 +148,6 @@ class SlotIsFilled(dict):
 
     def __missing__(self, key: Any) -> bool:
         return False
-
-
-@dataclass
-class ComponentSlotContext:
-    component_name: str
-    component_id: str
-    template_name: str
-    is_dynamic_component: bool
-    default_slot: Optional[str]
-    fills: Dict[SlotName, Slot]
 
 
 class SlotNode(BaseNode):
@@ -303,17 +306,30 @@ class SlotNode(BaseNode):
         if _is_extracting_fill(context):
             return ""
 
-        if _COMPONENT_SLOT_CTX_CONTEXT_KEY not in context or not context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]:
+        if _COMPONENT_CONTEXT_KEY not in context or not context[_COMPONENT_CONTEXT_KEY]:
             raise TemplateSyntaxError(
-                "Encountered a SlotNode outside of a ComponentNode context. "
+                "Encountered a SlotNode outside of a Component context. "
                 "Make sure that all {% slot %} tags are nested within {% component %} tags.\n"
                 f"SlotNode: {self.__repr__()}"
             )
 
-        component_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
+        component_id: str = context[_COMPONENT_CONTEXT_KEY]
+        component_ctx = component_context_cache[component_id]
+        component_name = component_ctx.component_name
+        component_path = component_ctx.component_path
+        slot_fills = component_ctx.fills
         slot_name = name
         is_default = self.flags[SLOT_DEFAULT_KEYWORD]
         is_required = self.flags[SLOT_REQUIRED_KEYWORD]
+
+        trace_component_msg(
+            "RENDER_SLOT_START",
+            component_name=component_name,
+            component_id=component_id,
+            slot_name=slot_name,
+            component_path=component_path,
+            slot_fills=slot_fills,
+        )
 
         # Check for errors
         if is_default and not component_ctx.is_dynamic_component:
@@ -325,7 +341,7 @@ class SlotNode(BaseNode):
                     "Only one component slot may be marked as 'default', "
                     f"found '{default_slot_name}' and '{slot_name}'. "
                     f"To fix, check template '{component_ctx.template_name}' "
-                    f"of component '{component_ctx.component_name}'."
+                    f"of component '{component_name}'."
                 )
 
             if default_slot_name is None:
@@ -335,23 +351,88 @@ class SlotNode(BaseNode):
             # by specifying the fill both by explicit slot name and implicitly as 'default'.
             if (
                 slot_name != DEFAULT_SLOT_KEY
-                and component_ctx.fills.get(slot_name, False)
-                and component_ctx.fills.get(DEFAULT_SLOT_KEY, False)
+                and slot_fills.get(slot_name, False)
+                and slot_fills.get(DEFAULT_SLOT_KEY, False)
             ):
                 raise TemplateSyntaxError(
-                    f"Slot '{slot_name}' of component '{component_ctx.component_name}' was filled twice: "
+                    f"Slot '{slot_name}' of component '{component_name}' was filled twice: "
                     "once explicitly and once implicitly as 'default'."
                 )
 
         # If slot is marked as 'default', we use the name 'default' for the fill,
         # IF SUCH FILL EXISTS. Otherwise, we use the slot's name.
-        if is_default and DEFAULT_SLOT_KEY in component_ctx.fills:
+        if is_default and DEFAULT_SLOT_KEY in slot_fills:
             fill_name = DEFAULT_SLOT_KEY
         else:
             fill_name = slot_name
 
-        if fill_name in component_ctx.fills:
-            slot_fill_fn = component_ctx.fills[fill_name]
+        # NOTE: TBH not sure why this happens. But there's an edge case when:
+        # 1. Using the "django" context behavior
+        # 2. AND the slot fill is defined in the root template
+        #
+        # Then `ctx_with_fills.fills` does NOT contain any fills (`{% fill %}`). So in this case,
+        # we need to use a different strategy to find the fills Context layer that contains the fills.
+        #
+        # ------------------------------------------------------------------------------------------
+        #
+        # Context:
+        # When we render slot fills, we want to use the context as was OUTSIDE of the component.
+        # E.g. In this example, we want to render `{{ item.name }}` inside the `{% fill %}` tag:
+        #
+        # ```django
+        # {% for item in items %}
+        #   {% component "my_component" %}
+        #     {% fill "my_slot" %}
+        #       {{ item.name }}
+        #     {% endfill %}
+        #   {% endcomponent %}
+        # {% endfor %}
+        # ```
+        #
+        # In this case, we need to find the context that was used to render the component,
+        # and use the fills from that context.
+        if (
+            component_ctx.registry.settings.context_behavior == ContextBehavior.DJANGO
+            and component_ctx.outer_context is None
+        ):
+            # When we have nested components with fills, the context layers are added in
+            # the following order:
+            # Page -> SubComponent -> NestedComponent -> ChildComponent
+            #
+            # Then, if ChildComponent defines a `{% slot %}` tag, its `{% fill %}` will be defined
+            # within the context of its parent, NestedComponent. The context is updated as follows:
+            # Page -> SubComponent -> NestedComponent -> ChildComponent -> NestedComponent
+            #
+            # And if, WITHIN THAT `{% fill %}`, there is another `{% slot %}` tag, its `{% fill %}`
+            # will be defined within the context of its parent, SubComponent. The context becomes:
+            # Page -> SubComponent -> NestedComponent -> ChildComponent -> NestedComponent -> SubComponent
+            #
+            # If that top-level `{% fill %}` defines a `{% component %}`, and the component accepts a `{% fill %}`,
+            # we'd go one down inside the component, and then one up outside of it inside the `{% fill %}`.
+            # Page -> SubComponent -> NestedComponent -> ChildComponent -> NestedComponent -> SubComponent ->
+            # -> CompA -> SubComponent
+            #
+            # So, given a context of nested components like this, we need to find which component was parent
+            # of the current component, and use the fills from that component.
+            #
+            # In the Context, the components are identified by their ID, NOT by their name, as in the example above.
+            # So the path is more like this:
+            # ax3c89 -> hui3q2 -> kok92a -> a1b2c3 -> kok92a -> hui3q2 -> d4e5f6 -> hui3q2
+            #
+            # We're at the right-most `hui3q2`, and we want to find `ax3c89`.
+            # To achieve that, we first find the left-most `hui3q2`, and then find the `ax3c89`
+            # in the list of dicts before it.
+            curr_index = get_index(
+                context.dicts, lambda d: _COMPONENT_CONTEXT_KEY in d and d[_COMPONENT_CONTEXT_KEY] == component_id
+            )
+            parent_index = get_last_index(context.dicts[:curr_index], lambda d: _COMPONENT_CONTEXT_KEY in d)
+            if parent_index is not None:
+                ctx_id_with_fills = context.dicts[parent_index][_COMPONENT_CONTEXT_KEY]
+                ctx_with_fills = component_context_cache[ctx_id_with_fills]
+                slot_fills = ctx_with_fills.fills
+
+        if fill_name in slot_fills:
+            slot_fill_fn = slot_fills[fill_name]
             slot_fill = SlotFill(
                 name=slot_name,
                 is_filled=True,
@@ -363,6 +444,7 @@ class SlotNode(BaseNode):
                 name=slot_name,
                 is_filled=False,
                 slot=_nodelist_to_slot_render_func(
+                    component_name=component_name,
                     slot_name=slot_name,
                     nodelist=self.nodelist,
                     data_var=None,
@@ -385,7 +467,7 @@ class SlotNode(BaseNode):
                 f"Slot '{slot_name}' is marked as 'required' (i.e. non-optional), "
                 f"yet no fill is provided. Check template.'"
             )
-            fill_names = list(component_ctx.fills.keys())
+            fill_names = list(slot_fills.keys())
             if fill_names:
                 fuzzy_fill_name_matches = difflib.get_close_matches(fill_name, fill_names, n=1, cutoff=0.7)
                 if fuzzy_fill_name_matches:
@@ -404,8 +486,8 @@ class SlotNode(BaseNode):
         # then we will enter an endless loop. E.g.:
         # ```django
         # {% component "mycomponent" %}
-        #   {% slot "content" %}
-        #     {% fill "content" %}
+        #   {% slot "content" %}    <--,
+        #     {% fill "content" %}  ---'
         #       ...
         #     {% endfill %}
         #   {% endslot %}
@@ -413,14 +495,18 @@ class SlotNode(BaseNode):
         # ```
         #
         # Hence, even in the "django" mode, we MUST use slots of the context of the parent component.
-        all_ctxs = [d for d in context.dicts if _COMPONENT_SLOT_CTX_CONTEXT_KEY in d]
-        if len(all_ctxs) > 1:
-            second_to_last_ctx = all_ctxs[-2]
-            extra_context[_COMPONENT_SLOT_CTX_CONTEXT_KEY] = second_to_last_ctx[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
+        if (
+            component_ctx.registry.settings.context_behavior == ContextBehavior.DJANGO
+            and component_ctx.outer_context is not None
+            and _COMPONENT_CONTEXT_KEY in component_ctx.outer_context
+        ):
+            extra_context[_COMPONENT_CONTEXT_KEY] = component_ctx.outer_context[_COMPONENT_CONTEXT_KEY]
+            # This ensures that `component_vars.is_filled`is accessible in the fill
+            extra_context["component_vars"] = component_ctx.outer_context["component_vars"]
 
         # Irrespective of which context we use ("root" context or the one passed to this
         # render function), pass down the keys used by inject/provide feature. This makes it
-        # possible to pass the provided values down the slots, e.g.:
+        # possible to pass the provided values down through slots, e.g.:
         # {% provide "abc" val=123 %}
         #   {% slot "content" %}{% endslot %}
         # {% endprovide %}
@@ -432,22 +518,42 @@ class SlotNode(BaseNode):
 
         # For the user-provided slot fill, we want to use the context of where the slot
         # came from (or current context if configured so)
-        used_ctx = self._resolve_slot_context(context, slot_fill)
+        used_ctx = self._resolve_slot_context(context, slot_fill, component_ctx)
         with used_ctx.update(extra_context):
             # Required for compatibility with Django's {% extends %} tag
             # This makes sure that the render context used outside of a component
             # is the same as the one used inside the slot.
             # See https://github.com/django-components/django-components/pull/859
-            render_ctx_layer = used_ctx.render_context.dicts[-2] if len(used_ctx.render_context.dicts) > 1 else {}
+            if len(used_ctx.render_context.dicts) > 1 and "block_context" in used_ctx.render_context.dicts[-2]:
+                render_ctx_layer = used_ctx.render_context.dicts[-2]
+            else:
+                # Otherwise we simply re-use the last layer, so that following logic uses `with` in either case
+                render_ctx_layer = used_ctx.render_context.dicts[-1]
+
             with used_ctx.render_context.push(render_ctx_layer):
-                # Render slot as a function
-                # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
-                #       the render function ALWAYS receives them.
-                output = slot_fill.slot(used_ctx, kwargs, slot_ref)
+                with add_slot_to_error_message(component_name, slot_name):
+                    # Render slot as a function
+                    # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
+                    #       the render function ALWAYS receives them.
+                    output = slot_fill.slot(used_ctx, kwargs, slot_ref)
+
+        trace_component_msg(
+            "RENDER_SLOT_END",
+            component_name=component_name,
+            component_id=component_id,
+            slot_name=slot_name,
+            component_path=component_path,
+            slot_fills=slot_fills,
+        )
 
         return output
 
-    def _resolve_slot_context(self, context: Context, slot_fill: "SlotFill") -> Context:
+    def _resolve_slot_context(
+        self,
+        context: Context,
+        slot_fill: "SlotFill",
+        component_ctx: "ComponentContext",
+    ) -> Context:
         """Prepare the context used in a slot fill based on the settings."""
         # If slot is NOT filled, we use the slot's default AKA content between
         # the `{% slot %}` tags. These should be evaluated as if the `{% slot %}`
@@ -455,13 +561,14 @@ class SlotNode(BaseNode):
         if not slot_fill.is_filled:
             return context
 
-        registry: "ComponentRegistry" = context[_REGISTRY_CONTEXT_KEY]
-        if registry.settings.context_behavior == ContextBehavior.DJANGO:
+        registry_settings = component_ctx.registry.settings
+        if registry_settings.context_behavior == ContextBehavior.DJANGO:
             return context
-        elif registry.settings.context_behavior == ContextBehavior.ISOLATED:
-            return context[_ROOT_CTX_CONTEXT_KEY]
+        elif registry_settings.context_behavior == ContextBehavior.ISOLATED:
+            outer_context = component_ctx.outer_context
+            return outer_context if outer_context is not None else Context()
         else:
-            raise ValueError(f"Unknown value for context_behavior: '{registry.settings.context_behavior}'")
+            raise ValueError(f"Unknown value for context_behavior: '{registry_settings.context_behavior}'")
 
 
 class FillNode(BaseNode):
@@ -760,8 +867,9 @@ def resolve_fills(
 
         if not nodelist_is_empty:
             slots[DEFAULT_SLOT_KEY] = _nodelist_to_slot_render_func(
-                DEFAULT_SLOT_KEY,
-                nodelist,
+                component_name=component_name,
+                slot_name=None,  # Will be populated later
+                nodelist=nodelist,
                 data_var=None,
                 default_var=None,
             )
@@ -772,6 +880,7 @@ def resolve_fills(
         #       This is different from the default slot, where we ignore empty content.
         for fill in maybe_fills:
             slots[fill.name] = _nodelist_to_slot_render_func(
+                component_name=component_name,
                 slot_name=fill.name,
                 nodelist=fill.fill.nodelist,
                 data_var=fill.data_var,
@@ -843,7 +952,8 @@ def _escape_slot_name(name: str) -> str:
 
 
 def _nodelist_to_slot_render_func(
-    slot_name: str,
+    component_name: str,
+    slot_name: Optional[str],
     nodelist: NodeList,
     data_var: Optional[str] = None,
     default_var: Optional[str] = None,
@@ -860,6 +970,13 @@ def _nodelist_to_slot_render_func(
             raise TemplateSyntaxError(
                 f"Slot default alias in fill '{slot_name}' must be a valid identifier. Got '{default_var}'"
             )
+
+    # We use Template.render() to render the nodelist, so that Django correctly sets up
+    # and binds the context.
+    template = Template("")
+    template.nodelist = nodelist
+    # This allows the template to access current RenderContext layer.
+    template._djc_is_component_nested = True
 
     def render_func(ctx: Context, slot_data: Dict[str, Any], slot_ref: SlotRef) -> SlotResult:
         # Expose the kwargs that were passed to the `{% slot %}` tag. These kwargs
@@ -887,34 +1004,43 @@ def _nodelist_to_slot_render_func(
         #
         # Thus, when we get here and `extra_context` is not None, it means that the component
         # is being rendered from within the template. And so we know that we're inside `Component._render()`.
-        # And that means that the context MUST contain our internal context keys like `_ROOT_CTX_CONTEXT_KEY`.
+        # And that means that the context MUST contain our internal context keys like `_COMPONENT_CONTEXT_KEY`.
         #
-        # And so we want to put the `extra_context` into the same layer that contains `_ROOT_CTX_CONTEXT_KEY`.
+        # And so we want to put the `extra_context` into the same layer that contains `_COMPONENT_CONTEXT_KEY`.
         #
-        # HOWEVER, the layer with `_ROOT_CTX_CONTEXT_KEY` also contains user-defined data from `get_context_data()`.
+        # HOWEVER, the layer with `_COMPONENT_CONTEXT_KEY` also contains user-defined data from `get_context_data()`.
         # Data from `get_context_data()` should take precedence over `extra_context`. So we have to insert
         # the forloop variables BEFORE that.
-        index_of_last_component_layer = get_last_index(ctx.dicts, lambda d: _ROOT_CTX_CONTEXT_KEY in d)
+        index_of_last_component_layer = get_last_index(ctx.dicts, lambda d: _COMPONENT_CONTEXT_KEY in d)
         if index_of_last_component_layer is None:
             index_of_last_component_layer = 0
 
-        # TODO: Currently there's one more layer before the `_ROOT_CTX_CONTEXT_KEY` layer, which is
+        # TODO: Currently there's one more layer before the `_COMPONENT_CONTEXT_KEY` layer, which is
         #       pushed in `_prepare_template()` in `component.py`.
         #       That layer should be removed when `Component.get_template()` is removed, after which
         #       the following line can be removed.
         index_of_last_component_layer -= 1
 
-        # Insert the `extra_context` into the correct layer of the context stack
+        # Insert the `extra_context` layer BEFORE the layer that defines the variables from get_context_data.
+        # Thus, get_context_data will overshadow these on conflict.
         ctx.dicts.insert(index_of_last_component_layer, extra_context or {})
 
-        rendered = nodelist.render(ctx)
+        trace_component_msg("RENDER_NODELIST", component_name, component_id=None, slot_name=slot_name)
+
+        rendered = template.render(ctx)
 
         # After the rendering is done, remove the `extra_context` from the context stack
         ctx.dicts.pop(index_of_last_component_layer)
 
         return rendered
 
-    return Slot(content_func=cast(SlotFunc, render_func))
+    return Slot(
+        content_func=cast(SlotFunc, render_func),
+        component_name=component_name,
+        slot_name=slot_name,
+        escaped=False,
+        nodelist=nodelist,
+    )
 
 
 def _is_extracting_fill(context: Context) -> bool:

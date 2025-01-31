@@ -331,7 +331,24 @@ def set_component_attrs_for_js_and_css(
     return updated_html, child_components
 
 
-def _insert_component_comment(
+# NOTE: To better understand the next section, consider this:
+#
+# We define and cache the component's JS and CSS at the same time as
+# when we render the HTML. However, the resulting HTML MAY OR MAY NOT
+# be used in another component.
+#
+# IF the component's HTML IS used in another component, and the other
+# component want to render the JS or CSS dependencies (e.g. inside <head>),
+# then it's only at that point when we want to access the data about
+# which JS and CSS scripts is the component's HTML associated with.
+#
+# This happens AFTER the rendering context, so there's no Context to rely on.
+#
+# Hence, we store the info about associated JS and CSS right in the HTML itself.
+# As an HTML comment `<!-- -->`. Thus, the inner component can be used as many times
+# and in different components, and they will all know to fetch also JS and CSS of the
+# inner components.
+def insert_component_dependencies_comment(
     content: str,
     # NOTE: We pass around the component CLASS, so the dependencies logic is not
     # dependent on ComponentRegistries
@@ -339,7 +356,7 @@ def _insert_component_comment(
     component_id: str,
     js_input_hash: Optional[str],
     css_input_hash: Optional[str],
-) -> str:
+) -> SafeString:
     """
     Given some textual content, prepend it with a short string that
     will be used by the ComponentDependencyMiddleware to collect all
@@ -354,54 +371,6 @@ def _insert_component_comment(
     # NOTE: It's important that we put the comment BEFORE the content, so we can
     # use the order of comments to evaluate components' instance JS code in the correct order.
     output = mark_safe(COMPONENT_DEPS_COMMENT.format(data=data) + content)
-    return output
-
-
-# Anything and everything that needs to be done with a Component's HTML
-# script in order to support running JS and CSS per-instance.
-def postprocess_component_html(
-    component_cls: Type["Component"],
-    component_id: str,
-    html_content: Union[str, SafeString],
-    css_input_hash: Optional[str],
-    js_input_hash: Optional[str],
-    type: RenderType,
-    render_dependencies: bool,
-) -> Union[str, SafeString]:
-    is_safestring = isinstance(html_content, SafeString)
-
-    # NOTE: To better understand the next section, consider this:
-    #
-    # We define and cache the component's JS and CSS at the same time as
-    # when we render the HTML. However, the resulting HTML MAY OR MAY NOT
-    # be used in another component.
-    #
-    # IF the component's HTML IS used in another component, and the other
-    # component want to render the JS or CSS dependencies (e.g. inside <head>),
-    # then it's only at that point when we want to access the data about
-    # which JS and CSS scripts is the component's HTML associated with.
-    #
-    # This happens AFTER the rendering context, so there's no Context to rely on.
-    #
-    # Hence, we store the info about associated JS and CSS right in the HTML itself.
-    # As an HTML comment `<!-- -->`. Thus, the inner component can be used as many times
-    # and in different components, and they will all know to fetch also JS and CSS of the
-    # inner components.
-
-    # Mark the generated HTML so that we will know which JS and CSS
-    # scripts are associated with it.
-    output = _insert_component_comment(
-        html_content,
-        component_cls=component_cls,
-        component_id=component_id,
-        js_input_hash=js_input_hash,
-        css_input_hash=css_input_hash,
-    )
-
-    if render_dependencies:
-        output = _render_dependencies(output, type)
-
-    output = mark_safe(output) if is_safestring else output
     return output
 
 

@@ -1,10 +1,13 @@
-from typing import Any
+from collections import namedtuple
+from typing import Any, Dict, Optional
 
-from django.template import Context
+from django.template import Context, TemplateSyntaxError
 from django.utils.safestring import SafeString
 
-from django_components.context import set_provided_context_var
+from django_components.context import _INJECT_CONTEXT_KEY_PREFIX
 from django_components.node import BaseNode
+from django_components.perfutil.provide import managed_provide_cache, provide_cache
+from django_components.util.misc import gen_id
 
 
 class ProvideNode(BaseNode):
@@ -87,8 +90,79 @@ class ProvideNode(BaseNode):
         # add the provided kwargs into the Context.
         with context.update({}):
             # "Provide" the data to child nodes
-            set_provided_context_var(context, name, kwargs)
+            provide_id = set_provided_context_var(context, name, kwargs)
 
-            output = self.nodelist.render(context)
+            # `managed_provide_cache` will remove the cache entry at the end if no components reference it.
+            with managed_provide_cache(provide_id):
+                output = self.nodelist.render(context)
 
         return output
+
+
+def get_injected_context_var(
+    component_name: str,
+    context: Context,
+    key: str,
+    default: Optional[Any] = None,
+) -> Any:
+    """
+    Retrieve a 'provided' field. The field MUST have been previously 'provided'
+    by the component's ancestors using the `{% provide %}` template tag.
+    """
+    # NOTE: For simplicity, we keep the provided values directly on the context.
+    # This plays nicely with Django's Context, which behaves like a stack, so "newer"
+    # values overshadow the "older" ones.
+    internal_key = _INJECT_CONTEXT_KEY_PREFIX + key
+
+    # Return provided value if found
+    if internal_key in context:
+        cache_key = context[internal_key]
+        return provide_cache[cache_key]
+
+    # If a default was given, return that
+    if default is not None:
+        return default
+
+    # Otherwise raise error
+    raise KeyError(
+        f"Component '{component_name}' tried to inject a variable '{key}' before it was provided."
+        f" To fix this, make sure that at least one ancestor of component '{component_name}' has"
+        f" the variable '{key}' in their 'provide' attribute."
+    )
+
+
+def set_provided_context_var(
+    context: Context,
+    key: str,
+    provided_kwargs: Dict[str, Any],
+) -> str:
+    """
+    'Provide' given data under given key. In other words, this data can be retrieved
+    using `self.inject(key)` inside of `get_context_data()` method of components that
+    are nested inside the `{% provide %}` tag.
+    """
+    # NOTE: We raise TemplateSyntaxError since this func should be called only from
+    # within template.
+    if not key:
+        raise TemplateSyntaxError(
+            "Provide tag received an empty string. Key must be non-empty and a valid identifier."
+        )
+    if not key.isidentifier():
+        raise TemplateSyntaxError(
+            "Provide tag received a non-identifier string. Key must be non-empty and a valid identifier."
+        )
+
+    # We turn the kwargs into a NamedTuple so that the object that's "provided"
+    # is immutable. This ensures that the data returned from `inject` will always
+    # have all the keys that were passed to the `provide` tag.
+    tpl_cls = namedtuple("DepInject", provided_kwargs.keys())  # type: ignore[misc]
+    payload = tpl_cls(**provided_kwargs)
+
+    # Instead of storing the provided data on the Context object, we store it
+    # in a separate dictionary, and we set only the key to the data on the Context.
+    context_key = _INJECT_CONTEXT_KEY_PREFIX + key
+    provide_id = gen_id()
+    context[context_key] = provide_id
+    provide_cache[provide_id] = payload
+
+    return provide_id

@@ -1,8 +1,39 @@
 import re
 from collections import deque
-from typing import Callable, Deque, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Deque, Dict, List, NamedTuple, Optional, Tuple
 
 from django.utils.safestring import mark_safe
+
+from django_components.util.exception import component_error_message
+
+if TYPE_CHECKING:
+    from django_components.component import ComponentContext
+
+# When we're inside a component's template, we need to acccess some component data,
+# as defined by `ComponentContext`. If we have nested components, then
+# each nested component will point to the Context of its parent component
+# via `outer_context`. This make is possible to access the correct data
+# inside `{% fill %}` tags.
+#
+# Previously, `ComponentContext` was stored directly on the `Context` object, but
+# this was problematic:
+# - The need for creating a Context snapshot meant potentially a lot of copying
+# - It was hard to trace and debug. Because if you printed the Context, it included the
+#   `ComponentContext` data, including the `outer_context` which contained another
+#   `ComponentContext` object, and so on.
+#
+# Thus, similarly to the data stored by `{% provide %}`, we store the actual
+# `ComponentContext` data on a separate dictionary, and what's passed through the Context
+# is only a key to this dictionary.
+component_context_cache: Dict[str, "ComponentContext"] = {}
+
+
+class PostRenderQueueItem(NamedTuple):
+    content_before_component: str
+    component_id: Optional[str]
+    parent_id: Optional[str]
+    component_name_path: List[str]
+
 
 # Function that accepts a list of extra HTML attributes to be set on the component's root elements
 # and returns the component's HTML content and a dictionary of child components' IDs
@@ -13,8 +44,8 @@ from django.utils.safestring import mark_safe
 ComponentRenderer = Callable[[Optional[List[str]]], Tuple[str, Dict[str, List[str]]]]
 
 # Render-time cache for component rendering
-# See Component._post_render()
-component_renderer_cache: Dict[str, ComponentRenderer] = {}
+# See component_post_render()
+component_renderer_cache: Dict[str, Tuple[ComponentRenderer, str]] = {}
 child_component_attrs: Dict[str, List[str]] = {}
 
 nested_comp_pattern = re.compile(r'<template [^>]*?djc-render-id="\w{6}"[^>]*?></template>')
@@ -69,12 +100,15 @@ render_id_pattern = re.compile(r'djc-render-id="(?P<render_id>\w{6})"')
 def component_post_render(
     renderer: ComponentRenderer,
     render_id: str,
+    component_name: str,
     parent_id: Optional[str],
+    on_component_rendered: Callable[[str], None],
+    on_html_rendered: Callable[[str], str],
 ) -> str:
     # Instead of rendering the component's HTML content immediately, we store it,
     # so we can render the component only once we know if there are any HTML attributes
     # to be applied to the resulting HTML.
-    component_renderer_cache[render_id] = renderer
+    component_renderer_cache[render_id] = (renderer, component_name)
 
     if parent_id is not None:
         # Case: Nested component
@@ -113,27 +147,44 @@ def component_post_render(
     # 4. We split the content by placeholders, and put the pairs of (content, placeholder_id) into the queue,
     #    repeating this whole process until we've processed all nested components.
     content_parts: List[str] = []
-    process_queue: Deque[Tuple[str, Optional[str]]] = deque()
+    process_queue: Deque[PostRenderQueueItem] = deque()
 
-    process_queue.append(("", render_id))
+    process_queue.append(
+        PostRenderQueueItem(
+            content_before_component="",
+            component_id=render_id,
+            parent_id=None,
+            component_name_path=[],
+        )
+    )
 
     while len(process_queue):
-        curr_content_before_component, curr_comp_id = process_queue.popleft()
+        curr_item = process_queue.popleft()
 
         # Process content before the component
-        if curr_content_before_component:
-            content_parts.append(curr_content_before_component)
+        if curr_item.content_before_component:
+            content_parts.append(curr_item.content_before_component)
 
-        # The entry was only a remaining text, no more components to process, we're done
-        if curr_comp_id is None:
+        # In this case we've reached the end of the component's HTML content, and there's
+        # no more subcomponents to process.
+        if curr_item.component_id is None:
+            on_component_rendered(curr_item.parent_id)  # type: ignore[arg-type]
             continue
 
         # Generate component's content, applying the extra HTML attributes set by the parent component
-        curr_comp_renderer = component_renderer_cache.pop(curr_comp_id)
+        curr_comp_renderer, curr_comp_name = component_renderer_cache.pop(curr_item.component_id)
         # NOTE: This may be undefined, because this is set only for components that
         # are also root elements in their parent's HTML
-        curr_comp_attrs = child_component_attrs.pop(curr_comp_id, None)
-        curr_comp_content, curr_child_component_attrs = curr_comp_renderer(curr_comp_attrs)
+        curr_comp_attrs = child_component_attrs.pop(curr_item.component_id, None)
+
+        full_path = [*curr_item.component_name_path, curr_comp_name]
+
+        # This is where we actually render the component
+        #
+        # NOTE: [1:] because the root component will be yet again added to the error's
+        # `components` list in `_render` so we remove the first element from the path.
+        with component_error_message(full_path[1:]):
+            curr_comp_content, curr_child_component_attrs = curr_comp_renderer(curr_comp_attrs)
 
         # Exclude the `data-djc-scope-...` attribute from being applied to the child component's HTML
         for key in list(curr_child_component_attrs.keys()):
@@ -144,7 +195,7 @@ def component_post_render(
 
         # Process the component's content
         last_index = 0
-        parts_to_process: List[Tuple[str, Optional[str]]] = []
+        parts_to_process: List[PostRenderQueueItem] = []
 
         # Split component's content by placeholders, and put the pairs of (content, placeholder_id) into the queue
         for match in nested_comp_pattern.finditer(curr_comp_content):
@@ -157,13 +208,33 @@ def component_post_render(
             if curr_child_id_match is None:
                 raise ValueError(f"No placeholder ID found in {comp_part}")
             curr_child_id = curr_child_id_match.group("render_id")
-            parts_to_process.append((part_before_component, curr_child_id))
+            parts_to_process.append(
+                PostRenderQueueItem(
+                    content_before_component=part_before_component,
+                    component_id=curr_child_id,
+                    parent_id=curr_item.component_id,
+                    component_name_path=full_path,
+                )
+            )
 
         # Append any remaining text
         if last_index < len(curr_comp_content):
-            parts_to_process.append((curr_comp_content[last_index:], None))
+            parts_to_process.append(
+                PostRenderQueueItem(
+                    content_before_component=curr_comp_content[last_index:],
+                    # Setting component_id to None means that this is the last part of the component's HTML
+                    # and we're done with this component
+                    component_id=None,
+                    parent_id=curr_item.component_id,
+                    component_name_path=full_path,
+                )
+            )
 
         process_queue.extendleft(reversed(parts_to_process))
 
+    # Lastly, join up all pieces of the component's HTML content
     output = "".join(content_parts)
+
+    output = on_html_rendered(output)
+
     return mark_safe(output)
