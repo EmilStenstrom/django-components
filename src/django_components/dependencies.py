@@ -5,7 +5,6 @@ import json
 import re
 import sys
 from abc import ABC, abstractmethod
-from functools import lru_cache
 from hashlib import md5
 from typing import (
     TYPE_CHECKING,
@@ -34,10 +33,9 @@ from django.urls import path, reverse
 from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 from djc_core_html_parser import set_html_attributes
-from django_components.component_registry import all_registries
 
 from django_components.node import BaseNode
-from django_components.util.misc import get_import_path, is_nonempty_str
+from django_components.util.misc import is_nonempty_str
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -104,13 +102,6 @@ else:
 
 
 # Convert Component class to something like `TableComp_a91d03`
-@lru_cache(None)
-def _hash_comp_cls(comp_cls: Type["Component"]) -> str:
-    full_name = get_import_path(comp_cls)
-    comp_cls_hash = md5(full_name.encode()).hexdigest()[0:6]
-    return comp_cls.__name__ + "_" + comp_cls_hash
-
-
 def _gen_cache_key(
     comp_cls_hash: str,
     script_type: ScriptType,
@@ -127,8 +118,7 @@ def _is_script_in_cache(
     script_type: ScriptType,
     input_hash: Optional[str],
 ) -> bool:
-    comp_cls_hash = _hash_comp_cls(comp_cls)
-    cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
+    cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
     return comp_media_cache.has(cache_key)
 
 
@@ -142,11 +132,10 @@ def _cache_script(
     Given a component and it's inlined JS or CSS, store the JS/CSS in a cache,
     so it can be retrieved via URL endpoint.
     """
-    comp_cls_hash = _hash_comp_cls(comp_cls)
 
     # E.g. `__components:MyButton:js:df7c6d10`
     if script_type in ("js", "css"):
-        cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
+        cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
     else:
         raise ValueError(f"Unexpected script_type '{script_type}'")
 
@@ -346,29 +335,12 @@ def _insert_component_comment(
     will be used by the ComponentDependencyMiddleware to collect all
     declared JS / CSS scripts.
     """
-    # Add components to the cache
-    comp_cls_hash = _hash_comp_cls(component_cls)
-    comp_hash_mapping[comp_cls_hash] = component_cls
-
-    data = f"{comp_cls_hash},{component_id},{js_input_hash or ''},{css_input_hash or ''}"
+    data = f"{component_cls._class_hash},{component_id},{js_input_hash or ''},{css_input_hash or ''}"
 
     # NOTE: It's important that we put the comment BEFORE the content, so we can
     # use the order of comments to evaluate components' instance JS code in the correct order.
     output = mark_safe(COMPONENT_DEPS_COMMENT.format(data=data) + content)
     return output
-
-def _safe_get_comp_cls(comp_cls_hash: str) -> Type["Component"]:
-    try:
-        return comp_hash_mapping[comp_cls_hash]
-    except KeyError:
-        # NOTE: This should only happen if another worker rendered the component,
-        # and the rendered HTML fragment was cached in a shared cache.
-        for reg in all_registries:
-            for component in reg.all().values():
-                if (comp_cls_hash := _hash_comp_cls(component)) == comp_cls_hash:
-                    comp_hash_mapping[comp_cls_hash] = component
-                    return component
-        raise KeyError(f"Component class with hash '{comp_cls_hash}' not found, even after searching registry.")
 
 # Anything and everything that needs to be done with a Component's HTML
 # script in order to support running JS and CSS per-instance.
@@ -667,7 +639,7 @@ def _process_dep_declarations(content: bytes, type: RenderType) -> Tuple[bytes, 
     ) = _prepare_tags_and_urls(comp_data, type)
 
     def get_component_media(comp_cls_hash: str) -> Media:
-        comp_cls = _safe_get_comp_cls(comp_cls_hash)
+        comp_cls = comp_hash_mapping[comp_cls_hash]
         # NOTE: We instantiate the component classes so the `Media` are processed into `media`
         comp = comp_cls()
         return comp.media
@@ -840,7 +812,7 @@ def _prepare_tags_and_urls(
         # copy of the style, because each copy will have component's ID embedded.
         # So, in that case we inline the style into the HTML (See `_link_dependencies_with_component_html`),
         # which means that we are NOT going to load / inline it again.
-        comp_cls = _safe_get_comp_cls(comp_cls_hash)
+        comp_cls = comp_hash_mapping[comp_cls_hash]
 
         if type == "document":
             # NOTE: Skip fetching of inlined JS/CSS if it's not defined or empty for given component
@@ -881,8 +853,7 @@ def get_script_content(
     comp_cls: Type["Component"],
     input_hash: Optional[str],
 ) -> SafeString:
-    comp_cls_hash = _hash_comp_cls(comp_cls)
-    cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
+    cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
     script = comp_media_cache.get(cache_key)
 
     return script
@@ -910,12 +881,10 @@ def get_script_url(
     comp_cls: Type["Component"],
     input_hash: Optional[str],
 ) -> str:
-    comp_cls_hash = _hash_comp_cls(comp_cls)
-
     return reverse(
         CACHE_ENDPOINT_NAME,
         kwargs={
-            "comp_cls_hash": comp_cls_hash,
+            "comp_cls_hash": comp_cls._class_hash,
             "script_type": script_type,
             **({"input_hash": input_hash} if input_hash is not None else {}),
         },
@@ -1044,7 +1013,7 @@ def cached_script_view(
     if req.method != "GET":
         return HttpResponseNotAllowed(["GET"])
 
-    comp_cls = _safe_get_comp_cls(comp_cls_hash)
+    comp_cls = comp_hash_mapping[comp_cls_hash]
 
     script = get_script_content(script_type, comp_cls, input_hash)
     if script is None:
