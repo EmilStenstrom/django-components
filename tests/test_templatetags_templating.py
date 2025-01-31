@@ -740,6 +740,58 @@ class ComponentNestingTests(BaseTestCase):
         """
         self.assertHTMLEqual(rendered, expected)
 
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_nesting_deep_slot_inside_component_fill(self):
+        @register("complex_child")
+        class ComplexChildComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                {% slot "content" default %}
+                    No slot!
+                {% endslot %}
+                </div>
+            """
+
+        @register("complex_parent")
+        class ComplexParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                ITEMS: {{ items|safe }}
+                {% for item in items %}
+                <li>
+                    {% component "complex_child" %}
+                        {{ item.value }}
+                    {% endcomponent %}
+                </li>
+                {% endfor %}
+            """
+
+            def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
+                return {"items": items}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "complex_parent" items=items %}{% endcomponent %}
+        """
+        template = Template(template_str)
+        items = [{"value": 1}, {"value": 2}, {"value": 3}]
+        rendered = template.render(Context({"items": items}))
+
+        expected = """
+            ITEMS: [{'value': 1}, {'value': 2}, {'value': 3}]
+            <li data-djc-id-a1bc3f>
+                <div data-djc-id-a1bc41> 1 </div>
+            </li>
+            <li data-djc-id-a1bc3f>
+                <div data-djc-id-a1bc43> 2 </div>
+            </li>
+            <li data-djc-id-a1bc3f>
+                <div data-djc-id-a1bc44> 3 </div>
+            </li>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
     # This test is based on real-life example.
     # It ensures that deeply nested slots in fills with same names are resolved correctly.
     # It also ensures that the component_vars.is_filled context is correctly populated.
