@@ -30,9 +30,17 @@ component_context_cache: Dict[str, "ComponentContext"] = {}
 
 class PostRenderQueueItem(NamedTuple):
     content_before_component: str
-    component_id: Optional[str]
+    child_id: Optional[str]
     parent_id: Optional[str]
+    grandparent_id: Optional[str]
     component_name_path: List[str]
+
+    def __repr__(self) -> str:
+        return (
+            f"PostRenderQueueItem(child_id={self.child_id!r}, parent_id={self.parent_id!r}, "
+            f"grandparent_id={self.grandparent_id!r}, component_name_path={self.component_name_path!r}, "
+            f"content_before_component={self.content_before_component[:10]!r})"
+        )
 
 
 # Function that accepts a list of extra HTML attributes to be set on the component's root elements
@@ -102,7 +110,7 @@ def component_post_render(
     render_id: str,
     component_name: str,
     parent_id: Optional[str],
-    on_component_rendered: Callable[[str], None],
+    on_component_rendered_callbacks: Dict[str, Callable[[str], str]],
     on_html_rendered: Callable[[str], str],
 ) -> str:
     # Instead of rendering the component's HTML content immediately, we store it,
@@ -146,36 +154,89 @@ def component_post_render(
     # 3. If there were any extra attributes set by the parent component, we apply these to the renderer.
     # 4. We split the content by placeholders, and put the pairs of (content, placeholder_id) into the queue,
     #    repeating this whole process until we've processed all nested components.
-    content_parts: List[str] = []
+    # 5. If the placeholder ID is None, then we've reached the end of the component's HTML content,
+    #    and we can go one level up to continue the process with component's parent.
     process_queue: Deque[PostRenderQueueItem] = deque()
 
     process_queue.append(
         PostRenderQueueItem(
             content_before_component="",
-            component_id=render_id,
+            child_id=render_id,
             parent_id=None,
+            grandparent_id=None,
             component_name_path=[],
         )
     )
 
+    # By looping over the queue below, we obtain bits of rendered HTML, which we then
+    # must all join together into a single final HTML.
+    #
+    # But instead of joining it all up once at the end, we join the bits on component basis.
+    # So if component has a template like this:
+    # ```django
+    # <div>
+    #   Hello
+    #   {% component "table" / %}
+    # </div>
+    # ```
+    #
+    # Then we end up with 3 bits - 1. test before, 2. component, and 3. text after
+    #
+    # We know when we've arrived at component's end, because `child_id` will be set to `None`.
+    # So we can collect the HTML parts by the component ID, and when we hit the end, we join
+    # all the bits that belong to the same component.
+    #
+    # Once the component's HTML is joined, we can call the callback for the component, and
+    # then add the joined HTML to the cache for the parent component to continue the cycle.
+    html_parts_by_component_id: Dict[str, List[str]] = {}
+    content_parts: List[str] = []
+
+    def get_html_parts(component_id: str) -> List[str]:
+        if component_id not in html_parts_by_component_id:
+            html_parts_by_component_id[component_id] = []
+        return html_parts_by_component_id[component_id]
+
     while len(process_queue):
         curr_item = process_queue.popleft()
 
-        # Process content before the component
-        if curr_item.content_before_component:
-            content_parts.append(curr_item.content_before_component)
-
         # In this case we've reached the end of the component's HTML content, and there's
         # no more subcomponents to process.
-        if curr_item.component_id is None:
-            on_component_rendered(curr_item.parent_id)  # type: ignore[arg-type]
+        if curr_item.child_id is None:
+            # Parent ID must NOT be None in this branch
+            if curr_item.parent_id is None:
+                raise RuntimeError("Parent ID is None")
+
+            parent_parts = html_parts_by_component_id.pop(curr_item.parent_id, [])
+
+            # Add the left-over content
+            parent_parts.append(curr_item.content_before_component)
+
+            # Allow to optionally override/modify the rendered content from outside
+            component_html = "".join(parent_parts)
+            on_component_rendered = on_component_rendered_callbacks[curr_item.parent_id]
+            component_html = on_component_rendered(component_html)  # type: ignore[arg-type]
+
+            # Add the component's HTML to parent's parent's HTML parts
+            if curr_item.grandparent_id is not None:
+                target_list = get_html_parts(curr_item.grandparent_id)
+                target_list.append(component_html)
+            else:
+                content_parts.append(component_html)
+
             continue
 
+        # Process content before the component
+        if curr_item.content_before_component:
+            if curr_item.parent_id is None:
+                raise RuntimeError("Parent ID is None")
+            parent_html_parts = get_html_parts(curr_item.parent_id)
+            parent_html_parts.append(curr_item.content_before_component)
+
         # Generate component's content, applying the extra HTML attributes set by the parent component
-        curr_comp_renderer, curr_comp_name = component_renderer_cache.pop(curr_item.component_id)
+        curr_comp_renderer, curr_comp_name = component_renderer_cache.pop(curr_item.child_id)
         # NOTE: This may be undefined, because this is set only for components that
         # are also root elements in their parent's HTML
-        curr_comp_attrs = child_component_attrs.pop(curr_item.component_id, None)
+        curr_comp_attrs = child_component_attrs.pop(curr_item.child_id, None)
 
         full_path = [*curr_item.component_name_path, curr_comp_name]
 
@@ -184,14 +245,14 @@ def component_post_render(
         # NOTE: [1:] because the root component will be yet again added to the error's
         # `components` list in `_render` so we remove the first element from the path.
         with component_error_message(full_path[1:]):
-            curr_comp_content, curr_child_component_attrs = curr_comp_renderer(curr_comp_attrs)
+            curr_comp_content, grandchild_component_attrs = curr_comp_renderer(curr_comp_attrs)
 
         # Exclude the `data-djc-scope-...` attribute from being applied to the child component's HTML
-        for key in list(curr_child_component_attrs.keys()):
+        for key in list(grandchild_component_attrs.keys()):
             if key.startswith("data-djc-scope-"):
-                curr_child_component_attrs.pop(key, None)
+                grandchild_component_attrs.pop(key, None)
 
-        child_component_attrs.update(curr_child_component_attrs)
+        child_component_attrs.update(grandchild_component_attrs)
 
         # Process the component's content
         last_index = 0
@@ -204,31 +265,32 @@ def component_post_render(
             comp_part = match[0]
 
             # Extract the placeholder ID from `<template djc-render-id="a1b3cf"></template>`
-            curr_child_id_match = render_id_pattern.search(comp_part)
-            if curr_child_id_match is None:
+            grandchild_id_match = render_id_pattern.search(comp_part)
+            if grandchild_id_match is None:
                 raise ValueError(f"No placeholder ID found in {comp_part}")
-            curr_child_id = curr_child_id_match.group("render_id")
+            grandchild_id = grandchild_id_match.group("render_id")
             parts_to_process.append(
                 PostRenderQueueItem(
                     content_before_component=part_before_component,
-                    component_id=curr_child_id,
-                    parent_id=curr_item.component_id,
+                    child_id=grandchild_id,
+                    parent_id=curr_item.child_id,
+                    grandparent_id=curr_item.parent_id,
                     component_name_path=full_path,
                 )
             )
 
         # Append any remaining text
-        if last_index < len(curr_comp_content):
-            parts_to_process.append(
-                PostRenderQueueItem(
-                    content_before_component=curr_comp_content[last_index:],
-                    # Setting component_id to None means that this is the last part of the component's HTML
-                    # and we're done with this component
-                    component_id=None,
-                    parent_id=curr_item.component_id,
-                    component_name_path=full_path,
-                )
+        parts_to_process.append(
+            PostRenderQueueItem(
+                content_before_component=curr_comp_content[last_index:],
+                # Setting `child_id` to None means that this is the last part of the component's HTML
+                # and we're done with this component
+                child_id=None,
+                parent_id=curr_item.child_id,
+                grandparent_id=curr_item.parent_id,
+                component_name_path=full_path,
             )
+        )
 
         process_queue.extendleft(reversed(parts_to_process))
 
