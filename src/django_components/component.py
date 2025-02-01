@@ -232,6 +232,10 @@ class ComponentContext:
     fills: Dict[SlotName, Slot]
     outer_context: Optional[Context]
     registry: ComponentRegistry
+    # When we render a component, the root component, together with all the nested Components,
+    # shares this dictionary for storing callbacks that are called from within `component_post_render`.
+    # This is so that we can pass them all in when the root component is passed to `component_post_render`.
+    post_render_callbacks: Dict[str, Callable[[str], str]]
 
 
 class Component(
@@ -1028,9 +1032,11 @@ class Component(
             parent_id = cast(str, context[_COMPONENT_CONTEXT_KEY])
             parent_comp_ctx = component_context_cache[parent_id]
             component_path = [*parent_comp_ctx.component_path, self.name]
+            post_render_callbacks = parent_comp_ctx.post_render_callbacks
         else:
             parent_id = None
             component_path = [self.name]
+            post_render_callbacks = {}
 
         trace_component_msg(
             "COMP_PREP_START",
@@ -1061,6 +1067,7 @@ class Component(
             default_slot=None,
             outer_context=snapshot_context(self.outer_context) if self.outer_context is not None else None,
             registry=self.registry,
+            post_render_callbacks=post_render_callbacks,
         )
 
         # Instead of passing the ComponentContext directly through the Context, the entry on the Context
@@ -1137,9 +1144,18 @@ class Component(
         )
 
         # Remove component from caches
-        def on_component_rendered(component_id: str) -> None:
-            del component_context_cache[component_id]  # type: ignore[arg-type]
-            unregister_provide_reference(component_id)  # type: ignore[arg-type]
+        def on_component_rendered(html: str) -> str:
+            with self._with_metadata(metadata):
+                # Allow to optionally override/modify the rendered content
+                new_output = self.on_render_after(context_snapshot, template, html)
+                html = new_output if new_output is not None else html
+
+            del component_context_cache[render_id]  # type: ignore[arg-type]
+            unregister_provide_reference(render_id)  # type: ignore[arg-type]
+
+            return html
+
+        post_render_callbacks[render_id] = on_component_rendered
 
         # After the component and all its children are rendered, we resolve
         # all inserted HTML comments into <script> and <link> tags (if render_dependencies=True)
@@ -1161,7 +1177,7 @@ class Component(
             render_id=render_id,
             component_name=self.name,
             parent_id=parent_id,
-            on_component_rendered=on_component_rendered,
+            on_component_rendered_callbacks=post_render_callbacks,
             on_html_rendered=on_html_rendered,
         )
 
@@ -1216,10 +1232,6 @@ class Component(
                 template_rendered.send(sender=template, template=template, context=context)
                 # Get the component's HTML
                 html_content = template.render(context)
-
-                # Allow to optionally override/modify the rendered content
-                new_output = component.on_render_after(context, template, html_content)
-                html_content = new_output if new_output is not None else html_content
 
             # Add necessary HTML attributes to work with JS and CSS variables
             updated_html, child_components = set_component_attrs_for_js_and_css(
