@@ -1,7 +1,6 @@
-from hashlib import md5
 import re
-from typing import Any, Callable, List, Optional, Type, TypeVar, TYPE_CHECKING
-
+from hashlib import md5
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Type, TypeVar
 
 from django_components.util.nanoid import generate
 

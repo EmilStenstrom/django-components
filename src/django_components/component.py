@@ -51,9 +51,9 @@ from django_components.dependencies import (
     cache_component_css_vars,
     cache_component_js,
     cache_component_js_vars,
+    comp_hash_mapping,
     postprocess_component_html,
     set_component_attrs_for_js_and_css,
-    comp_hash_mapping,
 )
 from django_components.node import BaseNode
 from django_components.perfutil.component import component_post_render
@@ -72,7 +72,7 @@ from django_components.slots import (
 )
 from django_components.template import cached_template
 from django_components.util.django_monkeypatch import is_template_cls_patched
-from django_components.util.misc import hash_comp_cls, gen_id
+from django_components.util.misc import gen_id, hash_comp_cls
 from django_components.util.template_tag import TagAttr
 from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 

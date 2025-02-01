@@ -342,6 +342,7 @@ def _insert_component_comment(
     output = mark_safe(COMPONENT_DEPS_COMMENT.format(data=data) + content)
     return output
 
+
 # Anything and everything that needs to be done with a Component's HTML
 # script in order to support running JS and CSS per-instance.
 def postprocess_component_html(
