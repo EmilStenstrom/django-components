@@ -1,5 +1,11 @@
 # Release notes
 
+## v0.127
+
+#### Fix
+
+- Fix component rendering when using `{% cache %}` with remote cache and multiple web servers ([#930](https://github.com/django-components/django-components/issues/930))
+
 ## v0.126
 
 #### Refactor

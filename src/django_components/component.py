@@ -1,4 +1,3 @@
-import inspect
 import types
 from collections import deque
 from contextlib import contextmanager
@@ -46,6 +45,7 @@ from django_components.dependencies import (
     cache_component_css_vars,
     cache_component_js,
     cache_component_js_vars,
+    comp_hash_mapping,
     insert_component_dependencies_comment,
 )
 from django_components.dependencies import render_dependencies as _render_dependencies
@@ -73,7 +73,7 @@ from django_components.util.context import snapshot_context
 from django_components.util.django_monkeypatch import is_template_cls_patched
 from django_components.util.exception import component_error_message
 from django_components.util.logger import trace_component_msg
-from django_components.util.misc import gen_id, get_import_path
+from django_components.util.misc import gen_id, get_import_path, hash_comp_cls
 from django_components.util.template_tag import TagAttr
 from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 
@@ -515,7 +515,7 @@ class Component(
     However, there's a few differences from Django's Media class:
 
     1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list,
-       or (CSS-only) a dictonary (See [`ComponentMediaInput`](../api#django_components.ComponentMediaInput)).
+       or (CSS-only) a dictionary (See [`ComponentMediaInput`](../api#django_components.ComponentMediaInput)).
     2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
        [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function
        (See [`ComponentMediaInputPath`](../api#django_components.ComponentMediaInputPath)).
@@ -572,7 +572,7 @@ class Component(
     # MISC
     # #####################################
 
-    _class_hash: ClassVar[int]
+    _class_hash: ClassVar[str]
 
     def __init__(
         self,
@@ -603,7 +603,8 @@ class Component(
         self._types: Optional[Union[Tuple[Any, Any, Any, Any, Any, Any], Literal[False]]] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        cls._class_hash = hash(inspect.getfile(cls) + cls.__name__)
+        cls._class_hash = hash_comp_cls(cls)
+        comp_hash_mapping[cls._class_hash] = cls
 
     @contextmanager
     def _with_metadata(self, item: MetadataItem) -> Generator[None, None, None]:
@@ -655,7 +656,7 @@ class Component(
     @property
     def input(self) -> RenderInput[ArgsType, KwargsType, SlotsType]:
         """
-        Input holds the data (like arg, kwargs, slots) that were passsed to
+        Input holds the data (like arg, kwargs, slots) that were passed to
         the current execution of the `render` method.
         """
         if not len(self._metadata_stack):

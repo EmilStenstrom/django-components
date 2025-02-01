@@ -5,7 +5,6 @@ import json
 import re
 import sys
 from abc import ABC, abstractmethod
-from functools import lru_cache
 from hashlib import md5
 from typing import (
     TYPE_CHECKING,
@@ -36,7 +35,7 @@ from django.utils.safestring import SafeString, mark_safe
 from djc_core_html_parser import set_html_attributes
 
 from django_components.node import BaseNode
-from django_components.util.misc import get_import_path, is_nonempty_str
+from django_components.util.misc import is_nonempty_str
 
 if TYPE_CHECKING:
     from django_components.component import Component
@@ -103,13 +102,6 @@ else:
 
 
 # Convert Component class to something like `TableComp_a91d03`
-@lru_cache(None)
-def _hash_comp_cls(comp_cls: Type["Component"]) -> str:
-    full_name = get_import_path(comp_cls)
-    comp_cls_hash = md5(full_name.encode()).hexdigest()[0:6]
-    return comp_cls.__name__ + "_" + comp_cls_hash
-
-
 def _gen_cache_key(
     comp_cls_hash: str,
     script_type: ScriptType,
@@ -126,8 +118,7 @@ def _is_script_in_cache(
     script_type: ScriptType,
     input_hash: Optional[str],
 ) -> bool:
-    comp_cls_hash = _hash_comp_cls(comp_cls)
-    cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
+    cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
     return comp_media_cache.has(cache_key)
 
 
@@ -141,11 +132,10 @@ def _cache_script(
     Given a component and it's inlined JS or CSS, store the JS/CSS in a cache,
     so it can be retrieved via URL endpoint.
     """
-    comp_cls_hash = _hash_comp_cls(comp_cls)
 
     # E.g. `__components:MyButton:js:df7c6d10`
     if script_type in ("js", "css"):
-        cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
+        cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
     else:
         raise ValueError(f"Unexpected script_type '{script_type}'")
 
@@ -362,11 +352,7 @@ def insert_component_dependencies_comment(
     will be used by the ComponentDependencyMiddleware to collect all
     declared JS / CSS scripts.
     """
-    # Add components to the cache
-    comp_cls_hash = _hash_comp_cls(component_cls)
-    comp_hash_mapping[comp_cls_hash] = component_cls
-
-    data = f"{comp_cls_hash},{component_id},{js_input_hash or ''},{css_input_hash or ''}"
+    data = f"{component_cls._class_hash},{component_id},{js_input_hash or ''},{css_input_hash or ''}"
 
     # NOTE: It's important that we put the comment BEFORE the content, so we can
     # use the order of comments to evaluate components' instance JS code in the correct order.
@@ -837,8 +823,7 @@ def get_script_content(
     comp_cls: Type["Component"],
     input_hash: Optional[str],
 ) -> SafeString:
-    comp_cls_hash = _hash_comp_cls(comp_cls)
-    cache_key = _gen_cache_key(comp_cls_hash, script_type, input_hash)
+    cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
     script = comp_media_cache.get(cache_key)
 
     return script
@@ -866,12 +851,10 @@ def get_script_url(
     comp_cls: Type["Component"],
     input_hash: Optional[str],
 ) -> str:
-    comp_cls_hash = _hash_comp_cls(comp_cls)
-
     return reverse(
         CACHE_ENDPOINT_NAME,
         kwargs={
-            "comp_cls_hash": comp_cls_hash,
+            "comp_cls_hash": comp_cls._class_hash,
             "script_type": script_type,
             **({"input_hash": input_hash} if input_hash is not None else {}),
         },

@@ -10,12 +10,19 @@ This makes a copy of the repository in your own name. Now you can clone this rep
 
 ```sh
 git clone https://github.com/<your GitHub username>/django-components.git
+cd django-components
 ```
 
 To quickly run the tests install the local dependencies by running:
 
 ```sh
 pip install -r requirements-dev.txt
+```
+
+You also have to install this local django-components version. Use `-e` for [editable mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) so you don't have to re-install after every change:
+
+```sh
+pip install -e .
 ```
 
 Now you can run the tests to make sure everything works as expected:
@@ -35,6 +42,20 @@ pyenv install -s 3.12
 pyenv install -s 3.13
 pyenv local 3.8 3.9 3.10 3.11 3.12 3.13
 tox -p
+```
+
+To run tests for a specific Python version, use:
+
+```sh
+tox -e py38
+```
+
+NOTE: See the available environments in `tox.ini`.
+
+And to run only linters, use:
+
+```sh
+tox -e mypy,flake8,isort,black
 ```
 
 ## Running Playwright tests
