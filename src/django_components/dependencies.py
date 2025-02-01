@@ -1013,7 +1013,9 @@ def cached_script_view(
     if req.method != "GET":
         return HttpResponseNotAllowed(["GET"])
 
-    comp_cls = comp_hash_mapping[comp_cls_hash]
+    comp_cls = comp_hash_mapping.get(comp_cls_hash)
+    if comp_cls is None:
+        return HttpResponseNotFound()
 
     script = get_script_content(script_type, comp_cls, input_hash)
     if script is None:
