@@ -76,7 +76,7 @@ weight: 3
                     'django.template.loaders.cached.Loader', [
                         # Default Django loader
                         'django.template.loaders.filesystem.Loader',
-                        # Inluding this is the same as APP_DIRS=True
+                        # Including this is the same as APP_DIRS=True
                         'django.template.loaders.app_directories.Loader',
                         # Components loader
                         'django_components.template_loader.Loader',
