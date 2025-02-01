@@ -1,7 +1,11 @@
 import re
-from typing import Any, Callable, List, Optional, Type, TypeVar
+from hashlib import md5
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Type, TypeVar
 
 from django_components.util.nanoid import generate
+
+if TYPE_CHECKING:
+    from django_components.component import Component
 
 T = TypeVar("T")
 
@@ -71,3 +75,9 @@ def get_last_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
 
 def is_nonempty_str(txt: Optional[str]) -> bool:
     return txt is not None and bool(txt.strip())
+
+
+def hash_comp_cls(comp_cls: Type["Component"]) -> str:
+    full_name = get_import_path(comp_cls)
+    comp_cls_hash = md5(full_name.encode()).hexdigest()[0:6]
+    return comp_cls.__name__ + "_" + comp_cls_hash

@@ -1,4 +1,3 @@
-import inspect
 import types
 from collections import deque
 from contextlib import contextmanager
@@ -52,6 +51,7 @@ from django_components.dependencies import (
     cache_component_css_vars,
     cache_component_js,
     cache_component_js_vars,
+    comp_hash_mapping,
     postprocess_component_html,
     set_component_attrs_for_js_and_css,
 )
@@ -72,7 +72,7 @@ from django_components.slots import (
 )
 from django_components.template import cached_template
 from django_components.util.django_monkeypatch import is_template_cls_patched
-from django_components.util.misc import gen_id
+from django_components.util.misc import gen_id, hash_comp_cls
 from django_components.util.template_tag import TagAttr
 from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 
@@ -499,7 +499,7 @@ class Component(
     However, there's a few differences from Django's Media class:
 
     1. Our Media class accepts various formats for the JS and CSS files: either a single file, a list,
-       or (CSS-only) a dictonary (See [`ComponentMediaInput`](../api#django_components.ComponentMediaInput)).
+       or (CSS-only) a dictionary (See [`ComponentMediaInput`](../api#django_components.ComponentMediaInput)).
     2. Individual JS / CSS files can be any of `str`, `bytes`, `Path`,
        [`SafeString`](https://dev.to/doridoro/django-safestring-afj), or a function
        (See [`ComponentMediaInputPath`](../api#django_components.ComponentMediaInputPath)).
@@ -556,7 +556,7 @@ class Component(
     # MISC
     # #####################################
 
-    _class_hash: ClassVar[int]
+    _class_hash: ClassVar[str]
 
     def __init__(
         self,
@@ -587,7 +587,8 @@ class Component(
         self._types: Optional[Union[Tuple[Any, Any, Any, Any, Any, Any], Literal[False]]] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        cls._class_hash = hash(inspect.getfile(cls) + cls.__name__)
+        cls._class_hash = hash_comp_cls(cls)
+        comp_hash_mapping[cls._class_hash] = cls
 
     @property
     def name(self) -> str:
@@ -627,7 +628,7 @@ class Component(
     @property
     def input(self) -> RenderInput[ArgsType, KwargsType, SlotsType]:
         """
-        Input holds the data (like arg, kwargs, slots) that were passsed to
+        Input holds the data (like arg, kwargs, slots) that were passed to
         the current execution of the `render` method.
         """
         if not len(self._render_stack):
