@@ -10,8 +10,7 @@ that will be added by installing `django_components`:
 
 ```txt
 usage: manage.py upgradecomponent [-h] [--path PATH] [--version] [-v {0,1,2,3}] [--settings SETTINGS]
-                                  [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
-                                  [--skip-checks]
+                                  [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color] [--skip-checks]
 
 ```
 
@@ -53,10 +52,9 @@ Updates component and component_block tags to the new syntax
 ## `startcomponent`
 
 ```txt
-usage: manage.py startcomponent [-h] [--path PATH] [--js JS] [--css CSS] [--template TEMPLATE] [--force]
-                                [--verbose] [--dry-run] [--version] [-v {0,1,2,3}] [--settings SETTINGS]
-                                [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
-                                [--skip-checks]
+usage: manage.py startcomponent [-h] [--path PATH] [--js JS] [--css CSS] [--template TEMPLATE] [--force] [--verbose]
+                                [--dry-run] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH]
+                                [--traceback] [--no-color] [--force-color] [--skip-checks]
                                 name
 
 ```

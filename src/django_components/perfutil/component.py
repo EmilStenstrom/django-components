@@ -180,7 +180,7 @@ def component_post_render(
     # </div>
     # ```
     #
-    # Then we end up with 3 bits - 1. test before, 2. component, and 3. text after
+    # Then we end up with 3 bits - 1. text before, 2. component, and 3. text after
     #
     # We know when we've arrived at component's end, because `child_id` will be set to `None`.
     # So we can collect the HTML parts by the component ID, and when we hit the end, we join

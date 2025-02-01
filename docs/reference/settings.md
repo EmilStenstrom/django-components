@@ -38,6 +38,8 @@ defaults = ComponentsSettings(
     dirs=[Path(settings.BASE_DIR) / "components"],
     # App-level "components" dirs, e.g. `[app]/components/`
     app_dirs=["components"],
+    debug_highlight_components=False,
+    debug_highlight_slots=False,
     dynamic_component_name="dynamic",
     libraries=[],  # E.g. ["mysite.components.forms", ...]
     multiline_tags=True,
@@ -84,6 +86,26 @@ defaults = ComponentsSettings(
       show_labels: false
 
 ::: django_components.app_settings.ComponentsSettings.context_behavior
+    options:
+      show_root_heading: true
+      show_signature: true
+      separate_signature: true
+      show_symbol_type_heading: false
+      show_symbol_type_toc: false
+      show_if_no_docstring: true
+      show_labels: false
+
+::: django_components.app_settings.ComponentsSettings.debug_highlight_components
+    options:
+      show_root_heading: true
+      show_signature: true
+      separate_signature: true
+      show_symbol_type_heading: false
+      show_symbol_type_toc: false
+      show_if_no_docstring: true
+      show_labels: false
+
+::: django_components.app_settings.ComponentsSettings.debug_highlight_slots
     options:
       show_root_heading: true
       show_signature: true
