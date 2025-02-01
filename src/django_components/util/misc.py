@@ -24,13 +24,6 @@ def gen_id() -> str:
     )
 
 
-def find_last_index(lst: List, predicate: Callable[[Any], bool]) -> Any:
-    for r_idx, elem in enumerate(reversed(lst)):
-        if predicate(elem):
-            return len(lst) - 1 - r_idx
-    return -1
-
-
 def is_str_wrapped_in_quotes(s: str) -> bool:
     return s.startswith(('"', "'")) and s[0] == s[-1] and len(s) >= 2
 
@@ -66,7 +59,16 @@ def default(val: Optional[T], default: T) -> T:
     return val if val is not None else default
 
 
+def get_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
+    """Get the index of the first item in the list that satisfies the key"""
+    for i in range(len(lst)):
+        if key(lst[i]):
+            return i
+    return None
+
+
 def get_last_index(lst: List, key: Callable[[Any], bool]) -> Optional[int]:
+    """Get the index of the last item in the list that satisfies the key"""
     for index, item in enumerate(reversed(lst)):
         if key(item):
             return len(lst) - 1 - index

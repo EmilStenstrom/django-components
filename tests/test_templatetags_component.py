@@ -752,6 +752,32 @@ class AggregateInputTests(BaseTestCase):
         )
 
 
+class RecursiveComponentTests(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_recursive_component(self):
+        DEPTH = 100
+
+        @register("recursive")
+        class Recursive(Component):
+            def get_context_data(self, depth: int = 0):
+                print("depth:", depth)
+                return {"depth": depth + 1, "DEPTH": DEPTH}
+
+            template: types.django_html = """
+                <div>
+                    <span> depth: {{ depth }} </span>
+                    {% if depth <= DEPTH %}
+                        {% component "recursive" depth=depth / %}
+                    {% endif %}
+                </div>
+            """
+
+        result = Recursive.render()
+
+        for i in range(DEPTH):
+            self.assertIn(f"<span> depth: {i + 1} </span>", result)
+
+
 class ComponentTemplateSyntaxErrorTests(BaseTestCase):
     def setUp(self):
         super().setUp()

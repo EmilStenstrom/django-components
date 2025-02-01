@@ -513,7 +513,7 @@ class OuterContextPropertyTests(BaseTestCase):
         """
 
         def get_context_data(self):
-            return self.outer_context.flatten()
+            return self.outer_context.flatten()  # type: ignore[union-attr]
 
     def setUp(self):
         super().setUp()

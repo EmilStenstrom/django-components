@@ -26,10 +26,10 @@ from typing import (
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media as MediaCls
 from django.http import HttpRequest, HttpResponse
-from django.template.base import NodeList, Parser, Template, TextNode, Token
+from django.template.base import NodeList, Origin, Parser, Template, TextNode, Token
 from django.template.context import Context, RequestContext
 from django.template.loader import get_template
-from django.template.loader_tags import BLOCK_CONTEXT_KEY
+from django.template.loader_tags import BLOCK_CONTEXT_KEY, BlockContext
 from django.test.signals import template_rendered
 from django.utils.html import conditional_escape
 from django.views import View
@@ -38,13 +38,7 @@ from django_components.app_settings import ContextBehavior
 from django_components.component_media import ComponentMediaInput, ComponentMediaMeta
 from django_components.component_registry import ComponentRegistry
 from django_components.component_registry import registry as registry_
-from django_components.context import (
-    _COMPONENT_SLOT_CTX_CONTEXT_KEY,
-    _REGISTRY_CONTEXT_KEY,
-    _ROOT_CTX_CONTEXT_KEY,
-    get_injected_context_var,
-    make_isolated_context_copy,
-)
+from django_components.context import _COMPONENT_CONTEXT_KEY, make_isolated_context_copy
 from django_components.dependencies import (
     RenderType,
     cache_component_css,
@@ -52,13 +46,17 @@ from django_components.dependencies import (
     cache_component_js,
     cache_component_js_vars,
     comp_hash_mapping,
-    postprocess_component_html,
+    insert_component_dependencies_comment,
+)
+from django_components.dependencies import render_dependencies as _render_dependencies
+from django_components.dependencies import (
     set_component_attrs_for_js_and_css,
 )
 from django_components.node import BaseNode
-from django_components.perfutil.component import component_post_render
+from django_components.perfutil.component import ComponentRenderer, component_context_cache, component_post_render
+from django_components.perfutil.provide import register_provide_reference, unregister_provide_reference
+from django_components.provide import get_injected_context_var
 from django_components.slots import (
-    ComponentSlotContext,
     Slot,
     SlotContent,
     SlotFunc,
@@ -71,8 +69,11 @@ from django_components.slots import (
     resolve_fills,
 )
 from django_components.template import cached_template
+from django_components.util.context import snapshot_context
 from django_components.util.django_monkeypatch import is_template_cls_patched
-from django_components.util.misc import gen_id, hash_comp_cls
+from django_components.util.exception import component_error_message
+from django_components.util.logger import trace_component_msg
+from django_components.util.misc import gen_id, get_import_path, hash_comp_cls
 from django_components.util.template_tag import TagAttr
 from django_components.util.validation import validate_typed_dict, validate_typed_tuple
 
@@ -99,7 +100,6 @@ CssDataType = TypeVar("CssDataType", bound=Mapping[str, Any])
 
 @dataclass(frozen=True)
 class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
-    id: str
     context: Context
     args: ArgsType
     kwargs: KwargsType
@@ -109,7 +109,8 @@ class RenderInput(Generic[ArgsType, KwargsType, SlotsType]):
 
 
 @dataclass()
-class RenderStackItem(Generic[ArgsType, KwargsType, SlotsType]):
+class MetadataItem(Generic[ArgsType, KwargsType, SlotsType]):
+    render_id: str
     input: RenderInput[ArgsType, KwargsType, SlotsType]
     is_filled: Optional[SlotIsFilled]
 
@@ -216,6 +217,21 @@ class ComponentView(View, metaclass=ComponentViewMeta):
     def __init__(self, component: "Component", **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.component = component
+
+
+# Internal data that are made available within the component's template
+@dataclass
+class ComponentContext:
+    component_name: str
+    component_id: str
+    component_class: Type["Component"]
+    component_path: List[str]
+    template_name: Optional[str]
+    is_dynamic_component: bool
+    default_slot: Optional[str]
+    fills: Dict[SlotName, Slot]
+    outer_context: Optional[Context]
+    registry: ComponentRegistry
 
 
 class Component(
@@ -580,15 +596,21 @@ class Component(
         self.as_view = types.MethodType(self.__class__.as_view.__func__, self)  # type: ignore
 
         self.registered_name: Optional[str] = registered_name
-        self.outer_context: Context = outer_context or Context()
+        self.outer_context: Optional[Context] = outer_context
         self.registry = registry or registry_
-        self._render_stack: Deque[RenderStackItem[ArgsType, KwargsType, SlotsType]] = deque()
+        self._metadata_stack: Deque[MetadataItem[ArgsType, KwargsType, SlotsType]] = deque()
         # None == uninitialized, False == No types, Tuple == types
         self._types: Optional[Union[Tuple[Any, Any, Any, Any, Any, Any], Literal[False]]] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         cls._class_hash = hash_comp_cls(cls)
         comp_hash_mapping[cls._class_hash] = cls
+
+    @contextmanager
+    def _with_metadata(self, item: MetadataItem) -> Generator[None, None, None]:
+        self._metadata_stack.append(item)
+        yield
+        self._metadata_stack.pop()
 
     @property
     def name(self) -> str:
@@ -623,7 +645,13 @@ class Component(
         # Rendering 'ab3c4d'
         ```
         """
-        return self.input.id
+        if not len(self._metadata_stack):
+            raise RuntimeError(
+                f"{self.name}: Tried to access Component's `id` attribute " "while outside of rendering execution"
+            )
+
+        ctx = self._metadata_stack[-1]
+        return ctx.render_id
 
     @property
     def input(self) -> RenderInput[ArgsType, KwargsType, SlotsType]:
@@ -631,12 +659,12 @@ class Component(
         Input holds the data (like arg, kwargs, slots) that were passed to
         the current execution of the `render` method.
         """
-        if not len(self._render_stack):
+        if not len(self._metadata_stack):
             raise RuntimeError(f"{self.name}: Tried to access Component input while outside of rendering execution")
 
         # NOTE: Input is managed as a stack, so if `render` is called within another `render`,
         # the propertes below will return only the inner-most state.
-        return self._render_stack[-1].input
+        return self._metadata_stack[-1].input
 
     @property
     def is_filled(self) -> SlotIsFilled:
@@ -646,13 +674,13 @@ class Component(
         This attribute is available for use only within the template as `{{ component_vars.is_filled.slot_name }}`,
         and within `on_render_before` and `on_render_after` hooks.
         """
-        if not len(self._render_stack):
+        if not len(self._metadata_stack):
             raise RuntimeError(
                 f"{self.name}: Tried to access Component's `is_filled` attribute "
                 "while outside of rendering execution"
             )
 
-        ctx = self._render_stack[-1]
+        ctx = self._metadata_stack[-1]
         if ctx.is_filled is None:
             raise RuntimeError(
                 f"{self.name}: Tried to access Component's `is_filled` attribute " "before slots were resolved"
@@ -666,7 +694,7 @@ class Component(
     #
     #       This is important to keep in mind, because the implication is that we should
     #       treat Templates AND their nodelists as IMMUTABLE.
-    def _get_template(self, context: Context) -> Template:
+    def _get_template(self, context: Context, component_id: str) -> Template:
         template_name = self.get_template_name(context)
         # TODO_REMOVE_IN_V1 - Remove `self.get_template_string` in v1
         template_getter = getattr(self, "get_template_string", self.get_template)
@@ -700,9 +728,11 @@ class Component(
         if template_body is not None:
             # We got template string, so we convert it to Template
             if isinstance(template_body, str):
+                trace_component_msg("COMP_LOAD", component_name=self.name, component_id=component_id, slot_name=None)
                 template: Template = cached_template(
                     template_string=template_body,
-                    name=self.template_file,
+                    name=self.template_file or self.name,
+                    origin=Origin(name=self.template_file or get_import_path(self.__class__)),
                 )
             else:
                 template = template_body
@@ -929,36 +959,14 @@ class Component(
         render_dependencies: bool = True,
         request: Optional[HttpRequest] = None,
     ) -> str:
-        try:
-            return self._render_impl(
-                context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request
-            )
-        except Exception as err:
-            # Nicely format the error message to include the component path.
-            # E.g.
-            # ```
-            # KeyError: "An error occured while rendering components ProjectPage > ProjectLayoutTabbed >
-            # Layout > RenderContextProvider > Base > TabItem:
-            # Component 'TabItem' tried to inject a variable '_tab' before it was provided.
-            # ```
-
-            if not hasattr(err, "_components"):
-                err._components = []  # type: ignore[attr-defined]
-
-            components = getattr(err, "_components", [])
-
-            # Access the exception's message, see https://stackoverflow.com/a/75549200/9788634
-            if not components:
-                orig_msg = err.args[0]
-            else:
-                orig_msg = err.args[0].split("\n", 1)[1]
-
-            components.insert(0, self.name)
-            comp_path = " > ".join(components)
-            prefix = f"An error occured while rendering components {comp_path}:\n"
-
-            err.args = (prefix + orig_msg,)  # tuple of one
-            raise err
+        # Modify the error to display full component path (incl. slots)
+        with component_error_message([self.name]):
+            try:
+                return self._render_impl(
+                    context, args, kwargs, slots, escape_slots_content, type, render_dependencies, request
+                )
+            except Exception as err:
+                raise err from None
 
     def _render_impl(
         self,
@@ -990,28 +998,84 @@ class Component(
 
         # Required for compatibility with Django's {% extends %} tag
         # See https://github.com/django-components/django-components/pull/859
-        context.render_context.push({BLOCK_CONTEXT_KEY: context.render_context.get(BLOCK_CONTEXT_KEY, {})})
+        context.render_context.push({BLOCK_CONTEXT_KEY: context.render_context.get(BLOCK_CONTEXT_KEY, BlockContext())})
 
         # By adding the current input to the stack, we temporarily allow users
         # to access the provided context, slots, etc. Also required so users can
         # call `self.inject()` from within `get_context_data()`.
+        #
+        # This is handled as a stack, as users can potentially call `component.render()`
+        # from within component hooks. Thus, then they do so, `component.id` will be the ID
+        # of the deepest-most call to `component.render()`.
         render_id = gen_id()
-        self._render_stack.append(
-            RenderStackItem(
-                input=RenderInput(
-                    id=render_id,
-                    context=context,
-                    slots=slots,
-                    args=args,
-                    kwargs=kwargs,
-                    type=type,
-                    render_dependencies=render_dependencies,
-                ),
-                is_filled=None,
+        metadata = MetadataItem(
+            render_id=render_id,
+            input=RenderInput(
+                context=context,
+                slots=slots,
+                args=args,
+                kwargs=kwargs,
+                type=type,
+                render_dependencies=render_dependencies,
             ),
+            is_filled=None,
         )
 
-        context_data = self.get_context_data(*args, **kwargs)
+        # We pass down the components the info about the component's parent.
+        # This is used for correctly resolving slot fills, correct rendering order,
+        # or CSS scoping.
+        if context.get(_COMPONENT_CONTEXT_KEY, None):
+            parent_id = cast(str, context[_COMPONENT_CONTEXT_KEY])
+            parent_comp_ctx = component_context_cache[parent_id]
+            component_path = [*parent_comp_ctx.component_path, self.name]
+        else:
+            parent_id = None
+            component_path = [self.name]
+
+        trace_component_msg(
+            "COMP_PREP_START",
+            component_name=self.name,
+            component_id=render_id,
+            slot_name=None,
+            component_path=component_path,
+            extra=f"Received {len(args)} args, {len(kwargs)} kwargs, {len(slots)} slots",
+        )
+
+        # Register the component to provide
+        register_provide_reference(context, render_id)
+
+        # This is data that will be accessible (internally) from within the component's template
+        component_ctx = ComponentContext(
+            component_class=self.__class__,
+            component_name=self.name,
+            component_id=render_id,
+            component_path=component_path,
+            # Template name is set only once we've resolved the component's Template instance.
+            template_name=None,
+            fills=slots_untyped,
+            is_dynamic_component=getattr(self, "_is_dynamic_component", False),
+            # This field will be modified from within `SlotNodes.render()`:
+            # - The `default_slot` will be set to the first slot that has the `default` attribute set.
+            #   If multiple slots have the `default` attribute set, yet have different name, then
+            #   we will raise an error.
+            default_slot=None,
+            outer_context=snapshot_context(self.outer_context) if self.outer_context is not None else None,
+            registry=self.registry,
+        )
+
+        # Instead of passing the ComponentContext directly through the Context, the entry on the Context
+        # contains only a key to retrieve the ComponentContext from `component_context_cache`.
+        #
+        # This way, the flow is easier to debug. Because otherwise, if you try to print out
+        # or inspect the Context object, your screen is filled with the deeply nested ComponentContext objects.
+        component_context_cache[render_id] = component_ctx
+
+        # Allow to access component input and metadata like component ID from within these hook
+        with self._with_metadata(metadata):
+            context_data = self.get_context_data(*args, **kwargs)
+            # TODO - enable JS and CSS vars
+            # js_data = self.get_js_data(*args, **kwargs)
+            # css_data = self.get_css_data(*args, **kwargs)
         self._validate_outputs(data=context_data)
 
         # Process Component's JS and CSS
@@ -1023,40 +1087,19 @@ class Component(
         cache_component_css(self.__class__)
         css_input_hash = cache_component_css_vars(self.__class__, css_data) if css_data else None
 
-        with _prepare_template(self, context, context_data) as template:
+        with _prepare_template(self, context, context_data, metadata) as template:
+            component_ctx.template_name = template.name
+
             # For users, we expose boolean variables that they may check
             # to see if given slot was filled, e.g.:
             # `{% if variable > 8 and component_vars.is_filled.header %}`
             is_filled = SlotIsFilled(slots_untyped)
-            self._render_stack[-1].is_filled = is_filled
-
-            # If any slot fills were defined within the template, we want to scope them
-            # to the CSS of the parent component. Thus we keep track of the parent component.
-            if context.get(_COMPONENT_SLOT_CTX_CONTEXT_KEY, None):
-                parent_comp_ctx: ComponentSlotContext = context[_COMPONENT_SLOT_CTX_CONTEXT_KEY]
-                parent_id = parent_comp_ctx.component_id
-            else:
-                parent_id = None
-
-            component_slot_ctx = ComponentSlotContext(
-                component_name=self.name,
-                component_id=render_id,
-                template_name=template.name,
-                fills=slots_untyped,
-                is_dynamic_component=getattr(self, "_is_dynamic_component", False),
-                # This field will be modified from within `SlotNodes.render()`:
-                # - The `default_slot` will be set to the first slot that has the `default` attribute set.
-                #   If multiple slots have the `default` attribute set, yet have different name, then
-                #   we will raise an error.
-                default_slot=None,
-            )
+            metadata.is_filled = is_filled
 
             with context.update(
                 {
                     # Private context fields
-                    _ROOT_CTX_CONTEXT_KEY: self.outer_context,
-                    _COMPONENT_SLOT_CTX_CONTEXT_KEY: component_slot_ctx,
-                    _REGISTRY_CONTEXT_KEY: self.registry,
+                    _COMPONENT_CONTEXT_KEY: render_id,
                     # NOTE: Public API for variables accessible from within a component's template
                     # See https://github.com/django-components/django-components/issues/280#issuecomment-2081180940
                     "component_vars": ComponentVars(
@@ -1064,60 +1107,149 @@ class Component(
                     ),
                 }
             ):
-                self.on_render_before(context, template)
+                # Make a "snapshot" of the context as it was at the time of the render call.
+                #
+                # Previously, we recursively called `Template.render()` as this point, but due to recursion
+                # this was limiting the number of nested components to only about 60 levels deep.
+                #
+                # Now, we make a flat copy, so that the context copy is static and doesn't change even if
+                # we leave the `with context.update` blocks.
+                #
+                # This makes it possible to render nested components with a queue, avoiding recursion limits.
+                context_snapshot = snapshot_context(context)
+
+        # Cleanup
+        context.render_context.pop()
+
+        # Instead of rendering component at the time we come across the `{% component %}` tag
+        # in the template, we defer rendering in order to scalably handle deeply nested components.
+        #
+        # See `_gen_component_renderer()` for more details.
+        deferred_render = self._gen_component_renderer(
+            render_id=render_id,
+            template=template,
+            context=context_snapshot,
+            metadata=metadata,
+            component_path=component_path,
+            css_input_hash=css_input_hash,
+            js_input_hash=js_input_hash,
+            css_scope_id=None,  # TODO - Implement CSS scoping
+        )
+
+        # Remove component from caches
+        def on_component_rendered(component_id: str) -> None:
+            del component_context_cache[component_id]  # type: ignore[arg-type]
+            unregister_provide_reference(component_id)  # type: ignore[arg-type]
+
+        # After the component and all its children are rendered, we resolve
+        # all inserted HTML comments into <script> and <link> tags (if render_dependencies=True)
+        def on_html_rendered(html: str) -> str:
+            if render_dependencies:
+                html = _render_dependencies(html, type)
+            return html
+
+        trace_component_msg(
+            "COMP_PREP_END",
+            component_name=self.name,
+            component_id=render_id,
+            slot_name=None,
+            component_path=component_path,
+        )
+
+        return component_post_render(
+            renderer=deferred_render,
+            render_id=render_id,
+            component_name=self.name,
+            parent_id=parent_id,
+            on_component_rendered=on_component_rendered,
+            on_html_rendered=on_html_rendered,
+        )
+
+    # Creates a renderer function that will be called only once, when the component is to be rendered.
+    #
+    # By encapsulating components' output as render function, we can render components top-down,
+    # starting from root component, and moving down.
+    #
+    # This way, when it comes to rendering a particular component, we have already rendered its parent,
+    # and we KNOW if there were any HTML attributes that were passed from parent to children.
+    #
+    # Thus, the returned renderer function accepts the extra HTML attributes that were passed from parent,
+    # and returns the updated HTML content.
+    #
+    # Because the HTML attributes are all boolean (e.g. `data-djc-id-a1b3c4`), they are passed as a list.
+    #
+    # This whole setup makes it possible for multiple components to resolve to the same HTML element.
+    # E.g. if CompA renders CompB, and CompB renders a <div>, then the <div> element will have
+    # IDs of both CompA and CompB.
+    # ```html
+    # <div djc-id-a1b3cf djc-id-f3d3cf>...</div>
+    # ```
+    def _gen_component_renderer(
+        self,
+        render_id: str,
+        template: Template,
+        context: Context,
+        metadata: MetadataItem,
+        component_path: List[str],
+        css_input_hash: Optional[str],
+        js_input_hash: Optional[str],
+        css_scope_id: Optional[str],
+    ) -> ComponentRenderer:
+        component = self
+        component_name = self.name
+        component_cls = self.__class__
+
+        def renderer(root_attributes: Optional[List[str]] = None) -> Tuple[str, Dict[str, List[str]]]:
+            trace_component_msg(
+                "COMP_RENDER_START",
+                component_name=component_name,
+                component_id=render_id,
+                slot_name=None,
+                component_path=component_path,
+            )
+
+            # Allow to access component input and metadata like component ID from within `on_render` hook
+            with component._with_metadata(metadata):
+                component.on_render_before(context, template)
 
                 # Emit signal that the template is about to be rendered
-                template_rendered.send(sender=self, template=self, context=context)
+                template_rendered.send(sender=template, template=template, context=context)
                 # Get the component's HTML
                 html_content = template.render(context)
 
                 # Allow to optionally override/modify the rendered content
-                new_output = self.on_render_after(context, template, html_content)
+                new_output = component.on_render_after(context, template, html_content)
                 html_content = new_output if new_output is not None else html_content
 
-        # After rendering is done, remove the current state from the stack, which means
-        # properties like `self.context` will no longer return the current state.
-        self._render_stack.pop()
-        context.render_context.pop()
-
-        # Internal component HTML post-processing:
-        # - Add the HTML attributes to work with JS and CSS variables
-        # - Resolve component's JS / CSS into <script> and <link> (if render_dependencies=True)
-        #
-        # However, to ensure that we run an HTML parser only once over the HTML content,
-        # we have to wrap it in this callback. This callback runs only once we know whether
-        # there are any extra HTML attributes that should be applied to this component's root elements.
-        #
-        # This makes it possible for multiple components to resolve to the same HTML element.
-        # E.g. if CompA renders CompB, and CompB renders a <div>, then the <div> element will have
-        # IDs of both CompA and CompB.
-        # ```html
-        # <div djc-id-a1b3cf djc-id-f3d3cf>...</div>
-        # ```
-        def post_processor(root_attributes: Optional[List[str]] = None) -> Tuple[str, Dict[str, List[str]]]:
-            nonlocal html_content
-
+            # Add necessary HTML attributes to work with JS and CSS variables
             updated_html, child_components = set_component_attrs_for_js_and_css(
                 html_content=html_content,
                 component_id=render_id,
                 css_input_hash=css_input_hash,
-                css_scope_id=None,  # TODO - Implement
+                css_scope_id=css_scope_id,
                 root_attributes=root_attributes,
             )
 
-            updated_html = postprocess_component_html(
-                component_cls=self.__class__,
+            # Prepend an HTML comment to instructs how and what JS and CSS scripts are associated with it.
+            updated_html = insert_component_dependencies_comment(
+                updated_html,
+                component_cls=component_cls,
                 component_id=render_id,
-                html_content=updated_html,
-                css_input_hash=css_input_hash,
                 js_input_hash=js_input_hash,
-                type=type,
-                render_dependencies=render_dependencies,
+                css_input_hash=css_input_hash,
+            )
+
+            trace_component_msg(
+                "COMP_RENDER_END",
+                component_name=component_name,
+                component_id=render_id,
+                slot_name=None,
+                component_path=component_path,
             )
 
             return updated_html, child_components
 
-        return component_post_render(post_processor, render_id, parent_id)
+        return renderer
 
     def _normalize_slot_fills(
         self,
@@ -1129,12 +1261,41 @@ class Component(
 
         # NOTE: `gen_escaped_content_func` is defined as a separate function, instead of being inlined within
         #       the forloop, because the value the forloop variable points to changes with each loop iteration.
-        def gen_escaped_content_func(content: SlotFunc) -> Slot:
-            def content_fn(ctx: Context, slot_data: Dict, slot_ref: SlotRef) -> SlotResult:
-                rendered = content(ctx, slot_data, slot_ref)
-                return conditional_escape(rendered) if escape_content else rendered
+        def gen_escaped_content_func(content: SlotFunc, slot_name: str) -> Slot:
+            # Case: Already Slot, already escaped, and names tracing names assigned, so nothing to do.
+            if isinstance(content, Slot) and content.escaped and content.slot_name and content.component_name:
+                return content
 
-            slot = Slot(content_func=cast(SlotFunc, content_fn))
+            # Otherwise, we create a new instance of Slot, whether `content` was already Slot or not.
+            # This is so that user can potentially define a single `Slot` and use it in multiple components.
+            if not isinstance(content, Slot) or not content.escaped:
+
+                def content_fn(ctx: Context, slot_data: Dict, slot_ref: SlotRef) -> SlotResult:
+                    rendered = content(ctx, slot_data, slot_ref)
+                    return conditional_escape(rendered) if escape_content else rendered
+
+                content_func = cast(SlotFunc, content_fn)
+            else:
+                content_func = content.content_func
+
+            # Populate potentially missing fields so we can trace the component and slot
+            if isinstance(content, Slot):
+                used_component_name = content.component_name or self.name
+                used_slot_name = content.slot_name or slot_name
+                used_nodelist = content.nodelist
+            else:
+                used_component_name = self.name
+                used_slot_name = slot_name
+                used_nodelist = None
+
+            slot = Slot(
+                content_func=content_func,
+                component_name=used_component_name,
+                slot_name=used_slot_name,
+                nodelist=used_nodelist,
+                escaped=True,
+            )
+
             return slot
 
         for slot_name, content in fills.items():
@@ -1142,13 +1303,14 @@ class Component(
                 continue
             elif not callable(content):
                 slot = _nodelist_to_slot_render_func(
-                    slot_name,
-                    NodeList([TextNode(conditional_escape(content) if escape_content else content)]),
+                    component_name=self.name,
+                    slot_name=slot_name,
+                    nodelist=NodeList([TextNode(conditional_escape(content) if escape_content else content)]),
                     data_var=None,
                     default_var=None,
                 )
             else:
-                slot = gen_escaped_content_func(content)
+                slot = gen_escaped_content_func(content, slot_name)
 
             norm_fills[slot_name] = slot
 
@@ -1460,13 +1622,15 @@ def _prepare_template(
     component: Component,
     context: Context,
     context_data: Any,
+    metadata: MetadataItem,
 ) -> Generator[Template, Any, None]:
     with context.update(context_data):
         # Associate the newly-created Context with a Template, otherwise we get
         # an error when we try to use `{% include %}` tag inside the template?
         # See https://github.com/django-components/django-components/issues/580
         # And https://github.com/django-components/django-components/issues/634
-        template = component._get_template(context)
+        with component._with_metadata(metadata):
+            template = component._get_template(context, component_id=metadata.render_id)
 
         if not is_template_cls_patched(template):
             raise RuntimeError(

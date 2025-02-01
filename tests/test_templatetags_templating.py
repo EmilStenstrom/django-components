@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from django.template import Context, Template
 
-from django_components import Component, registry, types
+from django_components import Component, register, registry, types
 
 from .django_test_setup import setup_test_config
 from .testutils import BaseTestCase, parametrize_context_behavior
@@ -604,38 +604,10 @@ class ComponentNestingTests(BaseTestCase):
             </div>
         """
 
-    class ComplexChildComponent(Component):
-        template: types.django_html = """
-            {% load component_tags %}
-            <div>
-            {% slot "content" default %}
-                No slot!
-            {% endslot %}
-            </div>
-        """
-
-    class ComplexParentComponent(Component):
-        template: types.django_html = """
-            {% load component_tags %}
-            ITEMS: {{ items|safe }}
-            {% for item in items %}
-            <li>
-                {% component "complex_child" %}
-                    {{ item.value }}
-                {% endcomponent %}
-            </li>
-            {% endfor %}
-        """
-
-        def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
-            return {"items": items}
-
     def setUp(self) -> None:
         super().setUp()
         registry.register("dashboard", self.DashboardComponent)
         registry.register("calendar", self.CalendarComponent)
-        registry.register("complex_child", self.ComplexChildComponent)
-        registry.register("complex_parent", self.ComplexParentComponent)
 
     # NOTE: Second arg in tuple are expected names in nested fills. In "django" mode,
     # the value should be overridden by the component, while in "isolated" it should
@@ -770,6 +742,34 @@ class ComponentNestingTests(BaseTestCase):
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_component_nesting_deep_slot_inside_component_fill(self):
+        @register("complex_child")
+        class ComplexChildComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                <div>
+                {% slot "content" default %}
+                    No slot!
+                {% endslot %}
+                </div>
+            """
+
+        @register("complex_parent")
+        class ComplexParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                ITEMS: {{ items|safe }}
+                {% for item in items %}
+                <li>
+                    {% component "complex_child" %}
+                        {{ item.value }}
+                    {% endcomponent %}
+                </li>
+                {% endfor %}
+            """
+
+            def get_context_data(self, items, *args, **kwargs) -> Dict[str, Any]:
+                return {"items": items}
+
         template_str: types.django_html = """
             {% load component_tags %}
             {% component "complex_parent" items=items %}{% endcomponent %}
@@ -789,6 +789,114 @@ class ComponentNestingTests(BaseTestCase):
             <li data-djc-id-a1bc3f>
                 <div data-djc-id-a1bc44> 3 </div>
             </li>
+        """
+        self.assertHTMLEqual(rendered, expected)
+
+    # This test is based on real-life example.
+    # It ensures that deeply nested slots in fills with same names are resolved correctly.
+    # It also ensures that the component_vars.is_filled context is correctly populated.
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_component_nesting_deep_slot_inside_component_fill_2(self):
+        @register("TestPage")
+        class TestPage(Component):
+            template: types.django_html = """
+                {% component "TestLayout" %}
+                    {% fill "content" %}
+                        <div class="test-page">
+                            ------PROJ_LAYOUT_TABBED META ------<br/>
+                            component_vars.is_filled: {{ component_vars.is_filled|safe }}<br/>
+                            ------------------------<br/>
+
+                            {% if component_vars.is_filled.left_panel %}
+                                <div style="background-color: red;">
+                                    {% slot "left_panel" / %}
+                                </div>
+                            {% endif %}
+
+                            {% slot "content" default %}
+                                DEFAULT LAYOUT TABBED CONTENT
+                            {% endslot %}
+                        </div>
+                    {% endfill %}
+                {% endcomponent %}
+            """
+
+        @register("TestLayout")
+        class TestLayout(Component):
+            template: types.django_html = """
+            {% component "TestBase" %}
+                {% fill "content" %}
+                    ------LAYOUT META ------<br/>
+                    component_vars.is_filled: {{ component_vars.is_filled|safe }}<br/>
+                    ------------------------<br/>
+
+                    <div class="test-layout">
+                        {% slot "content" default / %}
+                    </div>
+                {% endfill %}
+            {% endcomponent %}
+            """
+
+        @register("TestBase")
+        class TestBase(Component):
+            template: types.django_html = """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Test app</title>
+                </head>
+                <body class="test-base">
+                    ------BASE META ------<br/>
+                    component_vars.is_filled: {{ component_vars.is_filled|safe }}<br/>
+                    ------------------------<br/>
+
+                    {% slot "content" default / %}
+                </body>
+                </html>
+            """
+
+        rendered = TestPage.render(
+            slots={
+                "left_panel": "LEFT PANEL SLOT FROM FILL",
+                "content": "CONTENT SLOT FROM FILL",
+            }
+        )
+
+        expected = """
+            <!DOCTYPE html>
+            <html lang="en" data-djc-id-a1bc3e data-djc-id-a1bc43 data-djc-id-a1bc47><head>
+                <meta charset="UTF-8">
+                <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Test app</title>
+            </head>
+            <body class="test-base">
+                ------BASE META ------ <br>
+                component_vars.is_filled: {'content': True}<br>
+                ------------------------ <br>
+
+                ------LAYOUT META ------<br>
+                component_vars.is_filled: {'content': True}<br>
+                ------------------------<br>
+
+                <div class="test-layout">
+                    <div class="test-page">
+                        ------PROJ_LAYOUT_TABBED META ------<br>
+                        component_vars.is_filled: {'left_panel': True, 'content': True}<br>
+                        ------------------------<br>
+
+                        <div style="background-color: red;">
+                            LEFT PANEL SLOT FROM FILL
+                        </div>
+                        CONTENT SLOT FROM FILL
+                    </div>
+                </div>
+                <script src="django_components/django_components.min.js"></script>
+            </body>
+            </html>
         """
         self.assertHTMLEqual(rendered, expected)
 

@@ -153,7 +153,7 @@ class ComponentTest(BaseTestCase):
             pass
 
         with self.assertRaises(ImproperlyConfigured):
-            EmptyComponent("empty_component")._get_template(Context({}))
+            EmptyComponent("empty_component")._get_template(Context({}), "123")
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_template_string_static_inlined(self):
@@ -425,7 +425,7 @@ class ComponentTest(BaseTestCase):
 
         with self.assertRaisesMessage(
             TypeError,
-            "An error occured while rendering components Root > parent > provider > broken:\n"
+            "An error occured while rendering components Root > parent > provider > provider(slot:content) > broken:\n"
             "tuple indices must be integers or slices, not str",
         ):
             Root.render()

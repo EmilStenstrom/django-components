@@ -557,7 +557,6 @@ class ExtendsCompatTests(BaseTestCase):
 
         template: types.django_html = """
             {% extends "block_in_component.html" %}
-            {% load component_tags %}
             {% block body %}
             <div>
                 58 giraffes and 2 pantaloons
@@ -826,10 +825,10 @@ class ExtendsCompatTests(BaseTestCase):
             <!DOCTYPE html>
             <html lang="en">
             <body>
-                <custom-template data-djc-id-a1bc43>
+                <custom-template data-djc-id-a1bc44>
                     <header></header>
                     <main>
-                        <div data-djc-id-a1bc47> injected: DepInject(hello='from_block') </div>
+                        <div data-djc-id-a1bc48> injected: DepInject(hello='from_block') </div>
                     </main>
                     <footer>Default footer</footer>
                 </custom-template>

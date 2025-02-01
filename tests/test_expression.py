@@ -658,9 +658,9 @@ class SpreadOperatorTests(BaseTestCase):
         self.assertHTMLEqual(
             rendered,
             """
-            <div data-djc-id-a1bc40>{'@click': '() =&gt; {}', 'style': 'height: 20px'}</div>
-            <div data-djc-id-a1bc40>[1, 2, 3]</div>
-            <div data-djc-id-a1bc40>1</div>
+            <div data-djc-id-a1bc41>{'@click': '() =&gt; {}', 'style': 'height: 20px'}</div>
+            <div data-djc-id-a1bc41>[1, 2, 3]</div>
+            <div data-djc-id-a1bc41>1</div>
             """,
         )
 

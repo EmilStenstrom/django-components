@@ -531,7 +531,7 @@ class ComponentSlotTests(BaseTestCase):
 
         with self.assertRaisesMessage(
             TemplateSyntaxError,
-            "Encountered a SlotNode outside of a ComponentNode context.",
+            "Encountered a SlotNode outside of a Component context.",
         ):
             Template(template_str).render(Context({}))
 

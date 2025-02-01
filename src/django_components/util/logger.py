@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Any, Dict, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 DEFAULT_TRACE_LEVEL_NUM = 5  # NOTE: MUST be lower than DEBUG which is 10
 
@@ -29,7 +29,7 @@ def _get_log_levels() -> Dict[str, int]:
         return logging._nameToLevel.copy()
 
 
-def trace(logger: logging.Logger, message: str, *args: Any, **kwargs: Any) -> None:
+def trace(message: str, *args: Any, **kwargs: Any) -> None:
     """
     TRACE level logger.
 
@@ -61,20 +61,64 @@ def trace(logger: logging.Logger, message: str, *args: Any, **kwargs: Any) -> No
         logger.log(actual_trace_level_num, message, *args, **kwargs)
 
 
-def trace_msg(
-    action: Literal["PARSE", "RENDR"],
+def trace_node_msg(
+    action: Literal["PARSE", "RENDER"],
     node_type: str,
     node_id: str,
     msg: str = "",
 ) -> None:
     """
-    TRACE level logger with opinionated format for tracing interaction of components,
-    nodes, and slots. Formats messages like so:
+    TRACE level logger with opinionated format for tracing interaction of nodes.
+    Formats messages like so:
 
     `"PARSE slot ID 0088 ...Done!"`
     """
-    full_msg = f"{action} {node_type} ID {node_id} {msg}"
+    action_normalized = action.ljust(6, " ")
+    full_msg = f"{action_normalized} NODE {node_type} ID {node_id} {msg}"
 
     # NOTE: When debugging tests during development, it may be easier to change
     # this to `print()`
-    trace(logger, full_msg)
+    trace(full_msg)
+
+
+def trace_component_msg(
+    action: str,
+    component_name: str,
+    component_id: Optional[str],
+    slot_name: Optional[str],
+    component_path: Optional[List[str]] = None,
+    slot_fills: Optional[Dict[str, Any]] = None,
+    extra: str = "",
+) -> None:
+    """
+    TRACE level logger with opinionated format for tracing interaction of components
+    and slots. Formats messages like so:
+
+    `"RENDER_SLOT COMPONENT 'component_name' SLOT: 'slot_name' FILLS: 'fill_name' PATH: Root > Child > Grandchild "`
+    """
+
+    if component_id:
+        component_id_str = f"ID {component_id}"
+    else:
+        component_id_str = ""
+
+    if slot_name:
+        slot_name_str = f"SLOT: '{slot_name}'"
+    else:
+        slot_name_str = ""
+
+    if component_path:
+        component_path_str = "PATH: " + " > ".join(component_path)
+    else:
+        component_path_str = ""
+
+    if slot_fills:
+        slot_fills_str = "FILLS: " + ", ".join(slot_fills.keys())
+    else:
+        slot_fills_str = ""
+
+    full_msg = f"{action} COMPONENT: '{component_name}' {component_id_str} {slot_name_str} {slot_fills_str} {component_path_str} {extra}"  # noqa: E501
+
+    # NOTE: When debugging tests during development, it may be easier to change
+    # this to `print()`
+    trace(full_msg)

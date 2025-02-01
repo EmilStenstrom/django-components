@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, cast
 from django.template import Context, Library
 from django.template.base import Node, NodeList, Parser, Token
 
-from django_components.util.logger import trace_msg
+from django_components.util.logger import trace_node_msg
 from django_components.util.misc import gen_id
 from django_components.util.template_tag import (
     TagAttr,
@@ -89,7 +89,7 @@ class NodeMeta(type):
 
         @functools.wraps(orig_render)
         def wrapper_render(self: "BaseNode", context: Context) -> str:
-            trace_msg("RENDR", self.tag, self.node_id)
+            trace_node_msg("RENDER", self.tag, self.node_id)
 
             resolved_params = resolve_params(self.tag, self.params, context)
 
@@ -196,7 +196,7 @@ class NodeMeta(type):
             ] + resolved_params_without_invalid_kwargs
             output = apply_params_in_original_order(orig_render, resolved_params_with_context, invalid_kwargs)
 
-            trace_msg("RENDR", self.tag, self.node_id, msg="...Done!")
+            trace_node_msg("RENDER", self.tag, self.node_id, msg="...Done!")
             return output
 
         # Wrap cls.render() so we resolve the args and kwargs and pass them to the
@@ -357,7 +357,7 @@ class BaseNode(Node, metaclass=NodeMeta):
         tag_id = gen_id()
         tag = parse_template_tag(cls.tag, cls.end_tag, cls.allowed_flags, parser, token)
 
-        trace_msg("PARSE", cls.tag, tag_id)
+        trace_node_msg("PARSE", cls.tag, tag_id)
 
         body = tag.parse_body()
         node = cls(
@@ -368,7 +368,7 @@ class BaseNode(Node, metaclass=NodeMeta):
             **kwargs,
         )
 
-        trace_msg("PARSE", cls.tag, tag_id, "...Done!")
+        trace_node_msg("PARSE", cls.tag, tag_id, "...Done!")
         return node
 
     @classmethod
