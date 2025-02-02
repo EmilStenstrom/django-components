@@ -10,8 +10,6 @@ from django_components.util.logger import trace_node_msg
 from django_components.util.misc import gen_id
 from django_components.util.template_tag import (
     TagAttr,
-    TagParam,
-    apply_params_in_original_order,
     parse_template_tag,
     resolve_params,
     validate_params,
@@ -159,8 +157,7 @@ class NodeMeta(type):
 
             # Validate the params against the signature
             #
-            # Unlike the call to `apply_params_in_original_order()` further below, this uses a signature
-            # that has been stripped of the `self` and `context` parameters. E.g.
+            # This uses a signature that has been stripped of the `self` and `context` parameters. E.g.
             #
             # `def render(name: str, **kwargs: Any) -> None`
             #
@@ -180,21 +177,14 @@ class NodeMeta(type):
             #
             # But cause we stripped the two parameters, then the error will be:
             # `render() takes from 1 positional arguments but 2 were given`
-            validate_params(self.tag, validation_signature, resolved_params_without_invalid_kwargs, invalid_kwargs)
+            args, kwargs = validate_params(
+                self.tag,
+                validation_signature,
+                resolved_params_without_invalid_kwargs,
+                invalid_kwargs,
+            )
 
-            # The code below calls the `orig_render()` function like so:
-            # `orig_render(self, context, arg1, arg2, kwarg1=val1, kwarg2=val2)`
-            #
-            # So it's called in the same order as what was passed to the template tag, e.g.
-            # `{% component arg1 arg2 kwarg1=val1 kwarg2=val2 %}`
-            #
-            # That's why we don't simply spread all args and kwargs as `*args, **kwargs`,
-            # because then Python's validation wouldn't catch such errors.
-            resolved_params_with_context = [
-                TagParam(key=None, value=self),
-                TagParam(key=None, value=context),
-            ] + resolved_params_without_invalid_kwargs
-            output = apply_params_in_original_order(orig_render, resolved_params_with_context, invalid_kwargs)
+            output = orig_render(self, context, *args, **kwargs)
 
             trace_node_msg("RENDER", self.tag, self.node_id, msg="...Done!")
             return output

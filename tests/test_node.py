@@ -225,7 +225,7 @@ class NodeTests(BaseTestCase):
         """
         )
         with self.assertRaisesMessage(
-            TypeError, "Invalid parameters for tag 'mytag': multiple values for argument 'name'"
+            TypeError, "Invalid parameters for tag 'mytag': got multiple values for argument 'name'"
         ):
             template6.render(Context({}))
 
@@ -236,7 +236,7 @@ class NodeTests(BaseTestCase):
             {% mytag count=1 name='John' 123 %}
         """
         )
-        with self.assertRaisesMessage(SyntaxError, "positional argument follows keyword argument"):
+        with self.assertRaisesMessage(TypeError, "positional argument follows keyword argument"):
             template6.render(Context({}))
 
         # Extra kwargs
@@ -310,6 +310,62 @@ class NodeTests(BaseTestCase):
         )
 
         TestNode1.unregister(component_tags.register)
+
+    def test_node_render_kwargs_only(self):
+        captured = None
+
+        class TestNode(BaseNode):
+            tag = "mytag"
+
+            def render(self, context: Context, **kwargs) -> str:
+                nonlocal captured
+                captured = kwargs
+                return ""
+
+        TestNode.register(component_tags.register)
+
+        # Test with various kwargs including non-identifier keys
+        template = Template(
+            """
+            {% load component_tags %}
+            {% mytag
+                name='John'
+                age=25
+                data-id=123
+                class="header"
+                @click="handleClick"
+                v-if="isVisible"
+            %}
+            """
+        )
+        template.render(Context({}))
+
+        # All kwargs should be accepted since the function accepts **kwargs
+        self.assertEqual(
+            captured,
+            {
+                "name": "John",
+                "age": 25,
+                "data-id": 123,
+                "class": "header",
+                "@click": "handleClick",
+                "v-if": "isVisible",
+            },
+        )
+
+        # Test with positional args (should fail since function only accepts kwargs)
+        template2 = Template(
+            """
+            {% load component_tags %}
+            {% mytag "John" name="Mary" %}
+            """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': takes 0 positional arguments but 1 was given"
+        ):
+            template2.render(Context({}))
+
+        TestNode.unregister(component_tags.register)
 
 
 class DecoratorTests(BaseTestCase):
@@ -488,7 +544,7 @@ class DecoratorTests(BaseTestCase):
         """
         )
         with self.assertRaisesMessage(
-            TypeError, "Invalid parameters for tag 'mytag': multiple values for argument 'name'"
+            TypeError, "Invalid parameters for tag 'mytag': got multiple values for argument 'name'"
         ):
             template6.render(Context({}))
 
@@ -499,7 +555,7 @@ class DecoratorTests(BaseTestCase):
             {% mytag count=1 name='John' 123 %}
         """
         )
-        with self.assertRaisesMessage(SyntaxError, "positional argument follows keyword argument"):
+        with self.assertRaisesMessage(TypeError, "positional argument follows keyword argument"):
             template6.render(Context({}))
 
         # Extra kwargs
@@ -566,5 +622,57 @@ class DecoratorTests(BaseTestCase):
                 {"a": 1, "b": 2, "c": 3, "data-id": 123, "class": "pa-4", "@click.once": "myVar"},
             ),
         )
+
+        render._node.unregister(component_tags.register)  # type: ignore[attr-defined]
+
+    def test_decorator_render_kwargs_only(self):
+        captured = None
+
+        @template_tag(component_tags.register, tag="mytag")  # type: ignore
+        def render(node: BaseNode, context: Context, **kwargs) -> str:
+            nonlocal captured
+            captured = kwargs
+            return ""
+
+        # Test with various kwargs including non-identifier keys
+        template = Template(
+            """
+            {% load component_tags %}
+            {% mytag
+                name='John'
+                age=25
+                data-id=123
+                class="header"
+                @click="handleClick"
+                v-if="isVisible"
+            %}
+            """
+        )
+        template.render(Context({}))
+
+        # All kwargs should be accepted since the function accepts **kwargs
+        self.assertEqual(
+            captured,
+            {
+                "name": "John",
+                "age": 25,
+                "data-id": 123,
+                "class": "header",
+                "@click": "handleClick",
+                "v-if": "isVisible",
+            },
+        )
+
+        # Test with positional args (should fail since function only accepts kwargs)
+        template2 = Template(
+            """
+            {% load component_tags %}
+            {% mytag "John" name="Mary" %}
+            """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': takes 0 positional arguments but 1 was given"
+        ):
+            template2.render(Context({}))
 
         render._node.unregister(component_tags.register)  # type: ignore[attr-defined]
