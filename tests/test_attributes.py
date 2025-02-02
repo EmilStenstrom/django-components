@@ -128,7 +128,7 @@ class HtmlAttrsTests(BaseTestCase):
         template = Template(self.template_str)
 
         with self.assertRaisesMessage(
-            TypeError, "Invalid parameters for tag 'html_attrs': too many positional arguments"
+            TypeError, "Invalid parameters for tag 'html_attrs': takes 2 positional argument(s) but more were given"
         ):
             template.render(Context({"class_var": "padding-top-8"}))
 
@@ -269,7 +269,7 @@ class HtmlAttrsTests(BaseTestCase):
         template = Template(self.template_str)
 
         with self.assertRaisesMessage(
-            TypeError, "Invalid parameters for tag 'html_attrs': multiple values for argument 'attrs'"
+            TypeError, "Invalid parameters for tag 'html_attrs': got multiple values for argument 'attrs'"
         ):
             template.render(Context({"class_var": "padding-top-8"}))
 

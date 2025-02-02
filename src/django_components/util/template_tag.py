@@ -4,9 +4,8 @@ This file is for logic that focuses on transforming the AST of template tags
 """
 
 import inspect
-import sys
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple
 
 from django.template import Context, NodeList
 from django.template.base import Parser, Token
@@ -23,7 +22,7 @@ def validate_params(
     signature: inspect.Signature,
     params: List["TagParam"],
     extra_kwargs: Optional[Dict[str, Any]] = None,
-) -> None:
+) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
     """
     Validates a list of TagParam objects against this tag's function signature.
 
@@ -33,17 +32,16 @@ def validate_params(
     """
 
     # Create a function that uses the given signature
-    def validator(*args: Any, **kwargs: Any) -> None:
-        # Let Python do the signature validation
-        bound = signature.bind(*args, **kwargs)
-        bound.apply_defaults()
+    def validator(*args: Any, **kwargs: Any) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        return args, kwargs
 
     validator.__signature__ = signature  # type: ignore[attr-defined]
 
     # Call the validator with our args and kwargs in the same order as they appeared
     # in the template, to let the Python interpreter validate on repeated kwargs.
     try:
-        apply_params_in_original_order(validator, params, extra_kwargs)
+        # Returns args, kwargs
+        return apply_params_in_original_order(validator, params, extra_kwargs)
     except TypeError as e:
         raise TypeError(f"Invalid parameters for tag '{tag}': {str(e)}") from None
 
@@ -244,82 +242,101 @@ def apply_params_in_original_order(
     {% component key1=value1 arg1 arg2 key2=value2 key3=value3 %}
     ```
 
-    Then `apply_params_in_original_order()` will call the `fn` like this:
-    ```
-    component(
-        key1=call_params[0], # kwarg 1
-        call_params[1], # arg 1
-        call_params[2], # arg 2
-        key2=call_params[3], # kwarg 2
-        key3=call_params[4], # kwarg 3
-        ...
-        **extra_kwargs,
-    )
-    ```
-
-    This way, this will be effectively the same as:
+    Then it will be as if the given function was called like this:
 
     ```python
-    component(key1=value1, arg1, arg2, key2=value2, key3=value3, ..., **extra_kwargs)
+    fn(key1=value1, arg1, arg2, key2=value2, key3=value3)
     ```
 
-    The problem this works around is that, dynamically, args and kwargs in Python
-    can be passed only with `*args` and `**kwargs`. But in such case, we're already
-    grouping all args and kwargs, which may not represent the original order of the params
-    as they appeared in the template tag.
+    This function validates that the template tag's parameters match the function's signature
+    and follow Python's function calling conventions. It will raise appropriate TypeError exceptions
+    for invalid parameter combinations, such as:
+    - Too few/many arguments (for non-variadic functions)
+    - Duplicate keyword arguments
+    - Mixed positional/keyword argument errors
+    - Positional args after kwargs
 
-    If you need to pass kwargs that are not valid Python identifiers, e.g. `data-id`, `class`, `:href`,
-    you can pass them in via `extra_kwargs`. These kwargs will be exempt from the validation, and will be
-    passed to the function as a dictionary spread.
+    Returns the result of calling fn with the validated parameters
     """
-    # Generate a script like so:
-    # ```py
-    # component(
-    #     key1=call_params[0],
-    #     call_params[1],
-    #     call_params[2],
-    #     key2=call_params[3],
-    #     key3=call_params[4],
-    #     ...
-    #     **extra_kwargs,
-    # )
-    # ```
-    #
-    # NOTE: Instead of grouping params into args and kwargs, we preserve the original order
-    #       of the params as they appeared in the template.
-    #
-    # NOTE: Because we use `eval()` here, we can't trust neither the param keys nor values.
-    #       So we MUST NOT reference them directly in the exec script, otherwise we'd be at risk
-    #       of injection attack.
-    #
-    #       Currently, the use of `eval()` is safe, because we control the input:
-    #       - List with indices is used so that we don't have to reference directly or try to print the values.
-    #         and instead refer to them as `call_params[0]`, `call_params[1]`, etc.
-    #       - List indices are safe, because we generate them.
-    #       - Kwarg names come from the user. But Python expects the kwargs to be valid identifiers.
-    #         So if a key is not a valid identifier, we'll raise an error. Before passing it to `eval()`
-    validator_call_script = "fn("
-    call_params: List[Union[List, Dict]] = []
-    for index, param in enumerate(params):
-        call_params.append(param.value)
+    signature = inspect.signature(fn)
+
+    # Track state as we process parameters
+    seen_kwargs = False  # To detect positional args after kwargs
+    used_param_names = set()  # To detect duplicate kwargs
+    validated_args = []
+    validated_kwargs = {}
+
+    # Get list of valid parameter names and analyze signature
+    params_by_name = signature.parameters
+    valid_params = list(params_by_name.keys())
+
+    # Check if function accepts variable arguments (*args, **kwargs)
+    has_var_positional = any(param.kind == inspect.Parameter.VAR_POSITIONAL for param in params_by_name.values())
+    has_var_keyword = any(param.kind == inspect.Parameter.VAR_KEYWORD for param in params_by_name.values())
+
+    # Find the last positional parameter index (excluding *args)
+    max_positional_index = 0
+    for i, (_, signature_param) in enumerate(params_by_name.items()):
+        if signature_param.kind in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        ):
+            max_positional_index = i + 1
+        elif signature_param.kind == inspect.Parameter.VAR_POSITIONAL:
+            # Don't count *args in max_positional_index
+            break
+        # Parameter.KEYWORD_ONLY
+        # Parameter.VAR_KEYWORD
+        else:
+            break
+
+    next_positional_index = 0
+
+    # Process parameters in their original order
+    for param in params:
         if param.key is None:
-            validator_call_script += f"call_params[{index}], "
+            # This is a positional argument
+            if seen_kwargs:
+                raise TypeError("positional argument follows keyword argument")
+
+            # Only check position limit for non-variadic functions
+            if not has_var_positional and next_positional_index >= max_positional_index:
+                if max_positional_index == 0:
+                    raise TypeError(f"takes 0 positional arguments but {next_positional_index + 1} was given")
+                raise TypeError(f"takes {max_positional_index} positional argument(s) but more were given")
+
+            # For non-variadic arguments, get the parameter name this maps to
+            if next_positional_index < max_positional_index:
+                param_name = valid_params[next_positional_index]
+                # Check if this parameter was already provided as a kwarg
+                if param_name in used_param_names:
+                    raise TypeError(f"got multiple values for argument '{param_name}'")
+                used_param_names.add(param_name)
+
+            validated_args.append(param.value)
+            next_positional_index += 1
         else:
-            validator_call_script += f"{param.key}=call_params[{index}], "
+            # This is a keyword argument
+            seen_kwargs = True
 
-    validator_call_script += "**extra_kwargs, "
-    validator_call_script += ")"
+            # Check for duplicate kwargs
+            if param.key in used_param_names:
+                raise TypeError(f"got multiple values for argument '{param.key}'")
 
-    def applier(fn: Callable[..., Any]) -> Any:
-        locals = {
-            "fn": fn,
-            "call_params": call_params,
-            "extra_kwargs": extra_kwargs or {},
-        }
-        # NOTE: `eval()` changed API in Python 3.13
-        if sys.version_info >= (3, 13):
-            return eval(validator_call_script, globals={}, locals=locals)
-        else:
-            return eval(validator_call_script, {}, locals)
+            # Only validate kwarg names if the function doesn't accept **kwargs
+            if not has_var_keyword and param.key not in valid_params:
+                raise TypeError(f"got an unexpected keyword argument '{param.key}'")
 
-    return applier(fn)
+            validated_kwargs[param.key] = param.value
+            used_param_names.add(param.key)
+
+    # Add any extra kwargs
+    if extra_kwargs:
+        validated_kwargs.update(extra_kwargs)
+
+    # Final validation using signature.bind()
+    bound_args = signature.bind(*validated_args, **validated_kwargs)
+    bound_args.apply_defaults()
+
+    # Actually call the function with validated parameters
+    return fn(*bound_args.args, **bound_args.kwargs)
