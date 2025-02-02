@@ -6,6 +6,7 @@
   - [Advanced](concepts/advanced/)
 - Guides
   - [Setup](guides/setup/)
+  - [Other](guides/other/)
   - [Dev guides](guides/devguides/)
 - [API Documentation](reference/)
 - [Release notes](release_notes.md)

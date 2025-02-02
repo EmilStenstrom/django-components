@@ -20,7 +20,7 @@ Import as
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1118" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1066" target="_blank">See source code</a>
 
 
 
@@ -43,7 +43,7 @@ If you insert this tag multiple times, ALL CSS links will be duplicately inserte
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1140" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1088" target="_blank">See source code</a>
 
 
 
@@ -67,7 +67,7 @@ If you insert this tag multiple times, ALL JS scripts will be duplicately insert
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1257" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L1436" target="_blank">See source code</a>
 
 
 
@@ -175,7 +175,7 @@ can access only the data that was explicitly passed to it:
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L466" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L577" target="_blank">See source code</a>
 
 
 
@@ -336,7 +336,7 @@ renders
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L9" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L12" target="_blank">See source code</a>
 
 
 
@@ -416,7 +416,7 @@ user = self.inject("user_data")["user"]
 
 
 
-<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L149" target="_blank">See source code</a>
+<a href="https://github.com/django-components/django-components/tree/master/src/django_components/templatetags/component_tags.py#L153" target="_blank">See source code</a>
 
 
 

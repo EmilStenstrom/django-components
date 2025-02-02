@@ -24,10 +24,11 @@ from django.template.base import NodeList, TextNode
 from django.template.exceptions import TemplateSyntaxError
 from django.utils.safestring import SafeString, mark_safe
 
-from django_components.app_settings import ContextBehavior
+from django_components.app_settings import ContextBehavior, app_settings
 from django_components.context import _COMPONENT_CONTEXT_KEY, _INJECT_CONTEXT_KEY_PREFIX
 from django_components.node import BaseNode
 from django_components.perfutil.component import component_context_cache
+from django_components.util.component_highlight import apply_component_highlight
 from django_components.util.exception import add_slot_to_error_message
 from django_components.util.logger import trace_component_msg
 from django_components.util.misc import get_index, get_last_index, is_identifier
@@ -536,6 +537,9 @@ class SlotNode(BaseNode):
                     # NOTE: While `{% fill %}` tag has to opt in for the `default` and `data` variables,
                     #       the render function ALWAYS receives them.
                     output = slot_fill.slot(used_ctx, kwargs, slot_ref)
+
+        if app_settings.DEBUG_HIGHLIGHT_SLOTS:
+            output = apply_component_highlight("slot", output, f"{component_name} - {slot_name}")
 
         trace_component_msg(
             "RENDER_SLOT_END",

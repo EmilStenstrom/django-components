@@ -239,6 +239,34 @@ class ComponentsSettings(NamedTuple):
     > [here](https://github.com/django-components/django-components/issues/498).
     """
 
+    debug_highlight_components: Optional[bool] = None
+    """
+    Enable / disable component highlighting.
+    See [Troubleshooting](../../guides/other/troubleshooting#component-highlighting) for more details.
+
+    Defaults to `False`.
+
+    ```python
+    COMPONENTS = ComponentsSettings(
+        debug_highlight_components=True,
+    )
+    ```
+    """
+
+    debug_highlight_slots: Optional[bool] = None
+    """
+    Enable / disable slot highlighting.
+    See [Troubleshooting](../../guides/other/troubleshooting#slot-highlighting) for more details.
+
+    Defaults to `False`.
+
+    ```python
+    COMPONENTS = ComponentsSettings(
+        debug_highlight_slots=True,
+    )
+    ```
+    """
+
     dynamic_component_name: Optional[str] = None
     """
     By default, the [dynamic component](../components#django_components.components.dynamic.DynamicComponent)
@@ -594,6 +622,8 @@ defaults = ComponentsSettings(
     dirs=Dynamic(lambda: [Path(settings.BASE_DIR) / "components"]),  # type: ignore[arg-type]
     # App-level "components" dirs, e.g. `[app]/components/`
     app_dirs=["components"],
+    debug_highlight_components=False,
+    debug_highlight_slots=False,
     dynamic_component_name="dynamic",
     libraries=[],  # E.g. ["mysite.components.forms", ...]
     multiline_tags=True,
@@ -642,6 +672,14 @@ class InternalSettings:
     @property
     def APP_DIRS(self) -> Sequence[str]:
         return default(self._settings.app_dirs, cast(List[str], defaults.app_dirs))
+
+    @property
+    def DEBUG_HIGHLIGHT_COMPONENTS(self) -> bool:
+        return default(self._settings.debug_highlight_components, cast(bool, defaults.debug_highlight_components))
+
+    @property
+    def DEBUG_HIGHLIGHT_SLOTS(self) -> bool:
+        return default(self._settings.debug_highlight_slots, cast(bool, defaults.debug_highlight_slots))
 
     @property
     def DYNAMIC_COMPONENT_NAME(self) -> str:
