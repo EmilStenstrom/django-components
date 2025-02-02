@@ -1,3 +1,5 @@
+import inspect
+
 from django.template import Context, Template
 from django.template.exceptions import TemplateSyntaxError
 
@@ -676,3 +678,383 @@ class DecoratorTests(BaseTestCase):
             template2.render(Context({}))
 
         render._node.unregister(component_tags.register)  # type: ignore[attr-defined]
+
+
+def force_signature_validation(fn):
+    """
+    Creates a proxy around a function that makes __code__ inaccessible,
+    forcing the use of signature-based validation.
+    """
+
+    class SignatureOnlyFunction:
+        def __init__(self, fn):
+            self.__wrapped__ = fn
+            self.__signature__ = inspect.signature(fn)
+
+        def __call__(self, *args, **kwargs):
+            return self.__wrapped__(*args, **kwargs)
+
+        def __getattr__(self, name):
+            # Return None for __code__ to force signature-based validation
+            if name == "__code__":
+                return None
+            # For all other attributes, delegate to the wrapped function
+            return getattr(self.__wrapped__, name)
+
+    return SignatureOnlyFunction(fn)
+
+
+class SignatureBasedValidationTests(BaseTestCase):
+    # Test that the template tag can be used within the template under the registered tag
+    def test_node_class_tags(self):
+        class TestNode(BaseNode):
+            tag = "mytag"
+            end_tag = "endmytag"
+
+            @force_signature_validation
+            def render(self, context: Context, name: str, **kwargs) -> str:
+                return f"Hello, {name}!"
+
+        TestNode.register(component_tags.register)
+
+        # Works with end tag and self-closing
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% mytag 'John' %}
+            {% endmytag %}
+            Shorthand: {% mytag 'Mary' / %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({}))
+
+        self.assertEqual(rendered.strip(), "Hello, John!\n            Shorthand: Hello, Mary!")
+
+        # But raises if missing end tag
+        template_str2: types.django_html = """
+            {% load component_tags %}
+            {% mytag 'John' %}
+        """
+        with self.assertRaisesMessage(TemplateSyntaxError, "Unclosed tag on line 3: 'mytag'"):
+            Template(template_str2)
+
+        TestNode.unregister(component_tags.register)
+
+    def test_node_class_no_end_tag(self):
+        class TestNode(BaseNode):
+            tag = "mytag"
+
+            @force_signature_validation
+            def render(self, context: Context, name: str, **kwargs) -> str:
+                return f"Hello, {name}!"
+
+        TestNode.register(component_tags.register)
+
+        # Raises with end tag or self-closing
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% mytag 'John' %}
+            {% endmytag %}
+            Shorthand: {% mytag 'Mary' / %}
+        """
+        with self.assertRaisesMessage(TemplateSyntaxError, "Invalid block tag on line 4: 'endmytag'"):
+            Template(template_str)
+
+        # Works when missing end tag
+        template_str2: types.django_html = """
+            {% load component_tags %}
+            {% mytag 'John' %}
+        """
+        template2 = Template(template_str2)
+        rendered2 = template2.render(Context({}))
+        self.assertEqual(rendered2.strip(), "Hello, John!")
+
+        TestNode.unregister(component_tags.register)
+
+    def test_node_class_flags(self):
+        captured = None
+
+        class TestNode(BaseNode):
+            tag = "mytag"
+            end_tag = "endmytag"
+            allowed_flags = ["required", "default"]
+
+            @force_signature_validation
+            def render(self, context: Context, name: str, **kwargs) -> str:
+                nonlocal captured
+                captured = self.allowed_flags, self.flags, self.active_flags
+                return f"Hello, {name}!"
+
+        TestNode.register(component_tags.register)
+
+        template_str = """
+            {% load component_tags %}
+            {% mytag 'John' required / %}
+        """
+        template = Template(template_str)
+        template.render(Context({}))
+
+        allowed_flags, flags, active_flags = captured  # type: ignore
+        self.assertEqual(allowed_flags, ["required", "default"])
+        self.assertEqual(flags, {"required": True, "default": False})
+        self.assertEqual(active_flags, ["required"])
+
+        TestNode.unregister(component_tags.register)
+
+    def test_node_render(self):
+        # Check that the render function is called with the context
+        captured = None
+
+        class TestNode(BaseNode):
+            tag = "mytag"
+
+            @force_signature_validation
+            def render(self, context: Context) -> str:
+                nonlocal captured
+                captured = context.flatten()
+                return f"Hello, {context['name']}!"
+
+        TestNode.register(component_tags.register)
+
+        template_str = """
+            {% load component_tags %}
+            {% mytag / %}
+        """
+        template = Template(template_str)
+        rendered = template.render(Context({"name": "John"}))
+
+        self.assertEqual(captured, {"False": False, "None": None, "True": True, "name": "John"})
+        self.assertEqual(rendered.strip(), "Hello, John!")
+
+        TestNode.unregister(component_tags.register)
+
+    def test_node_render_raises_if_no_context_arg(self):
+        with self.assertRaisesMessage(TypeError, "`render()` method of TestNode must have at least two parameters"):
+
+            class TestNode(BaseNode):
+                tag = "mytag"
+
+                def render(self) -> str:  # type: ignore
+                    return ""
+
+    def test_node_render_accepted_params_set_by_render_signature(self):
+        captured = None
+
+        class TestNode1(BaseNode):
+            tag = "mytag"
+            allowed_flags = ["required", "default"]
+
+            @force_signature_validation
+            def render(self, context: Context, name: str, count: int = 1, *, msg: str, mode: str = "default") -> str:
+                nonlocal captured
+                captured = name, count, msg, mode
+                return ""
+
+        TestNode1.register(component_tags.register)
+
+        # Set only required params
+        template1 = Template(
+            """
+            {% load component_tags %}
+            {% mytag 'John' msg='Hello' required %}
+        """
+        )
+        template1.render(Context({}))
+        self.assertEqual(captured, ("John", 1, "Hello", "default"))
+
+        # Set all params
+        template2 = Template(
+            """
+            {% load component_tags %}
+            {% mytag 'John2' count=2 msg='Hello' mode='custom' required %}
+        """
+        )
+        template2.render(Context({}))
+        self.assertEqual(captured, ("John2", 2, "Hello", "custom"))
+
+        # Set no params
+        template3 = Template(
+            """
+            {% load component_tags %}
+            {% mytag %}
+        """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': missing a required argument: 'name'"
+        ):
+            template3.render(Context({}))
+
+        # Omit required arg
+        template4 = Template(
+            """
+            {% load component_tags %}
+            {% mytag msg='Hello' %}
+        """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': missing a required argument: 'name'"
+        ):
+            template4.render(Context({}))
+
+        # Omit required kwarg
+        template5 = Template(
+            """
+            {% load component_tags %}
+            {% mytag name='John' %}
+        """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': missing a required argument: 'msg'"
+        ):
+            template5.render(Context({}))
+
+        # Extra args
+        template6 = Template(
+            """
+            {% load component_tags %}
+            {% mytag 123 count=1 name='John' %}
+        """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': got multiple values for argument 'name'"
+        ):
+            template6.render(Context({}))
+
+        # Extra args after kwargs
+        template6 = Template(
+            """
+            {% load component_tags %}
+            {% mytag count=1 name='John' 123 %}
+        """
+        )
+        with self.assertRaisesMessage(TypeError, "positional argument follows keyword argument"):
+            template6.render(Context({}))
+
+        # Extra kwargs
+        template7 = Template(
+            """
+            {% load component_tags %}
+            {% mytag 'John' msg='Hello' mode='custom' var=123 %}
+        """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': got an unexpected keyword argument 'var'"
+        ):
+            template7.render(Context({}))
+
+        # Extra kwargs - non-identifier or kwargs
+        template8 = Template(
+            """
+            {% load component_tags %}
+            {% mytag 'John' msg='Hello' mode='custom' data-id=123 class="pa-4" @click.once="myVar" %}
+        """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': got an unexpected keyword argument 'data-id'"
+        ):
+            template8.render(Context({}))
+
+        # Extra arg after special kwargs
+        template9 = Template(
+            """
+            {% load component_tags %}
+            {% mytag data-id=123 'John' msg='Hello' %}
+        """
+        )
+        with self.assertRaisesMessage(SyntaxError, "positional argument follows keyword argument"):
+            template9.render(Context({}))
+
+        TestNode1.unregister(component_tags.register)
+
+    def test_node_render_extra_args_and_kwargs(self):
+        captured = None
+
+        class TestNode1(BaseNode):
+            tag = "mytag"
+            allowed_flags = ["required", "default"]
+
+            @force_signature_validation
+            def render(self, context: Context, name: str, *args, msg: str, **kwargs) -> str:
+                nonlocal captured
+                captured = name, args, msg, kwargs
+                return ""
+
+        TestNode1.register(component_tags.register)
+
+        template1 = Template(
+            """
+            {% load component_tags %}
+            {% mytag 'John'
+                123 456 789 msg='Hello' a=1 b=2 c=3 required
+                data-id=123 class="pa-4" @click.once="myVar"
+            %}
+        """
+        )
+        template1.render(Context({}))
+        self.assertEqual(
+            captured,
+            (
+                "John",
+                (123, 456, 789),
+                "Hello",
+                {"a": 1, "b": 2, "c": 3, "data-id": 123, "class": "pa-4", "@click.once": "myVar"},
+            ),
+        )
+
+        TestNode1.unregister(component_tags.register)
+
+    def test_node_render_kwargs_only(self):
+        captured = None
+
+        class TestNode(BaseNode):
+            tag = "mytag"
+
+            @force_signature_validation
+            def render(self, context: Context, **kwargs) -> str:
+                nonlocal captured
+                captured = kwargs
+                return ""
+
+        TestNode.register(component_tags.register)
+
+        # Test with various kwargs including non-identifier keys
+        template = Template(
+            """
+            {% load component_tags %}
+            {% mytag
+                name='John'
+                age=25
+                data-id=123
+                class="header"
+                @click="handleClick"
+                v-if="isVisible"
+            %}
+            """
+        )
+        template.render(Context({}))
+
+        # All kwargs should be accepted since the function accepts **kwargs
+        self.assertEqual(
+            captured,
+            {
+                "name": "John",
+                "age": 25,
+                "data-id": 123,
+                "class": "header",
+                "@click": "handleClick",
+                "v-if": "isVisible",
+            },
+        )
+
+        # Test with positional args (should fail since function only accepts kwargs)
+        template2 = Template(
+            """
+            {% load component_tags %}
+            {% mytag "John" name="Mary" %}
+            """
+        )
+        with self.assertRaisesMessage(
+            TypeError, "Invalid parameters for tag 'mytag': takes 0 positional arguments but 1 was given"
+        ):
+            template2.render(Context({}))
+
+        TestNode.unregister(component_tags.register)

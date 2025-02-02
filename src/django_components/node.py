@@ -178,8 +178,9 @@ class NodeMeta(type):
             # But cause we stripped the two parameters, then the error will be:
             # `render() takes from 1 positional arguments but 2 were given`
             args, kwargs = validate_params(
-                self.tag,
+                orig_render,
                 validation_signature,
+                self.tag,
                 resolved_params_without_invalid_kwargs,
                 invalid_kwargs,
             )
