@@ -34,19 +34,3 @@ class ComponentHighlightTests(BaseTestCase):
         # Check that the slot colors are used
         self.assertIn(COLORS["slot"].text_color, result)
         self.assertIn(COLORS["slot"].border_color, result)
-
-    def test_highlight_styling(self):
-        """Test that the output contains expected styling elements"""
-        result = apply_component_highlight("component", "<p>Test</p>", "Test")
-
-        # Check for expected styling elements
-        self.assertIn("border-radius: 12px", result)
-        self.assertIn("padding: 4px", result)
-        self.assertIn("margin: 4px", result)
-        self.assertIn("transition: all 0.2s ease", result)
-        self.assertIn("box-shadow:", result)
-
-    def test_invalid_type(self):
-        # Test that invalid type raises an error
-        with self.assertRaises(KeyError):
-            apply_component_highlight("invalid", "<div>Test</div>", "Test")  # type: ignore

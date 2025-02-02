@@ -1,5 +1,7 @@
 from typing import Literal, NamedTuple
 
+from django_components.util.misc import gen_id
+
 
 class HighlightColor(NamedTuple):
     text_color: str
@@ -8,7 +10,7 @@ class HighlightColor(NamedTuple):
 
 COLORS = {
     "component": HighlightColor(text_color="#2f14bb", border_color="blue"),
-    "slot": HighlightColor(text_color="#bb1414", border_color="red"),
+    "slot": HighlightColor(text_color="#bb1414", border_color="#e40c0c"),
 }
 
 
@@ -21,22 +23,19 @@ def apply_component_highlight(type: Literal["component", "slot"], output: str, n
     """
     color = COLORS[type]
 
+    # Because the component / slot name is set via styling as a `::before` pseudo-element,
+    # we need to generate a unique ID for each component / slot to avoid conflicts.
+    highlight_id = gen_id()
+
     output = f"""
-        <div style="
-            border-radius: 12px;
-            padding: 4px;
-            margin: 4px;
-            border: 1px solid {color.border_color};
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
-        ">
-            <p style="
-                background: white;
-                color: {color.text_color};
-                font-weight: 600;
-                border-radius: 6px;
-                padding: 2px;
-            ">{name}</p>
+        <style>
+        .{type}-highlight-{highlight_id}::before {{
+            content: "{name}: ";
+            font-weight: bold;
+            color: {color.text_color};
+        }}
+        </style>
+        <div class="{type}-highlight-{highlight_id}" style="border: 1px solid {color.border_color}">
             {output}
         </div>
     """
