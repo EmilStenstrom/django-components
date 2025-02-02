@@ -276,7 +276,7 @@ def apply_params_in_original_order(
 
     # Find the last positional parameter index (excluding *args)
     max_positional_index = 0
-    for i, (_, signature_param) in enumerate(params_by_name.items()):
+    for i, signature_param in enumerate(params_by_name.values()):
         if signature_param.kind in (
             inspect.Parameter.POSITIONAL_ONLY,
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
