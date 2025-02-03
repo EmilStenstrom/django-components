@@ -1,6 +1,6 @@
 ---
-title: Running with development server
-weight: 2
+title: Development server
+weight: 3
 ---
 
 ### Reload dev server on component file changes

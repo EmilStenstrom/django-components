@@ -2,15 +2,10 @@ from typing import Any, Optional, Type, TypeVar
 
 from django.template import Origin, Template
 
-from django_components.app_settings import app_settings
-from django_components.util.cache import LRUCache
+from django_components.cache import get_template_cache
 from django_components.util.misc import get_import_path
 
 TTemplate = TypeVar("TTemplate", bound=Template)
-
-
-# Lazily initialize the cache
-template_cache: Optional[LRUCache[Template]] = None
 
 
 # Central logic for creating Templates from string, so we can cache the results
@@ -54,16 +49,14 @@ def cached_template(
     )
     ```
     """  # noqa: E501
-    global template_cache
-    if template_cache is None:
-        template_cache = LRUCache(maxsize=app_settings.TEMPLATE_CACHE_SIZE)
+    template_cache = get_template_cache()
 
     template_cls = template_cls or Template
     template_cls_path = get_import_path(template_cls)
     engine_cls_path = get_import_path(engine.__class__) if engine else None
     cache_key = (template_cls_path, template_string, engine_cls_path)
 
-    maybe_cached_template = template_cache.get(cache_key)
+    maybe_cached_template: Optional[Template] = template_cache.get(cache_key)
     if maybe_cached_template is None:
         template = template_cls(template_string, origin=origin, name=name, engine=engine)
         template_cache.set(cache_key, template)

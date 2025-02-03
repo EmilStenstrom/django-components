@@ -1081,17 +1081,15 @@ class Component(
         # Allow to access component input and metadata like component ID from within these hook
         with self._with_metadata(metadata):
             context_data = self.get_context_data(*args, **kwargs)
-            # TODO - enable JS and CSS vars
-            # js_data = self.get_js_data(*args, **kwargs)
-            # css_data = self.get_css_data(*args, **kwargs)
+            # TODO - enable JS and CSS vars - EXPOSE AND DOCUMENT AND MAKE NON-NULL
+            js_data = self.get_js_data(*args, **kwargs) if hasattr(self, "get_js_data") else {}  # type: ignore
+            css_data = self.get_css_data(*args, **kwargs) if hasattr(self, "get_css_data") else {}  # type: ignore
         self._validate_outputs(data=context_data)
 
         # Process Component's JS and CSS
-        js_data: Dict = {}  # TODO
         cache_component_js(self.__class__)
         js_input_hash = cache_component_js_vars(self.__class__, js_data) if js_data else None
 
-        css_data: Dict = {}  # TODO
         cache_component_css(self.__class__)
         css_input_hash = cache_component_css_vars(self.__class__, css_data) if css_data else None
 

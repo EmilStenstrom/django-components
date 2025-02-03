@@ -26,9 +26,13 @@ weight: 3
     BASE_DIR = Path(__file__).resolve().parent.parent
     ```
 
-4. Set [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
+4. _Optional._ Set [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
    and/or [`COMPONENTS.app_dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.app_dirs)
    so django_components knows where to find component HTML, JS and CSS files:
+
+    If [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
+    is omitted, django-components will by default look for a top-level `/components` directory,
+    `{BASE_DIR}/components`.
 
     ```python
     from django_components import ComponentsSettings
@@ -40,10 +44,6 @@ weight: 3
         ],
     )
     ```
-
-    If [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs)
-    is omitted, django-components will by default look for a top-level `/components` directory,
-    `{BASE_DIR}/components`.
 
     In addition to [`COMPONENTS.dirs`](../reference/settings.md#django_components.app_settings.ComponentsSettings.dirs),
     django_components will also load components from app-level directories, such as `my-app/components/`.
@@ -65,7 +65,7 @@ weight: 3
           which has the same effect.
     - Add `loaders` to `OPTIONS` list and set it to following value:
 
-    This allows Django load component HTML files as Django templates.
+    This allows Django to load component HTML files as Django templates.
 
     ```python
     TEMPLATES = [
@@ -152,8 +152,15 @@ If you want to use JS or CSS with components, you will need to:
     </html>
     ```
 
+5. _Optional._ By default, components' JS and CSS files are cached in memory.
+   
+    If you want to change the cache backend, set the [`COMPONENTS.cache`](../reference/settings.md#django_components.app_settings.ComponentsSettings.cache) setting.
+
+    Read more in [Caching](../../guides/setup/caching).
+
 ## Optional
 
+### Builtin template tags
 To avoid loading the app in each template using `{% load component_tags %}`, you can add the tag as a 'builtin' in settings.py
 
 ```python
@@ -169,4 +176,6 @@ TEMPLATES = [
 ]
 ```
 
-Read on to find out how to build your first component!
+---
+
+Now you're all set! Read on to find out how to build your first component.

@@ -212,6 +212,25 @@ class ComponentsSettings(NamedTuple):
     ```
     """
 
+    cache: Optional[str] = None
+    """
+    Name of the [Django cache](https://docs.djangoproject.com/en/5.1/topics/cache/)
+    to be used for storing component's JS and CSS files.
+
+    If `None`, a [`LocMemCache`](https://docs.djangoproject.com/en/5.1/topics/cache/#local-memory-caching)
+    is used with default settings.
+
+    Defaults to `None`.
+
+    Read more about [caching](../../guides/setup/caching).
+
+    ```python
+    COMPONENTS = ComponentsSettings(
+        cache="my_cache",
+    )
+    ```
+    """
+
     context_behavior: Optional[ContextBehaviorType] = None
     """
     Configure whether, inside a component template, you can use variables from the outside
@@ -383,7 +402,7 @@ class ComponentsSettings(NamedTuple):
     [`COMPONENTS.app_dirs`](../settings/#django_components.app_settings.ComponentsSettings.app_dirs)
     change.
 
-    See [Reload dev server on component file changes](../../guides/setup/dev_server_setup/#reload-dev-server-on-component-file-changes).
+    See [Reload dev server on component file changes](../../guides/setup/development_server/#reload-dev-server-on-component-file-changes).
 
     Defaults to `False`.
 
@@ -617,6 +636,7 @@ class Dynamic(Generic[T]):
 # --snippet:defaults--
 defaults = ComponentsSettings(
     autodiscover=True,
+    cache=None,
     context_behavior=ContextBehavior.DJANGO.value,  # "django" | "isolated"
     # Root-level "components" dirs, e.g. `/path/to/proj/components/`
     dirs=Dynamic(lambda: [Path(settings.BASE_DIR) / "components"]),  # type: ignore[arg-type]
@@ -660,6 +680,10 @@ class InternalSettings:
     @property
     def AUTODISCOVER(self) -> bool:
         return default(self._settings.autodiscover, cast(bool, defaults.autodiscover))
+
+    @property
+    def CACHE(self) -> Optional[str]:
+        return default(self._settings.cache, defaults.cache)
 
     @property
     def DIRS(self) -> Sequence[Union[str, PathLike, Tuple[str, str], Tuple[str, PathLike]]]:
