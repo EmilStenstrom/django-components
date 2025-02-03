@@ -1,5 +1,16 @@
 # Release notes
 
+## v0.128
+
+#### Feat
+
+- Configurable cache - Set [`COMPONENTS.cache`](https://django-components.github.io/django-components/0.128/reference/settings/#django_components.app_settings.ComponentsSettings.cache) to change where and how django-components caches JS and CSS files.
+  Read more on [Caching](https://django-components.github.io/django-components/0.128/guides/setup/caching).
+
+#### Perf
+
+- Component input validation is now 6-7x faster on CPython and PyPy. This previously made up 10-30% of the total render time. ([#945](https://github.com/django-components/django-components/pull/945))
+
 ## v0.127
 
 #### Fix

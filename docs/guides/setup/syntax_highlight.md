@@ -1,5 +1,6 @@
 ---
 title: Syntax highlighting
+weight: 1
 ---
 
 ## VSCode

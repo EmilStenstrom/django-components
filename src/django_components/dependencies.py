@@ -4,7 +4,6 @@ import base64
 import json
 import re
 import sys
-from abc import ABC, abstractmethod
 from hashlib import md5
 from typing import (
     TYPE_CHECKING,
@@ -34,6 +33,7 @@ from django.utils.decorators import sync_and_async_middleware
 from django.utils.safestring import SafeString, mark_safe
 from djc_core_html_parser import set_html_attributes
 
+from django_components.cache import get_component_media_cache
 from django_components.node import BaseNode
 from django_components.util.misc import is_nonempty_str
 
@@ -46,38 +46,15 @@ RenderType = Literal["document", "fragment"]
 
 
 #########################################################
-# 1. Cache the inlined component JS and CSS scripts,
-#    so they can be referenced and retrieved later via
-#    an ID.
+# 1. Cache the inlined component JS and CSS scripts (`Component.js` and `Component.css`).
+#
+#    To support HTML fragments, when a fragment is loaded on a page,
+#    we on-demand request the JS and CSS files of the components that are
+#    referenced in the fragment.
+#
+#    Thus, we need to persist the JS and CSS files across requests. These are then accessed
+#    via `cached_script_view` endpoint.
 #########################################################
-
-
-class ComponentMediaCacheABC(ABC):
-    @abstractmethod
-    def get(self, key: str) -> Optional[str]: ...  # noqa: #704
-
-    @abstractmethod
-    def has(self, key: str) -> bool: ...  # noqa: #704
-
-    @abstractmethod
-    def set(self, key: str, value: str) -> None: ...  # noqa: #704
-
-
-class InMemoryComponentMediaCache(ComponentMediaCacheABC):
-    def __init__(self) -> None:
-        self._data: Dict[str, str] = {}
-
-    def get(self, key: str) -> Optional[str]:
-        return self._data.get(key, None)
-
-    def has(self, key: str) -> bool:
-        return key in self._data
-
-    def set(self, key: str, value: str) -> None:
-        self._data[key] = value
-
-
-comp_media_cache = InMemoryComponentMediaCache()
 
 
 # NOTE: Initially, we fetched components by their registered name, but that didn't work
@@ -101,7 +78,9 @@ else:
     comp_hash_mapping: WeakValueDictionary[str, Type["Component"]] = WeakValueDictionary()
 
 
-# Convert Component class to something like `TableComp_a91d03`
+# Generate keys like
+# `__components:MyButton_a78y37:js:df7c6d10`
+# `__components:MyButton_a78y37:css`
 def _gen_cache_key(
     comp_cls_hash: str,
     script_type: ScriptType,
@@ -119,7 +98,8 @@ def _is_script_in_cache(
     input_hash: Optional[str],
 ) -> bool:
     cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
-    return comp_media_cache.has(cache_key)
+    cache = get_component_media_cache()
+    return cache.has_key(cache_key)
 
 
 def _cache_script(
@@ -141,7 +121,8 @@ def _cache_script(
 
     # NOTE: By setting the script in the cache, we will be able to retrieve it
     # via the endpoint, e.g. when we make a request to `/components/cache/MyComp_ab0c2d.js`.
-    comp_media_cache.set(cache_key, script.strip())
+    cache = get_component_media_cache()
+    cache.set(cache_key, script.strip())
 
 
 def cache_component_js(comp_cls: Type["Component"]) -> None:
@@ -187,7 +168,7 @@ def cache_component_js_vars(comp_cls: Type["Component"], js_vars: Dict) -> Optio
     if not _is_script_in_cache(comp_cls, "js", input_hash):
         _cache_script(
             comp_cls=comp_cls,
-            script="",  # TODO
+            script="",  # TODO - enable JS and CSS vars
             script_type="js",
             input_hash=input_hash,
         )
@@ -195,7 +176,7 @@ def cache_component_js_vars(comp_cls: Type["Component"], js_vars: Dict) -> Optio
     return input_hash
 
 
-def wrap_component_js(comp_cls: Type["Component"], content: str) -> SafeString:
+def wrap_component_js(comp_cls: Type["Component"], content: str) -> str:
     if "</script" in content:
         raise RuntimeError(
             f"Content of `Component.js` for component '{comp_cls.__name__}' contains '</script>' end tag. "
@@ -237,7 +218,7 @@ def cache_component_css_vars(comp_cls: Type["Component"], css_vars: Dict) -> Opt
     if not _is_script_in_cache(comp_cls, "css", input_hash):
         _cache_script(
             comp_cls=comp_cls,
-            script="",  # TODO
+            script="",  # TODO - enable JS and CSS vars
             script_type="css",
             input_hash=input_hash,
         )
@@ -245,7 +226,7 @@ def cache_component_css_vars(comp_cls: Type["Component"], css_vars: Dict) -> Opt
     return input_hash
 
 
-def wrap_component_css(comp_cls: Type["Component"], content: str) -> SafeString:
+def wrap_component_css(comp_cls: Type["Component"], content: str) -> str:
     if "</style" in content:
         raise RuntimeError(
             f"Content of `Component.css` for component '{comp_cls.__name__}' contains '</style>' end tag. "
@@ -822,9 +803,10 @@ def get_script_content(
     script_type: ScriptType,
     comp_cls: Type["Component"],
     input_hash: Optional[str],
-) -> SafeString:
+) -> Optional[str]:
+    cache = get_component_media_cache()
     cache_key = _gen_cache_key(comp_cls._class_hash, script_type, input_hash)
-    script = comp_media_cache.get(cache_key)
+    script = cache.get(cache_key)
 
     return script
 
@@ -833,8 +815,13 @@ def get_script_tag(
     script_type: ScriptType,
     comp_cls: Type["Component"],
     input_hash: Optional[str],
-) -> SafeString:
+) -> str:
     content = get_script_content(script_type, comp_cls, input_hash)
+    if content is None:
+        raise RuntimeError(
+            f"Could not find {script_type.upper()} for component '{comp_cls.__name__}' "
+            f"(hash: {comp_cls._class_hash})"
+        )
 
     if script_type == "js":
         content = wrap_component_js(comp_cls, content)

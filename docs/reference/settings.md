@@ -33,6 +33,7 @@ Here's overview of all available settings and their defaults:
 ```py
 defaults = ComponentsSettings(
     autodiscover=True,
+    cache=None,
     context_behavior=ContextBehavior.DJANGO.value,  # "django" | "isolated"
     # Root-level "components" dirs, e.g. `/path/to/proj/components/`
     dirs=[Path(settings.BASE_DIR) / "components"],
@@ -76,6 +77,16 @@ defaults = ComponentsSettings(
       show_labels: false
 
 ::: django_components.app_settings.ComponentsSettings.autodiscover
+    options:
+      show_root_heading: true
+      show_signature: true
+      separate_signature: true
+      show_symbol_type_heading: false
+      show_symbol_type_toc: false
+      show_if_no_docstring: true
+      show_labels: false
+
+::: django_components.app_settings.ComponentsSettings.cache
     options:
       show_root_heading: true
       show_signature: true
