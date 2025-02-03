@@ -46,7 +46,7 @@ idna==3.10
     # via requests
 iniconfig==2.0.0
     # via pytest
-isort==5.13.2
+isort==6.0.0
     # via -r requirements-dev.in
 mccabe==0.7.0
     # via flake8
