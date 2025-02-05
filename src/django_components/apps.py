@@ -4,6 +4,7 @@ from typing import Any
 
 from django.apps import AppConfig
 from django.template import Template
+from django.template.context import BaseContext
 from django.utils.autoreload import file_changed, trigger_reload
 
 
@@ -17,12 +18,12 @@ class ComponentsConfig(AppConfig):
         from django_components.autodiscovery import autodiscover, import_libraries
         from django_components.component_registry import registry
         from django_components.components.dynamic import DynamicComponent
-        from django_components.util.django_monkeypatch import monkeypatch_template_cls
+        from django_components.util.django_monkeypatch import monkeypatch_django_classes
 
         # NOTE: This monkeypatch is applied here, before Django processes any requests.
         #       To make django-components work with django-debug-toolbar-template-profiler
         #       See https://github.com/django-components/django-components/discussions/819
-        monkeypatch_template_cls(Template)
+        monkeypatch_django_classes(Template, BaseContext)
 
         # Import modules set in `COMPONENTS.libraries` setting
         import_libraries()

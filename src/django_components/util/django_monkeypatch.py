@@ -2,11 +2,19 @@ from typing import Any, Type
 
 from django.template import Context, NodeList, Template
 from django.template.base import Parser
+from django.template.context import BaseContext as DjangoBaseContext
 
+from django_components.util.context2 import BaseContext as OurBaseContext
+from django_components.util.context2 import DictsDescriptor
 from django_components.util.template_parser import parse_template
 
 
-# In some cases we can't work around Django's design, and need to patch the template class.
+# In some cases we can't work around Django's design, and need to patch their classes.
+def monkeypatch_django_classes(template_cls: Type[Template], context_cls: Type[DjangoBaseContext]) -> None:
+    monkeypatch_template_cls(template_cls)
+    monkeypatch_base_context_cls(context_cls)
+
+
 def monkeypatch_template_cls(template_cls: Type[Template]) -> None:
     monkeypatch_template_compile_nodelist(template_cls)
     monkeypatch_template_render(template_cls)
@@ -104,6 +112,49 @@ def monkeypatch_template_render(template_cls: Type[Template]) -> None:
                 return self._render(context, *args, **kwargs)
 
     template_cls.render = _template_render
+
+
+def monkeypatch_base_context_cls(context_cls: Type[DjangoBaseContext]) -> None:
+    """
+    Patch Django's BaseContext class with our improved implementation.
+
+    This replaces Django's BaseContext implementation with our more performant version
+    that properly tracks key indices and handles mutations correctly.
+    """
+    if getattr(context_cls, "_djc_patched", False):
+        return
+
+    # Copy over class attributes
+    context_cls.dicts = DictsDescriptor()
+
+    # Copy over all methods from our BaseContext
+    methods_to_copy = [
+        "__init__",
+        "_reset_dicts",
+        "_register_key",
+        "_unregister_key",
+        "_remap_layer_indices",
+        "_get_latest_layer",
+        "__copy__",
+        "__repr__",
+        "__hash__",
+        "__iter__",
+        "push",
+        "pop",
+        "__setitem__",
+        "set_upward",
+        "__getitem__",
+        "__delitem__",
+        "__contains__",
+        "get",
+        "flatten",
+    ]
+
+    for method_name in methods_to_copy:
+        setattr(context_cls, method_name, getattr(OurBaseContext, method_name))
+
+    # Mark as patched
+    context_cls._djc_patched = True
 
 
 def is_template_cls_patched(template_cls: Type[Template]) -> bool:
