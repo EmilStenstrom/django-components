@@ -1045,7 +1045,7 @@ class Component(
             component_id=render_id,
             slot_name=None,
             component_path=component_path,
-            extra=f"Received {len(args)} args, {len(kwargs)} kwargs, {len(slots)} slots",
+            extra=f"Received {len(args)} args, {len(kwargs)} kwargs, {len(slots)} slots, Available slots: {slots}",
         )
 
         # Register the component to provide

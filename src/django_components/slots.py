@@ -330,6 +330,7 @@ class SlotNode(BaseNode):
             slot_name=slot_name,
             component_path=component_path,
             slot_fills=slot_fills,
+            extra=f"Available fills: {slot_fills}",
         )
 
         # Check for errors
@@ -395,6 +396,7 @@ class SlotNode(BaseNode):
         if (
             component_ctx.registry.settings.context_behavior == ContextBehavior.DJANGO
             and component_ctx.outer_context is None
+            and (slot_name not in component_ctx.fills)
         ):
             # When we have nested components with fills, the context layers are added in
             # the following order:
@@ -418,19 +420,52 @@ class SlotNode(BaseNode):
             #
             # In the Context, the components are identified by their ID, NOT by their name, as in the example above.
             # So the path is more like this:
-            # ax3c89 -> hui3q2 -> kok92a -> a1b2c3 -> kok92a -> hui3q2 -> d4e5f6 -> hui3q2
+            # a1b2c3 -> ax3c89 -> hui3q2 -> kok92a -> a1b2c3 -> kok92a -> hui3q2 -> d4e5f6 -> hui3q2
             #
-            # We're at the right-most `hui3q2`, and we want to find `ax3c89`.
-            # To achieve that, we first find the left-most `hui3q2`, and then find the `ax3c89`
-            # in the list of dicts before it.
+            # We're at the right-most `hui3q2` (index 8), and we want to find `ax3c89` (index 1).
+            # To achieve that, we first find the left-most `hui3q2` (index 2), and then find the `ax3c89`
+            # in the list of dicts before it (index 1).
             curr_index = get_index(
                 context.dicts, lambda d: _COMPONENT_CONTEXT_KEY in d and d[_COMPONENT_CONTEXT_KEY] == component_id
             )
             parent_index = get_last_index(context.dicts[:curr_index], lambda d: _COMPONENT_CONTEXT_KEY in d)
+
+            # NOTE: There's an edge case when our component `hui3q2` appears at the start of the stack:
+            # hui3q2 -> ax3c89 -> ... -> hui3q2
+            #
+            # Looking left finds nothing. In this case, look for the first component layer to the right.
+            if parent_index is None and curr_index + 1 < len(context.dicts):
+                parent_index = get_index(
+                    context.dicts[curr_index + 1 :], lambda d: _COMPONENT_CONTEXT_KEY in d  # noqa: E203
+                )
+                if parent_index is not None:
+                    parent_index = parent_index + curr_index + 1
+
+            trace_component_msg(
+                "SLOT_PARENT_INDEX",
+                component_name=component_ctx.component_name,
+                component_id=component_ctx.component_id,
+                slot_name=name,
+                component_path=component_ctx.component_path,
+                extra=(
+                    f"Parent index: {parent_index}, Current index: {curr_index}, "
+                    f"Context stack: {[d.get(_COMPONENT_CONTEXT_KEY) for d in context.dicts]}"
+                ),
+            )
             if parent_index is not None:
                 ctx_id_with_fills = context.dicts[parent_index][_COMPONENT_CONTEXT_KEY]
                 ctx_with_fills = component_context_cache[ctx_id_with_fills]
                 slot_fills = ctx_with_fills.fills
+
+                # Add trace message when slot_fills are overwritten
+                trace_component_msg(
+                    "SLOT_FILLS_OVERWRITTEN",
+                    component_name=component_name,
+                    component_id=component_id,
+                    slot_name=slot_name,
+                    component_path=component_path,
+                    extra=f"Slot fills overwritten in django mode. New fills: {slot_fills}",
+                )
 
         if fill_name in slot_fills:
             slot_fill_fn = slot_fills[fill_name]

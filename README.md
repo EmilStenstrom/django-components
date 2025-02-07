@@ -101,6 +101,15 @@ Potential benefits:
 
 Django-components can be particularly useful for larger Django projects that require a more structured approach to UI development, without necessitating a shift to a separate frontend framework.
 
+### Debugging features
+
+- **Visual component inspection**: Highlight components and slots directly in your browser.
+- **Detailed tracing logs to supply AI-agents with context**: The logs include component and slot names and IDs, and their position in the tree.
+
+<div style="text-align: center;">
+<img src="https://github.com/django-components/django-components/blob/master/docs/images/debug-highlight-slots.png?raw=true" alt="Component debugging visualization showing slot highlighting" width="500" style="margin: auto;">
+</div>
+
 ## Quickstart
 
 django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app.
