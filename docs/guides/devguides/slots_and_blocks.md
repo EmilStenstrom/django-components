@@ -1,11 +1,12 @@
 # Using `slot` and `block` tags
 
 1.  First let's clarify how `include` and `extends` tags work inside components.
-    So when component template includes `include` or `extends` tags, it's as if the "included"
+
+    When component template includes `include` or `extends` tags, it's as if the "included"
     template was inlined. So if the "included" template contains `slot` tags, then the component
     uses those slots.
 
-    So if you have a template `abc.html`:
+    If you have a template `abc.html`:
     ```django
     <div>
       hello
@@ -46,7 +47,7 @@
 
 2.  Slot and block
 
-    So if you have a template `abc.html` like so:
+    If you have a template `abc.html` like so:
 
     ```django
     <div>
@@ -105,7 +106,7 @@
         <div>hello 1 XYZ</div>
         ```
 
-    3.  You CAN override the `block` tags of `abc.html` if my component template
+    3.  You CAN override the `block` tags of `abc.html` if the component template
         uses `extends`. In that case, just as you would expect, the `block inner` inside
         `abc.html` will render `OVERRIDEN`:
 
