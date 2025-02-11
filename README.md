@@ -11,17 +11,24 @@
 >
 > Report any broken links links in [#922](https://github.com/django-components/django-components/issues/922).
 
-Django-components is a package that introduces component-based architecture to Django's server-side rendering. It aims to combine Django's templating system with the modularity seen in modern frontend frameworks.
+`django-components` combines Django's templating system with the modularity seen
+in modern frontend frameworks like Vue or React.
+
+With `django-components` you can support Django projects small and large without leaving the Django ecosystem.
+
+## Quickstart
 
 A component in django-components can be as simple as a Django template and Python code to declare the component:
 
-```htmldjango title="calendar.html"
+```django
+{# components/calendar/calendar.html #}
 <div class="calendar">
   Today's date is <span>{{ date }}</span>
 </div>
 ```
 
-```py title="calendar.py"
+```py
+# components/calendar/calendar.html
 from django_components import Component
 
 class Calendar(Component):
@@ -30,113 +37,280 @@ class Calendar(Component):
 
 Or a combination of Django template, Python, CSS, and Javascript:
 
-```htmldjango title="calendar.html"
+```django
+{# components/calendar/calendar.html #}
 <div class="calendar">
   Today's date is <span>{{ date }}</span>
 </div>
 ```
 
-```css title="calendar.css"
+```css
+/* components/calendar/calendar.css */
 .calendar {
   width: 200px;
   background: pink;
 }
 ```
 
-```js title="calendar.js"
-document.querySelector(".calendar").onclick = function () {
+```js
+/* components/calendar/calendar.js */
+document.querySelector(".calendar").onclick = () => {
   alert("Clicked calendar!");
 };
 ```
 
-```py title="calendar.py"
+```py
+# components/calendar/calendar.py
 from django_components import Component
 
 class Calendar(Component):
     template_file = "calendar.html"
     js_file = "calendar.js"
     css_file = "calendar.css"
-```
-
-Alternatively, you can "inline" HTML, JS, and CSS right into the component class:
-
-```py
-from django_components import Component
-
-class Calendar(Component):
-    template = """
-      <div class="calendar">
-        Today's date is <span>{{ date }}</span>
-      </div>
-    """
-
-    css = """
-      .calendar {
-        width: 200px;
-        background: pink;
-      }
-    """
-
-    js = """
-      document.querySelector(".calendar").onclick = function () {
-        alert("Clicked calendar!");
-      };
-    """
-```
-
-## Features
-
-1. 🧩 **Reusability:** Allows creation of self-contained, reusable UI elements.
-2. 📦 **Encapsulation:** Each component can include its own HTML, CSS, and JavaScript.
-3. 🚀 **Server-side rendering:** Components render on the server, improving initial load times and SEO.
-4. 🐍 **Django integration:** Works within the Django ecosystem, using familiar concepts like template tags.
-5. ⚡ **Asynchronous loading:** Components can render independently opening up for integration with JS frameworks like HTMX or AlpineJS.
-
-Potential benefits:
-
-- 🔄 Reduced code duplication
-- 🛠️ Improved maintainability through modular design
-- 🧠 Easier management of complex UIs
-- 🤝 Enhanced collaboration between frontend and backend developers
-
-Django-components can be particularly useful for larger Django projects that require a more structured approach to UI development, without necessitating a shift to a separate frontend framework.
-
-## Quickstart
-
-django-components lets you create reusable blocks of code needed to generate the front end code you need for a modern app.
-
-Define a component in `components/calendar/calendar.py` like this:
-
-```python
-@register("calendar")
-class Calendar(Component):
-    template_file = "template.html"
 
     def get_context_data(self, date):
         return {"date": date}
 ```
 
-With this `template.html` file:
-
-```htmldjango
-<div class="calendar-component">Today's date is <span>{{ date }}</span></div>
-```
-
 Use the component like this:
 
-```htmldjango
+```django
 {% component "calendar" date="2024-11-06" %}{% endcomponent %}
 ```
 
 And this is what gets rendered:
 
 ```html
-<div class="calendar-component">Today's date is <span>2024-11-06</span></div>
+<div class="calendar-component">
+  Today's date is <span>2024-11-06</span>
+</div>
 ```
 
-### <table><td>[Read the full documentation](https://django-components.github.io/django-components/latest/)</td></table>
+## Features
 
-... or jump right into the code, [check out the example project](https://github.com/django-components/django-components/tree/master/sampleproject))
+### Modern and modular UI
+
+- Create self-contained, reusable UI elements.
+- Each component can include its own HTML, CSS, and JS, or additional third-party JS and CSS.
+- HTML, CSS, and JS can be defined on the component class, or loaded from files.
+
+```python
+from django_components import Component
+
+@register("calendar")
+class Calendar(Component):
+    template = """
+        <div class="calendar">
+            Today's date is
+            <span>{{ date }}</span>
+        </div>
+    """
+
+    css = """
+        .calendar {
+            width: 200px;
+            background: pink;
+        }
+    """
+
+    js = """
+        document.querySelector(".calendar")
+            .addEventListener("click", () => {
+                alert("Clicked calendar!");
+            });
+    """
+
+    # Additional JS and CSS
+    class Media:
+        js = ["https://cdn.jsdelivr.net/npm/htmx.org@2.1.1/dist/htmx.min.js"]
+        css = ["bootstrap/dist/css/bootstrap.min.css"]
+
+    # Variables available in the template
+    def get_context_data(self, date):
+        return {
+            "date": date
+        }
+```
+
+### Composition with slots
+
+- Render components inside templates with `{% component %}` tag.
+- Compose them with `{% slot %}` and `{% fill %}` tags.
+- Vue-like slot system, including scoped slots.
+
+```django
+{% component "Layout"
+    bookmarks=bookmarks
+    breadcrumbs=breadcrumbs
+%}
+    {% fill "header" %}
+        <div class="flex justify-between gap-x-12">
+            <div class="prose">
+                <h3>{{ project.name }}</h3>
+            </div>
+            <div class="font-semibold text-gray-500">
+                {{ project.start_date }} - {{ project.end_date }}
+            </div>
+        </div>
+    {% endfill %}
+
+    {# Access data passed to `{% slot %}` with `data` #}
+    {% fill "tabs" data="tabs_data" %}
+        {% component "TabItem" header="Project Info" %}
+            {% component "ProjectInfo"
+                project=project
+                project_tags=project_tags
+                attrs:class="py-5"
+                attrs:width=tabs_data.width
+            / %}
+        {% endcomponent %}
+    {% endfill %}
+{% endcomponent %}
+```
+
+### Extended template tags
+
+`django-components` extends Django's template tags syntax with:
+
+- Literal lists and dictionaries in template tags
+- Self-closing tags `{% mytag / %}`
+- Multi-line template tags
+- Spread operator `...` to dynamically pass args or kwargs into the template tag
+- Nested template tags like `"{{ first_name }} {{ last_name }}"`
+- Flat definition of dictionary keys `attr:key=val`
+
+```django
+{% component "table"
+    ...default_attrs
+    title="Friend list for {{ user.name }}"
+    headers=["Name", "Age", "Email"]
+    data=[
+        {
+            "name": "John"|upper,
+            "age": 30|add:1,
+            "email": "john@example.com",
+            "hobbies": ["reading"],
+        },
+        {
+            "name": "Jane"|upper,
+            "age": 25|add:1,
+            "email": "jane@example.com",
+            "hobbies": ["reading", "coding"],
+        },
+    ],
+    attrs:class="py-4 ma-2 border-2 border-gray-300 rounded-md"
+/ %}
+```
+
+### HTML fragment support
+
+`django-components` makes intergration with HTMX, AlpineJS or jQuery easy by allowing components to be rendered as HTML fragments:
+
+- Components's JS and CSS is loaded automatically when the fragment is inserted into the DOM.
+
+- Expose components as views with `get`, `post`, `put`, `patch`, `delete` methods
+
+```py
+# components/calendar/calendar.py
+@register("calendar")
+class Calendar(Component):
+    template_file = "calendar.html"
+
+    def get(self, request, *args, **kwargs):
+        page = request.GET.get("page", 1)
+        return self.render_to_response(
+            kwargs={
+                "page": page,
+            }
+        )
+
+    def get_context_data(self, page):
+        return {
+            "page": page,
+        }
+
+# urls.py
+path("calendar/", Calendar.as_view()),
+```
+
+### Type hints
+
+Opt-in to type hints by defining types for component's args, kwargs, slots, and more:
+
+```py
+from typing import NotRequired, Tuple, TypedDict, SlotContent, SlotFunc
+
+ButtonArgs = Tuple[int, str]
+
+class ButtonKwargs(TypedDict):
+    variable: str
+    another: int
+    maybe_var: NotRequired[int] # May be omitted
+
+class ButtonData(TypedDict):
+    variable: str
+
+class ButtonSlots(TypedDict):
+    my_slot: NotRequired[SlotFunc]
+    another_slot: SlotContent
+
+ButtonType = Component[ButtonArgs, ButtonKwargs, ButtonSlots, ButtonData, JsData, CssData]
+
+class Button(ButtonType):
+    def get_context_data(self, *args, **kwargs):
+        self.input.args[0]  # int
+        self.input.kwargs["variable"]  # str
+        self.input.slots["my_slot"]  # SlotFunc[MySlotData]
+
+        return {}  # Error: Key "variable" is missing
+```
+
+When you then call `Button.render()` or `Button.render_to_response()`, you will get type hints:
+
+```py
+Button.render(
+    # Error: First arg must be `int`, got `float`
+    args=(1.25, "abc"),
+    # Error: Key "another" is missing
+    kwargs={
+        "variable": "text",
+    },
+)
+```
+
+### Debugging features
+
+- **Visual component inspection**: Highlight components and slots directly in your browser.
+- **Detailed tracing logs to supply AI-agents with context**: The logs include component and slot names and IDs, and their position in the tree.
+
+<div style="text-align: center;">
+<img src="https://github.com/django-components/django-components/blob/master/docs/images/debug-highlight-slots.png?raw=true" alt="Component debugging visualization showing slot highlighting" width="500" style="margin: auto;">
+</div>
+
+### Sharing components
+
+- Install and use third-party components from PyPI
+- Or publish your own "component registry"
+- Highly customizable - Choose how the components are called in the template, and more:
+
+    ```django
+    {% component "calendar" date="2024-11-06" %}
+    {% endcomponent %}
+
+    {% calendar date="2024-11-06" %}
+    {% endcalendar %}
+    ```
+
+### Other features
+
+- Vue-like provide / inject system
+- Format HTML attributes with `{% html_attrs %}`
+
+## Documentation
+
+[Read the full documentation here](https://django-components.github.io/django-components/latest/).
+
+... or jump right into the code, [check out the example project](https://github.com/django-components/django-components/tree/master/sampleproject).
 
 ## Release notes
 

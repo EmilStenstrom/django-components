@@ -143,3 +143,82 @@ might print:
     'left_panel': <Slot component_name='layout' slot_name='left_panel'>,
 }
 ```
+
+## Agentic debugging
+
+All the features above make django-components to work really well with coding AI agents
+like Github Copilot or CursorAI.
+
+To debug component rendering with LLMs, you want to provide the LLM with:
+
+1. The components source code
+2. The rendered output
+3. As much additional context as possible
+
+Your codebase already contains the components source code, but not the latter two.
+
+### Providing rendered output
+
+To provide the LLM with the rendered output, you can simply export the rendered output to a file.
+
+```python
+rendered = ProjectPage.render(...)
+with open("result.html", "w") as f:
+    f.write(rendered)
+```
+
+If you're using `render_to_response`, access the output from the `HttpResponse` object:
+
+```python
+response = ProjectPage.render_to_response(...)
+with open("result.html", "wb") as f:
+    f.write(response.content)
+```
+
+### Providing contextual logs
+
+Next, we provide the agent with info on HOW we got the result that we have. We do so
+by providing the agent with the trace-level logs.
+
+In your `settings.py`, configure the trace-level logs to be written to the `django_components.log` file:
+
+```python
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "django_components.log",
+            "mode": "w",  # Overwrite the file each time
+        },
+    },
+    "loggers": {
+        "django_components": {
+            "level": 5,
+            "handlers": ["file"],
+        },
+    },
+}
+```
+
+### Prompting the agent
+
+Now, you can prompt the agent and include the trace log and the rendered output to guide the agent with debugging.
+
+> I have a django-components (DJC) project. DJC is like if Vue or React component-based web development but made for Django ecosystem.
+> 
+> In the view `project_view`, I am rendering the `ProjectPage` component. However, the output is not as expected.
+> The output is missing the tabs.
+>
+> You have access to the full log trace in `django_components.log`.
+>
+> You can also see the rendered output in `result.html`.
+>
+> With this information, help me debug the issue.
+>
+> First, tell me what kind of info you would be looking for in the logs, and why (how it relates to understanding the cause of the bug).
+>
+> Then tell me if that info was there, and what the implications are.
+>
+> Finally, tell me what you would do to fix the issue.
