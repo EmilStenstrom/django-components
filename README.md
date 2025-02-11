@@ -16,6 +16,76 @@ in modern frontend frameworks like Vue or React.
 
 With `django-components` you can support Django projects small and large without leaving the Django ecosystem.
 
+## Quickstart
+
+A component in django-components can be as simple as a Django template and Python code to declare the component:
+
+```django
+{# components/calendar/calendar.html #}
+<div class="calendar">
+  Today's date is <span>{{ date }}</span>
+</div>
+```
+
+```py
+# components/calendar/calendar.html
+from django_components import Component
+
+class Calendar(Component):
+    template_file = "calendar.html"
+```
+
+Or a combination of Django template, Python, CSS, and Javascript:
+
+```django
+{# components/calendar/calendar.html #}
+<div class="calendar">
+  Today's date is <span>{{ date }}</span>
+</div>
+```
+
+```css
+/* components/calendar/calendar.css */
+.calendar {
+  width: 200px;
+  background: pink;
+}
+```
+
+```js
+/* components/calendar/calendar.js */
+document.querySelector(".calendar").onclick = () => {
+  alert("Clicked calendar!");
+};
+```
+
+```py
+# components/calendar/calendar.py
+from django_components import Component
+
+class Calendar(Component):
+    template_file = "calendar.html"
+    js_file = "calendar.js"
+    css_file = "calendar.css"
+
+    def get_context_data(self, date):
+        return {"date": date}
+```
+
+Use the component like this:
+
+```django
+{% component "calendar" date="2024-11-06" %}{% endcomponent %}
+```
+
+And this is what gets rendered:
+
+```html
+<div class="calendar-component">
+  Today's date is <span>2024-11-06</span>
+</div>
+```
+
 ## Features
 
 ### Modern and modular UI
@@ -236,79 +306,11 @@ Button.render(
 - Vue-like provide / inject system
 - Format HTML attributes with `{% html_attrs %}`
 
-## Quickstart
+## Documentation
 
-A component in django-components can be as simple as a Django template and Python code to declare the component:
+[Read the full documentation here](https://django-components.github.io/django-components/latest/).
 
-```django
-{# components/calendar/calendar.html #}
-<div class="calendar">
-  Today's date is <span>{{ date }}</span>
-</div>
-```
-
-```py
-# components/calendar/calendar.html
-from django_components import Component
-
-class Calendar(Component):
-    template_file = "calendar.html"
-```
-
-Or a combination of Django template, Python, CSS, and Javascript:
-
-```django
-{# components/calendar/calendar.html #}
-<div class="calendar">
-  Today's date is <span>{{ date }}</span>
-</div>
-```
-
-```css
-/* components/calendar/calendar.css */
-.calendar {
-  width: 200px;
-  background: pink;
-}
-```
-
-```js
-/* components/calendar/calendar.js */
-document.querySelector(".calendar").onclick = () => {
-  alert("Clicked calendar!");
-};
-```
-
-```py
-# components/calendar/calendar.py
-from django_components import Component
-
-class Calendar(Component):
-    template_file = "calendar.html"
-    js_file = "calendar.js"
-    css_file = "calendar.css"
-
-    def get_context_data(self, date):
-        return {"date": date}
-```
-
-Use the component like this:
-
-```django
-{% component "calendar" date="2024-11-06" %}{% endcomponent %}
-```
-
-And this is what gets rendered:
-
-```html
-<div class="calendar-component">
-  Today's date is <span>2024-11-06</span>
-</div>
-```
-
-### <table><td>[Read the full documentation](https://django-components.github.io/django-components/latest/)</td></table>
-
-... or jump right into the code, [check out the example project](https://github.com/django-components/django-components/tree/master/sampleproject)
+... or jump right into the code, [check out the example project](https://github.com/django-components/django-components/tree/master/sampleproject).
 
 ## Release notes
 
