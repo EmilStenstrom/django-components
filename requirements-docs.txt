@@ -28,7 +28,7 @@ babel==2.16.0
     # via
     #   mkdocs-git-revision-date-localized-plugin
     #   mkdocs-material
-black==24.10.0
+black==25.1.0
     # via hatch.envs.docs
 bracex==2.5.post1
     # via wcmatch
@@ -134,11 +134,11 @@ mkdocs-git-authors-plugin==0.9.2
     # via hatch.envs.docs
 mkdocs-git-revision-date-localized-plugin==1.3.0
     # via hatch.envs.docs
-mkdocs-include-markdown-plugin==7.1.2
+mkdocs-include-markdown-plugin==7.1.4
     # via hatch.envs.docs
 mkdocs-literate-nav==0.6.1
     # via hatch.envs.docs
-mkdocs-material==9.6.2
+mkdocs-material==9.6.3
     # via hatch.envs.docs
 mkdocs-material-extensions==1.3.1
     # via mkdocs-material
@@ -179,7 +179,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via mkdocs-material
-pymdown-extensions==10.14.1
+pymdown-extensions==10.14.3
     # via
     #   hatch.envs.docs
     #   markdown-exec

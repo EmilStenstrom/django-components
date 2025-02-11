@@ -1,52 +1,53 @@
 # Using `slot` and `block` tags
 
 1.  First let's clarify how `include` and `extends` tags work inside components.
-    So when component template includes `include` or `extends` tags, it's as if the "included"
+
+    When component template includes `include` or `extends` tags, it's as if the "included"
     template was inlined. So if the "included" template contains `slot` tags, then the component
     uses those slots.
 
-        So if you have a template `abc.html`:
-        ```django
-        <div>
-          hello
-          {% slot "body" %}{% endslot %}
-        </div>
-        ```
+    If you have a template `abc.html`:
+    ```django
+    <div>
+      hello
+      {% slot "body" %}{% endslot %}
+    </div>
+    ```
 
-        And components that make use of `abc.html` via `include` or `extends`:
-        ```py
-        from django_components import Component, register
+    And components that make use of `abc.html` via `include` or `extends`:
+    ```py
+    from django_components import Component, register
 
-        @register("my_comp_extends")
-        class MyCompWithExtends(Component):
-            template = """{% extends "abc.html" %}"""
+    @register("my_comp_extends")
+    class MyCompWithExtends(Component):
+        template = """{% extends "abc.html" %}"""
 
-        @register("my_comp_include")
-        class MyCompWithInclude(Component):
-            template = """{% include "abc.html" %}"""
-        ```
+    @register("my_comp_include")
+    class MyCompWithInclude(Component):
+        template = """{% include "abc.html" %}"""
+    ```
 
-        Then you can set slot fill for the slot imported via `include/extends`:
+    Then you can set slot fill for the slot imported via `include/extends`:
 
-        ```django
-        {% component "my_comp_extends" %}
-        	{% fill "body" %}
-        		123
-        	{% endfill %}
-        {% endcomponent %}
-        ```
+    ```django
+    {% component "my_comp_extends" %}
+        {% fill "body" %}
+            123
+        {% endfill %}
+    {% endcomponent %}
+    ```
 
-        And it will render:
-        ```html
-        <div>
-          hello
-          123
-        </div>
-        ```
+    And it will render:
+    ```html
+    <div>
+      hello
+      123
+    </div>
+    ```
 
 2.  Slot and block
 
-    So if you have a template `abc.html` like so:
+    If you have a template `abc.html` like so:
 
     ```django
     <div>
@@ -105,7 +106,7 @@
         <div>hello 1 XYZ</div>
         ```
 
-    3.  You CAN override the `block` tags of `abc.html` if my component template
+    3.  You CAN override the `block` tags of `abc.html` if the component template
         uses `extends`. In that case, just as you would expect, the `block inner` inside
         `abc.html` will render `OVERRIDEN`:
 
