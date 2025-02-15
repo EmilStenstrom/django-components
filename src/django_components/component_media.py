@@ -238,7 +238,6 @@ class ComponentMedia:
                     f"Received non-null value from both '{inlined_attr}' and '{file_attr}' in"
                     f" Component {self.comp_cls.__name__}. Only one of the two must be set."
                 )
-            
 
 
 # This metaclass is all about one thing - lazily resolving the media files.
