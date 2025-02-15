@@ -4,9 +4,9 @@ from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Protocol, Tuple, Type, Union, cast
-from django.core.exceptions import ImproperlyConfigured
 
 from django.contrib.staticfiles import finders
+from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media as MediaCls
 from django.template import Template, TemplateDoesNotExist
 from django.template.loader import get_template
