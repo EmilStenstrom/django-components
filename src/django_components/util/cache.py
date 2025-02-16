@@ -63,6 +63,10 @@ class LRUCache(Generic[T]):
         :param key: Key to insert or update.
         :param value: Value to associate with the key.
         """
+        # Noop if maxsize is set to 0
+        if self.maxsize is not None and self.maxsize <= 0:
+            return
+
         if key in self.cache:
             node = self.cache[key]
             # Update the value
