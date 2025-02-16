@@ -1,3 +1,5 @@
+from typing import Dict, Optional
+
 from django.http import HttpRequest
 from django.template import Context, RequestContext, Template
 
@@ -57,10 +59,6 @@ class IncrementerComponent(Component):
         else:
             self.call_count = 1
         return {"value": value + 1, "calls": self.call_count}
-
-
-class SimpleComponentWithContextProcessorVariable(Component):
-    template: types.django_html = """{% csrf_token %}"""
 
 
 #########################
@@ -442,7 +440,7 @@ class IsolatedContextTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"})).strip()
-        self.assertIn("outer_value", rendered, rendered)
+        self.assertIn("outer_value", rendered)
 
     @parametrize_context_behavior(["django", "isolated"])
     def test_simple_component_cannot_use_outer_context(self):
@@ -452,17 +450,13 @@ class IsolatedContextTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"})).strip()
-        self.assertNotIn("outer_value", rendered, rendered)
+        self.assertNotIn("outer_value", rendered)
 
 
 class IsolatedContextSettingTests(BaseTestCase):
     def setUp(self):
         super().setUp()
         registry.register(name="simple_component", component=SimpleComponent)
-        registry.register(
-            name="simple_component_with_context_processor_variable",
-            component=SimpleComponentWithContextProcessorVariable,
-        )
 
     @parametrize_context_behavior(["isolated"])
     def test_component_tag_includes_variable_with_isolated_context_from_settings(
@@ -474,7 +468,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"}))
-        self.assertIn("outer_value", rendered, rendered)
+        self.assertIn("outer_value", rendered)
 
     @parametrize_context_behavior(["isolated"])
     def test_component_tag_excludes_variable_with_isolated_context_from_settings(
@@ -486,7 +480,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"}))
-        self.assertNotIn("outer_value", rendered, rendered)
+        self.assertNotIn("outer_value", rendered)
 
     @parametrize_context_behavior(["isolated"])
     def test_component_includes_variable_with_isolated_context_from_settings(
@@ -499,7 +493,7 @@ class IsolatedContextSettingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"}))
-        self.assertIn("outer_value", rendered, rendered)
+        self.assertIn("outer_value", rendered)
 
     @parametrize_context_behavior(["isolated"])
     def test_component_excludes_variable_with_isolated_context_from_settings(
@@ -512,15 +506,29 @@ class IsolatedContextSettingTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"}))
-        self.assertNotIn("outer_value", rendered, rendered)
+        self.assertNotIn("outer_value", rendered)
 
-    @parametrize_context_behavior(["isolated"])
-    def test_component_can_use_context_processors_variables(
-        self,
-    ):
+
+class ContextProcessorsTests(BaseTestCase):
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_context_in_template(self):
+        context_processors_data: Optional[Dict] = None
+        inner_request: Optional[HttpRequest] = None
+
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal inner_request
+                context_processors_data = self.context_processors_data
+                inner_request = self.request
+                return {}
+
         template_str: types.django_html = """
             {% load component_tags %}
-            {% component 'simple_component_with_context_processor_variable' %}
+            {% component "test" %}
             {% endcomponent %}
         """
         request = HttpRequest()
@@ -528,7 +536,330 @@ class IsolatedContextSettingTests(BaseTestCase):
 
         template = Template(template_str)
         rendered = template.render(request_context)
-        self.assertIn("csrfmiddlewaretoken", rendered, rendered)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(inner_request, request)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_context_in_template_nested(self):
+        context_processors_data = None
+        context_processors_data_child = None
+        parent_request: Optional[HttpRequest] = None
+        child_request: Optional[HttpRequest] = None
+
+        @register("test_parent")
+        class TestParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "test_child" / %}
+            """
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal parent_request
+                context_processors_data = self.context_processors_data
+                parent_request = self.request
+                return {}
+
+        @register("test_child")
+        class TestChildComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data_child
+                nonlocal child_request
+                context_processors_data_child = self.context_processors_data
+                child_request = self.request
+                return {}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test_parent" / %}
+        """
+        request = HttpRequest()
+        request_context = RequestContext(request)
+
+        template = Template(template_str)
+        rendered = template.render(request_context)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(list(context_processors_data_child.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(parent_request, request)
+        self.assertEqual(child_request, request)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_context_in_template_slot(self):
+        context_processors_data = None
+        context_processors_data_child = None
+        parent_request: Optional[HttpRequest] = None
+        child_request: Optional[HttpRequest] = None
+
+        @register("test_parent")
+        class TestParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "test_child" %}
+                    {% slot "content" default / %}
+                {% endcomponent %}
+            """
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal parent_request
+                context_processors_data = self.context_processors_data
+                parent_request = self.request
+                return {}
+
+        @register("test_child")
+        class TestChildComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data_child
+                nonlocal child_request
+                context_processors_data_child = self.context_processors_data
+                child_request = self.request
+                return {}
+
+        template_str: types.django_html = """
+            {% load component_tags %}
+            {% component "test_parent" %}
+                {% component "test_child" / %}
+            {% endcomponent %}
+        """
+        request = HttpRequest()
+        request_context = RequestContext(request)
+
+        template = Template(template_str)
+        rendered = template.render(request_context)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(list(context_processors_data_child.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(parent_request, request)
+        self.assertEqual(child_request, request)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_context_in_python(self):
+        context_processors_data = None
+        inner_request: Optional[HttpRequest] = None
+
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal inner_request
+                context_processors_data = self.context_processors_data
+                inner_request = self.request
+                return {}
+
+        request = HttpRequest()
+        request_context = RequestContext(request)
+        rendered = TestComponent.render(request_context)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(inner_request, request)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_context_in_python_nested(self):
+        context_processors_data: Optional[Dict] = None
+        context_processors_data_child: Optional[Dict] = None
+        parent_request: Optional[HttpRequest] = None
+        child_request: Optional[HttpRequest] = None
+
+        @register("test_parent")
+        class TestParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "test_child" / %}
+            """
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal parent_request
+                context_processors_data = self.context_processors_data
+                parent_request = self.request
+                return {}
+
+        @register("test_child")
+        class TestChildComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data_child
+                nonlocal child_request
+                context_processors_data_child = self.context_processors_data
+                child_request = self.request
+                return {}
+
+        request = HttpRequest()
+        request_context = RequestContext(request)
+
+        rendered = TestParentComponent.render(request_context)
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(list(context_processors_data_child.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(parent_request, request)
+        self.assertEqual(child_request, request)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_in_python(self):
+        context_processors_data: Optional[Dict] = None
+        inner_request: Optional[HttpRequest] = None
+
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal inner_request
+                context_processors_data = self.context_processors_data
+                inner_request = self.request
+                return {}
+
+        request = HttpRequest()
+        rendered = TestComponent.render(request=request)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(inner_request, request)
+
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_request_in_python_nested(self):
+        context_processors_data: Optional[Dict] = None
+        context_processors_data_child: Optional[Dict] = None
+        parent_request: Optional[HttpRequest] = None
+        child_request: Optional[HttpRequest] = None
+
+        @register("test_parent")
+        class TestParentComponent(Component):
+            template: types.django_html = """
+                {% load component_tags %}
+                {% component "test_child" / %}
+            """
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal parent_request
+                context_processors_data = self.context_processors_data
+                parent_request = self.request
+                return {}
+
+        @register("test_child")
+        class TestChildComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data_child
+                nonlocal child_request
+                context_processors_data_child = self.context_processors_data
+                child_request = self.request
+                return {}
+
+        request = HttpRequest()
+        rendered = TestParentComponent.render(request=request)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(list(context_processors_data_child.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(parent_request, request)
+        self.assertEqual(child_request, request)
+
+    # No request, regular Context
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_no_context_processor_when_non_request_context_in_python(self):
+        context_processors_data: Optional[Dict] = None
+        inner_request: Optional[HttpRequest] = None
+
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal inner_request
+                context_processors_data = self.context_processors_data
+                inner_request = self.request
+                return {}
+
+        rendered = TestComponent.render(context=Context())
+
+        self.assertNotIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), [])  # type: ignore[union-attr]
+        self.assertEqual(inner_request, None)
+
+    # No request, no Context
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_no_context_processor_when_non_request_context_in_python_2(self):
+        context_processors_data: Optional[Dict] = None
+        inner_request: Optional[HttpRequest] = None
+
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal inner_request
+                context_processors_data = self.context_processors_data
+                inner_request = self.request
+                return {}
+
+        rendered = TestComponent.render()
+
+        self.assertNotIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), [])  # type: ignore[union-attr]
+        self.assertEqual(inner_request, None)
+
+    # Yes request, regular Context
+    @parametrize_context_behavior(["django", "isolated"])
+    def test_context_processor_when_regular_context_and_request_in_python(self):
+        context_processors_data: Optional[Dict] = None
+        inner_request: Optional[HttpRequest] = None
+
+        @register("test")
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+            def get_context_data(self):
+                nonlocal context_processors_data
+                nonlocal inner_request
+                context_processors_data = self.context_processors_data
+                inner_request = self.request
+                return {}
+
+        request = HttpRequest()
+        rendered = TestComponent.render(Context(), request=request)
+
+        self.assertIn("csrfmiddlewaretoken", rendered)
+        self.assertEqual(list(context_processors_data.keys()), ["csrf_token"])  # type: ignore[union-attr]
+        self.assertEqual(inner_request, request)
+
+    def test_raises_on_accessing_context_processors_data_outside_of_rendering(self):
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+        with self.assertRaisesMessage(
+            RuntimeError,
+            "Tried to access Component's `context_processors_data` attribute while outside of rendering execution",
+        ):
+            TestComponent().context_processors_data
+
+    def test_raises_on_accessing_request_outside_of_rendering(self):
+        class TestComponent(Component):
+            template: types.django_html = """{% csrf_token %}"""
+
+        with self.assertRaisesMessage(
+            RuntimeError,
+            "Tried to access Component's `request` attribute while outside of rendering execution",
+        ):
+            TestComponent().request
 
 
 class OuterContextPropertyTests(BaseTestCase):
@@ -552,7 +883,7 @@ class OuterContextPropertyTests(BaseTestCase):
         """
         template = Template(template_str)
         rendered = template.render(Context({"variable": "outer_value"})).strip()
-        self.assertIn("outer_value", rendered, rendered)
+        self.assertIn("outer_value", rendered)
 
 
 class ContextVarsIsFilledTests(BaseTestCase):

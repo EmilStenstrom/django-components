@@ -1,8 +1,20 @@
 import copy
-from typing import List
+import sys
+from typing import Any, Callable, Dict, List, Tuple
+from weakref import WeakKeyDictionary
 
-from django.template import Context
+from django.http import HttpRequest
+from django.template import Engine
+from django.template.context import BaseContext, Context
 from django.template.loader_tags import BlockContext
+
+# We cache the context processors data for each request, so that we don't have to
+# generate it for each component.
+# NOTE: Can't be used as generic in Python 3.8
+if sys.version_info >= (3, 9):
+    context_processors_data: WeakKeyDictionary[HttpRequest, Dict[str, Any]] = WeakKeyDictionary()
+else:
+    context_processors_data = WeakKeyDictionary()
 
 
 class CopiedDict(dict):
@@ -112,3 +124,33 @@ def _copy_block_context(block_context: BlockContext) -> BlockContext:
         # need to modify the Nodes, but we need to make a copy of the lists.
         block_context_copy.blocks[key] = val.copy()
     return block_context_copy
+
+
+# Django's logic for generating context processors data. The gist is the same as
+# `RequestContext.bind_template()`, but without depending on a Template object.
+# See https://github.com/django/django/blame/2d34ebe49a25d0974392583d5bbd954baf742a32/django/template/context.py#L255
+def gen_context_processors_data(context: BaseContext, request: HttpRequest) -> Dict[str, Any]:
+    if request in context_processors_data:
+        return context_processors_data[request]
+
+    # TODO_REMOVE_IN_V2 - In v2, if we still support context processors,
+    #     it should be set on our settings, so we wouldn't have to get the Engine for that.
+    #     In v2 it should be also possible to remove RequestContext, and use only Context,
+    #     since we're internalized the behaviour of RequestContext.
+    default_engine = Engine.get_default()
+
+    # NOTE: Compatibility with `RequestContext`, which accepts an optional
+    #       `processors` argument.
+    request_context_processors: Tuple[Callable[..., Any], ...] = getattr(context, "_processors", ())
+
+    # This part is same as in `RequestContext.bind_template()`
+    processors = default_engine.template_context_processors + request_context_processors
+    processors_data = {}
+    for processor in processors:
+        data = processor(request)
+        try:
+            processors_data.update(data)
+        except TypeError as e:
+            raise TypeError(f"Context processor {processor.__qualname__} didn't return a " "dictionary.") from e
+
+    return processors_data
