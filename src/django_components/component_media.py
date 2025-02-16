@@ -220,6 +220,7 @@ class ComponentMediaInput(Protocol):
 
 @dataclass
 class ComponentMedia:
+    comp_cls: Type["Component"]
     resolved: bool = False
     Media: Optional[Type[ComponentMediaInput]] = None
     template: Optional[str] = None
@@ -228,6 +229,15 @@ class ComponentMedia:
     js_file: Optional[str] = None
     css: Optional[str] = None
     css_file: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        for inlined_attr in ("template", "js", "css"):
+            file_attr = f"{inlined_attr}_file"
+            if getattr(self, inlined_attr) is not None and getattr(self, file_attr) is not None:
+                raise ImproperlyConfigured(
+                    f"Received non-null value from both '{inlined_attr}' and '{file_attr}' in"
+                    f" Component {self.comp_cls.__name__}. Only one of the two must be set."
+                )
 
 
 # This metaclass is all about one thing - lazily resolving the media files.
@@ -301,6 +311,7 @@ class ComponentMediaMeta(type):
 def _setup_lazy_media_resolve(comp_cls: Type["Component"], attrs: Dict[str, Any]) -> None:
     # Collect all the original values of the lazy attributes, so we can access them from the getter
     comp_cls._component_media = ComponentMedia(
+        comp_cls=comp_cls,
         resolved=False,
         # NOTE: We take the values from `attrs` so we consider only the values that were set on THIS class,
         #       and not the values that were inherited from the parent classes.
@@ -350,7 +361,7 @@ def _get_comp_cls_attr(comp_cls: Type["Component"], attr: str) -> Any:
         value = getattr(comp_media, attr, None)
 
         # For each of the pairs of inlined_content + file (e.g. `js` + `js_file`), if at least one of the two
-        # is defined, we interpret it such that this (sub)class has overriden what was set by the parent class(es),
+        # is defined, we interpret it such that this (sub)class has overridden what was set by the parent class(es),
         # and we won't search further up the MRO.
         def check_pair_empty(inline_attr: str, file_attr: str) -> bool:
             inline_attr_empty = getattr(comp_media, inline_attr, None) is None
@@ -614,7 +625,7 @@ def _normalize_media(media: Type[ComponentMediaInput]) -> None:
             # JS is already a list, no action needed
             pass
 
-    # Now that the Media class has a predicatable shape, get all the various JS/CSS paths
+    # Now that the Media class has a predictable shape, get all the various JS/CSS paths
     # that user has defined, and normalize them too.
     #
     # Because we can accept:
@@ -831,12 +842,6 @@ def _get_asset(
     """
     asset_content = getattr(comp_media, inlined_attr, None)
     asset_file = getattr(comp_media, file_attr, None)
-
-    if asset_file is not None and asset_content is not None:
-        raise ImproperlyConfigured(
-            f"Received non-null value from both '{inlined_attr}' and '{file_attr}' in"
-            f" Component {comp_cls.__name__}. Only one of the two must be set."
-        )
 
     if asset_file is not None:
         # Check if the file is in one of the components' directories
