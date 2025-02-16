@@ -43,6 +43,27 @@ class CacheTests(TestCase):
         self.assertEqual(cache.get("e"), None)
         self.assertEqual(cache.get("f"), None)
 
+    def test_cache_maxsize_zero(self):
+        cache = LRUCache[int](maxsize=0)
+
+        cache.set("a", 1)
+        self.assertEqual(cache.get("a"), None)
+
+        cache.set("b", 2)
+        cache.set("c", 3)
+        self.assertEqual(cache.get("b"), None)
+        self.assertEqual(cache.get("c"), None)
+
+        # Same with negative numbers
+        cache = LRUCache[int](maxsize=-1)
+        cache.set("a", 1)
+        self.assertEqual(cache.get("a"), None)
+
+        cache.set("b", 2)
+        cache.set("c", 3)
+        self.assertEqual(cache.get("b"), None)
+        self.assertEqual(cache.get("c"), None)
+
 
 class ComponentMediaCacheTests(TestCase):
     def setUp(self):

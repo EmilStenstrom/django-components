@@ -1,5 +1,11 @@
 # Release notes
 
+## v0.129
+
+#### Fix
+
+- Fix error when template cache setting (`template_cache_size`) is set to 0.
+
 ## v0.128
 
 #### Feat
