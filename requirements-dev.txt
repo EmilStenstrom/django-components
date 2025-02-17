@@ -8,7 +8,7 @@ asgiref==3.8.1
     # via django
 black==24.10.0
     # via -r requirements-dev.in
-cachetools==5.5.0
+cachetools==5.5.1
     # via tox
 certifi==2024.8.30
     # via requests
@@ -16,15 +16,15 @@ cfgv==3.4.0
     # via pre-commit
 chardet==5.2.0
     # via tox
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-click==8.1.7
+click==8.1.8
     # via black
 colorama==0.4.6
     # via tox
 distlib==0.3.9
     # via virtualenv
-django==5.1.5
+django==5.1.6
     # via -r requirements-dev.in
 djc-core-html-parser==1.0.1
     # via -r requirements-dev.in
@@ -32,7 +32,7 @@ filelock==3.16.1
     # via
     #   tox
     #   virtualenv
-flake8==7.1.1
+flake8==7.1.2
     # via
     #   -r requirements-dev.in
     #   flake8-pyproject
@@ -40,7 +40,7 @@ flake8-pyproject==1.2.3
     # via -r requirements-dev.in
 greenlet==3.1.1
     # via playwright
-identify==2.6.3
+identify==2.6.7
     # via pre-commit
 idna==3.10
     # via requests
@@ -85,6 +85,10 @@ pyee==12.0.0
     # via playwright
 pyflakes==3.2.0
     # via flake8
+pygments==2.19.1
+    # via pygments-djc
+pygments-djc==1.0.1
+    # via -r requirements-dev.in
 pyproject-api==1.8.0
     # via tox
 pytest==8.3.4
@@ -93,7 +97,7 @@ pyyaml==6.0.2
     # via pre-commit
 requests==2.32.3
     # via -r requirements-dev.in
-sqlparse==0.5.2
+sqlparse==0.5.3
     # via django
 tox==4.24.1
     # via -r requirements-dev.in

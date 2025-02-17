@@ -25,7 +25,7 @@ inheritance follows these rules:
 
 For example:
 
-```python
+```djc_py
 class BaseCard(Component):
     template = """
         <div class="card">
@@ -37,7 +37,7 @@ class BaseCard(Component):
             border: 1px solid gray;
         }
     """
-    js = "console.log('Base card loaded');"
+    js = """console.log('Base card loaded');"""
 
 # This class overrides parent's template, but inherits CSS and JS
 class SpecialCard(BaseCard):
@@ -94,7 +94,7 @@ All other attributes and methods (including the [`Component.View`](../../referen
 
 For example:
 
-```python
+```djc_py
 class BaseForm(Component):
     template = """
         <form>

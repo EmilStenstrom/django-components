@@ -9,7 +9,7 @@ Components can be rendered outside of Django templates, calling them as regular 
 
 The component class defines `render` and `render_to_response` class methods. These methods accept positional args, kwargs, and slots, offering the same flexibility as the `{% component %}` tag:
 
-```py
+```djc_py
 class SimpleComponent(Component):
     template = """
         {% load component_tags %}

@@ -256,7 +256,7 @@ Then:
 
 ## Full example for `html_attrs`
 
-```py
+```djc_py
 @register("my_comp")
 class MyComp(Component):
     template: t.django_html = """

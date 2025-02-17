@@ -123,6 +123,7 @@ plugins:
       closing_tag: "!}"
   - gen-files:
       scripts:
+        - docs/scripts/setup.py
         - docs/scripts/reference.py
   - literate-nav:
       nav_file: SUMMARY.md

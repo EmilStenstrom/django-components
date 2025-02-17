@@ -106,7 +106,7 @@ Then navigate to these URLs:
 
 ### 1. Define document HTML
 
-```py title="[root]/components/demo.py"
+```djc_py title="[root]/components/demo.py"
 from django_components import Component, types
 
 # HTML into which a fragment will be loaded using HTMX
@@ -141,7 +141,7 @@ class MyPage(Component):
 
 ### 2. Define fragment HTML
 
-```py title="[root]/components/demo.py"
+```djc_py title="[root]/components/demo.py"
 class Frag(Component):
     def get(self, request):
         return self.render_to_response(
@@ -184,7 +184,7 @@ urlpatterns = [
 
 ### 1. Define document HTML
 
-```py title="[root]/components/demo.py"
+```djc_py title="[root]/components/demo.py"
 from django_components import Component, types
 
 # HTML into which a fragment will be loaded using AlpineJS
@@ -225,7 +225,7 @@ class MyPage(Component):
 
 ### 2. Define fragment HTML
 
-```py title="[root]/components/demo.py"
+```djc_py title="[root]/components/demo.py"
 class Frag(Component):
     def get(self, request):
         # IMPORTANT: Don't forget `type="fragment"`
@@ -281,7 +281,7 @@ urlpatterns = [
 
 ### 1. Define document HTML
 
-```py title="[root]/components/demo.py"
+```djc_py title="[root]/components/demo.py"
 from django_components import Component, types
 
 # HTML into which a fragment will be loaded using JS
@@ -321,7 +321,7 @@ class MyPage(Component):
 
 ### 2. Define fragment HTML
 
-```py title="[root]/components/demo.py"
+```djc_py title="[root]/components/demo.py"
 class Frag(Component):
     def get(self, request):
         return self.render_to_response(

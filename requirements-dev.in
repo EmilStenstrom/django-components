@@ -12,3 +12,4 @@ playwright
 requests
 types-requests
 whitenoise
+pygments-djc

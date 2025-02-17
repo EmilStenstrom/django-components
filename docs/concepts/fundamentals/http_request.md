@@ -78,7 +78,7 @@ rendered = template.render(RequestContext(request, {}))
 
 The data from context processors is automatically available within the component's template.
 
-```python
+```djc_py
 class MyComponent(Component):
     template = """
         <div>

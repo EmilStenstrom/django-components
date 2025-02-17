@@ -202,7 +202,7 @@ of HTML attributes (usually called `attrs`) to pass to the underlying template.
 In such cases, we may want to define some HTML attributes statically, and other dynamically.
 But for that, we need to define this dictionary on Python side:
 
-```py
+```djc_py
 @register("my_comp")
 class MyComp(Component):
     template = """
@@ -229,7 +229,7 @@ as component kwargs, so we can keep all the relevant information in the template
 we prefix the key with the name of the dict and `:`. So key `class` of input `attrs` becomes
 `attrs:class`. And our example becomes:
 
-```py
+```djc_py
 @register("my_comp")
 class MyComp(Component):
     template = """

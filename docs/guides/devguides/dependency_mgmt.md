@@ -7,7 +7,7 @@ associated with components, and how we render them.
 
 1. First of all, when we consider a component, it has two kind of dependencies - the "inlined" JS and CSS, and additional linked JS and CSS via `Media.js/css`:
 
-    ```py
+    ```djc_py
     from django_components import Component, types
 
     class MyTable(Component):

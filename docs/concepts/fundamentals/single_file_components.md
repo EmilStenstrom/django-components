@@ -9,7 +9,7 @@ For example, here's the calendar component from
 the [Getting started](../../getting_started/your_first_component.md) tutorial,
 defined in a single file:
 
-```python title="[project root]/components/calendar.py"
+```djc_py title="[project root]/components/calendar.py"
 from django_components import Component, register, types
 
 @register("calendar")

@@ -85,9 +85,9 @@ This has two modes:
 
     Consider this example:
 
-    ```python
+    ```djc_py
     class Outer(Component):
-        template = \"\"\"
+        template = """
           <div>
             {% component "inner" %}
               {% fill "content" %}
@@ -95,7 +95,7 @@ This has two modes:
               {% endfill %}
             {% endcomponent %}
           </div>
-        \"\"\"
+        """
     ```
 
     - `"django"` - `my_var` has access to data from `get_context_data()` of both `Inner` and `Outer`.
@@ -108,7 +108,7 @@ This has two modes:
 
 Given this template:
 
-```python
+```djc_py
 @register("root_comp")
 class RootComp(Component):
     template = """
@@ -148,7 +148,7 @@ all the data defined in the outer layers, like the `{% with %}` tag.
 
 Given this template:
 
-```python
+```djc_py
 class RootComp(Component):
     template = """
         {% with cheese="feta" %}

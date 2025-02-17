@@ -50,7 +50,7 @@ class Calendar(Component):
 
 Alternatively, you can "inline" HTML, JS, and CSS right into the component class:
 
-```py
+```djc_py
 from django_components import Component
 
 class Calendar(Component):

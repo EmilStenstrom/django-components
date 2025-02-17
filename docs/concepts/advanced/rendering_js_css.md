@@ -27,7 +27,7 @@ the locations by inserting following Django template tags:
 
 So if you have a component with JS and CSS:
 
-```python
+```djc_py
 from django_components import Component, types
 
 class MyButton(Component):

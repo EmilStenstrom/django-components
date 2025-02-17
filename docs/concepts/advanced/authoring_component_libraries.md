@@ -105,7 +105,7 @@ For live examples, see the [Community examples](../../overview/community.md#comm
 
     It's also a good idea to have a common prefix for your components, so they can be easily distinguished from users' components. In the example below, we use the prefix `my_` / `My`.
 
-    ```py
+    ```djc_py
     from typing import Dict, NotRequired, Optional, Tuple, TypedDict
 
     from django_components import Component, SlotFunc, register, types

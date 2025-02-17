@@ -88,7 +88,7 @@ Read on to learn about all the exciting details and configuration possibilities!
 - Each component can include its own HTML, CSS, and JS, or additional third-party JS and CSS.
 - HTML, CSS, and JS can be defined on the component class, or loaded from files.
 
-```python
+```djc_py
 from django_components import Component
 
 @register("calendar")
