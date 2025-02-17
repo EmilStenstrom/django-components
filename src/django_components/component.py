@@ -1100,6 +1100,8 @@ class Component(
         kwargs = cast(KwargsType, kwargs or {})
         slots_untyped = self._normalize_slot_fills(slots or {}, escape_slots_content)
         slots = cast(SlotsType, slots_untyped)
+        # Use RequestContext if request is provided, so that child non-component template tags
+        # can access the request object too.
         context = context or (RequestContext(request) if request else Context())
 
         # Allow to provide a dict instead of Context
