@@ -148,7 +148,7 @@ mkdocs-nav-weight==0.2.0
     # via hatch.envs.docs
 mkdocs-redirects==1.2.2
     # via hatch.envs.docs
-mkdocstrings==0.28.0
+mkdocstrings==0.28.1
     # via
     #   hatch.envs.docs
     #   mkdocstrings-python
