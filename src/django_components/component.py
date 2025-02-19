@@ -70,7 +70,7 @@ from django_components.slots import (
 )
 from django_components.template import cached_template
 from django_components.util.component_highlight import apply_component_highlight
-from django_components.util.context import snapshot_context
+from django_components.util.context import gen_context_processors_data, snapshot_context
 from django_components.util.django_monkeypatch import is_template_cls_patched
 from django_components.util.exception import component_error_message
 from django_components.util.logger import trace_component_msg
@@ -114,6 +114,7 @@ class MetadataItem(Generic[ArgsType, KwargsType, SlotsType]):
     render_id: str
     input: RenderInput[ArgsType, KwargsType, SlotsType]
     is_filled: Optional[SlotIsFilled]
+    request: Optional[HttpRequest]
 
 
 class ViewFn(Protocol):
@@ -233,6 +234,7 @@ class ComponentContext:
     fills: Dict[SlotName, Slot]
     outer_context: Optional[Context]
     registry: ComponentRegistry
+    request: Optional[HttpRequest]
     # When we render a component, the root component, together with all the nested Components,
     # shares this dictionary for storing callbacks that are called from within `component_post_render`.
     # This is so that we can pass them all in when the root component is passed to `component_post_render`.
@@ -663,6 +665,8 @@ class Component(
         """
         Input holds the data (like arg, kwargs, slots) that were passed to
         the current execution of the `render` method.
+
+        Raises `RuntimeError` if accessed outside of rendering execution.
         """
         if not len(self._metadata_stack):
             raise RuntimeError(f"{self.name}: Tried to access Component input while outside of rendering execution")
@@ -678,6 +682,8 @@ class Component(
 
         This attribute is available for use only within the template as `{{ component_vars.is_filled.slot_name }}`,
         and within `on_render_before` and `on_render_after` hooks.
+
+        Raises `RuntimeError` if accessed outside of rendering execution.
         """
         if not len(self._metadata_stack):
             raise RuntimeError(
@@ -692,6 +698,93 @@ class Component(
             )
 
         return ctx.is_filled
+
+    @property
+    def request(self) -> Optional[HttpRequest]:
+        """
+        [HTTPRequest](https://docs.djangoproject.com/en/5.1/ref/request-response/#django.http.HttpRequest)
+        object passed to this component.
+
+        In regular Django templates, you have to use
+        [`RequestContext`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#django.template.RequestContext)
+        to pass the `HttpRequest` object to the template.
+
+        But in Components, you can either use `RequestContext`, or pass the `request` object
+        explicitly via [`Component.render()`](../api#django_components.Component.render) and
+        [`Component.render_to_response()`](../api#django_components.Component.render_to_response).
+
+        When a component is nested in another, the child component uses parent's `request` object.
+
+        Raises `RuntimeError` if accessed outside of rendering execution.
+
+        **Example:**
+
+        ```py
+        class MyComponent(Component):
+            def get_context_data(self):
+                user_id = self.request.GET['user_id']
+                return {
+                    'user_id': user_id,
+                }
+        ```
+        """
+        if not len(self._metadata_stack):
+            raise RuntimeError(
+                f"{self.name}: Tried to access Component's `request` attribute " "while outside of rendering execution"
+            )
+
+        ctx = self._metadata_stack[-1]
+        return ctx.request
+
+    @property
+    def context_processors_data(self) -> Dict:
+        """
+        Retrieve data injected by
+        [`context_processors`](https://docs.djangoproject.com/en/5.1/ref/templates/api/#configuring-an-engine).
+
+        This data is also available from within the component's template, without having to
+        return this data from
+        [`get_context_data()`](../api#django_components.Component.get_context_data).
+
+        Unlike regular Django templates, the context processors are applied to components either when:
+
+        - The component is rendered with `RequestContext` (Regular Django behavior)
+        - The component is rendered with a regular `Context` (or none), but the `request` kwarg
+          of [`Component.render()`](../api#django_components.Component.render) is set.
+        - The component is nested in another component that matches one of the two conditions above.
+
+        See
+        [`Component.request`](../api#django_components.Component.request)
+        on how the `request`
+        ([HTTPRequest](https://docs.djangoproject.com/en/5.1/ref/request-response/#django.http.HttpRequest))
+        object is passed to and within the components.
+
+        Raises `RuntimeError` if accessed outside of rendering execution.
+
+        **Example:**
+
+        ```py
+        class MyComponent(Component):
+            def get_context_data(self):
+                user = self.context_processors_data['user']
+                return {
+                    'is_logged_in': user.is_authenticated,
+                }
+        ```
+        """
+        if not len(self._metadata_stack):
+            raise RuntimeError(
+                f"{self.name}: Tried to access Component's `context_processors_data` attribute "
+                "while outside of rendering execution"
+            )
+
+        context = self.input.context
+        request = self.request
+
+        if request is None:
+            return {}
+        else:
+            return gen_context_processors_data(context, request)
 
     # NOTE: We cache the Template instance. When the template is taken from a file
     #       via `get_template_name`, then we leverage Django's template caching with `get_template()`.
@@ -859,8 +952,7 @@ class Component(
               or to the end of the `<body>` tag. CSS dependencies are inserted into
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
         - `request` - The request object. This is only required when needing to use RequestContext,
-                      e.g. to enable template `context_processors`. Unused if context is already an instance
-                      of `Context`
+                      e.g. to enable template `context_processors`.
 
         Any additional args and kwargs are passed to the `response_class`.
 
@@ -929,8 +1021,7 @@ class Component(
               `{% component_css_dependencies %}`, or the end of the `<head>` tag.
         - `render_dependencies` - Set this to `False` if you want to insert the resulting HTML into another component.
         - `request` - The request object. This is only required when needing to use RequestContext,
-                      e.g. to enable template `context_processors`. Unused if context is already an instance of
-                      `Context`
+                      e.g. to enable template `context_processors`.
         Example:
         ```py
         MyComponent.render(
@@ -991,11 +1082,26 @@ class Component(
         #       wraps them in functions.
         self._validate_inputs(args or (), kwargs or {}, slots or {})
 
+        # Allow to pass down Request object via context.
+        # `context` may be passed explicitly via `Component.render()` and `Component.render_to_response()`,
+        # or implicitly via `{% component %}` tag.
+        if request is None and context:
+            # If the context is `RequestContext`, it has `request` attribute
+            request = getattr(context, "request", None)
+            # Check if this is a nested component and whether parent has request
+            if request is None:
+                parent_id = context.get(_COMPONENT_CONTEXT_KEY, None)
+                if parent_id:
+                    parent_comp_ctx = component_context_cache[parent_id]
+                    request = parent_comp_ctx.request
+
         # Allow to provide no args/kwargs/slots/context
         args = cast(ArgsType, args or ())
         kwargs = cast(KwargsType, kwargs or {})
         slots_untyped = self._normalize_slot_fills(slots or {}, escape_slots_content)
         slots = cast(SlotsType, slots_untyped)
+        # Use RequestContext if request is provided, so that child non-component template tags
+        # can access the request object too.
         context = context or (RequestContext(request) if request else Context())
 
         # Allow to provide a dict instead of Context
@@ -1027,6 +1133,7 @@ class Component(
                 render_dependencies=render_dependencies,
             ),
             is_filled=None,
+            request=request,
         )
 
         # We pass down the components the info about the component's parent.
@@ -1071,6 +1178,8 @@ class Component(
             default_slot=None,
             outer_context=snapshot_context(self.outer_context) if self.outer_context is not None else None,
             registry=self.registry,
+            # Pass down Request object via context
+            request=request,
             post_render_callbacks=post_render_callbacks,
         )
 
@@ -1083,6 +1192,7 @@ class Component(
 
         # Allow to access component input and metadata like component ID from within these hook
         with self._with_metadata(metadata):
+            context_processors_data = self.context_processors_data
             context_data = self.get_context_data(*args, **kwargs)
             # TODO - enable JS and CSS vars - EXPOSE AND DOCUMENT AND MAKE NON-NULL
             js_data = self.get_js_data(*args, **kwargs) if hasattr(self, "get_js_data") else {}  # type: ignore
@@ -1107,6 +1217,8 @@ class Component(
 
             with context.update(
                 {
+                    # Make data from context processors available inside templates
+                    **context_processors_data,
                     # Private context fields
                     _COMPONENT_CONTEXT_KEY: render_id,
                     # NOTE: Public API for variables accessible from within a component's template
