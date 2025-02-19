@@ -469,7 +469,7 @@ _Added in version 0.76_:
 
 Consider a component with slot(s). This component may do some processing on the inputs, and then use the processed variable in the slot's default template:
 
-```py
+```djc_py
 @register("my_comp")
 class MyComp(Component):
     template = """
@@ -498,7 +498,7 @@ Using scoped slots consists of two steps:
 
 To pass the data to the `slot` tag, simply pass them as keyword attributes (`key=value`):
 
-```py
+```djc_py
 @register("my_comp")
 class MyComp(Component):
     template = """
@@ -649,14 +649,14 @@ So it's possible to define a `name` key on a dictionary, and then spread that on
 You can dynamically pass all slots to a child component. This is similar to
 [passing all slots in Vue](https://vue-land.github.io/faq/forwarding-slots#passing-all-slots):
 
-```py
+```djc_py
 class MyTable(Component):
     def get_context_data(self, *args, **kwargs):
         return {
             "slots": self.input.slots,
         }
 
-    template: """
+    template = """
     <div>
       {% component "child" %}
         {% for slot_name in slots %}

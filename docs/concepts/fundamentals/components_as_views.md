@@ -19,7 +19,7 @@ Components can now be used as views:
 
 Here's an example of a calendar component defined as a view:
 
-```python
+```djc_py
 # In a file called [project root]/components/calendar.py
 from django_components import Component, ComponentView, register
 

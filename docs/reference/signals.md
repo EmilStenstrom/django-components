@@ -14,7 +14,7 @@ the signal is triggered for each component.
 
 Import from django as `django.test.signals.template_rendered`.
 
-```python
+```djc_py
 from django.test.signals import template_rendered
 
 # Setup a callback function

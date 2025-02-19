@@ -28,7 +28,7 @@ HTML / JS / CSS with a component:
 
     However, you can freely mix these for different languages:
 
-    ```py
+    ```djc_py
     class MyTable(Component):
         template: types.django_html = """
           <div class="welcome">

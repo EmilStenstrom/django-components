@@ -107,7 +107,7 @@ have all the keys that were passed to the `provide` tag.
 
 ## Full example
 
-```py
+```djc_py
 @register("child")
 class ChildComponent(Component):
     template = """

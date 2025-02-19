@@ -15,7 +15,7 @@
     ```
 
     And components that make use of `abc.html` via `include` or `extends`:
-    ```py
+    ```djc_py
     from django_components import Component, register
 
     @register("my_comp_extends")
@@ -66,7 +66,7 @@
     ```py
     @register("my_comp")
     class MyComp(Component):
-    	template_file = "abc.html"
+        template_file = "abc.html"
     ```
 
     Then:
@@ -110,37 +110,34 @@
         uses `extends`. In that case, just as you would expect, the `block inner` inside
         `abc.html` will render `OVERRIDEN`:
 
-        ````py
+        ```djc_py
         @register("my_comp")
         class MyComp(Component):
-        template_file = """
-        {% extends "abc.html" %}
-
-            		{% block inner %}
-            			OVERRIDEN
-            		{% endblock %}
-            	"""
-            ```
-
-        ````
+            template = """
+                {% extends "abc.html" %}
+                {% block inner %}
+                  OVERRIDEN
+                {% endblock %}
+            """
+        ```
 
     4.  This is where it gets interesting (but still intuitive). You can insert even
         new `slots` inside these "overriding" blocks:
 
-        ```py
+        ```djc_py
         @register("my_comp")
         class MyComp(Component):
-        	template_file = """
-        		{% extends "abc.html" %}
+            template = """
+              {% extends "abc.html" %}
 
-        		{% load component_tags %}
-        		{% block "inner" %}
-        			OVERRIDEN
-        			{% slot "new_slot" %}
-        				hello
-        			{% endslot %}
-        		{% endblock %}
-        	"""
+              {% load component_tags %}
+              {% block "inner" %}
+                OVERRIDEN
+                {% slot "new_slot" %}
+                  hello
+                {% endslot %}
+              {% endblock %}
+            """
         ```
 
         And you can then pass fill for this `new_slot` when rendering the component:
